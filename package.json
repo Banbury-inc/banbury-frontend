@@ -1,6 +1,6 @@
 {
   "name": "BanburyCloud",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "private": true,
   "description": "A decentralized cloud storage system.",
   "main": "./dist/main.js",
@@ -145,7 +145,10 @@
         "msi"
       ],
       "icon": "static/NeuraNet_Icons/web/icon-512.png",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "publish": [
+        "github"
+      ]
     },
     "mac": {
       "entitlements": "build/entitlements.mac.plist",
@@ -156,7 +159,10 @@
         "dmg",
         "pkg"
       ],
-      "icon": "static/NeuraNet_Icons/macos/AppIcon.icns"
+      "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
+      "publish": [
+        "github"
+      ]
     },
     "linux": {
       "target": [
@@ -164,7 +170,10 @@
         "snap",
         "appImage"
       ],
-      "icon": "static/NeuraNet_Icons/macos/AppIcon.icns"
+      "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
+      "publish": [
+        "github"
+      ]
     },
     "files": [
       "package.json",
