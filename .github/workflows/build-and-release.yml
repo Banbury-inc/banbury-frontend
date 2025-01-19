@@ -29,26 +29,6 @@ jobs:
           source .venv/bin/activate
           python3 -m pip install --upgrade pip setuptools
 
-      - name: Install Apple Certificate for macOS
-        if: runner.os == 'macOS'
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
-          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
-        run: |
-          # Create keychain
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          
-          # Import certificate
-          echo $BUILD_CERTIFICATE_BASE64 | base64 --decode > certificate.p12
-          security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          
-          # Clean up
-          rm certificate.p12
-
       - name: Install dependencies
         run: npm install --force
 
@@ -61,11 +41,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           EP_PRE_RELEASE: true
           EP_DRAFT: false
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
-          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
