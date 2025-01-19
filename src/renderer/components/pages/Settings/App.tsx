@@ -6,6 +6,7 @@ import { Alert } from '../../../../components/alert';
 export default function App() {
     const [updateStatus, setUpdateStatus] = useState<{ title: string; messages: string[] } | null>(null);
     const [showAlert, setShowAlert] = useState(false);
+    const [appVersion, setAppVersion] = useState('');
 
     useEffect(() => {
         // Listen for update status messages
@@ -36,6 +37,9 @@ export default function App() {
             });
             setShowAlert(true);
         });
+
+        // Get app version from main process
+        setAppVersion(ipcRenderer.sendSync('get-app-version'));
 
         // Clean up listeners
         return () => {
@@ -83,7 +87,7 @@ export default function App() {
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <Box sx={{ pr: 3 }}>
                                         <Typography variant="h6" gutterBottom>Current Version</Typography>
-                                        <Typography color="textSecondary" variant="caption">Banbury 3.1.2</Typography>
+                                        <Typography color="textSecondary" variant="caption">{appVersion}</Typography>
                                     </Box>
                                 </Box>
                             </Stack>
