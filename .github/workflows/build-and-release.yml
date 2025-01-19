@@ -64,19 +64,19 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ubuntu-latest-artifacts
-          path: ./dist/linux
+          path: ./packages
 
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v3
         with:
           name: windows-latest-artifacts
-          path: ./dist/windows
+          path: ./packages
 
       - name: Download macos Artifacts
         uses: actions/download-artifact@v3
         with:
           name: macos-latest-artifacts
-          path: ./dist/macos
+          path: ./packages
 
       - name: Get version from package.json
         id: get_version
@@ -97,8 +97,12 @@ jobs:
         with:
           tag_name: "v${{ env.VERSION }}"
           files: |
-            ./dist/linux/*
-            ./dist/windows/*.exe
-            ./dist/macos/*.dmg
+            ./packages/**/*.AppImage
+            ./packages/**/*.exe
+            ./packages/**/*.dmg
+            ./packages/**/*.zip
+            ./packages/**/*.yml
+            ./packages/**/*.yaml
+            ./packages/**/*.blockmap
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
