@@ -125,7 +125,10 @@ ipcMain.on('fetch-data', async (event, args) => {
 
 autoUpdater.checkForUpdatesAndNotify();
 
-autoUpdater.on('update-available', () => {
+autoUpdater.on('update-available', (info) => {
+  // Start downloading the update
+  autoUpdater.downloadUpdate();
+  
   dialog.showMessageBox({
     type: 'info',
     title: 'Update available',
@@ -133,15 +136,25 @@ autoUpdater.on('update-available', () => {
   });
 });
 
+autoUpdater.on('download-progress', (progressObj) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('update-progress', progressObj.percent);
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  dialog.showErrorBox('Error', 'Error during update: ' + err);
+});
+
 autoUpdater.on('update-downloaded', () => {
   dialog.showMessageBox({
     type: 'info',
     title: 'Update ready',
-    message: 'A new update is ready. Quit and install now?',
+    message: 'A new update has been downloaded. Would you like to install it now?',
     buttons: ['Yes', 'Later']
   }).then(result => {
     if (result.response === 0) {
-      autoUpdater.quitAndInstall();
+      autoUpdater.quitAndInstall(true, true);
     }
   });
 });
