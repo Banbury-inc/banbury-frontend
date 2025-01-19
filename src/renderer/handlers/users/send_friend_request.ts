@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../../config/config';
+import { neuranet } from '../../neuranet';
 
 export async function sendFriendRequest(
   username: string,
@@ -7,7 +8,6 @@ export async function sendFriendRequest(
 ) {
 
   try {
-
     const response = await axios.post<{
       result: string;
     }>(`${CONFIG.url}/users/send_friend_request/`, {
@@ -18,7 +18,22 @@ export async function sendFriendRequest(
     const result = response.data.result;
     if (result === 'success') {
       console.log("send friend request success");
-      return 'success';
+      const notification = {
+        type: 'friend_request',
+        title: 'Friend Request',
+        description: 'You have a new friend request from ' + username,
+        timestamp: new Date(),
+        read: false,
+      };
+      const response = await neuranet.notifications.addNotification(friend_username, notification);
+      if (response === 'success') {
+        console.log("send friend request success");
+        return 'success';
+      }
+      else {
+        console.log("send friend request failed");
+        return 'failed';
+      }
     }
     if (result === 'fail') {
       console.log("send friend request failed");
@@ -36,5 +51,6 @@ export async function sendFriendRequest(
   } catch (error) {
     console.error('Error fetching data:', error);
   }
+
 }
 

@@ -310,7 +310,7 @@ export default function FileTreeView() {
   }, []);
 
   return (
-    <Box sx={{ width: 300, height: '100%', overflow: 'auto' }}>
+    <Box sx={{ height: '100%', overflow: 'auto' }}>
       <TreeView
         aria-label="file system navigator"
         defaultCollapseIcon={<ExpandMoreIcon />}

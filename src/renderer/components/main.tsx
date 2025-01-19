@@ -36,7 +36,8 @@ import path from 'path';
 import { neuranet } from '../neuranet';
 import Shared from './pages/Shared/Shared';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
-
+import Logs from './pages/Logs/Logs';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 const { ipcRenderer } = window.require('electron');
 
 const drawerWidth = 240;  // Change the width as needed
@@ -235,7 +236,7 @@ export default function PermanentDrawerLeft() {
         </List>
         <Divider />
         <List>
-          {['Settings'].map((text) => (
+          {['Logs', 'Settings'].map((text) => (
 
             <Tooltip title={text} key={text} placement="right">
               <ListItem key={text} sx={{ padding: '2px' }}>
@@ -251,7 +252,7 @@ export default function PermanentDrawerLeft() {
                   <Icon
                     fontSize='inherit'
                   >
-                    <SettingsIcon fontSize='inherit' />
+                    {text === 'Logs' ? <FactCheckOutlinedIcon fontSize='inherit' /> : <SettingsIcon fontSize='inherit' />}
                   </Icon>
                   {/* <ListItemText */}
                   {/*   secondary={text} */}
@@ -281,6 +282,8 @@ export default function PermanentDrawerLeft() {
               return <Shared />;
             case 'Devices':
               return <Devices />;
+            case 'Logs':
+              return <Logs />;
             case 'AI':
               return <AI />;
             case 'Friends':

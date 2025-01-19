@@ -1,4 +1,3 @@
-
 import fs from 'fs';
 import path from 'path';
 import { handlers } from '../index'; // Adjust the path according to your project structure
@@ -14,7 +13,11 @@ export async function deleteFile(
   username: string | null,
   updates: number,
   setUpdates: (updates: number) => void
-) {
+): Promise<string> {
+  if (selectedFileNames.length === 0) {
+    return 'No file selected';
+  }
+
   setdeleteLoading(true);
   const deletePromises: Promise<void>[] = [];  // Array to hold promises for deletion operations
 
@@ -59,21 +62,13 @@ export async function deleteFile(
   });
 
   try {
-    // Wait for all delete operations to complete
     await Promise.all(deletePromises);
-    console.log('All files deleted successfully.');
+    setSelectedFileNames([]);
+    setdeleteLoading(false);
+    setUpdates(updates + 1);
+    return 'success';
   } catch (error) {
-    console.error('Error deleting files:', error);
+    console.error('Error during deletion:', error);
+    return 'file_not_found';
   }
-
-  setdeleteLoading(false);
-  setIsAddingFolder(false);
-  setNewFolderName("");
-  setDisableFetch(false);
-  setSelectedFileNames([]);
-
-  // Run update devices function after all deletions are complete
-  const update_result = await handlers.devices.updateDevice(username);
-  console.log(update_result);
-  setUpdates(updates + 1);
 }

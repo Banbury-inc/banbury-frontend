@@ -37,6 +37,7 @@ import { CardContent, Container, FormControl, InputLabel, Select, MenuItem } fro
 import AccountMenuIcon from '../common/AccountMenuIcon';
 import ScannedFoldersChips from '../common/ScannedFoldersChips';
 import AddToQueueIcon from '@mui/icons-material/AddToQueue';
+import { styled } from '@mui/material/styles';
 import NewScannedFolderButton from '../new_scanned_folder_button';
 import { useAuth } from '../../context/AuthContext';
 import Card from '@mui/material/Card';
@@ -47,7 +48,7 @@ import fs from 'fs';
 import { neuranet } from '../../neuranet';
 import { formatRAM } from '../../utils';
 import { fileWatcherEmitter } from '../../neuranet/device/watchdog';
-import TaskBoxButton from '../TaskBoxButton';
+import TaskBoxButton from '../common/notifications/NotificationsButton';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
@@ -64,8 +65,9 @@ import ErrorIcon from '@mui/icons-material/Error';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import PendingIcon from '@mui/icons-material/Pending';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-
 import { CONFIG } from '../../config/config';
+import NotificationsButton from '../common/notifications/NotificationsButton';
+import { useAlert } from '../../context/AlertContext';
 
 
 // Update the interface to match device data
@@ -245,6 +247,34 @@ function formatTotalRAM(capacity: string | number): string {
 }
 
 
+const ResizeHandle = styled('div')(({ theme }) => ({
+  position: 'absolute',
+  right: -4,
+  top: 0,
+  bottom: 0,
+  width: 8,
+  cursor: 'col-resize',
+  zIndex: 1000,
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 4,
+    width: 2,
+    backgroundColor: theme.palette.primary.main,
+    opacity: 0,
+    transition: 'opacity 0.2s ease',
+  },
+  '&:hover::after': {
+    opacity: 1,
+    transition: 'opacity 0.2s ease 0.15s',
+  },
+  '&.dragging::after': {
+    opacity: 1,
+    transition: 'none',
+  }
+}));
 
 export default function Devices() {
   const isSmallScreen = useMediaQuery('(max-width:960px)');
@@ -267,6 +297,7 @@ export default function Devices() {
   const { updates, setUpdates, tasks, setTasks, username, first_name, last_name, setFirstname, setLastname, redirect_to_login, setredirect_to_login, taskbox_expanded, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
+  const { showAlert } = useAlert();
 
   // Add this new state for managing tabs
   const [selectedTab, setSelectedTab] = useState(0);
@@ -276,6 +307,41 @@ export default function Devices() {
     setSelectedTab(newValue);
   };
 
+  const [deviceListWidth, setDeviceListWidth] = useState(250);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const deltaX = e.clientX - dragStartX.current;
+        const newWidth = Math.max(100, Math.min(600, dragStartWidth.current + deltaX));
+        setDeviceListWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = deviceListWidth;
+  };
 
   const getSelectedDeviceNames = () => {
     return selected.map(id => {
@@ -640,38 +706,118 @@ export default function Devices() {
 
 
   const handleAddDeviceClick = async () => {
-    console.log("handling add device click")
-    let device_name = neuranet.device.name();
-    let task_description = 'Adding device ' + device_name;
-    let result = await handlers.devices.addDevice(username ?? '');
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
+    try {
+      console.log("handling add device click");
+      let device_name = neuranet.device.name();
+      let task_description = 'Adding device ' + device_name;
+      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      setTaskbox_expanded(true);
 
-    if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      // Refresh the device list after adding a device
-      await fetchDevices();
-
-      // Define the default directory for the new device
-      const defaultDirectory = path.join(os.homedir(), 'BCloud');
-
-      // Add the default directory to the device's scanned folders
-      await neuranet.device.add_scanned_folder(defaultDirectory, username ?? '');
-
+      const result = await handlers.devices.addDevice(username ?? '');
+      
+      if (result === 'success') {
+        // Add default directory and refresh device list
+        try {
+          const defaultDirectory = path.join(os.homedir(), 'BCloud');
+          await neuranet.device.add_scanned_folder(defaultDirectory, username ?? '');
+          await fetchDevices();
+          await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          showAlert('Success', ['Device added successfully'], 'success');
+        } catch (folderError) {
+          console.error('Error setting up default directory:', folderError);
+          await neuranet.sessions.failTask(
+            username ?? '', 
+            taskInfo, 
+            'Failed to set up default directory', 
+            tasks, 
+            setTasks
+          );
+          showAlert('Error', ['Failed to set up default directory', folderError instanceof Error ? folderError.message : 'Unknown error'], 'error');
+        }
+      } else {
+        await neuranet.sessions.failTask(
+          username ?? '', 
+          taskInfo, 
+          'Failed to add device', 
+          tasks, 
+          setTasks
+        );
+        showAlert('Error', ['Failed to add device'], 'error');
+      }
+    } catch (error) {
+      console.error('Error adding device:', error);
+      try {
+        const errorTaskInfo = await neuranet.sessions.addTask(
+          username ?? '', 
+          'Error adding device', 
+          tasks, 
+          setTasks
+        );
+        await neuranet.sessions.failTask(
+          username ?? '', 
+          errorTaskInfo, 
+          error instanceof Error ? error.message : 'Unknown error occurred', 
+          tasks, 
+          setTasks
+        );
+        showAlert('Error', ['Failed to add device', error instanceof Error ? error.message : 'Unknown error'], 'error');
+      } catch (taskError) {
+        console.error('Failed to create error task:', taskError);
+        showAlert('Error', ['Failed to create error task', taskError instanceof Error ? taskError.message : 'Unknown error'], 'error');
+      }
     }
   };
 
   const handleDeleteDevice = async () => {
-    let task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
-    let result = await neuranet.device.delete_device(username ?? '');
-    if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      // Refresh the device list after deleting a device
-      await fetchDevices();
+    if (!selectedDeviceNames.length) {
+      showAlert('Warning', ['Please select one or more devices to delete'], 'warning');
+      return;
     }
-    setSelectedDevices([]);
+
+    try {
+      let task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
+      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      setTaskbox_expanded(true);
+
+      const result = await neuranet.device.delete_device(username ?? '');
+      
+      if (result === 'success') {
+        await fetchDevices();
+        await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        setSelectedDevices([]);
+        showAlert('Success', ['Device(s) deleted successfully'], 'success');
+      } else {
+        await neuranet.sessions.failTask(
+          username ?? '', 
+          taskInfo, 
+          'Failed to delete device', 
+          tasks, 
+          setTasks
+        );
+        showAlert('Error', ['Failed to delete device(s)'], 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting device:', error);
+      try {
+        const errorTaskInfo = await neuranet.sessions.addTask(
+          username ?? '', 
+          'Error deleting device', 
+          tasks, 
+          setTasks
+        );
+        await neuranet.sessions.failTask(
+          username ?? '', 
+          errorTaskInfo, 
+          error instanceof Error ? error.message : 'Unknown error occurred', 
+          tasks, 
+          setTasks
+        );
+        showAlert('Error', ['Failed to delete device(s)', error instanceof Error ? error.message : 'Unknown error'], 'error');
+      } catch (taskError) {
+        console.error('Failed to create error task:', taskError);
+        showAlert('Error', ['Failed to create error task', taskError instanceof Error ? taskError.message : 'Unknown error'], 'error');
+      }
+    }
   };
 
 
@@ -757,20 +903,27 @@ export default function Devices() {
   };
 
   const handleSyncStorageChange = async (value: string) => {
-    console.log(value);
+    try {
+      console.log(value);
+      let task_description = 'Updating Sync Storage Capacity';
+      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      setTaskbox_expanded(true);
 
-    let task_description = 'Updating Sync Storage Capacity';
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
+      let result = await neuranet.device.update_sync_storage_capacity(username ?? '', value);
 
-    let result = await neuranet.device.update_sync_storage_capacity(username ?? '', value);
-
-    if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      setUpdates(updates + 1);
-      fetchDevices();
+      if (result === 'success') {
+        let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        setUpdates(updates + 1);
+        fetchDevices();
+        showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
+      } else {
+        await neuranet.sessions.failTask(username ?? '', taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
+        showAlert('Error', ['Failed to update sync storage capacity'], 'error');
+      }
+    } catch (error) {
+      console.error('Error updating sync storage:', error);
+      showAlert('Error', ['Failed to update sync storage capacity', error instanceof Error ? error.message : 'Unknown error'], 'error');
     }
-
   };
 
 
@@ -819,31 +972,35 @@ export default function Devices() {
     useFilesAvailableForDownload: boolean,
     useDeviceinFileSync: boolean
   ) => {
+    try {
+      let task_description = 'Updating prediction preferences';
+      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      setTaskbox_expanded(true);
 
+      const result = await neuranet.device.updateScoreConfigurationPreferences(
+        username ?? '',
+        usePredictedCPUUsage,
+        usePredictedRAMUsage,
+        usePredictedGPUUsage,
+        usePredictedDownloadSpeed,
+        usePredictedUploadSpeed,
+        useFilesNeeded,
+        useFilesAvailableForDownload,
+        useDeviceinFileSync,
+        neuranet.device.name()
+      );
 
-    let task_description = 'Updating prediction preferences';
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
-
-    const result = await neuranet.device.updateScoreConfigurationPreferences(
-      username ?? '',
-      usePredictedCPUUsage,
-      usePredictedRAMUsage,
-      usePredictedGPUUsage,
-      usePredictedDownloadSpeed,
-      usePredictedUploadSpeed,
-      useFilesNeeded,
-      useFilesAvailableForDownload,
-      useDeviceinFileSync,
-      neuranet.device.name()
-    );
-
-    if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      // setUpdates(updates + 1);
+      if (result === 'success') {
+        let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        showAlert('Success', ['Prediction preferences updated successfully'], 'success');
+      } else {
+        await neuranet.sessions.failTask(username ?? '', taskInfo, 'Failed to update prediction preferences', tasks, setTasks);
+        showAlert('Error', ['Failed to update prediction preferences'], 'error');
+      }
+    } catch (error) {
+      console.error('Error updating prediction preferences:', error);
+      showAlert('Error', ['Failed to update prediction preferences', error instanceof Error ? error.message : 'Unknown error'], 'error');
     }
-
-
   };
 
 
@@ -883,9 +1040,7 @@ export default function Devices() {
   }, [selectedDevice]);
 
   return (
-    // <Box sx={{ width: '100%', pl: 4, pr: 4, mt: 0, pt: 5 }}>
     <Box sx={{ width: '100%', pt: 0 }}>
-
       <Card variant='outlined' sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
         <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
@@ -922,7 +1077,9 @@ export default function Devices() {
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                   <Stack direction="row">
-                    <TaskBoxButton />
+                    <NotificationsButton />
+                  </Stack>
+                  <Stack paddingLeft={1} direction="row">
                     <AccountMenuIcon />
                   </Stack>
                 </Box>
@@ -933,79 +1090,107 @@ export default function Devices() {
       </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
         {/* Left panel: Device table */}
-        <Card variant="outlined" sx={{ flexGrow: 1, height: '100%', width: '30%', overflow: 'hidden' }}>
-          <CardContent sx={{ height: '100%', width: '100%', overflow: 'auto' }}>
-            <TableContainer sx={{ maxHeight: '96%', overflowY: 'auto', overflowX: 'auto' }}>
-              <Table aria-labelledby="tableTitle" size="small">
-                <EnhancedTableHead
-                  numSelected={selected.length}
-                  order={order}
-                  orderBy={orderBy}
-                  onSelectAllClick={() => { }}
-                  onRequestSort={() => { }}
-                  rowCount={allDevices.length}
-                />
-                <TableBody>
-                  {isLoading ? (
-                    Array.from(new Array(10)).map((_, index) => (
-                      <TableRow key={index}>
-                        <TableCell padding="checkbox">
-                          <Skeleton variant="rectangular" width={24} height={24} />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton variant="text" width="100%" />
+        <Stack 
+          sx={{ 
+            position: 'relative', 
+            width: `${deviceListWidth}px`,
+            flexShrink: 0,
+            transition: isDragging ? 'none' : 'width 0.3s ease',
+            borderRight: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Card variant="outlined" sx={{ 
+            height: '100%', 
+            width: '100%', 
+            overflow: 'hidden',
+            borderLeft: 0,
+            borderRight: 0,
+            borderRadius: 0,
+          }}>
+            <CardContent sx={{ height: '100%', width: '100%', overflow: 'auto' }}>
+              <TableContainer sx={{ maxHeight: '96%', overflowY: 'auto', overflowX: 'auto' }}>
+                <Table aria-labelledby="tableTitle" size="small">
+                  <EnhancedTableHead
+                    numSelected={selected.length}
+                    order={order}
+                    orderBy={orderBy}
+                    onSelectAllClick={() => { }}
+                    onRequestSort={() => { }}
+                    rowCount={allDevices.length}
+                  />
+                  <TableBody>
+                    {isLoading ? (
+                      Array.from(new Array(10)).map((_, index) => (
+                        <TableRow key={index}>
+                          <TableCell padding="checkbox">
+                            <Skeleton variant="rectangular" width={24} height={24} />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton variant="text" width="100%" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : allDevices.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center">
+                          <Typography variant="body1" color="textSecondary">
+                            No devices available.
+                          </Typography>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : allDevices.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} align="center">
-                        <Typography variant="body1" color="textSecondary">
-                          No devices available.
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    stableSort(allDevices, getComparator(order, orderBy))
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((row, index) => {
-                        const isItemSelected = isSelected(row.id);
-                        const labelId = `enhanced-table-checkbox-${index}`;
+                    ) : (
+                      stableSort(allDevices, getComparator(order, orderBy))
+                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                        .map((row, index) => {
+                          const isItemSelected = isSelected(row.id);
+                          const labelId = `enhanced-table-checkbox-${index}`;
 
-                        return (
-                          <TableRow
-                            hover
-                            onClick={() => handleDeviceClick(row)}
-                            role="checkbox"
-                            aria-checked={isItemSelected}
-                            tabIndex={-1}
-                            key={row.id}
-                            selected={!!selectedDevice && selectedDevice.id === row.id}
-                          >
-                            <TableCell padding="checkbox">
-                              <Checkbox
-                                color="primary"
-                                checked={isItemSelected}
-                                inputProps={{
-                                  'aria-labelledby': labelId,
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell component="th" id={labelId} scope="row" padding="normal">
-                              {row.device_name}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+                          return (
+                            <TableRow
+                              hover
+                              onClick={() => handleDeviceClick(row)}
+                              role="checkbox"
+                              aria-checked={isItemSelected}
+                              tabIndex={-1}
+                              key={row.id}
+                              selected={!!selectedDevice && selectedDevice.id === row.id}
+                            >
+                              <TableCell padding="checkbox">
+                                <Checkbox
+                                  color="primary"
+                                  checked={isItemSelected}
+                                  inputProps={{
+                                    'aria-labelledby': labelId,
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell component="th" id={labelId} scope="row" padding="normal">
+                                {row.device_name}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+          <ResizeHandle
+            className={isDragging ? 'dragging' : ''}
+            onMouseDown={handleMouseDown}
+          />
+        </Stack>
 
         {/* Right panel: Device details */}
-        <Card variant="outlined" sx={{ p: 2, height: '100%', width: '70%', overflow: 'auto' }}>
+        <Card variant="outlined" sx={{ 
+          flexGrow: 1,
+          height: '100%', 
+          overflow: 'auto',
+          borderLeft: 0,
+          borderRadius: 0,
+        }}>
           <CardContent>
             {isLoading ? (
               <Skeleton variant="rectangular" width="100%" height={400} />
@@ -1611,6 +1796,6 @@ export default function Devices() {
           </CardContent>
         </Card>
       </Stack>
-    </Box >
+    </Box>
   );
 }

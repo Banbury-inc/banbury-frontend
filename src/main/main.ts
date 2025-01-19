@@ -10,6 +10,7 @@ import { shell } from "electron";
 import { useEffect } from 'react';
 
 import { useAuth } from '../renderer/context/AuthContext';
+import { UpdateService } from './update-service';
 
 const fs = require('fs').promises;
 
@@ -65,6 +66,11 @@ function createWindow(): void {
     // Now you can safely execute any code that interacts with the mainWindow
     // initialize_receiver();
   });
+
+  const updateService = new UpdateService(mainWindow);
+
+  // Check for updates when app starts
+  updateService.checkForUpdates();
 }
 
 // function runPythonScript() {

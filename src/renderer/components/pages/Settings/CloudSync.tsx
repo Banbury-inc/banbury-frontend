@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Card, Grid, Stack, Typography, Box, Divider, TextField } from '@mui/material';
 import { neuranet } from '../../../neuranet';
 import { useAuth } from '../../../context/AuthContext';
+import { useAlert } from '../../../context/AlertContext';
 
 export default function CloudSync() {
 
@@ -11,7 +12,7 @@ export default function CloudSync() {
     const [predicted_gpu_usage_weighting, setPredictedGpuUsageWeighting] = useState(10);
     const [predicted_download_speed_weighting, setPredictedDownloadSpeedWeighting] = useState(10);
     const [predicted_upload_speed_weighting, setPredictedUploadSpeedWeighting] = useState(10);
-
+    const { showAlert } = useAlert();
 
     const handleSave = async (
         predicted_cpu_usage_weighting: number,
@@ -20,28 +21,54 @@ export default function CloudSync() {
         predicted_upload_speed_weighting: number,
         predicted_download_speed_weighting: number) => {
 
-        let task_description = 'Updating Settings';
-        let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-        setTaskbox_expanded(true);
+        try {
+            let task_description = 'Updating Settings';
+            let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+            setTaskbox_expanded(true);
 
-        let response = await neuranet.settings.updatePerformanceScoreWeightings(
-            username,
-            predicted_cpu_usage_weighting,
-            predicted_ram_usage_weighting,
-            predicted_gpu_usage_weighting,
-            predicted_download_speed_weighting,
-            predicted_upload_speed_weighting
-        );
+            let response = await neuranet.settings.updatePerformanceScoreWeightings(
+                username,
+                predicted_cpu_usage_weighting,
+                predicted_ram_usage_weighting,
+                predicted_gpu_usage_weighting,
+                predicted_download_speed_weighting,
+                predicted_upload_speed_weighting
+            );
 
-        console.log('response: ', response);
-
-        if (response === 'success') {
-            console.log('settings update success');
-            let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+            if (response === 'success') {
+                console.log('settings update success');
+                await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+                showAlert('Success', ['Performance score weightings updated successfully'], 'success');
+            } else {
+                await neuranet.sessions.failTask(username ?? '', taskInfo, 'Failed to update performance score weightings', tasks, setTasks);
+                showAlert('Error', ['Failed to update performance score weightings'], 'error');
+            }
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            showAlert('Error', ['Failed to save settings', error instanceof Error ? error.message : 'Unknown error'], 'error');
         }
-
     }
 
+    const handleWeightingChange = (
+        value: string, 
+        setter: (value: number) => void
+    ) => {
+        try {
+            const numValue = Number(value);
+            if (isNaN(numValue)) {
+                showAlert('Warning', ['Please enter a valid number'], 'warning');
+                return;
+            }
+            if (numValue < 0) {
+                showAlert('Warning', ['Weight cannot be negative'], 'warning');
+                return;
+            }
+            setter(numValue);
+        } catch (error) {
+            console.error('Error updating weighting:', error);
+            showAlert('Error', ['Failed to update weighting', error instanceof Error ? error.message : 'Unknown error'], 'error');
+        }
+    };
 
     return (
         <>
@@ -73,7 +100,7 @@ export default function CloudSync() {
                                                 size="small"
                                                 label="Weight"
                                                 value={predicted_cpu_usage_weighting}
-                                                onChange={(e) => setPredictedCpuUsageWeighting(Number(e.target.value))}
+                                                onChange={(e) => handleWeightingChange(e.target.value, setPredictedCpuUsageWeighting)}
                                                 fullWidth
                                             />
                                         </Box>
@@ -91,7 +118,7 @@ export default function CloudSync() {
                                         size="small"
                                         label="Weight"
                                         value={predicted_ram_usage_weighting}
-                                        onChange={(e) => setPredictedRamUsageWeighting(Number(e.target.value))}
+                                        onChange={(e) => handleWeightingChange(e.target.value, setPredictedRamUsageWeighting)}
                                         fullWidth
                                     />
                                 </Box>
@@ -108,7 +135,7 @@ export default function CloudSync() {
                                         size="small"
                                         label="Weight"
                                         value={predicted_gpu_usage_weighting}
-                                        onChange={(e) => setPredictedGpuUsageWeighting(Number(e.target.value))}
+                                        onChange={(e) => handleWeightingChange(e.target.value, setPredictedGpuUsageWeighting)}
                                         fullWidth
                                     />
                                 </Box>
@@ -125,7 +152,7 @@ export default function CloudSync() {
                                         size="small"
                                         label="Weight"
                                         value={predicted_download_speed_weighting}
-                                        onChange={(e) => setPredictedDownloadSpeedWeighting(Number(e.target.value))}
+                                        onChange={(e) => handleWeightingChange(e.target.value, setPredictedDownloadSpeedWeighting)}
                                         fullWidth
                                     />
                                 </Box>
@@ -142,7 +169,7 @@ export default function CloudSync() {
                                         size="small"
                                         label="Weight"
                                         value={predicted_upload_speed_weighting}
-                                        onChange={(e) => setPredictedUploadSpeedWeighting(Number(e.target.value))}
+                                        onChange={(e) => handleWeightingChange(e.target.value, setPredictedUploadSpeedWeighting)}
                                         fullWidth
                                     />
                                 </Box>

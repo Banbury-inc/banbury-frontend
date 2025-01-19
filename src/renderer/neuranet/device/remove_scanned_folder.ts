@@ -19,33 +19,33 @@ export async function remove_scanned_folder(
 
   try {
 
-      url = `${CONFIG.url}/files/remove_scanned_folder/${username}/`;
+    url = `${CONFIG.url}/files/remove_scanned_folder/${username}/`;
 
 
 
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    const response = await axios.post<{ status: string; username: string; }>(url, {
       device_name: device_name,
       scanned_folder: scanned_folder,
     });
-    const result = response.data.result;
+    console.log(response)
+    const result = response.data.status;
 
     if (result === 'success') {
 
-      console.log("declare offline success");
+      console.log("remove scanned folder success");
 
       return result;
     }
     if (result === 'fail') {
-      console.log("declare offline failed");
+      console.log(response)
       return 'failed';
     }
     if (result === 'task_already_exists') {
-      console.log("task already exists");
       return 'exists';
     }
 
     else {
-      console.log("declare offline failed");
+      console.log("remove scanned folder failed");
       console.log(result);
       return 'task_add failed';
     }

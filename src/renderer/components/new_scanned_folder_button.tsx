@@ -22,6 +22,7 @@ export default function NewScannedFolderButton({ fetchDevices }: NewScannedFolde
   const [loading, setLoading] = useState(false);
   const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleFolderSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
 
     const file = event.target.files ? event.target.files[0] : null;
@@ -72,7 +73,7 @@ export default function NewScannedFolderButton({ fetchDevices }: NewScannedFolde
         sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
       >
         <CreateNewFolderOutlinedIcon
-        fontSize="inherit" />
+          fontSize="inherit" />
         <input
           type="file"
           ref={fileInputRef}

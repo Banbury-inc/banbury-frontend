@@ -35,7 +35,7 @@ import { readdir, stat } from 'fs/promises';
 import isEqual from 'lodash/isEqual';
 import os from 'os';
 import path, { join } from 'path';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
 import { neuranet } from '../../../neuranet';
@@ -45,8 +45,7 @@ import AccountMenuIcon from '../../common/AccountMenuIcon';
 import RemoveFileFromSyncButton from './components/remove_file_from_sync_button/remove_file_from_sync_button';
 import FileTreeView from './components/NewTreeView/FileTreeView';
 import NewInputFileUploadButton from '../../newuploadfilebutton';
-import TaskBox from '../../TaskBox';
-import TaskBoxButton from '../../TaskBoxButton';
+import TaskBoxButton from '../../common/notifications/NotificationsButton';
 import { fetchDeviceData } from './utils/fetchDeviceData';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
@@ -60,7 +59,8 @@ import { newUseFileData } from './hooks/newUseFileData';
 import Rating from '@mui/material/Rating';
 import { CONFIG } from '../../../config/config';
 import { fetchFileSyncData } from './utils/fetchFileSyncData';
-
+import NotificationsButton from '../../common/notifications/NotificationsButton';
+import { styled } from '@mui/material/styles';
 
 const getHeadCells = (isCloudSync: boolean): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -68,8 +68,6 @@ const getHeadCells = (isCloudSync: boolean): HeadCell[] => [
   { id: 'device_ids', numeric: false, label: 'Coverage', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'file_priority', numeric: false, label: 'Priority', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
 ];
-
-
 
 function EnhancedTableHead(props: EnhancedTableProps) {
   const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
@@ -140,6 +138,35 @@ function EnhancedTableHead(props: EnhancedTableProps) {
     </TableHead>
   );
 }
+
+const ResizeHandle = styled('div')(({ theme }) => ({
+  position: 'absolute',
+  right: -4,
+  top: 0,
+  bottom: 0,
+  width: 8,
+  cursor: 'col-resize',
+  zIndex: 1000,
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 4,
+    width: 2,
+    backgroundColor: theme.palette.primary.main,
+    opacity: 0,
+    transition: 'opacity 0.2s ease',
+  },
+  '&:hover::after': {
+    opacity: 1,
+    transition: 'opacity 0.2s ease 0.15s',
+  },
+  '&.dragging::after': {
+    opacity: 1,
+    transition: 'none',
+  }
+}));
 
 export default function Sync() {
   const isSmallScreen = useMediaQuery('(max-width:960px)');
@@ -472,8 +499,43 @@ export default function Sync() {
     fetchUserInfo();
   }, [username]);
 
+  const [fileTreeWidth, setFileTreeWidth] = useState(250);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const deltaX = e.clientX - dragStartX.current;
+        const newWidth = Math.max(100, Math.min(600, dragStartWidth.current + deltaX));
+        setFileTreeWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = fileTreeWidth;
+  };
+
   return (
-    // <Box sx={{ width: '100%', pl: 4, pr: 4, mt: 0, pt: 5 }}>
     <Box sx={{ width: '100%', pt: 0 }}>
       <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
         <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
@@ -492,7 +554,9 @@ export default function Sync() {
               <Grid item>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                   <Stack direction="row">
-                    <TaskBoxButton />
+                    <NotificationsButton />
+                  </Stack>
+                  <Stack paddingLeft={1} direction="row">
                     <AccountMenuIcon />
                   </Stack>
                 </Box>
@@ -502,26 +566,88 @@ export default function Sync() {
         </CardContent>
       </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
-        <Stack>
+        <Stack 
+          sx={{ 
+            position: 'relative', 
+            width: `${fileTreeWidth}px`,
+            flexShrink: 0,
+            transition: isDragging ? 'none' : 'width 0.3s ease',
+            borderRight: 1,
+            borderColor: 'divider',
+          }}
+        >
           <Box display="flex" flexDirection="column" height="100%">
             <Card
               variant="outlined"
-              sx={{ flexGrow: 1, height: '100%', overflow: 'hidden', borderLeft: 0, borderRight: 0 }}
+              sx={{ 
+                flexGrow: 1, 
+                height: '100%', 
+                overflow: 'hidden', 
+                borderLeft: 0, 
+                borderRight: 0,
+                borderRadius: 0,
+              }}
             >
               <CardContent>
                 <Grid container spacing={4} sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
-                  <Grid item>
+                  <Grid item sx={{ width: '100%' }}>
                     <FileTreeView />
                   </Grid>
                 </Grid>
               </CardContent>
             </Card>
           </Box>
+          <ResizeHandle
+            className={isDragging ? 'dragging' : ''}
+            onMouseDown={handleMouseDown}
+          />
         </Stack>
-        <Card variant="outlined" sx={{ flexGrow: 1, height: '100%', width: '100%', overflow: 'hidden' }}>
+
+        <Card variant="outlined" sx={{ 
+          flexGrow: 1, 
+          height: '100%', 
+          width: '100%', 
+          overflow: 'hidden',
+          borderLeft: 0,
+          borderRadius: 0,
+        }}>
           <CardContent sx={{ height: '100%', width: '100%', overflow: 'hidden', padding: 0 }}>
             <FileBreadcrumbs />
-            {syncRows.length === 0 ? (
+            {isLoading ? (
+              <TableContainer sx={{ maxHeight: 'calc(100vh - 180px)' }}>
+                <Table aria-labelledby="tableTitle" size="small" stickyHeader>
+                  <EnhancedTableHead
+                    numSelected={selected.length}
+                    order={order}
+                    orderBy={orderBy}
+                    onSelectAllClick={handleSelectAllClick}
+                    onRequestSort={handleRequestSort}
+                    rowCount={syncRows.length}
+                  />
+                  <TableBody>
+                    {Array.from(new Array(rowsPerPage)).map((_, index) => (
+                      <TableRow key={`skeleton-${index}`}>
+                        <TableCell padding="checkbox">
+                          <Skeleton variant="rectangular" width={24} height={24} />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton variant="text" width="100%" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton variant="text" width="100%" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton variant="text" width="100%" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton variant="text" width="100%" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : syncRows.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 5 }}>
                 <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
                 <Typography variant="h5" color="textSecondary">

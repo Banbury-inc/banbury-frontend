@@ -61,8 +61,9 @@ export const newUseFileData = (
 
   // Filter files effect
   useEffect(() => {
-    if (!devices || !files) {
+    if (!devices) {
       // Fetch devices if they're not available
+      console.log("Fetching devices from newUseFileData");
       fetchDeviceData(username || '', disableFetch, global_file_path || '', {
         setFirstname,
         setLastname,
@@ -129,12 +130,13 @@ export const newUseFileData = (
       setIsLoading(false);
     }
 
-  }, [global_file_path, global_file_path_device, files, sync_files, devices, disableFetch, username, setFirstname, setLastname, setDevices]);
+  }, [global_file_path, global_file_path_device, files, devices, setDevices]);
 
   // Add effect to listen for device status changes
   useEffect(() => {
     const handleDeviceStatusChange = () => {
       // Refetch device data when status changes
+      console.log("Refetching devices from newUseFileData line 139");
       fetchDeviceData(username || '', disableFetch, global_file_path || '', {
         setFirstname,
         setLastname,

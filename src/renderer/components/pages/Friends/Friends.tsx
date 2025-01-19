@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
-import { Divider, TextField, Typography, useMediaQuery } from '@mui/material';
+import { Divider, TextField, Typography, useMediaQuery, Theme } from '@mui/material';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import { CardContent, Container, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
@@ -8,7 +8,7 @@ import AccountMenuIcon from '../../common/AccountMenuIcon';
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText } from '@mui/material';
 import { neuranet } from '../../../neuranet'
-import TaskBoxButton from '../../TaskBoxButton';
+import TaskBoxButton from '../../common/notifications/NotificationsButton';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
@@ -26,6 +26,11 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import { CircularProgress } from '@mui/material';
 import Skeleton from '@mui/material/Skeleton';
+import NotificationsButton from '../../common/notifications/NotificationsButton';
+import UploadProgress from '../../common/upload_progress/upload_progress';
+import DownloadProgress from '../../common/download_progress/download_progress';
+import { useAlert } from '../../../context/AlertContext';
+import { styled, Theme as MuiTheme } from '@mui/material/styles';
 
 interface SearchResult {
   id: number;
@@ -34,6 +39,35 @@ interface SearchResult {
   status: string;
   username: string;
 }
+
+const ResizeHandle = styled('div')(({ theme }) => ({
+  position: 'absolute',
+  right: -4,
+  top: 0,
+  bottom: 0,
+  width: 8,
+  cursor: 'col-resize',
+  zIndex: 1000,
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 4,
+    width: 2,
+    backgroundColor: theme.palette.primary.main,
+    opacity: 0,
+    transition: 'opacity 0.2s ease',
+  },
+  '&:hover::after': {
+    opacity: 1,
+    transition: 'opacity 0.2s ease 0.15s',
+  },
+  '&.dragging::after': {
+    opacity: 1,
+    transition: 'none',
+  }
+}));
 
 export default function Friends() {
 
@@ -52,7 +86,11 @@ export default function Friends() {
   const [followList, setFollowList] = useState<any[]>([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [isLoadingFriendInfo, setIsLoadingFriendInfo] = useState(false);
-
+  const { showAlert } = useAlert();
+  const [friendListWidth, setFriendListWidth] = useState(350);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
 
   useEffect(() => {
     if (selectedFriend) {
@@ -102,22 +140,21 @@ export default function Friends() {
 
 
   // Update search handler to handle the API response correctly
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.trim()) {
-      handlers.users.typeahead(query)
-        .then(response => {
-          if (response && response.data) {
-            console.log("response", response.data);
-            setSearchResults(response.data.users || []);
-          } else {
-            setSearchResults([]);
-          }
-        })
-        .catch(error => {
-          console.error('Search failed:', error);
+      try {
+        const response = await handlers.users.typeahead(query);
+        if (response?.data) {
+          setSearchResults(response.data.users || []);
+        } else {
           setSearchResults([]);
-        });
+        }
+      } catch (error) {
+        console.error('Search failed:', error);
+        setSearchResults([]);
+        showAlert('Error', ['Search failed', error instanceof Error ? error.message : 'Unknown error'], 'error');
+      }
     } else {
       setSearchResults([]);
     }
@@ -128,8 +165,7 @@ export default function Friends() {
     setFollowDialog('friends');
     try {
       const response = await handlers.users.getUserFriends(selectedFriend.username);
-      console.log("response", response);
-      if (response && response.data && Array.isArray(response.data.friends.friends)) {
+      if (response?.data?.friends?.friends) {
         setFollowList(response.data.friends.friends);
       } else {
         setFollowList([]);
@@ -137,8 +173,10 @@ export default function Friends() {
     } catch (error) {
       console.error('Error fetching friends:', error);
       setFollowList([]);
+      showAlert('Error', ['Failed to fetch friends list', error instanceof Error ? error.message : 'Unknown error'], 'error');
+    } finally {
+      setIsLoadingFriends(false);
     }
-    setIsLoadingFriends(false);
   };
 
 
@@ -153,8 +191,8 @@ export default function Friends() {
       const socket = await neuranet.device.connect(
         username || '',
         [],
-        () => {},
-        () => {}
+        () => { },
+        () => { }
       );
 
       socket.addEventListener('message', (event) => {
@@ -183,11 +221,106 @@ export default function Friends() {
     }
   }, [username]);
 
-  return (
-    // <Box sx={{ width: '100%', pl: 4, pr: 4, mt: 0, pt: 5 }}>
-    <Box sx={{ width: '100%', pt: 0 }}>
+  // Update the friend request accept handler
+  const handleAcceptFriendRequest = async (requestUsername: string) => {
+    try {
+      await handlers.users.acceptFriendRequest(username || '', requestUsername);
+      setUpdates(prevUpdates => [...prevUpdates, 'friend_request_accepted']);
 
-      <Card variant='outlined' sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
+      // Refresh both friends and requests lists
+      const [friendsResponse, requestsResponse] = await Promise.all([
+        handlers.users.getFriends(username || ''),
+        handlers.users.getFriendRequests(username || '')
+      ]);
+
+      if (friendsResponse?.data) {
+        setFriends(friendsResponse.data.friends);
+      }
+      if (requestsResponse?.data) {
+        setFriendRequests(requestsResponse.data.friend_requests);
+      }
+
+      showAlert('Success', ['Friend request accepted'], 'success');
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      showAlert('Error', ['Failed to accept friend request', error instanceof Error ? error.message : 'Unknown error'], 'error');
+    }
+  };
+
+  // Update the friend request reject handler
+  const handleRejectFriendRequest = async (requestUsername: string) => {
+    try {
+      await handlers.users.rejectFriendRequest(username || '', requestUsername);
+      const response = await handlers.users.getFriendRequests(username || '');
+      if (response?.data) {
+        setFriendRequests(response.data.friend_requests);
+      }
+      showAlert('Success', ['Friend request rejected'], 'success');
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      showAlert('Error', ['Failed to reject friend request', error instanceof Error ? error.message : 'Unknown error'], 'error');
+    }
+  };
+
+  // Update the send friend request handler
+  const handleSendFriendRequest = async (requestUsername: string) => {
+    try {
+      await handlers.users.sendFriendRequest(username || '', requestUsername);
+      setUpdates(prevUpdates => [...prevUpdates, 'friend_request_sent']);
+      showAlert('Success', ['Friend request sent'], 'success');
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      showAlert('Error', ['Failed to send friend request', error instanceof Error ? error.message : 'Unknown error'], 'error');
+    }
+  };
+
+  // Update the remove friend handler
+  const handleRemoveFriend = async (friendUsername: string) => {
+    try {
+      await handlers.users.removeFriend(username || '', friendUsername);
+      setUpdates(prevUpdates => [...prevUpdates, 'friend_removed']);
+      setSelectedFriend(null);
+      showAlert('Success', ['Friend removed successfully'], 'success');
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      showAlert('Error', ['Failed to remove friend', error instanceof Error ? error.message : 'Unknown error'], 'error');
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const deltaX = e.clientX - dragStartX.current;
+        const newWidth = Math.max(100, Math.min(600, dragStartWidth.current + deltaX));
+        setFriendListWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = friendListWidth;
+  };
+
+  return (
+    <Box sx={{ width: '100%', pt: 0 }}>
+      <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
         <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
             <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
@@ -200,7 +333,9 @@ export default function Friends() {
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                   <Stack direction="row">
-                    <TaskBoxButton />
+                    <NotificationsButton />
+                  </Stack>
+                  <Stack paddingLeft={1} direction="row">
                     <AccountMenuIcon />
                   </Stack>
                 </Box>
@@ -210,167 +345,161 @@ export default function Friends() {
         </CardContent>
       </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
-        {/* Left panel: Friends list */}
-        <Card variant="outlined" sx={{ flexGrow: 1, height: '100%', width: '30%', overflow: 'hidden' }}>
-          <CardContent sx={{ height: '100%', width: '100%', overflow: 'auto', p: 2 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              size="small"
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ mb: 2 }}
-            />
-
-            <Tabs
-              value={activeSection}
-              onChange={(e, newValue) => setActiveSection(newValue)}
-              sx={{
-                minHeight: '32px',
-                '& .MuiTab-root': {
-                  minHeight: '32px',
-                  padding: '6px 12px',
-                  fontSize: '12px'
-                }
-              }}
-            >
-              <Tab label="Friends" value="all-friends" />
-              <Tab
-                label={
-                  <Badge
-                    badgeContent={friendRequests.length}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        backgroundColor: '#ef4444',
-                        fontSize: '9px',
-                        height: '14px',
-                        minWidth: '14px',
-                        padding: '0 2px',
-                        right: '-10px',
-                      }
-                    }}
-                  >
-                    Requests
-                  </Badge>
-                }
-                value="requests"
+        <Stack
+          sx={{
+            position: 'relative',
+            width: `${friendListWidth}px`,
+            flexShrink: 0,
+            transition: isDragging ? 'none' : 'width 0.3s ease',
+            borderRight: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Card variant="outlined" sx={{
+            height: '100%',
+            width: '100%',
+            overflow: 'hidden',
+            borderLeft: 0,
+            borderRight: 0,
+            borderRadius: 0,
+          }}>
+            <CardContent sx={{ height: '100%', width: '100%', overflow: 'auto', p: 2 }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                size="small"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 2 }}
               />
-              <Tab label="Search" value="search" />
-            </Tabs>
 
-            <List component="nav">
-              {activeSection === 'all-friends' ? (
-                friends.map((friend) => (
-                  <ListItemButton
-                    dense
-                    key={friend.id}
-                    selected={selectedFriend?.id === friend.id}
-                    onClick={() => setSelectedFriend(friend)}
-                    sx={{
-                      borderRadius: 1,
-                      mb: 0,
-                      '&.Mui-selected': {
-                        backgroundColor: 'action.selected',
-                      },
-                    }}
-                  >
-                    <Avatar sx={{ mr: 2, width: 24, height: 24, fontSize: '12px' }}>{friend.first_name ? friend.first_name[0] : '?'}</Avatar>
-                    <ListItemText
-                      primary={`${friend.first_name || ''} ${friend.last_name || ''}`.trim() || 'Unknown User'}
-                      secondary={friend.username}
-                    />
-                  </ListItemButton>
-                ))
-              ) : activeSection === 'requests' ? (
-                friendRequests.map((request) => (
-                  <ListItemButton
-                    dense
-                    key={request.id}
-                    sx={{
-                      borderRadius: 1,
-                      mb: 0,
-                      '&.Mui-selected': {
-                        backgroundColor: 'action.selected',
-                      },
-                    }}
-                  >
-                    <Avatar sx={{ mr: 2, width: 24, height: 24, fontSize: '12px' }}>{request.first_name ? request.first_name[0] : '?'}</Avatar>
-                    <ListItemText primary={`${request.first_name || ''} ${request.last_name || ''}`.trim() || 'Unknown User'} secondary={request.username} />
-                    <IconButton color="success" size="small" onClick={() => {
-                      handlers.users.acceptFriendRequest(username || '', request.username || '')
-                        .then(() => {
-                          setUpdates(prevUpdates => [...prevUpdates, 'friend_request_accepted']);
-                          // Refresh both friends and requests lists
-                          handlers.users.getFriends(username || '')
-                            .then(response => {
-                              if (response && response.data) {
-                                setFriends(response.data.friends);
-                              }
-                            });
-                          handlers.users.getFriendRequests(username || '')
-                            .then(response => {
-                              if (response && response.data) {
-                                setFriendRequests(response.data.friend_requests);
-                              }
-                            });
-                        });
-                    }}>
-                      <CheckIcon sx={{ fontSize: '16px' }} />
-                    </IconButton>
-                    <IconButton color="error" size="small" onClick={() => {
-                      handlers.users.rejectFriendRequest(username || '', request.username || '')
-                        .then(() => {
-                          // Refresh friend requests list
-                          handlers.users.getFriendRequests(username || '')
-                            .then(response => {
-                              if (response && response.data) {
-                                setFriendRequests(response.data.friend_requests);
-                              }
-                            });
-                        });
-                    }}>
-                      <CloseIcon sx={{ fontSize: '16px' }} />
-                    </IconButton>
-                  </ListItemButton>
-                ))
-              ) : (
-                // Updated search results section with null checks
-                searchResults?.map((user) => (
-                  <ListItemButton
-                    dense
-                    key={user.id}
-                    sx={{ borderRadius: 1, mb: 0 }}
-                  >
-                    <Avatar sx={{ mr: 2, width: 24, height: 24, fontSize: '12px' }}>
-                      {user.first_name ? user.first_name[0] : '?'}
-                    </Avatar>
-                    <ListItemText
-                      primary={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown User'}
-                      secondary={user.username}
-                    />
-                    <IconButton color="primary" size="small" onClick={() => {
-                      handlers.users.sendFriendRequest(username || '', user.username || '')
-                      setUpdates(prevUpdates => [...prevUpdates, 'friend_request_sent']);
-                    }}>
-                      <PersonAddIcon sx={{ fontSize: '16px' }} />
-                    </IconButton>
-                  </ListItemButton>
-                )) || null
-              )}
-            </List>
-          </CardContent>
-        </Card>
+              <Tabs
+                value={activeSection}
+                onChange={(e, newValue) => setActiveSection(newValue)}
+                sx={{
+                  minHeight: '32px',
+                  '& .MuiTab-root': {
+                    minHeight: '32px',
+                    padding: '6px 12px',
+                    fontSize: '12px'
+                  }
+                }}
+              >
+                <Tab label="Friends" value="all-friends" />
+                <Tab
+                  label={
+                    <Badge
+                      badgeContent={friendRequests.length}
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          backgroundColor: '#ef4444',
+                          fontSize: '9px',
+                          height: '14px',
+                          minWidth: '14px',
+                          padding: '0 2px',
+                          right: '-10px',
+                        }
+                      }}
+                    >
+                      Requests
+                    </Badge>
+                  }
+                  value="requests"
+                />
+                <Tab label="Search" value="search" />
+              </Tabs>
 
-        {/* Right panel: Friend details */}
-        <Card variant="outlined" sx={{ p: 2, height: '100%', width: '70%', overflow: 'auto' }}>
+              <List component="nav">
+                {activeSection === 'all-friends' ? (
+                  friends.map((friend) => (
+                    <ListItemButton
+                      dense
+                      key={friend.id}
+                      selected={selectedFriend?.id === friend.id}
+                      onClick={() => setSelectedFriend(friend)}
+                      sx={{
+                        borderRadius: 1,
+                        mb: 0,
+                        '&.Mui-selected': {
+                          backgroundColor: 'action.selected',
+                        },
+                      }}
+                    >
+                      <Avatar sx={{ mr: 2, width: 24, height: 24, fontSize: '12px' }}>{friend.first_name ? friend.first_name[0] : '?'}</Avatar>
+                      <ListItemText
+                        primary={`${friend.first_name || ''} ${friend.last_name || ''}`.trim() || 'Unknown User'}
+                        secondary={friend.username}
+                      />
+                    </ListItemButton>
+                  ))
+                ) : activeSection === 'requests' ? (
+                  friendRequests.map((request) => (
+                    <ListItemButton
+                      dense
+                      key={request.id}
+                      sx={{
+                        borderRadius: 1,
+                        mb: 0,
+                        '&.Mui-selected': {
+                          backgroundColor: 'action.selected',
+                        },
+                      }}
+                    >
+                      <Avatar sx={{ mr: 2, width: 24, height: 24, fontSize: '12px' }}>{request.first_name ? request.first_name[0] : '?'}</Avatar>
+                      <ListItemText primary={`${request.first_name || ''} ${request.last_name || ''}`.trim() || 'Unknown User'} secondary={request.username} />
+                      <IconButton color="success" size="small" onClick={() => handleAcceptFriendRequest(request.username)}>
+                        <CheckIcon sx={{ fontSize: '16px' }} />
+                      </IconButton>
+                      <IconButton color="error" size="small" onClick={() => handleRejectFriendRequest(request.username)}>
+                        <CloseIcon sx={{ fontSize: '16px' }} />
+                      </IconButton>
+                    </ListItemButton>
+                  ))
+                ) : (
+                  // Updated search results section with null checks
+                  searchResults?.map((user) => (
+                    <ListItemButton
+                      dense
+                      key={user.id}
+                      sx={{ borderRadius: 1, mb: 0 }}
+                    >
+                      <Avatar sx={{ mr: 2, width: 24, height: 24, fontSize: '12px' }}>
+                        {user.first_name ? user.first_name[0] : '?'}
+                      </Avatar>
+                      <ListItemText
+                        primary={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown User'}
+                        secondary={user.username}
+                      />
+                      <IconButton color="primary" size="small" onClick={() => handleSendFriendRequest(user.username)}>
+                        <PersonAddIcon sx={{ fontSize: '16px' }} />
+                      </IconButton>
+                    </ListItemButton>
+                  )) || null
+                )}
+              </List>
+            </CardContent>
+          </Card>
+          <ResizeHandle
+            className={isDragging ? 'dragging' : ''}
+            onMouseDown={handleMouseDown}
+          />
+        </Stack>
+
+        <Card variant="outlined" sx={{
+          flexGrow: 1,
+          height: '100%',
+          overflow: 'auto',
+          borderLeft: 0,
+          borderRadius: 0,
+        }}>
           <CardContent>
             {selectedFriend ? (
               <Stack direction="column" spacing={3}>
@@ -420,10 +549,7 @@ export default function Friends() {
                       </>
                     )}
                   </Stack>
-                  <IconButton color="error" onClick={() => {
-                    handlers.users.removeFriend(username || '', selectedFriend.username || '')
-                    setUpdates(prevUpdates => [...prevUpdates, 'friend_removed']);
-                  }}>
+                  <IconButton color="error" onClick={() => handleRemoveFriend(selectedFriend.username)}>
                     <PersonRemoveIcon />
                   </IconButton>
                 </Box>

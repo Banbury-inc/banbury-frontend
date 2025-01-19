@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Button, Popover, Box, Typography, Stack, Autocomplete, TextField, Chip, Paper, Badge, CircularProgress, Switch } from '@mui/material';
+import { Button, Popover, Box, Typography, Stack, Autocomplete, TextField, Chip, Paper, Badge, CircularProgress, Switch, Tooltip } from '@mui/material';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import { styled } from '@mui/material/styles';
-import { handlers } from '../../handlers';
-import { neuranet } from '../../neuranet';
-import { useAuth } from '../../context/AuthContext';
+import { handlers } from '../../../handlers';
+import { neuranet } from '../../../neuranet';
+import { useAuth } from '../../../context/AuthContext';
 import CheckIcon from '@mui/icons-material/Check';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LockIcon from '@mui/icons-material/Lock';
-import { CONFIG } from '../../config/config';
+import { CONFIG } from '../../../config/config';
+import { useAlert } from '../../../context/AlertContext';
 
 interface ShareFileButtonProps {
   selectedFileNames: string[];
@@ -53,6 +54,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
   const [togglePublicSuccess, setTogglePublicSuccess] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [copyLinkSuccess, setCopyLinkSuccess] = useState(false);
+  const { showAlert } = useAlert();
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
@@ -80,38 +82,71 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
   };
 
   const handleCopyLink = async () => {
-    const file_id = selectedFileInfo[0]._id;
-    const link = `http://www.banbury.io/filedownload/${username}/${file_id}`;
-    navigator.clipboard.writeText(link);
+    if (selectedFileNames.length === 0) {
+      showAlert('No file selected', ['Please select one or more files to copy link'], 'warning');
+      return;
+    }
 
+    if (!selectedFileInfo || selectedFileInfo.length === 0) {
+      showAlert('Error', ['File information not found'], 'error');
+      return;
+    }
 
-    setCopyLinkSuccess(true);
+    const file_id = selectedFileInfo[0]?._id;
+    if (!file_id) {
+      showAlert('Error', ['File ID not found'], 'error');
+      return;
+    }
 
-    // Close after showing success for 2 seconds
+    try {
+      const link = `http://www.banbury.io/filedownload/${username}/${file_id}`;
+      await navigator.clipboard.writeText(link);
+      setCopyLinkSuccess(true);
+
+      // Close after showing success for 2 seconds
       setTimeout(() => {
         handleClose();
       }, 2000);
-
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      showAlert('Error', ['Failed to copy link to clipboard'], 'error');
+    }
   };
 
   // Update search handler to handle the API response correctly
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.trim()) {
-      handlers.users.typeahead(query)
-        .then(response => {
-          if (response && response.data) {
-            setSearchResults(response.data.users || []);
-          } else {
-            setSearchResults([]);
-          }
-        })
-        .catch(error => {
-          console.error('Search failed:', error);
-          setSearchResults([]);
-        });
-    } else {
+    if (!query.trim()) {
       setSearchResults([]);
+      return;
+    }
+
+    try {
+      const response = await handlers.users.typeahead(query);
+      
+      if (!response) {
+        throw new Error('No response received from server');
+      }
+
+      if (!response.data?.users) {
+        throw new Error('Invalid response format');
+      }
+
+      setSearchResults(response.data.users);
+
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults([]);
+      
+      // Determine error message based on error type
+      let errorMessage = 'Failed to search for users';
+      if (error instanceof TypeError) {
+        errorMessage = 'Network error while searching for users';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      showAlert('Search Error', [errorMessage], 'warning');
     }
   };
 
@@ -144,15 +179,25 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
 
     } catch (error) {
       console.error('Error sharing files:', error);
+      showAlert('Share Failed', ['Failed to share files with selected users.']);
       setIsSharing(false);
     }
   };
 
 
   const handleMakePublic = async () => {
-    const device_name = selectedFileInfo[0].device_name;
+    if (!selectedFileInfo || selectedFileInfo.length === 0) {
+      showAlert('Permission Change Failed', ['No file selected']);
+      return;
+    }
+
+    const device_name = selectedFileInfo[0]?.device_name;
+    if (!device_name) {
+      showAlert('Permission Change Failed', ['Device information not found']);
+      return;
+    }
+
     try {
-      // Wait for all share operations to complete
       await Promise.all(
         selectedFileNames.map(file =>
           neuranet.files.makeFilePublic(username, file, device_name)
@@ -160,21 +205,30 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
       );
       setTogglePublicSuccess(true);
 
-      // Close after showing success for 2 seconds
       setTimeout(() => {
         handleClose();
       }, 2000);
 
     } catch (error) {
       console.error('Error making file public:', error);
+      showAlert('Permission Change Failed', ['Failed to make file public.']);
     }
   };
 
 
   const handleMakePrivate = async () => {
-    const device_name = selectedFileInfo[0].device_name;
+    if (!selectedFileInfo || selectedFileInfo.length === 0) {
+      showAlert('Permission Change Failed', ['No file selected'], 'warning');
+      return;
+    }
+
+    const device_name = selectedFileInfo[0]?.device_name;
+    if (!device_name) {
+      showAlert('Permission Change Failed', ['Device information not found'], 'error');
+      return;
+    }
+
     try {
-      // Wait for all share operations to complete
       await Promise.all(
         selectedFileNames.map(file =>
           neuranet.files.makeFilePrivate(username, file, device_name)
@@ -182,13 +236,13 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
       );
       setTogglePublicSuccess(true);
 
-      // Close after showing success for 2 seconds
       setTimeout(() => {
         handleClose();
       }, 2000);
 
     } catch (error) {
       console.error('Error making file private:', error);
+      showAlert('Permission Change Failed', ['Failed to make file private.']);
       setIsSharing(false);
     }
   };
@@ -196,12 +250,14 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
 
   return (
     <>
-      <Button
-        onClick={handleClick}
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+      <Tooltip title="Share">
+        <Button
+          onClick={handleClick}
+          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
       >
         <ShareOutlinedIcon fontSize="inherit" />
       </Button>
+      </Tooltip>
       <Popover
         anchorEl={anchorEl}
         open={open}
@@ -394,6 +450,9 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
                     <Button
                       variant="contained"
                       size="small"
+                      sx={{
+                        fontSize: '12px',
+                      }}
                       disabled={isSharing}
                       onClick={handleShare}
                     >

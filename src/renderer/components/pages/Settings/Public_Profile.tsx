@@ -5,10 +5,11 @@ import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
 import EditIcon from '@mui/icons-material/Edit';
 import { CONFIG } from '../../../config/config';
+import { useAlert } from '../../../context/AlertContext';
 
 
 export default function Public_Profile() {
-
+    const { showAlert } = useAlert();
     const { username, first_name, last_name, phone_number, email, tasks, setTasks, setTaskbox_expanded, setFirstname, setLastname, setPhoneNumber, setEmail, picture, setPicture } = useAuth();
     const [localPicture, setLocalPicture] = useState<any | null>(null);
 
@@ -53,12 +54,62 @@ export default function Public_Profile() {
                 console.log('settings update success');
                 await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
                 setPicture(pictureData || null);
+                showAlert('Success', ['Profile settings updated successfully'], 'success');
+            } else {
+                await neuranet.sessions.failTask(username ?? '', taskInfo, 'Failed to update profile settings', tasks, setTasks);
+                showAlert('Error', ['Failed to update profile settings'], 'error');
             }
         } catch (error) {
             console.error('Error saving profile:', error);
+            showAlert('Error', ['Failed to save profile settings', error instanceof Error ? error.message : 'Unknown error'], 'error');
         }
     }
 
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                showAlert('Error', ['Image file is too large. Maximum size is 5MB'], 'error');
+                return;
+            }
+
+            try {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result?.toString().split(',')[1];
+                    if (base64) {
+                        setLocalPicture({
+                            content_type: file.type,
+                            data: base64,
+                            source: 'upload',
+                            size: file.size,
+                            base64: base64
+                        });
+                        showAlert('Success', ['Image uploaded successfully'], 'success');
+                    }
+                };
+                reader.onerror = () => {
+                    showAlert('Error', ['Failed to read image file'], 'error');
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                showAlert('Error', ['Failed to process image', error instanceof Error ? error.message : 'Unknown error'], 'error');
+            }
+            handleClose();
+        }
+    };
+
+    const handleRemovePhoto = () => {
+        try {
+            setLocalPicture(null);
+            handleClose();
+            showAlert('Success', ['Profile picture removed'], 'success');
+        } catch (error) {
+            console.error('Error removing photo:', error);
+            showAlert('Error', ['Failed to remove profile picture', error instanceof Error ? error.message : 'Unknown error'], 'error');
+        }
+    };
 
     return (
         <>
@@ -110,32 +161,10 @@ export default function Public_Profile() {
                                                         type="file"
                                                         hidden
                                                         accept="image/*"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                const reader = new FileReader();
-                                                                reader.onload = () => {
-                                                                    const base64 = reader.result?.toString().split(',')[1];
-                                                                    if (base64) {
-                                                                        setLocalPicture({
-                                                                            content_type: file.type,
-                                                                            data: base64,
-                                                                            source: 'upload',
-                                                                            size: file.size,
-                                                                            base64: base64
-                                                                        });
-                                                                    }
-                                                                };
-                                                                reader.readAsDataURL(file);
-                                                            }
-                                                            handleClose();
-                                                        }}
+                                                        onChange={handleImageUpload}
                                                     />
                                                 </MenuItem>
-                                                <MenuItem onClick={() => {
-                                                    setLocalPicture(null);
-                                                    handleClose();
-                                                }}>
+                                                <MenuItem onClick={handleRemovePhoto}>
                                                     Remove photo
                                                 </MenuItem>
                                             </Menu>
