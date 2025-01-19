@@ -100,8 +100,5 @@ jobs:
             ./dist/linux/*
             ./dist/windows/*.exe
             ./dist/macos/*.dmg
-            ./dist/macos/*.zip
-            ./dist/**/*.yml
-            ./dist/**/*.yaml
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
