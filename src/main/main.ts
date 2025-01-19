@@ -217,3 +217,7 @@ app.on("activate", () => {
     createWindow();
   }
 });
+
+ipcMain.on('get-app-version', (event) => {
+  event.returnValue = app.getVersion();
+});
