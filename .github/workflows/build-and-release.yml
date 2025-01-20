@@ -35,6 +35,14 @@ jobs:
       - name: Build the app
         run: npm run build
 
+      - name: Notarize macOS build
+        if: runner.os == 'macOS'
+        run: node ./scripts/notarize.ts
+        env:
+          APPLE_ID: mamills@maine.rr.com
+          APPLE_APP_SPECIFIC_PASSWORD: mgwm-abks-hehu-reom
+          APPLE_TEAM_ID: 5Q7W7ZFVLS
+
       - name: Package with Electron Builder
         run: npm run deploy
         env:
