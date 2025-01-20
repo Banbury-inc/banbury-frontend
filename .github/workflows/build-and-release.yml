@@ -37,7 +37,10 @@ jobs:
 
       - name: Notarize macOS build
         if: runner.os == 'macOS'
-        run: node ./scripts/notarize.ts
+        run: |
+          APP_NAME=$(node -p "require('./package.json').productName")
+          APP_PATH="./dist/mac/${APP_NAME}.app"
+          node ./scripts/notarize.ts
         env:
           APPLE_ID: mamills@maine.rr.com
           APPLE_APP_SPECIFIC_PASSWORD: mgwm-abks-hehu-reom

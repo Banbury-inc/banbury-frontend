@@ -1,30 +1,33 @@
-import { notarize } from '@electron/notarize';
+const { notarize } = require('@electron/notarize');
 
-export default async function notarizing(context: any) {
-  const { electronPlatformName, appOutDir } = context;
-  if (electronPlatformName !== 'darwin') {
-    return;
+async function notarizing() {
+  const appPath = process.env.APP_PATH;
+  if (!appPath) {
+    console.error('APP_PATH environment variable is not set');
+    process.exit(1);
   }
-
-  const appName = context.packager.appInfo.productFilename;
-  const appPath = `${appOutDir}/${appName}.app`;
 
   console.log(`Notarizing ${appPath}...`);
 
   try {
     await notarize({
       tool: 'notarytool',
-      teamId: "5Q7W7ZFVLS",
+      teamId: process.env.APPLE_TEAM_ID,
       appPath,
-      appleId: "mamills@maine.rr.com",
-      appleIdPassword: "mgwm-abks-hehu-reom"
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD
     });
     console.log('Notarization complete!');
-  } catch (error: any) {
+  } catch (error) {
     console.error('Notarization failed:', error.message);
     throw error;
   }
 }
+
+notarizing().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
 
 
 
