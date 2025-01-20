@@ -1,6 +1,6 @@
 {
-  "name": "BanburyCloud",
-  "version": "3.4.21",
+  "name": "Banbury",
+  "version": "3.4.22",
   "private": true,
   "description": "A decentralized cloud storage system.",
   "main": "./dist/main.js",
@@ -184,7 +184,7 @@
       {
         "provider": "github",
         "owner": "Banbury-inc",
-        "repo": "banbury-cloud-frontend"
+        "repo": "banbury-frontend"
       }
     ],
     "extraResources": []
