@@ -1,6 +1,6 @@
 {
   "name": "BanburyCloud",
-  "version": "3.4.7",
+  "version": "3.4.8",
   "private": true,
   "description": "A decentralized cloud storage system.",
   "main": "./dist/main.js",
@@ -133,8 +133,8 @@
     "react-dom": "^17.0.0 || ^18.0.0"
   },
   "build": {
+    "productName": "Banbury.Cloud",
     "appId": "com.banbury.cloud",
-    "productName": "Banbury Cloud",
     "directories": {
       "output": "packages",
       "buildResources": "resources"
@@ -151,10 +151,10 @@
       ]
     },
     "mac": {
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
         "dmg",
         "pkg",
@@ -163,7 +163,8 @@
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
       "publish": [
         "github"
-      ]
+      ],
+      "afterSign": "./scripts/notarize.ts"
     },
     "linux": {
       "target": [
