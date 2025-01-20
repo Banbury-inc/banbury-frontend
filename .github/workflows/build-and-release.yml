@@ -46,11 +46,11 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           xcode-select --install || true
-          APP_NAME="Banbury Cloud"
+          APP_NAME="Banbury.Cloud"
           VERSION=$(node -p "require('./package.json').version")
           
           # Notarize .app
-          export APP_PATH="./packages/mac/${APP_NAME}.app"
+          export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
           echo "Notarizing app: $APP_PATH"
           node ./scripts/notarize.ts
           
