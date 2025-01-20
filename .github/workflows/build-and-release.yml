@@ -56,42 +56,63 @@ jobs:
       - name: Build the app
         run: npm run build
 
-      - name: Package with Electron Builder
-        run: npm run deploy
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          EP_PRE_RELEASE: true
-          EP_DRAFT: false
-          CSC_KEYCHAIN: build.keychain
-
-      - name: Code Sign and Notarize macOS build
+      # For macOS: Build, Sign, and Notarize in the correct order
+      - name: Build and Sign macOS App
         if: runner.os == 'macOS'
         run: |
-          xcode-select --install || true
+          # First, build the .app bundle
+          npm run package:app
+        env:
+          CSC_KEYCHAIN: build.keychain
+
+      - name: Notarize macOS App Bundle
+        if: runner.os == 'macOS'
+        run: |
+          APP_NAME="Banbury.Cloud"
+          export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
+          echo "Notarizing app bundle: $APP_PATH"
+          node ./scripts/notarize.ts
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Create DMG and ZIP for macOS
+        if: runner.os == 'macOS'
+        run: |
+          # Create DMG and ZIP from the notarized .app
+          npm run package:dist
+        env:
+          CSC_KEYCHAIN: build.keychain
+
+      - name: Notarize macOS Distribution Files
+        if: runner.os == 'macOS'
+        run: |
           APP_NAME="Banbury.Cloud"
           VERSION=$(node -p "require('./package.json').version")
           
-          echo "Listing contents of packages directory:"
-          ls -R ./packages/
-          
-          # Notarize .app
-          export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
-          echo "Notarizing app: $APP_PATH"
-          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
-          
-          # Notarize .dmg
+          # Notarize DMG
           export APP_PATH="./packages/${APP_NAME}-${VERSION}-arm64.dmg"
-          echo "Notarizing dmg: $APP_PATH"
+          echo "Notarizing DMG: $APP_PATH"
           [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
           
-          # Notarize .zip
+          # Notarize ZIP
           export APP_PATH="./packages/${APP_NAME}-${VERSION}-arm64-mac.zip"
-          echo "Notarizing zip: $APP_PATH"
+          echo "Notarizing ZIP: $APP_PATH"
           [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # For non-macOS: Just build and package
+      - name: Package for non-macOS platforms
+        if: runner.os != 'macOS'
+        run: npm run deploy
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EP_PRE_RELEASE: true
+          EP_DRAFT: false
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
@@ -123,7 +144,7 @@ jobs:
           name: windows-latest-artifacts
           path: ./packages
 
-      - name: Download macos Artifacts
+      - name: Download macOS Artifacts
         uses: actions/download-artifact@v3
         with:
           name: macos-latest-artifacts

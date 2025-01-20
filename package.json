@@ -17,9 +17,9 @@
     "build:electron": "webpack --config webpack/electron.webpack.ts --mode=production",
     "build:react": "webpack --config webpack/react.webpack.ts --mode=production",
     "package": "npm-run-all build package:dist",
-    "deploy": "npm-run-all build package:dist2",
-    "package:dist": "electron-builder --dir",
-    "package:dist2": "electron-builder",
+    "deploy": "electron-builder --publish always",
+    "package:dist": "electron-builder --mac",
+    "package:app": "electron-builder --dir",
     "docs": "typedoc --out docs --entryPointStrategy expand src/renderer/neuranet",
     "test": "jest"
   },
