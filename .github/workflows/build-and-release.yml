@@ -182,6 +182,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v${{ env.VERSION }}"
+          draft: false
+          prerelease: false
+          make_latest: true
           files: |
             packages/**/*.AppImage
             packages/**/*.exe

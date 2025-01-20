@@ -1,6 +1,6 @@
 {
   "name": "BanburyCloud",
-  "version": "3.4.12",
+  "version": "3.4.13",
   "private": true,
   "description": "A decentralized cloud storage system.",
   "main": "./dist/main.js",
@@ -133,7 +133,7 @@
     "react-dom": "^17.0.0 || ^18.0.0"
   },
   "build": {
-    "productName": "Banbury.Cloud",
+    "productName": "Banbury Cloud",
     "appId": "com.banbury.cloud",
     "directories": {
       "output": "packages",
