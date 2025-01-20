@@ -35,6 +35,13 @@ jobs:
       - name: Build the app
         run: npm run build
 
+      - name: Package with Electron Builder
+        run: npm run deploy
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EP_PRE_RELEASE: true
+          EP_DRAFT: false
+
       - name: Notarize macOS build
         if: runner.os == 'macOS'
         run: |
@@ -43,30 +50,23 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           
           # Notarize .app
-          export APP_PATH="./dist/mac/${APP_NAME}.app"
+          export APP_PATH="./packages/mac/${APP_NAME}.app"
           echo "Notarizing app: $APP_PATH"
           node ./scripts/notarize.ts
           
           # Notarize .dmg
-          export APP_PATH="./dist/mac/${APP_NAME}-${VERSION}.dmg"
+          export APP_PATH="./packages/${APP_NAME}-${VERSION}.dmg"
           echo "Notarizing dmg: $APP_PATH"
           node ./scripts/notarize.ts
           
           # Notarize .zip
-          export APP_PATH="./dist/mac-arm64/${APP_NAME}-${VERSION}-arm64.zip"
+          export APP_PATH="./packages/${APP_NAME}-${VERSION}-arm64-mac.zip"
           echo "Notarizing zip: $APP_PATH"
           node ./scripts/notarize.ts
         env:
-          APPLE_ID: mamills@maine.rr.com
-          APPLE_APP_SPECIFIC_PASSWORD: mgwm-abks-hehu-reom
-          APPLE_TEAM_ID: 5Q7W7ZFVLS
-
-      - name: Package with Electron Builder
-        run: npm run deploy
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          EP_PRE_RELEASE: true
-          EP_DRAFT: false
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
