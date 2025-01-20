@@ -21,6 +21,15 @@ jobs:
           node-version: '20.11.0'
           cache: 'npm'
 
+      # Linux-specific setup
+      - name: Install Snapcraft
+        if: runner.os == 'Linux'
+        run: |
+          sudo snap install snapcraft --classic
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      # macOS-specific setup
       - name: Install Python and Build Tools for macOS
         if: runner.os == 'macOS'
         run: |
@@ -29,13 +38,100 @@ jobs:
           source .venv/bin/activate
           python3 -m pip install --upgrade pip setuptools
 
+      - name: Install the Apple certificate
+        if: runner.os == 'macOS'
+        run: |
+          # Create keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+
+          # Import certificate
+          echo "$CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+
+          # Remove certificate file
+          rm certificate.p12
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PASSWORD: keychainpassword # This is just a temporary password for the build
+
       - name: Install dependencies
         run: npm install --force
 
       - name: Build the app
         run: npm run build
 
-      - name: Package with Electron Builder
+      # For macOS: Build, Sign, and Notarize in the correct order
+      - name: Build and Sign macOS App
+        if: runner.os == 'macOS'
+        run: |
+          # First, build the .app bundle
+          npm run package:app
+        env:
+          CSC_KEYCHAIN: build.keychain
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Notarize macOS App Bundle
+        if: runner.os == 'macOS'
+        run: |
+          APP_NAME="Banbury"
+          export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
+          echo "Notarizing app bundle: $APP_PATH"
+          node ./scripts/notarize.ts
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Create DMG and ZIP for macOS
+        if: runner.os == 'macOS'
+        run: |
+          # Create DMG and ZIP from the notarized .app
+          npm run package:dist
+        env:
+          CSC_KEYCHAIN: build.keychain
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Notarize macOS Distribution Files
+        if: runner.os == 'macOS'
+        run: |
+          APP_NAME="Banbury"
+          VERSION=$(node -p "require('./package.json').version")
+          WORKSPACE_PATH="$GITHUB_WORKSPACE"
+          
+          # Notarize DMG
+          export APP_PATH="$WORKSPACE_PATH/packages/${APP_NAME}-${VERSION}-arm64.dmg"
+          echo "Notarizing DMG: $APP_PATH"
+          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
+
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      # For non-macOS: Build and package
+      - name: Package for Linux
+        if: runner.os == 'Linux'
+        run: |
+          # Install required dependencies
+          sudo snap install snapcraft --classic
+          sudo apt-get update
+          sudo apt-get install -y rpm
+          
+          # Build without publishing to Snapcraft store
+          npm run deploy
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EP_PRE_RELEASE: true
+          EP_DRAFT: false
+          SNAP_STORE_SKIP_UPLOAD: true  # Skip Snapcraft store upload
+
+      - name: Package for Windows
+        if: runner.os == 'Windows'
         run: npm run deploy
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -72,7 +168,7 @@ jobs:
           name: windows-latest-artifacts
           path: ./packages
 
-      - name: Download macos Artifacts
+      - name: Download macOS Artifacts
         uses: actions/download-artifact@v3
         with:
           name: macos-latest-artifacts
@@ -90,16 +186,27 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$VERSION"
-          git push https://$PAT@github.com/${{ github.repository }} "v$VERSION"
+          
+          # Check if tag exists
+          if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Creating new tag v$VERSION"
+            git tag "v$VERSION"
+            git push https://$GH_TOKEN@github.com/${{ github.repository }} "v$VERSION"
+          else
+            echo "Tag v$VERSION already exists, skipping tag creation"
+          fi
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v${{ env.VERSION }}"
+          draft: false
+          prerelease: false
+          make_latest: "true"
           files: |
             packages/**/*.AppImage
             packages/**/*.exe
             packages/**/*.dmg
+            packages/**/*.zip
             packages/**/latest*.yml
             packages/**/latest*.yaml
             packages/**/*blockmap

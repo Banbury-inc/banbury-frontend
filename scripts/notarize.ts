@@ -1,16 +1,33 @@
 const { notarize } = require('@electron/notarize');
 
-const projectRoot = require('path').resolve(__dirname, '..')
+async function notarizing() {
+  const appPath = process.env.APP_PATH;
+  if (!appPath) {
+    console.error('APP_PATH environment variable is not set');
+    process.exit(1);
+  }
 
-notarize({
-  appBundleId: 'com.banbury.cloud',
-  appPath: projectRoot + '/packages/mac-arm64/Banbury Cloud.app',
-  appleId: "mamills@maine.rr.com",
-  appleIdPassword: "mgwm-abks-hehu-reom",
-  teamId: "5Q7W7ZFVLS", // Team ID for your developer team
-}).catch((e: any) => {
-  console.error("Didn't work :( " + e.message) // eslint-disable-line no-console
-})
+  console.log(`Notarizing ${appPath}...`);
+
+  try {
+    await notarize({
+      tool: 'notarytool',
+      teamId: process.env.APPLE_TEAM_ID,
+      appPath,
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD
+    });
+    console.log('Notarization complete!');
+  } catch (error) {
+    console.error('Notarization failed:', error.message);
+    throw error;
+  }
+}
+
+notarizing().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
 
 
 

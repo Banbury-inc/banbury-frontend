@@ -1,6 +1,6 @@
 {
   "name": "BanburyCloud",
-  "version": "3.4.4",
+  "version": "3.4.21",
   "private": true,
   "description": "A decentralized cloud storage system.",
   "main": "./dist/main.js",
@@ -17,9 +17,9 @@
     "build:electron": "webpack --config webpack/electron.webpack.ts --mode=production",
     "build:react": "webpack --config webpack/react.webpack.ts --mode=production",
     "package": "npm-run-all build package:dist",
-    "deploy": "npm-run-all build package:dist2",
-    "package:dist": "electron-builder --dir",
-    "package:dist2": "electron-builder",
+    "deploy": "electron-builder --publish always",
+    "package:dist": "electron-builder --mac",
+    "package:app": "electron-builder --dir",
     "docs": "typedoc --out docs --entryPointStrategy expand src/renderer/neuranet",
     "test": "jest"
   },
@@ -133,8 +133,8 @@
     "react-dom": "^17.0.0 || ^18.0.0"
   },
   "build": {
+    "productName": "Banbury",
     "appId": "com.banbury.cloud",
-    "productName": "Banbury Cloud",
     "directories": {
       "output": "packages",
       "buildResources": "resources"
@@ -151,13 +151,14 @@
       ]
     },
     "mac": {
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
         "dmg",
-        "pkg"
+        "pkg",
+        "zip"
       ],
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
       "publish": [
@@ -167,7 +168,6 @@
     "linux": {
       "target": [
         "deb",
-        "snap",
         "appImage"
       ],
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
