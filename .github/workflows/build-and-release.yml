@@ -73,6 +73,7 @@ jobs:
           npm run package:app
         env:
           CSC_KEYCHAIN: build.keychain
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Notarize macOS App Bundle
         if: runner.os == 'macOS'
@@ -93,6 +94,7 @@ jobs:
           npm run package:dist
         env:
           CSC_KEYCHAIN: build.keychain
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Notarize macOS Distribution Files
         if: runner.os == 'macOS'
