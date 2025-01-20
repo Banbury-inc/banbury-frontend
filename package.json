@@ -163,12 +163,7 @@
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
       "publish": [
         "github"
-      ],
-      "notarize": {
-        "appleId": "mamills@maine.rr.com",
-        "appleIdPassword": "mgwm-abks-hehu-reom",
-        "teamId": "5Q7W7ZFVLS"
-      }
+      ]
     },
     "linux": {
       "target": [
