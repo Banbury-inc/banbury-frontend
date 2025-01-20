@@ -1,16 +1,30 @@
-const { notarize } = require('@electron/notarize');
+import { notarize } from '@electron/notarize';
 
-const projectRoot = require('path').resolve(__dirname, '..')
+export default async function notarizing(context: any) {
+  const { electronPlatformName, appOutDir } = context;
+  if (electronPlatformName !== 'darwin') {
+    return;
+  }
 
-notarize({
-  appBundleId: 'com.banbury.cloud',
-  appPath: projectRoot + '/packages/mac-arm64/Banbury Cloud.app',
-  appleId: "mamills@maine.rr.com",
-  appleIdPassword: "mgwm-abks-hehu-reom",
-  teamId: "5Q7W7ZFVLS", // Team ID for your developer team
-}).catch((e: any) => {
-  console.error("Didn't work :( " + e.message) // eslint-disable-line no-console
-})
+  const appName = context.packager.appInfo.productFilename;
+  const appPath = `${appOutDir}/${appName}.app`;
+
+  console.log(`Notarizing ${appPath}...`);
+
+  try {
+    await notarize({
+      tool: 'notarytool',
+      teamId: "5Q7W7ZFVLS",
+      appPath,
+      appleId: "mamills@maine.rr.com",
+      appleIdPassword: "mgwm-abks-hehu-reom"
+    });
+    console.log('Notarization complete!');
+  } catch (error: any) {
+    console.error('Notarization failed:', error.message);
+    throw error;
+  }
+}
 
 
 

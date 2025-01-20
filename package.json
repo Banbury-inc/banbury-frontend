@@ -163,7 +163,8 @@
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
       "publish": [
         "github"
-      ]
+      ],
+      "afterSign": "./scripts/notarize.ts"
     },
     "linux": {
       "target": [
