@@ -164,7 +164,9 @@
       "publish": [
         "github"
       ],
-      "afterSign": "./scripts/notarize.ts"
+      "notarize": {
+        "script": "./scripts/notarize.ts"
+      }
     },
     "linux": {
       "target": [
