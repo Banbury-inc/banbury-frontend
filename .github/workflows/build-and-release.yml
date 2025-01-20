@@ -71,20 +71,23 @@ jobs:
           APP_NAME="Banbury.Cloud"
           VERSION=$(node -p "require('./package.json').version")
           
+          echo "Listing contents of packages directory:"
+          ls -R ./packages/
+          
           # Notarize .app
           export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
           echo "Notarizing app: $APP_PATH"
-          node ./scripts/notarize.ts
+          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
           
           # Notarize .dmg
-          export APP_PATH="./packages/mac-arm64/${APP_NAME}-${VERSION}-arm64.dmg"
+          export APP_PATH="./packages/${APP_NAME}-${VERSION}-arm64.dmg"
           echo "Notarizing dmg: $APP_PATH"
-          node ./scripts/notarize.ts
+          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
           
           # Notarize .zip
-          export APP_PATH="./packages/mac-arm64/${APP_NAME}-${VERSION}-arm64-mac.zip"
+          export APP_PATH="./packages/${APP_NAME}-${VERSION}-arm64-mac.zip"
           echo "Notarizing zip: $APP_PATH"
-          node ./scripts/notarize.ts
+          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
