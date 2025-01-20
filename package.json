@@ -1,6 +1,6 @@
 {
   "name": "BanburyCloud",
-  "version": "3.4.19",
+  "version": "3.4.20",
   "private": true,
   "description": "A decentralized cloud storage system.",
   "main": "./dist/main.js",
