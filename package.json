@@ -168,7 +168,6 @@
     "linux": {
       "target": [
         "deb",
-        "snap",
         "appImage"
       ],
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
