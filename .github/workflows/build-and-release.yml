@@ -118,14 +118,18 @@ jobs:
       - name: Package for Linux
         if: runner.os == 'Linux'
         run: |
-          # Configure Snapcraft
-          mkdir -p ~/.snap/snapcraft
-          echo "${{ secrets.SNAPCRAFT_LOGIN_FILE }}" > ~/.snap/snapcraft/snapcraft.cfg
+          # Install required dependencies
+          sudo snap install snapcraft --classic
+          sudo apt-get update
+          sudo apt-get install -y rpm
+          
+          # Build without publishing to Snapcraft store
           npm run deploy
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           EP_PRE_RELEASE: true
           EP_DRAFT: false
+          SNAP_STORE_SKIP_UPLOAD: true  # Skip Snapcraft store upload
 
       - name: Package for Windows
         if: runner.os == 'Windows'
