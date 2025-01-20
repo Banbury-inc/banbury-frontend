@@ -157,7 +157,8 @@
       "gatekeeperAssess": false,
       "target": [
         "dmg",
-        "pkg"
+        "pkg",
+        "zip"
       ],
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
       "publish": [
