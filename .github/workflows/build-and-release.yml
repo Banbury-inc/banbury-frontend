@@ -96,6 +96,27 @@ jobs:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
+      - name: Notarize macOS Distribution Files
+        if: runner.os == 'macOS'
+        run: |
+          APP_NAME="Banbury Cloud"
+          VERSION=$(node -p "require('./package.json').version")
+          WORKSPACE_PATH="$GITHUB_WORKSPACE"
+          
+          # Notarize DMG
+          export APP_PATH="$WORKSPACE_PATH/packages/${APP_NAME}-${VERSION}-arm64.dmg"
+          echo "Notarizing DMG: $APP_PATH"
+          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
+          
+          # Notarize ZIP
+          export APP_PATH="$WORKSPACE_PATH/packages/${APP_NAME}-${VERSION}-arm64-mac.zip"
+          echo "Notarizing ZIP: $APP_PATH"
+          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
       # For non-macOS: Build and package
       - name: Package for Linux
         if: runner.os == 'Linux'
