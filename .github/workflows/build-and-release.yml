@@ -78,7 +78,7 @@ jobs:
       - name: Notarize macOS App Bundle
         if: runner.os == 'macOS'
         run: |
-          APP_NAME="Banbury-Cloud"
+          APP_NAME="Banbury"
           export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
           echo "Notarizing app bundle: $APP_PATH"
           node ./scripts/notarize.ts
@@ -99,7 +99,7 @@ jobs:
       - name: Notarize macOS Distribution Files
         if: runner.os == 'macOS'
         run: |
-          APP_NAME="Banbury Cloud"
+          APP_NAME="Banbury"
           VERSION=$(node -p "require('./package.json').version")
           WORKSPACE_PATH="$GITHUB_WORKSPACE"
           
