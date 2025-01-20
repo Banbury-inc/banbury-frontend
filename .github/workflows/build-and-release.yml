@@ -64,7 +64,7 @@ jobs:
           EP_DRAFT: false
           CSC_KEYCHAIN: build.keychain
 
-      - name: Notarize macOS build
+      - name: Code Sign and Notarize macOS build
         if: runner.os == 'macOS'
         run: |
           xcode-select --install || true
@@ -77,12 +77,12 @@ jobs:
           node ./scripts/notarize.ts
           
           # Notarize .dmg
-          export APP_PATH="./packages/${APP_NAME}-${VERSION}-arm64.dmg"
+          export APP_PATH="./packages/mac-arm64/${APP_NAME}-${VERSION}-arm64.dmg"
           echo "Notarizing dmg: $APP_PATH"
           node ./scripts/notarize.ts
           
           # Notarize .zip
-          export APP_PATH="./packages/${APP_NAME}-${VERSION}-arm64-mac.zip"
+          export APP_PATH="./packages/mac-arm64/${APP_NAME}-${VERSION}-arm64-mac.zip"
           echo "Notarizing zip: $APP_PATH"
           node ./scripts/notarize.ts
         env:
