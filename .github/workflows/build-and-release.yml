@@ -21,6 +21,15 @@ jobs:
           node-version: '20.11.0'
           cache: 'npm'
 
+      # Linux-specific setup
+      - name: Install Snapcraft
+        if: runner.os == 'Linux'
+        run: |
+          sudo snap install snapcraft --classic
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      # macOS-specific setup
       - name: Install Python and Build Tools for macOS
         if: runner.os == 'macOS'
         run: |
@@ -105,9 +114,21 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      # For non-macOS: Just build and package
-      - name: Package for non-macOS platforms
-        if: runner.os != 'macOS'
+      # For non-macOS: Build and package
+      - name: Package for Linux
+        if: runner.os == 'Linux'
+        run: |
+          # Configure Snapcraft
+          mkdir -p ~/.snap/snapcraft
+          echo "${{ secrets.SNAPCRAFT_LOGIN_FILE }}" > ~/.snap/snapcraft/snapcraft.cfg
+          npm run deploy
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EP_PRE_RELEASE: true
+          EP_DRAFT: false
+
+      - name: Package for Windows
+        if: runner.os == 'Windows'
         run: npm run deploy
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
