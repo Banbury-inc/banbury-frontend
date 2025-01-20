@@ -38,8 +38,9 @@ jobs:
       - name: Notarize macOS build
         if: runner.os == 'macOS'
         run: |
-          APP_NAME=$(node -p "require('./package.json').productName")
-          export APP_PATH="./dist/mac/${APP_NAME}.app"
+          xcode-select --install || true
+          APP_NAME="Banbury Cloud" # or use your actual app name
+          export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
           echo "App path: $APP_PATH"
           node ./scripts/notarize.ts
         env:
