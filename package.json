@@ -49,28 +49,22 @@
     "date-fns": "^4.1.0",
     "electron-log": "^5.2.4",
     "electron-store": "^9.0.0",
+    "electron-titlebar-windows": "^3.0.0",
     "electron-updater": "^6.3.9",
     "fast-speedtest-api": "^0.3.2",
-    "frameless-titlebar": "^2.1.4",
     "framer-motion": "^11.17.0",
     "install": "^0.13.0",
-    "lodash": "^4.17.21",
     "luxon": "^3.4.4",
     "moment": "^2.30.1",
     "neuranet": "^1.0.2",
     "node-fetch": "^3.3.2",
     "node-process-hider": "^1.0.3",
     "notistack": "^3.0.1",
-    "npm": "^10.8.3",
     "ollama": "^0.5.2",
     "p-queue": "^8.0.1",
     "postcss-loader": "^8.1.1",
     "punycode": "^2.3.1",
-    "react": "^17.0.0 || ^18.0.0",
-    "react-dom": "^17.0.0 || ^18.0.0",
     "react-router-dom": "^6.22.2",
-    "speed-test": "^3.0.0",
-    "speedtest-net": "^2.2.0",
     "style-loader": "^4.0.0",
     "styled-components": "^6.1.9"
   },
@@ -82,19 +76,10 @@
     "@types/react": "^18.0.15",
     "@types/react-dom": "^18.0.6",
     "@types/speedtest-net": "^2.1.5",
-    "@types/webpack-dev-server": "^4.7.2",
-    "@typescript-eslint/eslint-plugin": "^8.19.0",
-    "@typescript-eslint/parser": "^5.30.7",
     "autoprefixer": "^10.4.20",
     "cross-env": "^7.0.3",
     "electron": "^19.0.8",
     "electron-builder": "^25.1.8",
-    "eslint": "^9.17.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-jsdoc": "^50.2.2",
-    "eslint-plugin-prettier": "^5.2.1",
-    "eslint-plugin-react": "^7.30.1",
-    "eslint-plugin-unused-imports": "^4.1.3",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.0",
     "import-sort-cli": "^6.0.0",
@@ -115,8 +100,8 @@
     "typescript": "^4.7.4",
     "wait-on": "^6.0.1",
     "webpack": "^5.73.0",
-    "webpack-cli": "^4.10.0",
-    "webpack-dev-server": "^4.9.3"
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
   },
   "importSort": {
     ".js, .jsx, .es6, .es": {
@@ -190,7 +175,7 @@
     "extraResources": []
   },
   "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=16.13.0"
+    "npm": ">=10.0.0",
+    "node": ">=23.0.0"
   }
 }

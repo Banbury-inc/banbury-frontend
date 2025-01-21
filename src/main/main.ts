@@ -25,7 +25,7 @@ function createWindow(): void {
     // backgroundColor: "#23272a",
     backgroundColor: "rgb(33, 33, 33)",
     titleBarStyle: 'hidden' || 'customButtonsOnHover',
-    trafficLightPosition: { x: 15, y: 15 },
+    trafficLightPosition: { x: 15, y: 12 },
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

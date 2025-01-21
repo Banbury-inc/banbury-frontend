@@ -759,10 +759,10 @@ export default function Files() {
   return (
     <Box sx={{ width: '100%', pt: 0 }}>
       <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
-          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
+        <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '0px' }}>
+          <Stack paddingLeft={4} spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
             <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
-              <Grid item paddingRight={1}>
+              <Grid item paddingRight={1} zIndex={9999}>
                 <Tooltip title="Navigate back">
                   <Button
                     onClick={() =>
@@ -780,7 +780,7 @@ export default function Files() {
                   </Button>
                 </Tooltip>
               </Grid>
-              <Grid item paddingRight={1}>
+              <Grid item paddingRight={1} zIndex={9999}>
                 <Tooltip title="Navigate forward">
                   <Button
                     onClick={() =>
@@ -795,7 +795,7 @@ export default function Files() {
                     }
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }} // Adjust the left and right padding as needed
                   >
-                    <NavigateNextOutlinedIcon fontSize="inherit" />
+                    <NavigateNextOutlinedIcon fontSize="inherit"/>
                   </Button>
                 </Tooltip>
               </Grid>
@@ -817,12 +817,12 @@ export default function Files() {
               {/*     </Button> */}
               {/*   </Tooltip> */}
               {/* </Grid> */}
-              <Grid item paddingRight={1}>
+              <Grid item paddingRight={1} zIndex={9999}>
                 <Tooltip title="Upload">
                   <NewInputFileUploadButton />
                 </Tooltip>
               </Grid>
-              <Grid item paddingRight={1}>
+              <Grid item paddingRight={1} zIndex={9999}>
                   <DownloadFileButton
                     selectedFileNames={selectedFileNames}
                     selectedFileInfo={selectedFileInfo}
@@ -836,7 +836,7 @@ export default function Files() {
                   />
               </Grid>
 
-              <Grid item paddingRight={1}>
+              <Grid item paddingRight={1} zIndex={9999}>
                   <DeleteFileButton
                     selectedFileNames={selectedFileNames}
                     global_file_path={global_file_path || ''}
@@ -854,15 +854,15 @@ export default function Files() {
                     websocket={websocket as WebSocket}
                   />
               </Grid>
-              <Grid item paddingRight={1} paddingLeft={0}>
+              <Grid item paddingRight={1} paddingLeft={0} zIndex={9999}>
                 <Tooltip title="Add to Sync">
                   <AddFileToSyncButton selectedFileNames={selectedFileNames} />
                 </Tooltip>
               </Grid>
-              <Grid item paddingRight={1}>
+              <Grid item paddingRight={1} zIndex={9999}>
                   <SyncButton />
               </Grid>
-              <Grid item paddingRight={1}>
+              <Grid item paddingRight={1} zIndex={9999} >
                   <ShareFileButton
                     selectedFileNames={selectedFileNames}
                     selectedFileInfo={selectedFileInfo}
@@ -875,17 +875,17 @@ export default function Files() {
               <Grid item>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                     <Stack paddingRight={1} direction="row">
-                      <Grid item paddingRight={1}>
+                      <Grid item paddingRight={1} zIndex={9999}>
                         <UploadProgress uploads={uploads} />
                       </Grid>
-                      <Grid item paddingRight={1}>
+                      <Grid item paddingRight={1} zIndex={9999} >
                         <DownloadProgress downloads={downloads} />
                       </Grid>
-                      <Grid item paddingRight={1}>
+                      <Grid item paddingRight={1} zIndex={9999}>
                         <NotificationsButton />
                       </Grid>
                   </Stack>
-                  <Stack paddingLeft={1} direction="row">
+                  <Stack paddingLeft={1} direction="row" zIndex={9999}>
                     <AccountMenuIcon />
                   </Stack>
                 </Box>
