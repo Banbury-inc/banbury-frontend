@@ -253,7 +253,7 @@ const Tab = ({ label, isActive, onClick, onClose, style }: TabProps) => (
     style={style}
     className={`
       mt-3
-      pl-2
+      pl-3  
       h-9
       px-4 
       min-w-[140px]
@@ -276,7 +276,7 @@ const Tab = ({ label, isActive, onClick, onClose, style }: TabProps) => (
       first:ml-2
     `}
   >
-    <span className="truncate">{label}</span>
+    <span className="truncate pl-2">{label}</span>
     {onClose && (
       <button
         onClick={(e) => {
@@ -866,6 +866,41 @@ export default function Files() {
           }}
         >
           <Box display="flex" flexDirection="column" height="100%">
+            <Stack direction="row" spacing={1} sx={{pt: 0, pr: 0, pl: 6, marginTop: '7px' }}>
+                <Tooltip title="Navigate back">
+                  <Button
+                    onClick={() =>
+                        handlers.buttons.backButton(
+                          global_file_path ?? '',
+                          setGlobal_file_path,
+                          backHistory,
+                          setBackHistory,
+                          setForwardHistory,
+                      )
+                    }
+                    sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }} // Adjust the left and right padding as needed
+                  >
+                    <NavigateBeforeOutlinedIcon fontSize="inherit" />
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Navigate forward">
+                  <Button
+                    onClick={() =>
+                      handlers.buttons.forwardButton(
+                        global_file_path ?? '',
+                        setGlobal_file_path,
+                        backHistory,
+                        setBackHistory,
+                        forwardHistory,
+                        setForwardHistory,
+                      )
+                    }
+                    sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }} // Adjust the left and right padding as needed
+                  >
+                    <NavigateNextOutlinedIcon fontSize="inherit" />
+                  </Button>
+                </Tooltip>
+            </Stack>
             <Card
               variant="outlined"
               sx={{ 
@@ -906,7 +941,7 @@ export default function Files() {
                 ))}
                 <Button
                   onClick={handleAddTab}
-                  sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }}
+                  sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '7px', minWidth: '30px', zIndex: 9999 }}
                 >
                   <AddIcon fontSize="inherit" />
                 </Button>
