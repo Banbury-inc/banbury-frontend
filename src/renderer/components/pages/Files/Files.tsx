@@ -76,6 +76,7 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 import CloseIcon from '@mui/icons-material/Close';
+import { Tabs, Tab } from '../../common/Tabs/Tabs';
 // Rename the interface to avoid collision with DOM Notification
 interface UserNotification {
   id: string;
@@ -237,74 +238,6 @@ const StyledMenu = styled(Menu)(({ theme }) => ({
     }
   }
 }));
-
-// Update the Tab interface and component
-interface TabProps {
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-  onClose?: () => void;
-  style?: React.CSSProperties;
-}
-
-const Tab = ({ label, isActive, onClick, onClose, style }: TabProps) => (
-  <button
-    onClick={onClick}
-    style={style}
-    className={`
-      mt-3
-      pl-4  
-      h-9
-      px-4 
-      min-w-[140px]
-      text-sm 
-      font-medium 
-      relative 
-      mx-0.5
-      rounded-[5px_5px_0_0]
-      flex
-      items-center
-      justify-between
-      gap-2
-      ${isActive 
-        ? 'text-white bg-[rgba(23,23,23)] border-t border-l border-r border-[#333] before:absolute before:top-0 before:left-0 before:right-0 before:h-[0px] before:bg-white' 
-        : 'text-white/70 hover:bg-[#2a2a2a] hover:h-7 hover:rounded-[5px_5px_5px_5px]'
-      }
-      hover:text-white 
-      focus:outline-none
-      z-[9999]
-      first:ml-2
-    `}
-  >
-    <span className="truncate pl-2">{label}</span>
-    {onClose && (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className={`
-          p-0.5
-          rounded-sm
-          hover:bg-white/10
-          transition-colors
-          opacity-0
-          group-hover:opacity-100
-          ${isActive ? 'opacity-100' : ''}
-        `}
-      >
-        <CloseIcon sx={{ fontSize: 16 }} />
-      </button>
-    )}
-  </button>
-);
-
-// Add this interface near your other interfaces
-interface Tab {
-  id: string;
-  label: string;
-  path?: string; // Optional: to store the file/folder path
-}
 
 export default function Files() {
   const isSmallScreen = useMediaQuery('(max-width:960px)');
@@ -831,7 +764,7 @@ export default function Files() {
   };
 
   const handleAddTab = () => {
-    const newTabId = `tab-${Date.now()}`; // Generate unique ID
+    const newTabId = `tab-${Date.now()}`;
     const newTab = {
       id: newTabId,
       label: 'New tab',
@@ -841,12 +774,11 @@ export default function Files() {
   };
 
   const handleCloseTab = (tabId: string) => {
-    if (tabs.length === 1) return; // Don't close the last tab
+    if (tabs.length === 1) return;
     
     const newTabs = tabs.filter(tab => tab.id !== tabId);
     setTabs(newTabs);
     
-    // If we're closing the active tab, activate the previous tab
     if (activeTab === tabId) {
       const tabIndex = tabs.findIndex(tab => tab.id === tabId);
       const newActiveTab = newTabs[Math.max(0, tabIndex - 1)];
@@ -929,23 +861,13 @@ export default function Files() {
         <Card variant="outlined" sx={{ flexGrow: 1, height: '100%', width: '100%', overflow: 'hidden'}}>
           <CardContent sx={{ height: '100%', width: '100%', overflow: 'hidden', padding: 0 }}>
             <div className="flex justify-between items-center h-8 bg-[#2a2a2a] border-b border-black">
-              <div className="flex items-center group">
-                {tabs.map(tab => (
-                  <Tab
-                    key={tab.id}
-                    label={tab.label}
-                    isActive={activeTab === tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    onClose={tabs.length > 1 ? () => handleCloseTab(tab.id) : undefined}
-                  />
-                ))}
-                <Button
-                  onClick={handleAddTab}
-                  sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '7px', minWidth: '30px', zIndex: 9999 }}
-                >
-                  <AddIcon fontSize="inherit" />
-                </Button>
-              </div>
+              <Tabs
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                onTabClose={handleCloseTab}
+                onTabAdd={handleAddTab}
+              />
               
               <Stack direction="row" spacing={1} sx={{pt: 1, pr: 2 }}>
                 <UploadProgress uploads={uploads} />
