@@ -30,9 +30,9 @@ const TabComponent = ({ label, isActive, onClick, onClose, style }: TabProps) =>
     onClick={onClick}
     style={style}
     className={`
-      mt-3
+      mt-4
       pl-4  
-      h-9
+      h-8
       px-4 
       min-w-[140px]
       text-sm 
@@ -105,8 +105,8 @@ export const Tabs: React.FC<TabsProps> = ({
         <button
           onClick={onTabAdd}
           className="
-            h-8
-            mt-3
+            h-7
+            mt-4
             px-3
             ml-1
             text-white/70
