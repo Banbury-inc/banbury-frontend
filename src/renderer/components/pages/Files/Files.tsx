@@ -898,12 +898,12 @@ export default function Files() {
                         <Box sx={{ flexGrow: 1 }}>
                           <FileBreadcrumbs />
                         </Box>
-                        <Grid item paddingRight={1} zIndex={9999}>
+                        <Grid item paddingRight={1}>
                           <Tooltip title="Upload">
                             <NewInputFileUploadButton />
                           </Tooltip>
                         </Grid>
-                        <Grid item paddingRight={1} zIndex={9999}>
+                        <Grid item paddingRight={1}>
                             <DownloadFileButton
                               selectedFileNames={selectedFileNames}
                               selectedFileInfo={selectedFileInfo}
@@ -917,7 +917,7 @@ export default function Files() {
                             />
                         </Grid>
 
-                        <Grid item paddingRight={1} zIndex={9999}>
+                        <Grid item paddingRight={1}>
                             <DeleteFileButton
                               selectedFileNames={selectedFileNames}
                               global_file_path={global_file_path || ''}
@@ -935,15 +935,15 @@ export default function Files() {
                               websocket={websocket as WebSocket}
                             />
                         </Grid>
-                        <Grid item paddingRight={1} paddingLeft={0} zIndex={9999}>
+                        <Grid item paddingRight={1} paddingLeft={0}>
                           <Tooltip title="Add to Sync">
                             <AddFileToSyncButton selectedFileNames={selectedFileNames} />
                           </Tooltip>
                         </Grid>
-                        <Grid item paddingRight={1} zIndex={9999}>
+                        <Grid item paddingRight={1}>
                             <SyncButton />
                         </Grid>
-                        <Grid item paddingRight={1} zIndex={9999} >
+                        <Grid item paddingRight={1}>
                             <ShareFileButton
                               selectedFileNames={selectedFileNames}
                               selectedFileInfo={selectedFileInfo}
@@ -1111,7 +1111,7 @@ export default function Files() {
                               </Grid>
                             </Box>
                           ) : (
-                            <TableContainer sx={{ maxHeight: 'calc(100vh - 180px)' }}> <Table aria-labelledby="tableTitle" size="small" stickyHeader>
+                            <TableContainer sx={{ maxHeight: 'calc(100vh - 100px)' }}> <Table aria-labelledby="tableTitle" size="small" stickyHeader>
                               <EnhancedTableHead
                                 numSelected={selected.length}
                                 order={order}
