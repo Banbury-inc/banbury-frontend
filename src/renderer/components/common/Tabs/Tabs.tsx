@@ -39,7 +39,7 @@ const TabComponent = ({ label, isActive, onClick, onClose, style }: TabProps) =>
       font-medium 
       relative 
       mx-0.5
-      rounded-[10px_10px_0_0]
+      rounded-[5px_5px_0_0]
       flex
       items-center
       justify-between
