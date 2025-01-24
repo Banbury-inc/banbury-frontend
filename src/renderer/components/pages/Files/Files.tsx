@@ -817,58 +817,6 @@ export default function Files() {
               {/*     </Button> */}
               {/*   </Tooltip> */}
               {/* </Grid> */}
-              <Grid item paddingRight={1} zIndex={9999}>
-                <Tooltip title="Upload">
-                  <NewInputFileUploadButton />
-                </Tooltip>
-              </Grid>
-              <Grid item paddingRight={1} zIndex={9999}>
-                  <DownloadFileButton
-                    selectedFileNames={selectedFileNames}
-                    selectedFileInfo={selectedFileInfo}
-                    selectedDeviceNames={selectedDeviceNames}
-                    setSelectedFiles={setSelectedFiles}
-                    setSelected={setSelected}
-                    setTaskbox_expanded={setTaskbox_expanded}
-                    tasks={tasks || []}
-                    setTasks={setTasks}
-                    websocket={websocket as WebSocket}
-                  />
-              </Grid>
-
-              <Grid item paddingRight={1} zIndex={9999}>
-                  <DeleteFileButton
-                    selectedFileNames={selectedFileNames}
-                    global_file_path={global_file_path || ''}
-                    setSelectedFileNames={setSelectedFileNames}
-                    setdeleteLoading={setdeleteLoading}
-                    setIsAddingFolder={setIsAddingFolder}
-                    setNewFolderName={setNewFolderName}
-                    setDisableFetch={setDisableFetch}
-                    updates={updates}
-                    setUpdates={setUpdates}
-                    setSelected={setSelected}
-                    setTaskbox_expanded={setTaskbox_expanded}
-                    tasks={tasks || []}
-                    setTasks={setTasks}
-                    websocket={websocket as WebSocket}
-                  />
-              </Grid>
-              <Grid item paddingRight={1} paddingLeft={0} zIndex={9999}>
-                <Tooltip title="Add to Sync">
-                  <AddFileToSyncButton selectedFileNames={selectedFileNames} />
-                </Tooltip>
-              </Grid>
-              <Grid item paddingRight={1} zIndex={9999}>
-                  <SyncButton />
-              </Grid>
-              <Grid item paddingRight={1} zIndex={9999} >
-                  <ShareFileButton
-                    selectedFileNames={selectedFileNames}
-                    selectedFileInfo={selectedFileInfo}
-                    onShare={() => handleShareModalOpen(selectedFileNames[0])}
-                  />
-              </Grid>
             </Grid>
             <Grid container justifyContent="flex-end" alignItems="flex-end">
               <Grid item></Grid>
@@ -944,6 +892,58 @@ export default function Files() {
               <Box sx={{ flexGrow: 1 }}>
                 <FileBreadcrumbs />
               </Box>
+              <Grid item paddingRight={1} zIndex={9999}>
+                <Tooltip title="Upload">
+                  <NewInputFileUploadButton />
+                </Tooltip>
+              </Grid>
+              <Grid item paddingRight={1} zIndex={9999}>
+                  <DownloadFileButton
+                    selectedFileNames={selectedFileNames}
+                    selectedFileInfo={selectedFileInfo}
+                    selectedDeviceNames={selectedDeviceNames}
+                    setSelectedFiles={setSelectedFiles}
+                    setSelected={setSelected}
+                    setTaskbox_expanded={setTaskbox_expanded}
+                    tasks={tasks || []}
+                    setTasks={setTasks}
+                    websocket={websocket as WebSocket}
+                  />
+              </Grid>
+
+              <Grid item paddingRight={1} zIndex={9999}>
+                  <DeleteFileButton
+                    selectedFileNames={selectedFileNames}
+                    global_file_path={global_file_path || ''}
+                    setSelectedFileNames={setSelectedFileNames}
+                    setdeleteLoading={setdeleteLoading}
+                    setIsAddingFolder={setIsAddingFolder}
+                    setNewFolderName={setNewFolderName}
+                    setDisableFetch={setDisableFetch}
+                    updates={updates}
+                    setUpdates={setUpdates}
+                    setSelected={setSelected}
+                    setTaskbox_expanded={setTaskbox_expanded}
+                    tasks={tasks || []}
+                    setTasks={setTasks}
+                    websocket={websocket as WebSocket}
+                  />
+              </Grid>
+              <Grid item paddingRight={1} paddingLeft={0} zIndex={9999}>
+                <Tooltip title="Add to Sync">
+                  <AddFileToSyncButton selectedFileNames={selectedFileNames} />
+                </Tooltip>
+              </Grid>
+              <Grid item paddingRight={1} zIndex={9999}>
+                  <SyncButton />
+              </Grid>
+              <Grid item paddingRight={1} zIndex={9999} >
+                  <ShareFileButton
+                    selectedFileNames={selectedFileNames}
+                    selectedFileInfo={selectedFileInfo}
+                    onShare={() => handleShareModalOpen(selectedFileNames[0])}
+                  />
+              </Grid>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 2 }}>
               <Tooltip title="Change view">
                   <Button
