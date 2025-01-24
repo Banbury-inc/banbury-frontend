@@ -112,7 +112,7 @@ export const Tabs: React.FC<TabsProps> = ({
             text-white/70
             hover:text-white
             hover:bg-[#2a2a2a]
-            rounded-[10px_10px_0_0]
+            rounded-[5px_5px_0_0]
             transition-colors
             z-[9999]
           "
