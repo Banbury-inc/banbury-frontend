@@ -54,7 +54,7 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
     <>
       <Button
         onClick={handleClick}
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }}
       >
         <DownloadIcon sx={{ fontSize: 'inherit' }} />
         {activeDownloads > 0 && (

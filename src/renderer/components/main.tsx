@@ -155,12 +155,12 @@ export default function PermanentDrawerLeft() {
 
   return (
     // <Box sx={{ display: 'flex', width: '100vw' }}>
-    <Box sx={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', width: '100vw', height: '100%', overflow: 'hidden' }}>
       <CssBaseline />
       <Drawer
         sx={{
           '& .MuiDrawer-paper': {
-            marginTop: '42px',
+            marginTop: '0px',
             paddingLeft: '4px',
             backgroundColor: theme.palette.background.default,
           },

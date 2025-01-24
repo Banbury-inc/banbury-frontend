@@ -100,7 +100,7 @@ export default function App(): JSX.Element {
             <Box
               sx={{
                 backgroundColor: (theme) => theme.palette.background.default,
-                marginTop: '6px' // Updated to match new titlebar height
+                marginTop: '0px' // Updated to match new titlebar height
               }}
             >
               <main>

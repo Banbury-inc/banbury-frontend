@@ -130,7 +130,8 @@ export default function NotificationsButton({ }: {
           paddingLeft: '4px',
           paddingRight: '4px',
           minWidth: '30px',
-          position: 'relative'
+          position: 'relative',
+          zIndex: 9999
         }}
       >
         <NotificationsOutlinedIcon sx={{ fontSize: 'inherit' }} />
