@@ -284,7 +284,7 @@ export const Tabs: React.FC<TabsProps> = ({
         <div
           ref={el => tabRefs.current[index] = el}
           key={tab.id}
-          className={`relative ${draggedTab === tab.id ? 'opacity-50' : ''}`}
+          className="relative"
         >
           <TabComponent
             label={tab.label}
