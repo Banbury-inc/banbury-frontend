@@ -8,6 +8,7 @@ import type { ElementDropTargetGetFeedbackArgs } from '@atlaskit/pragmatic-drag-
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { attachClosestEdge, extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/types';
+import { createRoot } from 'react-dom/client';
 
 export interface Tab {
   id: string;
@@ -31,6 +32,32 @@ interface TabsProps {
   onTabAdd?: () => void;
   onReorder?: (sourceIndex: number, destinationIndex: number) => void;
 }
+
+const DragPreview = ({ label }: { label: string }) => (
+  <div
+    className="
+      bg-[#1e1e1e]
+      text-white
+      w-20
+      h-8
+      px-4
+      py-2
+      rounded-md
+      flex
+      items-center
+      gap-2
+      shadow-lg
+      border-[#333]
+    "
+  >
+    <div className="w-4 h-4 flex items-center justify-center">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M14 4v10H2V4h12zm0-1H2a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1zm-1-1V1H3v1h10z"/>
+      </svg>
+    </div>
+    {label}
+  </div>
+);
 
 export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabProps) => (
   <div
@@ -96,11 +123,14 @@ const DropIndicator = ({ edge, gap }: { edge: Edge; gap: string }) => (
       position: 'absolute',
       backgroundColor: 'white',
       width: '2px',
-      height: '20px',
-      top: '50%',
+      height: '28px',
+      top: '70%',
       transform: 'translateY(-50%)',
       left: edge === 'left' ? `-${gap}` : 'auto',
       right: edge === 'right' ? `-${gap}` : 'auto',
+      boxShadow: '0 0 3px rgba(126, 107, 242, 0.8)',
+      borderRadius: '1px',
+      zIndex: 10000,
     }}
   />
 );
@@ -117,6 +147,20 @@ export const Tabs: React.FC<TabsProps> = ({
   const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
   const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
   const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    return dropTargetForElements({
+      element,
+      getData: () => ({ type: 'container' }),
+      onDrag: () => {},
+      onDragLeave: () => setClosestEdge(null),
+      onDrop: () => setClosestEdge(null),
+    });
+  }, []);
 
   useEffect(() => {
     const cleanupFns = tabs.map((tab, index) => {
@@ -126,12 +170,42 @@ export const Tabs: React.FC<TabsProps> = ({
       return combine(
         draggable({
           element,
-          getInitialData: () => ({ id: tab.id, index }),
+          getInitialData: () => ({ id: tab.id, index, type: 'tab' }),
+          onDragStart: () => {
+            setDraggedTab(tab.id);
+          },
+          onGenerateDragPreview: ({ nativeSetDragImage }) => {
+            if (!nativeSetDragImage) return;
+            
+            // Create drag preview
+            const previewEl = document.createElement('div');
+            previewEl.style.position = 'fixed';
+            previewEl.style.top = '0';
+            previewEl.style.left = '0';
+            previewEl.style.width = '100px';
+            previewEl.style.height = '100px';
+            document.body.appendChild(previewEl);
+            
+            const root = createRoot(previewEl);
+            root.render(<DragPreview label={tab.label} />);
+            
+            nativeSetDragImage(previewEl, 10, 10);
+            
+            // Clean up after a short delay
+            setTimeout(() => {
+              root.unmount();
+              document.body.removeChild(previewEl);
+            }, 0);
+          },
+          onDrag: () => {},
+          onDrop: () => {
+            setDraggedTab(null);
+          }
         }),
         dropTargetForElements({
           element,
           getData: (args: ElementDropTargetGetFeedbackArgs) => attachClosestEdge(
-            { id: tab.id, index },
+            { id: tab.id, index, type: 'tab' },
             {
               element,
               input: args.input,
@@ -139,12 +213,18 @@ export const Tabs: React.FC<TabsProps> = ({
             }
           ),
           onDrag(args) {
-            setClosestEdge(extractClosestEdge(args.self.data));
+            const edge = extractClosestEdge(args.self.data);
+            if (edge) {
+              setDraggedOverTab(tab.id);
+              setClosestEdge(edge);
+            }
           },
           onDragLeave() {
+            setDraggedOverTab(null);
             setClosestEdge(null);
           },
           onDrop() {
+            setDraggedOverTab(null);
             setClosestEdge(null);
           }
         })
@@ -159,23 +239,34 @@ export const Tabs: React.FC<TabsProps> = ({
   useEffect(() => {
     return monitorForElements({
       onDrop({ location, source }) {
+        if (source.data.type !== 'tab') return;
+
         const target = location.current.dropTargets[0];
         if (!target) return;
 
         const sourceIndex = tabs.findIndex(tab => tab.id === source.data.id);
-        const targetIndex = tabs.findIndex(tab => tab.id === target.data.id);
-        const edge = extractClosestEdge(target.data);
         
-        if (sourceIndex >= 0 && targetIndex >= 0 && onReorder) {
-          const finalIndex = edge === 'right' ? targetIndex + 1 : targetIndex;
-          onReorder(sourceIndex, finalIndex);
+        if (target.data.type === 'container') {
+          // If dropped on container, move to end
+          if (sourceIndex >= 0 && onReorder) {
+            onReorder(sourceIndex, tabs.length);
+          }
+        } else {
+          // If dropped on another tab
+          const targetIndex = tabs.findIndex(tab => tab.id === target.data.id);
+          const edge = extractClosestEdge(target.data);
+          
+          if (sourceIndex >= 0 && targetIndex >= 0 && onReorder) {
+            const finalIndex = edge === 'right' ? targetIndex + 1 : targetIndex;
+            onReorder(sourceIndex, finalIndex);
+          }
         }
       }
     });
   }, [tabs, onReorder]);
 
   return (
-    <div className="flex items-center group">
+    <div ref={containerRef} className="flex items-center group">
       <style>
         {`
           .tab {
@@ -201,7 +292,7 @@ export const Tabs: React.FC<TabsProps> = ({
             onClick={() => onTabChange(tab.id)}
             onClose={onTabClose ? () => onTabClose(tab.id) : undefined}
           />
-          {closestEdge && <DropIndicator edge={closestEdge} gap="1px" />}
+          {closestEdge && draggedOverTab === tab.id && <DropIndicator edge={closestEdge} gap="1px" />}
         </div>
       ))}
       {onTabAdd && (
