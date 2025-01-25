@@ -47,9 +47,12 @@ import UploadProgress from './common/upload_progress/upload_progress';
 import DownloadProgress from './common/download_progress/download_progress';
 import NotificationsButton from './common/notifications/NotificationsButton';
 import AccountMenuIcon from './common/AccountMenuIcon';
-import { Tabs as CustomTabs, Tab } from './common/Tabs/Tabs';
+import { Tabs as CustomTabs, TabComponent } from './common/Tabs/Tabs';
 import { getUploadsInfo } from './common/upload_progress/add_uploads_info';
 import { getDownloadsInfo } from './common/download_progress/add_downloads_info';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
 
 const drawerWidth = 240;  // Change the width as needed
 
@@ -144,6 +147,11 @@ export default function PermanentDrawerLeft() {
     }
   ]);
   const [currentTabId, setCurrentTabId] = useState('tab-1');
+  const [contextMenu, setContextMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+    tabId: string;
+  } | null>(null);
 
   useEffect(() => {
     async function setupConnection() {
@@ -264,6 +272,49 @@ export default function PermanentDrawerLeft() {
     }
   };
 
+  // Handle tab reordering
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(tabs);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setTabs(items);
+  };
+
+  // Context menu handlers
+  const handleContextMenu = (event: React.MouseEvent, tabId: string) => {
+    event.preventDefault();
+    setContextMenu({
+      mouseX: event.clientX,
+      mouseY: event.clientY,
+      tabId,
+    });
+  };
+
+  const handleContextMenuClose = () => {
+    setContextMenu(null);
+  };
+
+  const handleRenameTab = () => {
+    if (!contextMenu) return;
+    
+    const newLabel = prompt('Enter new tab name:', 
+      tabs.find(tab => tab.id === contextMenu.tabId)?.label);
+    
+    if (newLabel) {
+      setTabs(currentTabs =>
+        currentTabs.map(tab =>
+          tab.id === contextMenu.tabId
+            ? { ...tab, label: newLabel }
+            : tab
+        )
+      );
+    }
+    handleContextMenuClose();
+  };
+
   return (
     <Box sx={{ display: 'flex' }}>
       <Stack>
@@ -303,14 +354,47 @@ export default function PermanentDrawerLeft() {
               </Button>
             </Tooltip>
             <div className="flex justify-between items-center h-8 bg-[#2a2a2a] border-b border-black">
-              <CustomTabs
-                tabs={tabs}
-                activeTab={currentTabId}
-                onTabChange={handleTabChange}
-                onTabClose={handleCloseTab}
-                onTabAdd={handleAddTab}
-              />
-              
+              <style>
+                {`
+                  .no-drag {
+                    -webkit-app-region: no-drag;
+                  }
+                `}
+              </style>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="tabs" direction="horizontal">
+                  {(provided: DroppableProvided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className="flex flex-grow no-drag"
+                    >
+                      <CustomTabs
+                        tabs={tabs}
+                        activeTab={currentTabId}
+                        onTabChange={handleTabChange}
+                        onTabClose={handleCloseTab}
+                        onTabAdd={handleAddTab}
+                      />
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+
+              <Menu
+                open={contextMenu !== null}
+                onClose={handleContextMenuClose}
+                anchorReference="anchorPosition"
+                anchorPosition={
+                  contextMenu !== null
+                    ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+                    : undefined
+                }
+              >
+                <MenuItem onClick={handleRenameTab}>Rename Tab</MenuItem>
+              </Menu>
+
               <Stack 
                 direction="row" 
                 spacing={1} 

@@ -25,7 +25,7 @@ interface TabsProps {
   onTabAdd?: () => void;
 }
 
-const TabComponent = ({ label, isActive, onClick, onClose, style }: TabProps) => (
+export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabProps) => (
   <button
     onClick={onClick}
     style={style}
