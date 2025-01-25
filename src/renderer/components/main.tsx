@@ -53,6 +53,7 @@ import { getDownloadsInfo } from './common/download_progress/add_downloads_info'
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { DragDropContext, Droppable, Draggable, DroppableProvided, DraggableProvided } from 'react-beautiful-dnd';
+import AddIcon from '@mui/icons-material/Add';
 
 const drawerWidth = 240;  // Change the width as needed
 
@@ -152,6 +153,8 @@ export default function PermanentDrawerLeft() {
     mouseY: number;
     tabId: string;
   } | null>(null);
+  const [draggedTab, setDraggedTab] = useState<string | null>(null);
+  const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
 
   useEffect(() => {
     async function setupConnection() {
@@ -273,14 +276,29 @@ export default function PermanentDrawerLeft() {
   };
 
   // Handle tab reordering
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
+  const handleDragStart = (tabId: string) => {
+    setDraggedTab(tabId);
+  };
 
-    const items = Array.from(tabs);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+  const handleDragEnd = () => {
+    if (draggedTab && draggedOverTab) {
+      const draggedIndex = tabs.findIndex(tab => tab.id === draggedTab);
+      const dropIndex = tabs.findIndex(tab => tab.id === draggedOverTab);
+      
+      const newTabs = [...tabs];
+      const [draggedItem] = newTabs.splice(draggedIndex, 1);
+      newTabs.splice(dropIndex, 0, draggedItem);
+      
+      setTabs(newTabs);
+    }
+    setDraggedTab(null);
+    setDraggedOverTab(null);
+  };
 
-    setTabs(items);
+  const handleDragOver = (tabId: string) => {
+    if (draggedTab && draggedTab !== tabId) {
+      setDraggedOverTab(tabId);
+    }
   };
 
   // Context menu handlers
@@ -357,30 +375,49 @@ export default function PermanentDrawerLeft() {
               <style>
                 {`
                   .no-drag {
+                    -webkit-app-region: no-drag !important;
+                  }
+                  .tab-container {
+                    display: flex;
+                    flex-grow: 1;
+                    position: relative;
                     -webkit-app-region: no-drag;
+                  }
+                  .tab {
+                    -webkit-app-region: no-drag;
+                    opacity: 1;
+                    cursor: grab;
+                    position: relative;
+                  }
+                  .tab.dragging {
+                    opacity: 0.5;
+                  }
+                  .tab.drag-over::before {
+                    content: '';
+                    position: absolute;
+                    left: -1px;
+                    top: 25%;
+                    height: 50%;
+                    width: 2px;
+                    background: white;
                   }
                 `}
               </style>
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="tabs" direction="horizontal">
-                  {(provided: DroppableProvided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="flex flex-grow no-drag"
-                    >
-                      <CustomTabs
-                        tabs={tabs}
-                        activeTab={currentTabId}
-                        onTabChange={handleTabChange}
-                        onTabClose={handleCloseTab}
-                        onTabAdd={handleAddTab}
-                      />
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
+              <div className="flex flex-grow no-drag">
+                <CustomTabs
+                  tabs={tabs}
+                  activeTab={currentTabId}
+                  onTabChange={handleTabChange}
+                  onTabClose={handleCloseTab}
+                  onTabAdd={handleAddTab}
+                  onReorder={(sourceIndex, destinationIndex) => {
+                    const newTabs = [...tabs];
+                    const [draggedItem] = newTabs.splice(sourceIndex, 1);
+                    newTabs.splice(destinationIndex, 0, draggedItem);
+                    setTabs(newTabs);
+                  }}
+                />
+              </div>
 
               <Menu
                 open={contextMenu !== null}

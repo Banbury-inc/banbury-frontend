@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
+import { invariant } from 'framer-motion';
+import { draggable, monitorForElements, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import type { ElementDropTargetGetFeedbackArgs } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { attachClosestEdge, extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/types';
 
 export interface Tab {
   id: string;
@@ -23,10 +29,11 @@ interface TabsProps {
   onTabChange: (tabId: string) => void;
   onTabClose?: (tabId: string) => void;
   onTabAdd?: () => void;
+  onReorder?: (sourceIndex: number, destinationIndex: number) => void;
 }
 
 export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabProps) => (
-  <button
+  <div
     onClick={onClick}
     style={style}
     className={`
@@ -80,7 +87,22 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabPr
         <CloseIcon sx={{ fontSize: 16 }} />
       </button>
     )}
-  </button>
+  </div>
+);
+
+const DropIndicator = ({ edge, gap }: { edge: Edge; gap: string }) => (
+  <div
+    style={{
+      position: 'absolute',
+      backgroundColor: 'white',
+      width: '2px',
+      height: '20px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      left: edge === 'left' ? `-${gap}` : 'auto',
+      right: edge === 'right' ? `-${gap}` : 'auto',
+    }}
+  />
 );
 
 export const Tabs: React.FC<TabsProps> = ({ 
@@ -88,18 +110,99 @@ export const Tabs: React.FC<TabsProps> = ({
   activeTab, 
   onTabChange, 
   onTabClose, 
-  onTabAdd 
+  onTabAdd,
+  onReorder
 }) => {
+  const [draggedTab, setDraggedTab] = useState<string | null>(null);
+  const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
+  const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
+  const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const cleanupFns = tabs.map((tab, index) => {
+      const element = tabRefs.current[index];
+      if (!element) return () => {};
+
+      return combine(
+        draggable({
+          element,
+          getInitialData: () => ({ id: tab.id, index }),
+        }),
+        dropTargetForElements({
+          element,
+          getData: (args: ElementDropTargetGetFeedbackArgs) => attachClosestEdge(
+            { id: tab.id, index },
+            {
+              element,
+              input: args.input,
+              allowedEdges: ['left', 'right']
+            }
+          ),
+          onDrag(args) {
+            setClosestEdge(extractClosestEdge(args.self.data));
+          },
+          onDragLeave() {
+            setClosestEdge(null);
+          },
+          onDrop() {
+            setClosestEdge(null);
+          }
+        })
+      );
+    });
+
+    return () => {
+      cleanupFns.forEach(cleanup => cleanup());
+    };
+  }, [tabs]);
+
+  useEffect(() => {
+    return monitorForElements({
+      onDrop({ location, source }) {
+        const target = location.current.dropTargets[0];
+        if (!target) return;
+
+        const sourceIndex = tabs.findIndex(tab => tab.id === source.data.id);
+        const targetIndex = tabs.findIndex(tab => tab.id === target.data.id);
+        const edge = extractClosestEdge(target.data);
+        
+        if (sourceIndex >= 0 && targetIndex >= 0 && onReorder) {
+          const finalIndex = edge === 'right' ? targetIndex + 1 : targetIndex;
+          onReorder(sourceIndex, finalIndex);
+        }
+      }
+    });
+  }, [tabs, onReorder]);
+
   return (
     <div className="flex items-center group">
-      {tabs.map(tab => (
-        <TabComponent
+      <style>
+        {`
+          .tab {
+            -webkit-app-region: no-drag;
+            opacity: 1;
+            cursor: grab;
+            position: relative;
+          }
+          .tab.dragging {
+            opacity: 0.5;
+          }
+        `}
+      </style>
+      {tabs.map((tab, index) => (
+        <div
+          ref={el => tabRefs.current[index] = el}
           key={tab.id}
-          label={tab.label}
-          isActive={activeTab === tab.id}
-          onClick={() => onTabChange(tab.id)}
-          onClose={tabs.length > 1 ? () => onTabClose?.(tab.id) : undefined}
-        />
+          className={`relative ${draggedTab === tab.id ? 'opacity-50' : ''}`}
+        >
+          <TabComponent
+            label={tab.label}
+            isActive={activeTab === tab.id}
+            onClick={() => onTabChange(tab.id)}
+            onClose={onTabClose ? () => onTabClose(tab.id) : undefined}
+          />
+          {closestEdge && <DropIndicator edge={closestEdge} gap="1px" />}
+        </div>
       ))}
       {onTabAdd && (
         <button
