@@ -434,9 +434,9 @@ export default function PermanentDrawerLeft() {
                 'Sync',
                 'Shared',
                 'Devices',
-                'Friends'].map((text, index) => (
+                'Friends'].map((text) => (
                   <Tooltip title={text} key={text} placement="right">
-                    <ListItem key={text} sx={{ padding: '2px', paddingTop: '2px' }}>
+                    <ListItem key={text} sx={{ padding: '2px', paddingTop: '0px' }}>
                       <Button
                         onClick={() => handleSidebarChange(text)}
                         sx={{
@@ -445,26 +445,11 @@ export default function PermanentDrawerLeft() {
                           minWidth: '30px',
                         }}
                       >
-                        <Icon
-                          fontSize="inherit"
-                        >
-                          {(() => {
-                            switch (index % 5) {
-                              case 0:
-                                return <FolderOutlinedIcon fontSize='inherit' />;
-                              case 1:
-                                return <CloudOutlinedIcon fontSize='inherit' />;
-                              case 2:
-                                return <FolderSharedOutlinedIcon fontSize='inherit' />;
-                              case 3:
-                                return <DevicesIcon fontSize='inherit' />;
-                              case 4:
-                                return <PeopleOutlinedIcon fontSize='inherit' />;
-                              default:
-                                return null;
-                            }
-                          })()}
-                        </Icon>
+                        {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
+                        {text === 'Sync' && <CloudOutlinedIcon fontSize='inherit' />}
+                        {text === 'Shared' && <FolderSharedOutlinedIcon fontSize='inherit' />}
+                        {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
+                        {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
                       </Button>
                     </ListItem>
                   </Tooltip>
@@ -483,11 +468,8 @@ export default function PermanentDrawerLeft() {
                       }}
                       onClick={() => handleSidebarChange(text)}
                     >
-                      <Icon
-                        fontSize='inherit'
-                      >
-                        {text === 'Logs' ? <FactCheckOutlinedIcon fontSize='inherit' /> : <SettingsIcon fontSize='inherit' />}
-                      </Icon>
+                      {text === 'Logs' && <FactCheckOutlinedIcon fontSize='inherit' />}
+                      {text === 'Settings' && <SettingsIcon fontSize='inherit' />}
                     </Button>
                   </ListItem>
                 </Tooltip>
