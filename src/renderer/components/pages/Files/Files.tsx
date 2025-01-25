@@ -290,12 +290,6 @@ export default function Files() {
   const [viewType, setViewType] = useState<ViewType>('list');
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
 
-  // Add this state for tabs
-  const [tabs, setTabs] = useState<Tab[]>([
-    { id: 'files', label: 'Files' }, // Default tab
-  ]);
-  const [activeTab, setActiveTab] = useState('files');
-
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
@@ -696,51 +690,7 @@ export default function Files() {
   };
 
 
-  // Add new state for downloads
-  const [downloads, setDownloads] = useState<{
-    filename: string;
-    fileType: string;
-    progress: number;
-    status: 'downloading' | 'completed' | 'failed' | 'skipped';
-    totalSize: number;
-    downloadedSize: number;
-    timeRemaining?: number;
-  }[]>([]);
 
-  // Add effect to subscribe to download updates
-  useEffect(() => {
-    // Set up interval to check for download updates
-    const downloadUpdateInterval = setInterval(() => {
-      const currentDownloads = getDownloadsInfo();
-      setDownloads(currentDownloads);
-    }, 1000); // Check every second
-
-    // Cleanup interval on unmount
-    return () => clearInterval(downloadUpdateInterval);
-  }, []);
-
-  // Add new state for uploads
-  const [uploads, setUploads] = useState<{
-    filename: string;
-    fileType: string;
-    progress: number;
-    status: 'uploading' | 'completed' | 'failed' | 'skipped';
-    totalSize: number;
-    uploadedSize: number;
-    timeRemaining?: number;
-  }[]>([]);
-
-  // Add effect to subscribe to upload updates
-  useEffect(() => {
-    // Set up interval to check for upload updates
-    const uploadUpdateInterval = setInterval(() => {
-      const currentUploads = getUploadsInfo();
-      setUploads(currentUploads);
-    }, 1000); // Check every second
-
-    // Cleanup interval on unmount
-    return () => clearInterval(uploadUpdateInterval);
-  }, []);
 
   // Add view options
   const viewOptions: ViewOption[] = [
@@ -763,28 +713,7 @@ export default function Files() {
     handleViewMenuClose();
   };
 
-  const handleAddTab = () => {
-    const newTabId = `tab-${Date.now()}`;
-    const newTab = {
-      id: newTabId,
-      label: 'New tab',
-    };
-    setTabs([...tabs, newTab]);
-    setActiveTab(newTabId);
-  };
 
-  const handleCloseTab = (tabId: string) => {
-    if (tabs.length === 1) return;
-    
-    const newTabs = tabs.filter(tab => tab.id !== tabId);
-    setTabs(newTabs);
-    
-    if (activeTab === tabId) {
-      const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-      const newActiveTab = newTabs[Math.max(0, tabIndex - 1)];
-      setActiveTab(newActiveTab.id);
-    }
-  };
 
   return (
     <Box sx={{ width: '100%', pt: 0 }}>
@@ -798,41 +727,6 @@ export default function Files() {
           }}
         >
           <Box display="flex" flexDirection="column" height="100%">
-            <Stack direction="row" spacing={1} sx={{pt: 0, pr: 0, pl: 6, marginTop: '7px' }}>
-                <Tooltip title="Navigate back">
-                  <Button
-                    onClick={() =>
-                        handlers.buttons.backButton(
-                          global_file_path ?? '',
-                          setGlobal_file_path,
-                          backHistory,
-                          setBackHistory,
-                          setForwardHistory,
-                      )
-                    }
-                    sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }} // Adjust the left and right padding as needed
-                  >
-                    <NavigateBeforeOutlinedIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
-                <Tooltip title="Navigate forward">
-                  <Button
-                    onClick={() =>
-                      handlers.buttons.forwardButton(
-                        global_file_path ?? '',
-                        setGlobal_file_path,
-                        backHistory,
-                        setBackHistory,
-                        forwardHistory,
-                        setForwardHistory,
-                      )
-                    }
-                    sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }} // Adjust the left and right padding as needed
-                  >
-                    <NavigateNextOutlinedIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
-            </Stack>
             <Card
               variant="outlined"
               sx={{ 
@@ -860,540 +754,509 @@ export default function Files() {
         </Stack>
         <Card variant="outlined" sx={{ flexGrow: 1, height: '100%', width: '100%', overflow: 'hidden'}}>
           <CardContent sx={{ height: '100%', width: '100%', overflow: 'hidden', padding: 0 }}>
-            <div className="flex justify-between items-center h-8 bg-[#2a2a2a] border-b border-black">
-              <Tabs
-                tabs={tabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                onTabClose={handleCloseTab}
-                onTabAdd={handleAddTab}
-              />
-              
-              <Stack direction="row" spacing={1} sx={{pt: 1, pr: 2 }}>
-                <UploadProgress uploads={uploads} />
-                <DownloadProgress downloads={downloads} />
-                <NotificationsButton />
-                <AccountMenuIcon />
-              </Stack>
-            </div>
-
-            {/* Tab content */}
             <div className="h-full">
-              {tabs.map(tab => (
-                <div 
-                  key={tab.id}
-                  className={activeTab === tab.id ? 'block h-full' : 'hidden'}
-                >
-                  {tab.id === 'files' ? (
-                    <div className="h-full flex flex-col">
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'space-between',
-                        pl: 2,
-                        pr: 2,
-                        pt: 2,
-                        minHeight: 40
-                      }}>
-                        <Box sx={{ flexGrow: 1 }}>
-                          <FileBreadcrumbs />
-                        </Box>
-                        <Grid item paddingRight={1}>
-                          <Tooltip title="Upload">
-                            <NewInputFileUploadButton />
-                          </Tooltip>
-                        </Grid>
-                        <Grid item paddingRight={1}>
-                            <DownloadFileButton
-                              selectedFileNames={selectedFileNames}
-                              selectedFileInfo={selectedFileInfo}
-                              selectedDeviceNames={selectedDeviceNames}
-                              setSelectedFiles={setSelectedFiles}
-                              setSelected={setSelected}
-                              setTaskbox_expanded={setTaskbox_expanded}
-                              tasks={tasks || []}
-                              setTasks={setTasks}
-                              websocket={websocket as WebSocket}
-                            />
-                        </Grid>
+              <div className="h-full flex flex-col">
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  pl: 2,
+                  pr: 2,
+                  pt: 2,
+                  minHeight: 40
+                }}>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <FileBreadcrumbs />
+                  </Box>
+                  <Grid item paddingRight={1}>
+                    <Tooltip title="Upload">
+                      <NewInputFileUploadButton />
+                    </Tooltip>
+                  </Grid>
+                  <Grid item paddingRight={1}>
+                      <DownloadFileButton
+                        selectedFileNames={selectedFileNames}
+                        selectedFileInfo={selectedFileInfo}
+                        selectedDeviceNames={selectedDeviceNames}
+                        setSelectedFiles={setSelectedFiles}
+                        setSelected={setSelected}
+                        setTaskbox_expanded={setTaskbox_expanded}
+                        tasks={tasks || []}
+                        setTasks={setTasks}
+                        websocket={websocket as WebSocket}
+                      />
+                  </Grid>
 
-                        <Grid item paddingRight={1}>
-                            <DeleteFileButton
-                              selectedFileNames={selectedFileNames}
-                              global_file_path={global_file_path || ''}
-                              setSelectedFileNames={setSelectedFileNames}
-                              setdeleteLoading={setdeleteLoading}
-                              setIsAddingFolder={setIsAddingFolder}
-                              setNewFolderName={setNewFolderName}
-                              setDisableFetch={setDisableFetch}
-                              updates={updates}
-                              setUpdates={setUpdates}
-                              setSelected={setSelected}
-                              setTaskbox_expanded={setTaskbox_expanded}
-                              tasks={tasks || []}
-                              setTasks={setTasks}
-                              websocket={websocket as WebSocket}
-                            />
-                        </Grid>
-                        <Grid item paddingRight={1} paddingLeft={0}>
-                          <Tooltip title="Add to Sync">
-                            <AddFileToSyncButton selectedFileNames={selectedFileNames} />
-                          </Tooltip>
-                        </Grid>
-                        <Grid item paddingRight={1}>
-                            <SyncButton />
-                        </Grid>
-                        <Grid item paddingRight={1}>
-                            <ShareFileButton
-                              selectedFileNames={selectedFileNames}
-                              selectedFileInfo={selectedFileInfo}
-                              onShare={() => handleShareModalOpen(selectedFileNames[0])}
-                            />
-                        </Grid>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 2 }}>
-                          <Tooltip title="Change view">
-                              <Button
-                                onClick={handleViewMenuOpen}
-                                size="small"
-                                sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-                          >
-                            {viewType.includes('grid') ? 
-                              <GridViewIcon fontSize="inherit" /> : 
-                              <ViewListIcon fontSize="inherit" />
+                  <Grid item paddingRight={1}>
+                      <DeleteFileButton
+                        selectedFileNames={selectedFileNames}
+                        global_file_path={global_file_path || ''}
+                        setSelectedFileNames={setSelectedFileNames}
+                        setdeleteLoading={setdeleteLoading}
+                        setIsAddingFolder={setIsAddingFolder}
+                        setNewFolderName={setNewFolderName}
+                        setDisableFetch={setDisableFetch}
+                        updates={updates}
+                        setUpdates={setUpdates}
+                        setSelected={setSelected}
+                        setTaskbox_expanded={setTaskbox_expanded}
+                        tasks={tasks || []}
+                        setTasks={setTasks}
+                        websocket={websocket as WebSocket}
+                      />
+                  </Grid>
+                  <Grid item paddingRight={1} paddingLeft={0}>
+                    <Tooltip title="Add to Sync">
+                      <AddFileToSyncButton selectedFileNames={selectedFileNames} />
+                    </Tooltip>
+                  </Grid>
+                  <Grid item paddingRight={1}>
+                      <SyncButton />
+                  </Grid>
+                  <Grid item paddingRight={1}>
+                      <ShareFileButton
+                        selectedFileNames={selectedFileNames}
+                        selectedFileInfo={selectedFileInfo}
+                        onShare={() => handleShareModalOpen(selectedFileNames[0])}
+                      />
+                  </Grid>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 2 }}>
+                    <Tooltip title="Change view">
+                        <Button
+                          onClick={handleViewMenuOpen}
+                          size="small"
+                          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+                    >
+                      {viewType.includes('grid') ? 
+                        <GridViewIcon fontSize="inherit" /> : 
+                        <ViewListIcon fontSize="inherit" />
+                      }
+                    </Button>
+                  </Tooltip>
+                  </Box>
+                  <StyledMenu
+                    anchorEl={viewMenuAnchor}
+                    open={Boolean(viewMenuAnchor)}
+                    onClose={handleViewMenuClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                  >
+                    {viewOptions.map((option) => (
+                      <MenuItem
+                        key={option.value}
+                        onClick={() => handleViewChange(option.value)}
+                        selected={viewType === option.value}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          color: 'text.primary',
+                          '&.Mui-selected': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.12)'
                             }
-                          </Button>
-                        </Tooltip>
-                        </Box>
-                        <StyledMenu
-                          anchorEl={viewMenuAnchor}
-                          open={Boolean(viewMenuAnchor)}
-                          onClose={handleViewMenuClose}
-                          anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'right',
-                          }}
-                          transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                          }}
-                        >
-                          {viewOptions.map((option) => (
-                            <MenuItem
-                              key={option.value}
-                              onClick={() => handleViewChange(option.value)}
-                              selected={viewType === option.value}
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                                color: 'text.primary',
-                                '&.Mui-selected': {
-                                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                  '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.12)'
-                                  }
-                                }
-                              }}
-                            >
-                              {option.icon}
-                              <Typography variant="body2">{option.label}</Typography>
-                            </MenuItem>
-                          ))}
-                        </StyledMenu>
-                      </Box>
-                      {fileRows.length === 0 ? (
-                        <Box sx={{ textAlign: 'center', py: 5 }}>
-                          <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                          <Typography variant="h5" color="textSecondary">
-                            No files available.
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            Please upload a file to get started.
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <>
-                          {viewType.includes('grid') ? (
-                            <Box sx={{ 
-                              height: 'calc(100vh - 180px)', 
-                              overflow: 'auto',
-                              px: 0.5 // Add slight padding to account for scrollbar
-                            }}>
-                              <Grid container spacing={2} sx={{ p: 2 }}>
-                                {fileRows.map((row) => {
-                                  const isItemSelected = isSelected(row.id as number);
-                                  return (
-                                    <Grid item xs={viewType === 'grid' ? 2.4 : 4} key={row.id}>
-                                      <Card
-                                        sx={{
-                                          cursor: 'pointer',
-                                          '&:hover': { 
-                                            bgcolor: 'action.hover',
-                                            '& .selection-checkbox': {
-                                              opacity: 1
-                                            }
-                                          },
-                                          height: '100%',
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                          borderRadius: '12px',
-                                          overflow: 'hidden',
-                                          position: 'relative',
-                                          border: isItemSelected ? '2px solid' : '1px solid',
-                                          borderColor: isItemSelected ? 'primary.main' : 'divider'
+                          }
+                        }}
+                      >
+                        {option.icon}
+                        <Typography variant="body2">{option.label}</Typography>
+                      </MenuItem>
+                    ))}
+                  </StyledMenu>
+                </Box>
+                {fileRows.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 5 }}>
+                    <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h5" color="textSecondary">
+                      No files available.
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Please upload a file to get started.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <>
+                    {viewType.includes('grid') ? (
+                      <Box sx={{ 
+                        height: 'calc(100vh - 180px)', 
+                        overflow: 'auto',
+                        px: 0.5 // Add slight padding to account for scrollbar
+                      }}>
+                        <Grid container spacing={2} sx={{ p: 2 }}>
+                          {fileRows.map((row) => {
+                            const isItemSelected = isSelected(row.id as number);
+                            return (
+                              <Grid item xs={viewType === 'grid' ? 2.4 : 4} key={row.id}>
+                                <Card
+                                  sx={{
+                                    cursor: 'pointer',
+                                    '&:hover': { 
+                                      bgcolor: 'action.hover',
+                                      '& .selection-checkbox': {
+                                        opacity: 1
+                                      }
+                                    },
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    position: 'relative',
+                                    border: isItemSelected ? '2px solid' : '1px solid',
+                                    borderColor: isItemSelected ? 'primary.main' : 'divider'
+                                  }}
+                                  onClick={(event) => handleClick(event, row.id as number)}
+                                >
+                                  <Box
+                                    className="selection-checkbox"
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 8,
+                                      left: 8,
+                                      opacity: isItemSelected ? 1 : 0,
+                                      transition: 'opacity 0.2s',
+                                      zIndex: 1
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Checkbox
+                                      checked={isItemSelected}
+                                      onChange={(event) => handleClick(event, row.id as number)}
+                                      size="small"
+                                    />
+                                  </Box>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      justifyContent: 'center',
+                                      alignItems: 'center',
+                                      p: 2,
+                                      bgcolor: 'background.default',
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      borderRadius: '8px',
+                                      m: 1.5,
+                                      minHeight: '120px'
+                                    }}
+                                  >
+                                    {row.kind === 'Folder' ? (
+                                      <FolderIcon sx={{ fontSize: 60, color: 'primary.main' }} />
+                                    ) : (
+                                      <InsertDriveFileIcon sx={{ fontSize: 60, color: 'text.secondary' }} />
+                                    )}
+                                  </Box>
+                                  <CardContent sx={{ flexGrow: 1, pt: 1, px: 2, pb: 2 }}>
+                                    <Typography variant="body2" noWrap>
+                                      {row.file_name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary" display="block">
+                                      {row.file_size}
+                                    </Typography>
+                                    {!isCloudSync && (
+                                      <Typography 
+                                        variant="caption" 
+                                        sx={{ 
+                                          color: row.available === 'Available' 
+                                            ? '#1DB954' 
+                                            : row.available === 'Unavailable' 
+                                              ? 'red' 
+                                              : 'inherit'
                                         }}
-                                        onClick={(event) => handleClick(event, row.id as number)}
                                       >
-                                        <Box
-                                          className="selection-checkbox"
-                                          sx={{
-                                            position: 'absolute',
-                                            top: 8,
-                                            left: 8,
-                                            opacity: isItemSelected ? 1 : 0,
-                                            transition: 'opacity 0.2s',
-                                            zIndex: 1
-                                          }}
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          <Checkbox
-                                            checked={isItemSelected}
-                                            onChange={(event) => handleClick(event, row.id as number)}
-                                            size="small"
-                                          />
-                                        </Box>
-                                        <Box
-                                          sx={{
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            p: 2,
-                                            bgcolor: 'background.default',
-                                            border: '1px solid',
-                                            borderColor: 'divider',
-                                            borderRadius: '8px',
-                                            m: 1.5,
-                                            minHeight: '120px'
-                                          }}
-                                        >
-                                          {row.kind === 'Folder' ? (
-                                            <FolderIcon sx={{ fontSize: 60, color: 'primary.main' }} />
-                                          ) : (
-                                            <InsertDriveFileIcon sx={{ fontSize: 60, color: 'text.secondary' }} />
-                                          )}
-                                        </Box>
-                                        <CardContent sx={{ flexGrow: 1, pt: 1, px: 2, pb: 2 }}>
-                                          <Typography variant="body2" noWrap>
-                                            {row.file_name}
-                                          </Typography>
-                                          <Typography variant="caption" color="text.secondary" display="block">
-                                            {row.file_size}
-                                          </Typography>
-                                          {!isCloudSync && (
-                                            <Typography 
-                                              variant="caption" 
-                                              sx={{ 
-                                                color: row.available === 'Available' 
-                                                  ? '#1DB954' 
-                                                  : row.available === 'Unavailable' 
-                                                    ? 'red' 
-                                                    : 'inherit'
-                                              }}
-                                            >
-                                              {row.available}
-                                            </Typography>
-                                          )}
-                                        </CardContent>
-                                      </Card>
-                                    </Grid>
-                                  );
-                                })}
+                                        {row.available}
+                                      </Typography>
+                                    )}
+                                  </CardContent>
+                                </Card>
                               </Grid>
-                            </Box>
-                          ) : (
-                            <TableContainer sx={{ maxHeight: 'calc(100vh - 100px)' }}> <Table aria-labelledby="tableTitle" size="small" stickyHeader>
-                              <EnhancedTableHead
-                                numSelected={selected.length}
-                                order={order}
-                                orderBy={orderBy}
-                                onSelectAllClick={handleSelectAllClick}
-                                onRequestSort={handleRequestSort}
-                                rowCount={fileRows.length}
-                              />
-                              <TableBody>
-                                {isLoading
-                                  ? Array.from(new Array(rowsPerPage)).map((_, index) => (
-                                    <TableRow key={`skeleton-${index}`}>
-                                      <TableCell padding="checkbox">
-                                        <Skeleton variant="rectangular" width={24} height={24} />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Skeleton variant="text" width="100%" />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Skeleton variant="text" width="100%" />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Skeleton variant="text" width="100%" />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Skeleton variant="text" width="100%" />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Skeleton variant="text" width="100%" />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Skeleton variant="text" width="100%" />
-                                      </TableCell>
-                                    </TableRow>
-                                  ))
-                                  : stableSort(fileRows, getComparator(order, orderBy))
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((row, index) => {
-                                      const isItemSelected = isSelected(row.id as number);
-                                      const labelId = `enhanced-table-checkbox-${index}`;
+                            );
+                          })}
+                        </Grid>
+                      </Box>
+                    ) : (
+                      <TableContainer sx={{ maxHeight: 'calc(100vh - 100px)' }}> <Table aria-labelledby="tableTitle" size="small" stickyHeader>
+                        <EnhancedTableHead
+                          numSelected={selected.length}
+                          order={order}
+                          orderBy={orderBy}
+                          onSelectAllClick={handleSelectAllClick}
+                          onRequestSort={handleRequestSort}
+                          rowCount={fileRows.length}
+                        />
+                        <TableBody>
+                          {isLoading
+                            ? Array.from(new Array(rowsPerPage)).map((_, index) => (
+                              <TableRow key={`skeleton-${index}`}>
+                                <TableCell padding="checkbox">
+                                  <Skeleton variant="rectangular" width={24} height={24} />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton variant="text" width="100%" />
+                                </TableCell>
+                              </TableRow>
+                            ))
+                            : stableSort(fileRows, getComparator(order, orderBy))
+                              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                              .map((row, index) => {
+                                const isItemSelected = isSelected(row.id as number);
+                                const labelId = `enhanced-table-checkbox-${index}`;
 
-                                      return (
-                                        <TableRow
-                                          hover
-                                          onClick={(event) => handleClick(event, row.id as number)}
-                                          role="checkbox"
-                                          aria-checked={isItemSelected}
-                                          tabIndex={-1}
-                                          key={row.id}
-                                          selected={isItemSelected}
-                                          onMouseEnter={() => setHoveredRowId(row.id as number)} // Track hover state
-                                          onMouseLeave={() => setHoveredRowId(null)} // Clear hover state
-                                        >
-                                          <TableCell sx={{ borderBottomColor: '#424242' }} padding="checkbox">
-                                            {hoveredRowId === row.id || isItemSelected ? ( // Only render Checkbox if row is hovered
-                                              <Checkbox
-                                                color="primary"
-                                                size="small"
-                                                checked={isItemSelected}
-                                                inputProps={{ 'aria-labelledby': labelId }}
-                                              />
-                                            ) : null}
-                                          </TableCell>
+                                return (
+                                  <TableRow
+                                    hover
+                                    onClick={(event) => handleClick(event, row.id as number)}
+                                    role="checkbox"
+                                    aria-checked={isItemSelected}
+                                    tabIndex={-1}
+                                    key={row.id}
+                                    selected={isItemSelected}
+                                    onMouseEnter={() => setHoveredRowId(row.id as number)} // Track hover state
+                                    onMouseLeave={() => setHoveredRowId(null)} // Clear hover state
+                                  >
+                                    <TableCell sx={{ borderBottomColor: '#424242' }} padding="checkbox">
+                                      {hoveredRowId === row.id || isItemSelected ? ( // Only render Checkbox if row is hovered
+                                        <Checkbox
+                                          color="primary"
+                                          size="small"
+                                          checked={isItemSelected}
+                                          inputProps={{ 'aria-labelledby': labelId }}
+                                        />
+                                      ) : null}
+                                    </TableCell>
 
-                                          <TableCell
+                                    <TableCell
+                                      sx={{
+                                        borderBottomColor: '#424242',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                      }}
+                                      component="th"
+                                      id={labelId}
+                                      scope="row"
+                                      padding="normal"
+                                    >
+                                      <ButtonBase
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          handleFileNameClick(row.id as number);
+                                        }}
+                                        style={{ textDecoration: 'none' }}
+                                      >
+                                        {row.file_name}
+                                      </ButtonBase>
+                                    </TableCell>
+
+                                    <TableCell
+                                      align="left"
+                                      padding="normal"
+                                      sx={{
+                                        borderBottomColor: '#424242',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                      }}
+                                    >
+                                      {row.file_size}
+                                    </TableCell>
+
+                                    {(!isCloudSync) && (
+                                      <TableCell
+                                        align="left"
+                                        sx={{
+                                          borderBottomColor: '#424242',
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                        }}
+                                      >
+                                        {row.kind}
+                                      </TableCell>
+                                    )}
+
+                                    {(!isCloudSync) && (
+                                      <TableCell
+                                        align="left"
+                                        sx={{
+                                          borderBottomColor: '#424242',
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                        }}
+                                      >
+                                        {row.device_name}
+                                      </TableCell>
+                                    )}
+
+                                    {(!isCloudSync) && (
+                                      <TableCell
+                                        align="left"
+                                        padding="normal"
+                                        sx={{
+                                          borderBottomColor: '#424242',
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          color:
+                                            row.available === 'Available'
+                                              ? '#1DB954'
+                                              : row.available === 'Unavailable'
+                                                ? 'red'
+                                                : 'inherit', // Default color is 'inherit'
+                                        }}
+                                      >
+                                        {row.available}
+                                      </TableCell>
+                                    )}
+
+                                    <TableCell
+                                      align="left"
+                                      padding="normal"
+                                      sx={{
+                                        borderBottomColor: '#424242',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                      }}
+                                    >
+                                      {row.is_public ? 'Public' : 'Private'}
+                                    </TableCell>
+
+                                    {isCloudSync && (
+                                      <TableCell
+                                        align="left"
+                                        padding="normal"
+                                        onClick={(e) => e.stopPropagation()}
+                                        sx={{
+                                          borderBottomColor: '#424242',
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                        }}
+                                      >
+                                        <Box sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          width: '75%',
+                                          position: 'relative',
+                                          border: '1px solid rgba(255, 255, 255, 0.2)',  // Add subtle white border
+                                          borderRadius: '2px',  // Optional: slight rounding of corners
+                                        }}>
+                                          <LinearProgress
+                                            variant="determinate"
+                                            value={(Array.isArray(row.device_ids) ? (row.device_ids.length / (devices?.length || 1)) * 100 : 0)}
                                             sx={{
-                                              borderBottomColor: '#424242',
-                                              whiteSpace: 'nowrap',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
+                                              flexGrow: 1,
+                                              height: 16,
+                                              backgroundColor: 'transparent',
+                                              borderRadius: '1px',  // Match the outer border radius
+                                              '& .MuiLinearProgress-bar': {
+                                                backgroundColor: (theme) => {
+                                                  const percentage = Array.isArray(row.device_ids) ? (row.device_ids.length / (devices?.length || 1)) * 100 : 0;
+                                                  if (percentage >= 80) return '#1DB954';
+                                                  if (percentage >= 50) return '#CD853F';
+                                                  return '#FF4444';
+                                                }
+                                              }
                                             }}
-                                            component="th"
-                                            id={labelId}
-                                            scope="row"
-                                            padding="normal"
-                                          >
-                                            <ButtonBase
-                                              onClick={(event) => {
-                                                event.stopPropagation();
-                                                handleFileNameClick(row.id as number);
-                                              }}
-                                              style={{ textDecoration: 'none' }}
-                                            >
-                                              {row.file_name}
-                                            </ButtonBase>
-                                          </TableCell>
-
-                                          <TableCell
-                                            align="left"
-                                            padding="normal"
+                                          />
+                                          <Typography
+                                            variant="body2"
                                             sx={{
-                                              borderBottomColor: '#424242',
-                                              whiteSpace: 'nowrap',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
+                                              position: 'absolute',
+                                              width: '100%',
+                                              textAlign: 'center',
+                                              color: '#ffffff',
+                                              mixBlendMode: 'normal'
                                             }}
                                           >
-                                            {row.file_size}
-                                          </TableCell>
+                                            {Array.isArray(row.device_ids) ?
+                                              `${((row.device_ids.length / (devices?.length || 1)) * 100).toFixed(2)}%` :
+                                              '0%'
+                                            }
+                                          </Typography>
+                                        </Box>
+                                      </TableCell>
+                                    )}
 
-                                          {(!isCloudSync) && (
-                                            <TableCell
-                                              align="left"
-                                              sx={{
-                                                borderBottomColor: '#424242',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                              }}
-                                            >
-                                              {row.kind}
-                                            </TableCell>
-                                          )}
+                                    {isCloudSync && (
+                                      <TableCell
+                                        align="left"
+                                        padding="normal"
+                                        onClick={(e) => e.stopPropagation()}
+                                        sx={{
+                                          borderBottomColor: '#424242',
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                        }}
+                                      >
+                                        <Rating
+                                          name={`priority-${row.id}`}
+                                          value={Number(row.file_priority)}
+                                          max={5}
+                                          onChange={(event, newValue) => handlePriorityChange(row, newValue)}
+                                          sx={{
+                                            fontSize: '16px',
+                                            '& .MuiRating-iconFilled': {
+                                              color: (theme) => {
+                                                const priority = Number(row.file_priority);
+                                                if (priority >= 4) return '#FF9500';
+                                                if (priority === 3) return '#FFCC00';
+                                                return '#1DB954';
+                                              }
+                                            }
+                                          }}
+                                        />
+                                      </TableCell>
+                                    )}
 
-                                          {(!isCloudSync) && (
-                                            <TableCell
-                                              align="left"
-                                              sx={{
-                                                borderBottomColor: '#424242',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                              }}
-                                            >
-                                              {row.device_name}
-                                            </TableCell>
-                                          )}
-
-                                          {(!isCloudSync) && (
-                                            <TableCell
-                                              align="left"
-                                              padding="normal"
-                                              sx={{
-                                                borderBottomColor: '#424242',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                color:
-                                                  row.available === 'Available'
-                                                    ? '#1DB954'
-                                                    : row.available === 'Unavailable'
-                                                      ? 'red'
-                                                      : 'inherit', // Default color is 'inherit'
-                                              }}
-                                            >
-                                              {row.available}
-                                            </TableCell>
-                                          )}
-
-                                          <TableCell
-                                            align="left"
-                                            padding="normal"
-                                            sx={{
-                                              borderBottomColor: '#424242',
-                                              whiteSpace: 'nowrap',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis',
-                                            }}
-                                          >
-                                            {row.is_public ? 'Public' : 'Private'}
-                                          </TableCell>
-
-                                          {isCloudSync && (
-                                            <TableCell
-                                              align="left"
-                                              padding="normal"
-                                              onClick={(e) => e.stopPropagation()}
-                                              sx={{
-                                                borderBottomColor: '#424242',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                              }}
-                                            >
-                                              <Box sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                width: '75%',
-                                                position: 'relative',
-                                                border: '1px solid rgba(255, 255, 255, 0.2)',  // Add subtle white border
-                                                borderRadius: '2px',  // Optional: slight rounding of corners
-                                              }}>
-                                                <LinearProgress
-                                                  variant="determinate"
-                                                  value={(Array.isArray(row.device_ids) ? (row.device_ids.length / (devices?.length || 1)) * 100 : 0)}
-                                                  sx={{
-                                                    flexGrow: 1,
-                                                    height: 16,
-                                                    backgroundColor: 'transparent',
-                                                    borderRadius: '1px',  // Match the outer border radius
-                                                    '& .MuiLinearProgress-bar': {
-                                                      backgroundColor: (theme) => {
-                                                        const percentage = Array.isArray(row.device_ids) ? (row.device_ids.length / (devices?.length || 1)) * 100 : 0;
-                                                        if (percentage >= 80) return '#1DB954';
-                                                        if (percentage >= 50) return '#CD853F';
-                                                        return '#FF4444';
-                                                      }
-                                                    }
-                                                  }}
-                                                />
-                                                <Typography
-                                                  variant="body2"
-                                                  sx={{
-                                                    position: 'absolute',
-                                                    width: '100%',
-                                                    textAlign: 'center',
-                                                    color: '#ffffff',
-                                                    mixBlendMode: 'normal'
-                                                  }}
-                                                >
-                                                  {Array.isArray(row.device_ids) ?
-                                                    `${((row.device_ids.length / (devices?.length || 1)) * 100).toFixed(2)}%` :
-                                                    '0%'
-                                                  }
-                                                </Typography>
-                                              </Box>
-                                            </TableCell>
-                                          )}
-
-                                          {isCloudSync && (
-                                            <TableCell
-                                              align="left"
-                                              padding="normal"
-                                              onClick={(e) => e.stopPropagation()}
-                                              sx={{
-                                                borderBottomColor: '#424242',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                              }}
-                                            >
-                                              <Rating
-                                                name={`priority-${row.id}`}
-                                                value={Number(row.file_priority)}
-                                                max={5}
-                                                onChange={(event, newValue) => handlePriorityChange(row, newValue)}
-                                                sx={{
-                                                  fontSize: '16px',
-                                                  '& .MuiRating-iconFilled': {
-                                                    color: (theme) => {
-                                                      const priority = Number(row.file_priority);
-                                                      if (priority >= 4) return '#FF9500';
-                                                      if (priority === 3) return '#FFCC00';
-                                                      return '#1DB954';
-                                                    }
-                                                  }
-                                                }}
-                                              />
-                                            </TableCell>
-                                          )}
-
-                                          {(!isCloudSync) && (
-                                            <TableCell
-                                              padding="normal"
-                                              align="right"
-                                              sx={{
-                                                borderBottomColor: '#424242',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                              }}
-                                            >
-                                              {row.date_uploaded}
-                                            </TableCell>
-                                          )}
-                                        </TableRow>
-                                      );
-                                    })}
-                              </TableBody>
-                            </Table>
-                            </TableContainer>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="p-4">
-                      <p className="text-gray-400">Content for {tab.label}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                                    {(!isCloudSync) && (
+                                      <TableCell
+                                        padding="normal"
+                                        align="right"
+                                        sx={{
+                                          borderBottomColor: '#424242',
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                        }}
+                                      >
+                                        {row.date_uploaded}
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
+                          </TableBody>
+                        </Table>
+                        </TableContainer>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
             <TablePagination
               rowsPerPageOptions={[5, 10, 25, 50, 100]}

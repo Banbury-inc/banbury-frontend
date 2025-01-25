@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
 import { styled, useTheme, Theme, CSSObject } from '@mui/material/styles';
@@ -38,10 +38,20 @@ import Shared from './pages/Shared/Shared';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import Logs from './pages/Logs/Logs';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import { Stack, Tabs } from '@mui/material';
+import { handlers } from '../handlers';
 const { ipcRenderer } = window.require('electron');
+import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
+import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
+import UploadProgress from './common/upload_progress/upload_progress';
+import DownloadProgress from './common/download_progress/download_progress';
+import NotificationsButton from './common/notifications/NotificationsButton';
+import AccountMenuIcon from './common/AccountMenuIcon';
+import { Tabs as CustomTabs, Tab } from './common/Tabs/Tabs';
+import { getUploadsInfo } from './common/upload_progress/add_uploads_info';
+import { getDownloadsInfo } from './common/download_progress/add_downloads_info';
 
 const drawerWidth = 240;  // Change the width as needed
-// const drawerWidth = 150;  // Change the width as needed
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
@@ -111,6 +121,14 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 
+// Define an interface for tab state
+interface TabState {
+  id: string;
+  label: string;
+  view: string;  // Stores which view is active in this tab (Files, Devices, etc.)
+  path?: string; // Store current path or other relevant state
+}
+
 export default function PermanentDrawerLeft() {
   const location = useLocation();
   const theme = useTheme();
@@ -118,6 +136,14 @@ export default function PermanentDrawerLeft() {
   const [activeTab, setActiveTab] = React.useState(initialActiveTab);
   const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, websocket, setSocket } = useAuth();
   const [open, setOpen] = React.useState(false);
+  const [tabs, setTabs] = useState<TabState[]>([
+    { 
+      id: 'tab-1', 
+      label: 'Files',
+      view: 'Files',
+    }
+  ]);
+  const [currentTabId, setCurrentTabId] = useState('tab-1');
 
   useEffect(() => {
     async function setupConnection() {
@@ -153,149 +179,270 @@ export default function PermanentDrawerLeft() {
     return <Login />;
   }
 
+  const [downloads, setDownloads] = useState<{
+    filename: string;
+    fileType: string;
+    progress: number;
+    status: 'downloading' | 'completed' | 'failed' | 'skipped';
+    totalSize: number;
+    downloadedSize: number;
+    timeRemaining?: number;
+  }[]>([]);
+
+  useEffect(() => {
+    const downloadUpdateInterval = setInterval(() => {
+      const currentDownloads = getDownloadsInfo();
+      setDownloads(currentDownloads);
+    }, 1000);
+
+    return () => clearInterval(downloadUpdateInterval);
+  }, []);
+
+  const [uploads, setUploads] = useState<{
+    filename: string;
+    fileType: string;
+    progress: number;
+    status: 'uploading' | 'completed' | 'failed' | 'skipped';
+    totalSize: number;
+    uploadedSize: number;
+    timeRemaining?: number;
+  }[]>([]);
+
+  useEffect(() => {
+    const uploadUpdateInterval = setInterval(() => {
+      const currentUploads = getUploadsInfo();
+      setUploads(currentUploads);
+    }, 1000);
+
+    return () => clearInterval(uploadUpdateInterval);
+  }, []);
+
+  const handleCloseTab = (tabId: string) => {
+    if (tabs.length === 1) return;
+    
+    const newTabs = tabs.filter(tab => tab.id !== tabId);
+    setTabs(newTabs);
+    
+    if (currentTabId === tabId) {
+      const tabIndex = tabs.findIndex(tab => tab.id === tabId);
+      const newActiveTab = newTabs[Math.max(0, tabIndex - 1)];
+      setCurrentTabId(newActiveTab.id);
+      setActiveTab(newActiveTab.view); // Update the active view based on the tab
+    }
+  };
+
+  const handleAddTab = () => {
+    const newTabId = `tab-${Date.now()}`;
+    const newTab: TabState = {
+      id: newTabId,
+      label: activeTab,
+      view: activeTab,
+    };
+    setTabs([...tabs, newTab]);
+    setCurrentTabId(newTabId);
+  };
+
+  // Update when sidebar selection changes
+  const handleSidebarChange = (newView: string) => {
+    // Update the current tab's view and label
+    setTabs(currentTabs => 
+      currentTabs.map(tab => 
+        tab.id === currentTabId 
+          ? { ...tab, view: newView, label: newView } 
+          : tab
+      )
+    );
+    setActiveTab(newView);
+  };
+
+  // Handle tab changes
+  const handleTabChange = (tabId: string) => {
+    setCurrentTabId(tabId);
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab) {
+      setActiveTab(tab.view); // Restore the view associated with this tab
+    }
+  };
+
   return (
-    // <Box sx={{ display: 'flex', width: '100vw' }}>
-    <Box sx={{ display: 'flex', width: '100vw', height: '100%', overflow: 'hidden' }}>
-      <CssBaseline />
-      <Drawer
-        sx={{
-          '& .MuiDrawer-paper': {
-            marginTop: '40px',
-            paddingLeft: '4px',
-            backgroundColor: theme.palette.background.default,
-          },
-        }}
-        variant="permanent"
-        open={open}
-        anchor="left"
-      >
-        {/* <DrawerHeader> */}
-        {/*   <IconButton */}
-        {/*     color="inherit" */}
-        {/*     aria-label="open drawer" */}
-        {/*     onClick={toggleDrawer} */}
-        {/*     edge="start" */}
-        {/*     sx={{ */}
-        {/*       marginRight: 0, */}
-        {/*     }} */}
-        {/*   > */}
-        {/*     <MenuIcon /> */}
-        {/*   </IconButton> */}
-        {/* </DrawerHeader> */}
-
-        <List>
-          {['Files',
-            'Sync',
-            'Shared',
-            'Devices',
-            'Friends'].map((text, index) => (
-              <Tooltip title={text} key={text} placement="right">
-                <ListItem key={text} sx={{ padding: '2px', paddingTop: '2px' }}>
-                  <Button
-                    onClick={() => setActiveTab(text)}
-                    sx={{
-                      paddingLeft: '4px',
-                      paddingRight: '4px',
-                      minWidth: '30px',
-                    }} // Adjust the left and right padding as needed
-
-                  >
-                    <Icon
-                      fontSize="inherit"
-                    >
-
-                      {(() => {
-                        switch (index % 5) {
-                          case 0:
-                            return <FolderOutlinedIcon fontSize='inherit' />;
-                          case 1:
-                            return <CloudOutlinedIcon fontSize='inherit' />;
-                          case 2:
-                            return <FolderSharedOutlinedIcon fontSize='inherit' />;
-                          case 3:
-                            return <DevicesIcon fontSize='inherit' />;
-                          case 4:
-                            return <PeopleOutlinedIcon fontSize='inherit' />;
-                          default:
-                            return null;
-                        }
-                      })()}
-                    </Icon>
-                    {/*   <ListItemText */}
-                    {/*     secondary={text} */}
-                    {/*     sx={{ */}
-                    {/*       opacity: open ? 1 : 1, */}
-                    {/*       display: 'block', */}
-                    {/*       textAlign: 'center', */}
-                    {/*     }} */}
-                    {/*   /> */}
-                  </Button>
-                </ListItem>
-              </Tooltip>
-            ))}
-        </List>
-        <Divider />
-        <List>
-          {['Logs', 'Settings'].map((text) => (
-
-            <Tooltip title={text} key={text} placement="right">
-              <ListItem key={text} sx={{ padding: '2px' }}>
-                <Button
-                  sx={{
-                    paddingLeft: '4px',
-                    paddingRight: '4px',
-                    minWidth: '30px',
-                  }} // Adjust the left and right padding as needed
-
-                  onClick={() => setActiveTab(text)}
-                >
-                  <Icon
-                    fontSize='inherit'
-                  >
-                    {text === 'Logs' ? <FactCheckOutlinedIcon fontSize='inherit' /> : <SettingsIcon fontSize='inherit' />}
-                  </Icon>
-                  {/* <ListItemText */}
-                  {/*   secondary={text} */}
-                  {/*   sx={{ */}
-                  {/*     opacity: open ? 1 : 1, */}
-                  {/*     display: 'block', */}
-                  {/*     textAlign: 'center', */}
-                  {/*   }} */}
-                  {/* /> */}
-                </Button>
-              </ListItem>
+    <Box sx={{ display: 'flex' }}>
+      <Stack>
+        <Box>
+          <Stack direction="row" paddingLeft={10}>
+            <Tooltip title="Navigate back">
+              <Button
+                onClick={() =>
+                  handlers.buttons.backButton(
+                    '',
+                    () => { },
+                    [],
+                    () => { },
+                    () => { },
+                  )
+                }
+                sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }}
+              >
+                <NavigateBeforeOutlinedIcon fontSize="inherit" />
+              </Button>
             </Tooltip>
-          ))}
-        </List>
-      </Drawer>
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, bgcolor: 'background.default', p: 0, width: 'calc(100vw - 240px)' }}
-      >
-        {(() => {
-          switch (activeTab) {
-            case 'Files':
-              return <Files />;
-            case 'Sync':
-              return <Sync />;
-            case 'Shared':
-              return <Shared />;
-            case 'Devices':
-              return <Devices />;
-            case 'Logs':
-              return <Logs />;
-            case 'AI':
-              return <AI />;
-            case 'Friends':
-              return <Friends />;
-            case 'Settings':
-              return <Settings />;
-            default:
-              return <Typography paragraph>Select a tab to display its content.</Typography>;
-          }
-        })()}
-      </Box>
-    </Box >
+            <Tooltip title="Navigate forward">
+              <Button
+                onClick={() =>
+                  handlers.buttons.forwardButton(
+                    '',
+                    () => { },
+                    [],
+                    () => { },
+                    [],
+                    () => { },
+                  )
+                }
+                sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }}
+              >
+                <NavigateNextOutlinedIcon fontSize="inherit" />
+              </Button>
+            </Tooltip>
+            <div className="flex justify-between items-center h-8 bg-[#2a2a2a] border-b border-black">
+              <CustomTabs
+                tabs={tabs}
+                activeTab={currentTabId}
+                onTabChange={handleTabChange}
+                onTabClose={handleCloseTab}
+                onTabAdd={handleAddTab}
+              />
+              
+              <Stack 
+                direction="row" 
+                spacing={1} 
+                sx={{
+                  pt: 1, 
+                  pr: 2,
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  zIndex: 9999
+                }}
+              >
+                <UploadProgress uploads={uploads} />
+                <DownloadProgress downloads={downloads} />
+                <NotificationsButton />
+                <AccountMenuIcon />
+              </Stack>
+            </div>
+          </Stack>
+        </Box>
+        <Box sx={{ display: 'flex', width: '100vw', height: '100%', overflow: 'hidden' }}>
+          <CssBaseline />
+          <Drawer
+            sx={{
+              '& .MuiDrawer-paper': {
+                marginTop: '40px',
+                paddingLeft: '4px',
+                backgroundColor: theme.palette.background.default,
+              },
+            }}
+            variant="permanent"
+            open={open}
+            anchor="left"
+          >
+            <List>
+              {['Files',
+                'Sync',
+                'Shared',
+                'Devices',
+                'Friends'].map((text, index) => (
+                  <Tooltip title={text} key={text} placement="right">
+                    <ListItem key={text} sx={{ padding: '2px', paddingTop: '2px' }}>
+                      <Button
+                        onClick={() => handleSidebarChange(text)}
+                        sx={{
+                          paddingLeft: '4px',
+                          paddingRight: '4px',
+                          minWidth: '30px',
+                        }}
+                      >
+                        <Icon
+                          fontSize="inherit"
+                        >
+                          {(() => {
+                            switch (index % 5) {
+                              case 0:
+                                return <FolderOutlinedIcon fontSize='inherit' />;
+                              case 1:
+                                return <CloudOutlinedIcon fontSize='inherit' />;
+                              case 2:
+                                return <FolderSharedOutlinedIcon fontSize='inherit' />;
+                              case 3:
+                                return <DevicesIcon fontSize='inherit' />;
+                              case 4:
+                                return <PeopleOutlinedIcon fontSize='inherit' />;
+                              default:
+                                return null;
+                            }
+                          })()}
+                        </Icon>
+                      </Button>
+                    </ListItem>
+                  </Tooltip>
+                ))}
+            </List>
+            <Divider />
+            <List>
+              {['Logs', 'Settings'].map((text) => (
+                <Tooltip title={text} key={text} placement="right">
+                  <ListItem key={text} sx={{ padding: '2px' }}>
+                    <Button
+                      sx={{
+                        paddingLeft: '4px',
+                        paddingRight: '4px',
+                        minWidth: '30px',
+                      }}
+                      onClick={() => handleSidebarChange(text)}
+                    >
+                      <Icon
+                        fontSize='inherit'
+                      >
+                        {text === 'Logs' ? <FactCheckOutlinedIcon fontSize='inherit' /> : <SettingsIcon fontSize='inherit' />}
+                      </Icon>
+                    </Button>
+                  </ListItem>
+                </Tooltip>
+              ))}
+            </List>
+          </Drawer>
+          <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', p: 0, width: 'calc(100vw - 240px)' }}>
+            {(() => {
+              return tabs.map(tab => (
+                <Box key={tab.id} sx={{ display: currentTabId === tab.id ? 'block' : 'none' }}>
+                  {(() => {
+                    switch (tab.view) {
+                      case 'Files':
+                        return <Files />;
+                      case 'Sync':
+                        return <Sync />;
+                      case 'Shared':
+                        return <Shared />;
+                      case 'Devices':
+                        return <Devices />;
+                      case 'Logs':
+                        return <Logs />;
+                      case 'AI':
+                        return <AI />;
+                      case 'Friends':
+                        return <Friends />;
+                      case 'Settings':
+                        return <Settings />;
+                      default:
+                        return <Typography paragraph>Select a tab to display its content.</Typography>;
+                    }
+                  })()}
+                </Box>
+              ));
+            })()}
+          </Box>
+        </Box>
+      </Stack>
+    </Box>
   );
 }
 
