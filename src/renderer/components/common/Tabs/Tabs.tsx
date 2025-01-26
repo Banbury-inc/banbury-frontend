@@ -117,17 +117,17 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabPr
   </div>
 );
 
-const DropIndicator = ({ edge, gap }: { edge: Edge; gap: string }) => (
+const DropIndicator = ({ edge, gap, left }: { edge: Edge; gap: string; left: number }) => (
   <div
     style={{
-      position: 'absolute',
+      position: 'fixed',
       backgroundColor: 'white',
       width: '2px',
       height: '28px',
-      top: '70%',
+      top: '25px',
+      left: `${left}px`,
       transform: 'translateY(-50%)',
-      left: edge === 'left' ? `-${gap}` : 'auto',
-      right: edge === 'right' ? `-${gap}` : 'auto',
+      transition: 'left 150ms ease',
       boxShadow: '0 0 3px rgba(126, 107, 242, 0.8)',
       borderRadius: '1px',
       zIndex: 10000,
@@ -146,6 +146,7 @@ export const Tabs: React.FC<TabsProps> = ({
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
   const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
   const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
+  const [indicatorPosition, setIndicatorPosition] = useState<number | null>(null);
   const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -215,17 +216,21 @@ export const Tabs: React.FC<TabsProps> = ({
           onDrag(args) {
             const edge = extractClosestEdge(args.self.data);
             if (edge) {
+              const rect = element.getBoundingClientRect();
               setDraggedOverTab(tab.id);
               setClosestEdge(edge);
+              setIndicatorPosition(edge === 'left' ? rect.left : rect.right);
             }
           },
           onDragLeave() {
             setDraggedOverTab(null);
             setClosestEdge(null);
+            setIndicatorPosition(null);
           },
           onDrop() {
             setDraggedOverTab(null);
             setClosestEdge(null);
+            setIndicatorPosition(null);
           }
         })
       );
@@ -292,7 +297,6 @@ export const Tabs: React.FC<TabsProps> = ({
             onClick={() => onTabChange(tab.id)}
             onClose={onTabClose ? () => onTabClose(tab.id) : undefined}
           />
-          {closestEdge && draggedOverTab === tab.id && <DropIndicator edge={closestEdge} gap="1px" />}
         </div>
       ))}
       {onTabAdd && (
@@ -313,6 +317,13 @@ export const Tabs: React.FC<TabsProps> = ({
         >
           <AddIcon fontSize="inherit" />
         </button>
+      )}
+      {closestEdge && indicatorPosition !== null && (
+        <DropIndicator 
+          edge={closestEdge} 
+          gap="1px" 
+          left={indicatorPosition} 
+        />
       )}
     </div>
   );
