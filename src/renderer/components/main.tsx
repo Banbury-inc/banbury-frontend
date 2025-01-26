@@ -334,7 +334,7 @@ export default function PermanentDrawerLeft() {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', height:'100vh'}}>
       <Stack>
         <Box>
           <Stack direction="row" paddingLeft={10}>
