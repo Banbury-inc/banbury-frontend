@@ -158,16 +158,39 @@ export const Tabs: React.FC<TabsProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const prevTabsLength = useRef(tabs.length);
 
+  // Handle tab close animation
+  const handleTabClose = (tabId: string) => {
+    // Don't animate if it's the last tab
+    if (tabs.length <= 1) {
+      if (onTabClose) {
+        onTabClose(tabId);
+      }
+      return;
+    }
+
+    setClosingTabId(tabId);
+    setTimeout(() => {
+      if (onTabClose) {
+        onTabClose(tabId);
+      }
+      setClosingTabId(null);
+    }, 200);
+  };
+
   // Watch for new tabs being added
   useEffect(() => {
     if (tabs.length > prevTabsLength.current) {
       // A new tab was added
       const newTab = tabs[tabs.length - 1];
-      setNewTabId(newTab.id);
-      // Delay adding the new tab to rendered tabs
-      setTimeout(() => {
+      // Only animate if it's not the first tab
+      if (tabs.length > 1) {
+        setNewTabId(newTab.id);
+        setTimeout(() => {
+          setRenderedTabs(tabs);
+        }, 0);
+      } else {
         setRenderedTabs(tabs);
-      }, 0);
+      }
     } else {
       setRenderedTabs(tabs);
     }
@@ -183,17 +206,6 @@ export const Tabs: React.FC<TabsProps> = ({
       return () => clearTimeout(timer);
     }
   }, [newTabId]);
-
-  // Handle tab close animation
-  const handleTabClose = (tabId: string) => {
-    setClosingTabId(tabId);
-    setTimeout(() => {
-      if (onTabClose) {
-        onTabClose(tabId);
-      }
-      setClosingTabId(null);
-    }, 200); // Match animation duration
-  };
 
   useEffect(() => {
     const element = containerRef.current;
