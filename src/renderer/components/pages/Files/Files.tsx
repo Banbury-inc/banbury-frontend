@@ -786,13 +786,12 @@ export default function Files() {
                   <Tooltip title="Change view">
                       <Button
                         onClick={handleViewMenuOpen}
-                        size="small"
                         sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-                  >
-                    {viewType.includes('grid') ? 
-                      <GridViewIcon fontSize="inherit" /> : 
-                      <ViewListIcon fontSize="inherit" />
-                    }
+                      >
+                        {viewType.includes('grid') ? 
+                          <GridViewIcon fontSize="inherit" /> : 
+                          <ViewListIcon fontSize="inherit" />
+                        }
                   </Button>
                 </Tooltip>
                 </Box>
