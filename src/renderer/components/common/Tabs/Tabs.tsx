@@ -64,7 +64,7 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabPr
     onClick={onClick}
     style={style}
     className={`
-      mt-4
+      mt-5
       pl-4  
       h-8
       px-4 
@@ -79,7 +79,7 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabPr
       justify-between
       gap-2
       ${isActive 
-        ? 'text-white bg-[rgba(23,23,23)] border-t border-l border-r border-[#333] before:absolute before:top-0 before:left-0 before:right-0 before:h-[0px] before:bg-white' 
+        ? 'text-white bg-[rgba(23,23,23)] border-t border-l border-r border-[rgba(23,23,23)] before:absolute before:top-0 before:left-0 before:right-0 before:h-[0px] before:bg-white' 
         : 'text-white/70 hover:bg-[#2a2a2a] hover:h-7 hover:rounded-[5px_5px_5px_5px]'
       }
       hover:text-white 
@@ -102,7 +102,6 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabPr
           onClose();
         }}
         className={`
-          p-0.5
           rounded-sm
           hover:bg-white/10
           transition-colors
@@ -111,7 +110,7 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabPr
           ${isActive ? 'opacity-100' : ''}
         `}
       >
-        <CloseIcon sx={{ fontSize: 16 }} />
+        <CloseIcon sx={{ fontSize: 'inherit' }} />
       </button>
     )}
   </div>
