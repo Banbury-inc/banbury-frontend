@@ -77,6 +77,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 import CloseIcon from '@mui/icons-material/Close';
 import { Tabs, Tab } from '../../common/Tabs/Tabs';
+import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 // Rename the interface to avoid collision with DOM Notification
 interface UserNotification {
   id: string;
@@ -722,94 +723,13 @@ export default function Files() {
       display: 'flex', 
       flexDirection: 'column'
     }}>
-      <Stack 
-        direction="row" 
-        spacing={0} 
-        sx={{ 
-          width: '100%', 
-          height: '100%', // Take remaining height
-          overflow: 'hidden'
-        }}
-      >
-        <Stack 
-          sx={{ 
-            position: 'relative', 
-            width: `${fileTreeWidth}px`,
-            flexShrink: 0,
-            height: '100%', // Full height
-            transition: isDragging ? 'none' : 'width 0.3s ease',
-          }}
-        >
-          <Card
-            variant="outlined"
-            sx={{ 
-              height: '100%', // Full height
-              overflow: 'hidden', 
-              borderLeft: 0, 
-              borderRight: 0,
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
-            <CardContent sx={{ 
-              height: '100%',
-              p: 2,
-              '&:last-child': { pb: 2 }, // Override MUI default padding
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              <Box sx={{ 
-                flexGrow: 1,
-                overflow: 'auto',
-                height: '100%'
-              }}>
-                <FileTreeView />
-              </Box>
-            </CardContent>
-          </Card>
-          <ResizeHandle
-            className={isDragging ? 'dragging' : ''}
-            onMouseDown={handleMouseDown}
-          />
-        </Stack>
 
-        <Card 
-          variant="outlined" 
-          sx={{ 
-            flexGrow: 1, 
-            height: '100%', 
-            width: '100%', 
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          <CardContent 
-            sx={{ 
-              height: '100%', 
-              width: '100%', 
-              overflow: 'hidden', 
-              padding: 0,
-              '&:last-child': { pb: 0 }, // Override MUI default padding
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
-            <div className="h-full flex flex-col">
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                pl: 2,
-                pr: 2,
-                pt: 2,
-                minHeight: 40
-              }}>
-                <Box sx={{ flexGrow: 1 }}>
-                  <FileBreadcrumbs />
-                </Box>
+      <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
+        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
+          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
+            <Grid container justifyContent="flex-start" alignItems="flex-start">
+              <Grid item>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                 <Grid item paddingRight={1}>
                   <Tooltip title="Upload">
                     <NewInputFileUploadButton />
@@ -912,6 +832,100 @@ export default function Files() {
                     </MenuItem>
                   ))}
                 </StyledMenu>
+                </Box>
+              </Grid>
+            </Grid>
+          </Stack>
+        </CardContent>
+      </Card>
+      <Stack 
+        direction="row" 
+        spacing={0} 
+        sx={{ 
+          width: '100%', 
+          height: '100%', // Take remaining height
+          overflow: 'hidden'
+        }}
+      >
+        <Stack 
+          sx={{ 
+            position: 'relative', 
+            width: `${fileTreeWidth}px`,
+            flexShrink: 0,
+            height: '100%', // Full height
+            transition: isDragging ? 'none' : 'width 0.3s ease',
+          }}
+        >
+          <Card
+            variant="outlined"
+            sx={{ 
+              height: '100%', // Full height
+              overflow: 'hidden', 
+              borderLeft: 0, 
+              borderRight: 0,
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <CardContent sx={{ 
+              height: '100%',
+              p: 2,
+              '&:last-child': { pb: 2 }, // Override MUI default padding
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Box sx={{ 
+                flexGrow: 1,
+                overflow: 'auto',
+                height: '100%'
+              }}>
+                <FileTreeView />
+              </Box>
+            </CardContent>
+          </Card>
+          <ResizeHandle
+            className={isDragging ? 'dragging' : ''}
+            onMouseDown={handleMouseDown}
+          />
+        </Stack>
+
+        <Card 
+          variant="outlined" 
+          sx={{ 
+            flexGrow: 1, 
+            height: '100%', 
+            width: '100%', 
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
+          <CardContent 
+            sx={{ 
+              height: '100%', 
+              width: '100%', 
+              overflow: 'hidden', 
+              padding: 0,
+              '&:last-child': { pb: 0 }, // Override MUI default padding
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div className="h-full flex flex-col">
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                pl: 2,
+                pr: 2,
+                pt: 2,
+                minHeight: 40
+              }}>
+                <Box sx={{ flexGrow: 1 }}>
+                  <FileBreadcrumbs />
+                </Box>
               </Box>
               {fileRows.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 5 }}>
