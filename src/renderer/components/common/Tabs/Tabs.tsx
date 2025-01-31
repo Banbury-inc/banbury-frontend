@@ -22,6 +22,8 @@ interface TabProps {
   onClick: () => void;
   onClose?: () => void;
   style?: React.CSSProperties;
+  isNew?: boolean;
+  isClosing?: boolean;
 }
 
 interface TabsProps {
@@ -59,11 +61,14 @@ const DragPreview = ({ label }: { label: string }) => (
   </div>
 );
 
-export const TabComponent = ({ label, isActive, onClick, onClose, style }: TabProps) => (
+export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, isClosing }: TabProps) => (
   <div
     onClick={onClick}
     style={style}
     className={`
+      tab
+      ${isNew ? 'animate-tab-enter opacity-0' : ''}
+      ${isClosing ? 'animate-tab-exit' : ''}
       mt-5
       pl-4  
       h-8
@@ -146,8 +151,49 @@ export const Tabs: React.FC<TabsProps> = ({
   const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
   const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
   const [indicatorPosition, setIndicatorPosition] = useState<number | null>(null);
+  const [newTabId, setNewTabId] = useState<string | null>(null);
+  const [closingTabId, setClosingTabId] = useState<string | null>(null);
+  const [renderedTabs, setRenderedTabs] = useState(tabs);
   const tabRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const prevTabsLength = useRef(tabs.length);
+
+  // Watch for new tabs being added
+  useEffect(() => {
+    if (tabs.length > prevTabsLength.current) {
+      // A new tab was added
+      const newTab = tabs[tabs.length - 1];
+      setNewTabId(newTab.id);
+      // Delay adding the new tab to rendered tabs
+      setTimeout(() => {
+        setRenderedTabs(tabs);
+      }, 0);
+    } else {
+      setRenderedTabs(tabs);
+    }
+    prevTabsLength.current = tabs.length;
+  }, [tabs]);
+
+  // Reset new tab animation after it plays
+  useEffect(() => {
+    if (newTabId) {
+      const timer = setTimeout(() => {
+        setNewTabId(null);
+      }, 200); // Match animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [newTabId]);
+
+  // Handle tab close animation
+  const handleTabClose = (tabId: string) => {
+    setClosingTabId(tabId);
+    setTimeout(() => {
+      if (onTabClose) {
+        onTabClose(tabId);
+      }
+      setClosingTabId(null);
+    }, 200); // Match animation duration
+  };
 
   useEffect(() => {
     const element = containerRef.current;
@@ -275,18 +321,46 @@ export const Tabs: React.FC<TabsProps> = ({
         {`
           .tab {
             -webkit-app-region: no-drag;
-            opacity: 1;
             cursor: grab;
             position: relative;
+            transform-origin: left center;
           }
           .tab.dragging {
             opacity: 0.5;
           }
+          @keyframes tabEnter {
+            0% {
+              opacity: 0;
+              transform: scaleX(0);
+            }
+            100% {
+              opacity: 1;
+              transform: scaleX(1);
+            }
+          }
+          @keyframes tabExit {
+            0% {
+              opacity: 1;
+              transform: scaleX(1);
+            }
+            100% {
+              opacity: 0;
+              transform: scaleX(0);
+            }
+          }
+          .animate-tab-enter {
+            animation: tabEnter 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            will-change: transform, opacity;
+          }
+          .animate-tab-exit {
+            animation: tabExit 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            will-change: transform, opacity;
+          }
         `}
       </style>
-      {tabs.map((tab, index) => (
+      {renderedTabs.map((tab) => (
         <div
-          ref={el => tabRefs.current[index] = el}
+          ref={el => tabRefs.current[tabs.indexOf(tab)] = el}
           key={tab.id}
           className="relative"
         >
@@ -294,13 +368,19 @@ export const Tabs: React.FC<TabsProps> = ({
             label={tab.label}
             isActive={activeTab === tab.id}
             onClick={() => onTabChange(tab.id)}
-            onClose={onTabClose ? () => onTabClose(tab.id) : undefined}
+            onClose={() => handleTabClose(tab.id)}
+            isNew={tab.id === newTabId}
+            isClosing={tab.id === closingTabId}
           />
         </div>
       ))}
       {onTabAdd && (
         <button
-          onClick={onTabAdd}
+          onClick={() => {
+            if (onTabAdd) {
+              onTabAdd();
+            }
+          }}
           className="
             h-7
             mt-4

@@ -387,24 +387,6 @@ export default function PermanentDrawerLeft() {
                     position: relative;
                     -webkit-app-region: no-drag;
                   }
-                  .tab {
-                    -webkit-app-region: no-drag;
-                    opacity: 1;
-                    cursor: grab;
-                    position: relative;
-                  }
-                  .tab.dragging {
-                    opacity: 0.5;
-                  }
-                  .tab.drag-over::before {
-                    content: '';
-                    position: absolute;
-                    left: -1px;
-                    top: 25%;
-                    height: 50%;
-                    width: 2px;
-                    background: white;
-                  }
                 `}
               </style>
               <div className="flex flex-grow no-drag">
