@@ -47,7 +47,7 @@ export default function UploadProgress({ uploads }: UploadProgressProps) {
     <>
       <Button
         onClick={handleClick}
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }}
+        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
       >
         <UploadIcon sx={{ fontSize: 'inherit' }} />
         {activeUploads > 0 && (
@@ -99,8 +99,8 @@ export default function UploadProgress({ uploads }: UploadProgressProps) {
       >
         <Box sx={{ p: 2 }}>
           {/* Header */}
-          <Box sx={{ 
-            display: 'flex', 
+          <Box sx={{
+            display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             mb: 2
@@ -161,15 +161,15 @@ export default function UploadProgress({ uploads }: UploadProgressProps) {
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ color: 'white' }}>{upload.filename}</Typography>
                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                      {upload.status === 'uploading' 
+                      {upload.status === 'uploading'
                         ? `Uploading ${Math.round(upload.uploadedSize / (1024 * 1024))}MB / ${Math.round(upload.totalSize / (1024 * 1024))}MB - ${upload.timeRemaining}s left...`
                         : `Uploaded to Files`
                       }
                     </Typography>
                     {upload.status === 'uploading' && (
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={upload.progress} 
+                      <LinearProgress
+                        variant="determinate"
+                        value={upload.progress}
                         sx={{ mt: 1 }}
                       />
                     )}
@@ -177,7 +177,7 @@ export default function UploadProgress({ uploads }: UploadProgressProps) {
 
                   {/* Action Button */}
                   {upload.status === 'uploading' ? (
-                    <Button 
+                    <Button
                       variant="contained"
                       size="small"
                       sx={{

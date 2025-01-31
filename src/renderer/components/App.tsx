@@ -1,5 +1,5 @@
 import { Box, CssBaseline, ThemeProvider } from "@mui/material";
-import React from "react";
+import React, { useState } from "react";
 import theme from "../theme";
 import { BrowserRouter } from "react-router-dom";
 import Login from "./pages/Login";
@@ -13,11 +13,11 @@ import { useAlert } from '../context/AlertContext';
 // Create a wrapper component to use the error context
 function AlertWrapper() {
   const { alert } = useAlert();
-  
+
   if (!alert.show) return null;
-  
+
   return (
-    <Alert 
+    <Alert
       title={alert.title}
       messages={alert.messages}
       variant={alert.variant}
@@ -33,24 +33,28 @@ interface TitleBarProps {
   onMaximize: () => void;
 }
 
-const CustomTitleBar: React.FC<TitleBarProps> = () => {
+const CustomTitleBar: React.FC<TitleBarProps> = ({ onClose, onMinimize, onMaximize }) => {
   const isMac = process.platform === 'darwin';
-  
+  const [isMinimizeHover, setIsMinimizeHover] = useState(false);
+  const [isMaximizeHover, setIsMaximizeHover] = useState(false);
+  const [isCloseHover, setIsCloseHover] = useState(false);
+
   return (
-    <div style={{ 
-      position: 'fixed', 
+    <div style={{
+      position: 'fixed',
       top: 0,
       left: 0,
-      width: '100%', 
+      width: '100%',
       height: '40px',
       backgroundColor: '#212121',
       borderBottom: '1px solid #424242',
       display: 'flex',
       alignItems: 'center',
-      '-webkit-app-region': 'drag' as 'drag',
       zIndex: 9000,
+      justifyContent: isMac ? 'flex-start' : 'flex-end',
+      '-webkit-app-region': 'drag' as 'drag',
     }}>
-      {isMac && (
+      {isMac ? (
         <div style={{
           marginLeft: '80px',
           display: 'flex',
@@ -59,6 +63,77 @@ const CustomTitleBar: React.FC<TitleBarProps> = () => {
           alignItems: 'center',
           '-webkit-app-region': 'no-drag' as 'no-drag'
         }}>
+        </div>
+      ) : (
+        <div style={{
+          display: 'flex',
+          height: '40px',
+          width: '100%',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
+          '-webkit-app-region': 'no-drag' as 'no-drag',
+          position: 'relative',
+        }}>
+          <button
+            onClick={onMinimize}
+            className="titlebar-button"
+            onMouseEnter={() => setIsMinimizeHover(true)}
+            onMouseLeave={() => setIsMinimizeHover(false)}
+            style={{
+              width: '46px',
+              height: '100%',
+              border: 'none',
+              background: isMinimizeHover ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+              color: '#fff',
+              fontSize: '18px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            &#8211;
+          </button>
+          <button
+            onClick={onMaximize}
+            className="titlebar-button"
+            onMouseEnter={() => setIsMaximizeHover(true)}
+            onMouseLeave={() => setIsMaximizeHover(false)}
+            style={{
+              width: '46px',
+              height: '100%',
+              border: 'none',
+              background: isMaximizeHover ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+              color: '#fff',
+              fontSize: '18px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            &#9633;
+          </button>
+          <button
+            onClick={onClose}
+            className="titlebar-button"
+            onMouseEnter={() => setIsCloseHover(true)}
+            onMouseLeave={() => setIsCloseHover(false)}
+            style={{
+              width: '46px',
+              height: '100%',
+              border: 'none',
+              background: isCloseHover ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+              color: '#fff',
+              fontSize: '18px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            &#10005;
+          </button>
         </div>
       )}
     </div>

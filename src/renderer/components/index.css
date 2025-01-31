@@ -23,3 +23,12 @@ code {
 .btn-download:disabled {
   @apply bg-zinc-800 text-zinc-400;
 }
+
+/* Window control button hover states */
+.titlebar-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.titlebar-close-button:hover {
+  background-color: #ff0000;
+}

@@ -141,8 +141,8 @@ export default function PermanentDrawerLeft() {
   const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, websocket, setSocket } = useAuth();
   const [open, setOpen] = React.useState(false);
   const [tabs, setTabs] = useState<TabState[]>([
-    { 
-      id: 'tab-1', 
+    {
+      id: 'tab-1',
       label: 'Files',
       view: 'Files',
     }
@@ -191,8 +191,8 @@ export default function PermanentDrawerLeft() {
   }
 
 
-  
-  
+
+
 
   const [downloads, setDownloads] = useState<{
     filename: string;
@@ -234,10 +234,10 @@ export default function PermanentDrawerLeft() {
 
   const handleCloseTab = (tabId: string) => {
     if (tabs.length === 1) return;
-    
+
     const newTabs = tabs.filter(tab => tab.id !== tabId);
     setTabs(newTabs);
-    
+
     if (currentTabId === tabId) {
       const tabIndex = tabs.findIndex(tab => tab.id === tabId);
       const newActiveTab = newTabs[Math.max(0, tabIndex - 1)];
@@ -260,10 +260,10 @@ export default function PermanentDrawerLeft() {
   // Update when sidebar selection changes
   const handleSidebarChange = (newView: string) => {
     // Update the current tab's view and label
-    setTabs(currentTabs => 
-      currentTabs.map(tab => 
-        tab.id === currentTabId 
-          ? { ...tab, view: newView, label: newView } 
+    setTabs(currentTabs =>
+      currentTabs.map(tab =>
+        tab.id === currentTabId
+          ? { ...tab, view: newView, label: newView }
           : tab
       )
     );
@@ -288,11 +288,11 @@ export default function PermanentDrawerLeft() {
     if (draggedTab && draggedOverTab) {
       const draggedIndex = tabs.findIndex(tab => tab.id === draggedTab);
       const dropIndex = tabs.findIndex(tab => tab.id === draggedOverTab);
-      
+
       const newTabs = [...tabs];
       const [draggedItem] = newTabs.splice(draggedIndex, 1);
       newTabs.splice(dropIndex, 0, draggedItem);
-      
+
       setTabs(newTabs);
     }
     setDraggedTab(null);
@@ -321,10 +321,10 @@ export default function PermanentDrawerLeft() {
 
   const handleRenameTab = () => {
     if (!contextMenu) return;
-    
-    const newLabel = prompt('Enter new tab name:', 
+
+    const newLabel = prompt('Enter new tab name:',
       tabs.find(tab => tab.id === contextMenu.tabId)?.label);
-    
+
     if (newLabel) {
       setTabs(currentTabs =>
         currentTabs.map(tab =>
@@ -337,8 +337,10 @@ export default function PermanentDrawerLeft() {
     handleContextMenuClose();
   };
 
+  const isMac = process.platform === 'darwin';
+
   return (
-    <Box sx={{ display: 'flex', height:'100vh'}}>
+    <Box sx={{ display: 'flex', height: '100vh' }}>
       <Stack>
         <Box>
           <Stack direction="row" paddingLeft={10}>
@@ -418,16 +420,15 @@ export default function PermanentDrawerLeft() {
                 <MenuItem onClick={handleRenameTab}>Rename Tab</MenuItem>
               </Menu>
 
-              <Stack 
-                direction="row" 
-                spacing={1} 
+              <Stack
+                direction="row"
+                spacing={1}
                 sx={{
-                  pt: 1, 
-                  pr: 2,
+                  pt: 1,
+                  pr: isMac ? 2 : 20,
                   position: 'absolute',
                   right: 0,
                   top: 0,
-                  zIndex: 9999
                 }}
               >
                 <UploadProgress uploads={uploads} />

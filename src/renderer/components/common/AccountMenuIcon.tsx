@@ -49,7 +49,7 @@ export default function AccountMenuIcon() {
 
   return (
     <React.Fragment>
-      <Box sx={{ mr: '20px', pr: '10px', pb: '2px', display: 'flex', alignItems: 'center', textAlign: 'center', zIndex: 9999 }}>
+      <Box sx={{ zIndex: 9999, mr: '20px', pr: '10px', pb: '2px', display: 'flex', alignItems: 'center', textAlign: 'center' }}>
         <Tooltip title="Account">
           <Avatar
             onClick={handleClick}
