@@ -3,7 +3,6 @@
   "plugins": [
     "react",
     "@typescript-eslint",
-    "prettier",
     "jsdoc",
     "unused-imports"
   ],
@@ -11,7 +10,6 @@
     "eslint:recommended",
     "plugin:react/recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier",
     "plugin:jsdoc/recommended"
   ],
   "env": {
@@ -35,8 +33,18 @@
     "react/react-in-jsx-scope": 0,
     "react/display-name": 0,
     "no-unused-vars": "off",
-    "unused-imports/no-unused-imports": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "warn"
+    ],
     "react/prop-types": 0,
+    "@typescript-eslint/no-unused-expressions": [
+      "error",
+      {
+        "allowShortCircuit": true,
+        "allowTernary": true,
+        "allowTaggedTemplates": true
+      }
+    ],
     "jsdoc/require-jsdoc": [
       "warn",
       {
@@ -49,5 +57,24 @@
         }
       }
     ]
-  }
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "build",
+    "public",
+    "static",
+    "src/renderer/components/common/upload_progress/upload_progress.tsx",
+    "dependency",
+    "docs",
+    "jest.config.js",
+    "postcss.config.js",
+    "tailwind.config.js",
+    "tsconfig.json",
+    "tsconfig.node.json",
+    "webpack.config.js",
+    "webpack.config.ts",
+    "webpack.config.tsx",
+    "notarize.ts"
+  ]
 }
