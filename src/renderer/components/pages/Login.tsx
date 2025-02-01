@@ -115,11 +115,17 @@ function saveCredentials(credentials: Record<string, string>): void {
 }
 
 export default function SignIn() {
+  // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [redirect_to_register, setredirect_to_register] = useState(false);
-  const { setUsername, websocket, setSocket } = useAuth(); // Destructure setUsername from useAuth
+  const { setUsername } = useAuth(); // Only destructure what you need
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
+  const [showMain, setShowMain] = useState<boolean>(false);
+  const [showRegister, setShowRegister] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+
+  // Messages can be defined after hooks
   const incorrect_login_message: Message = {
     type: 'error',
     content: 'Incorrect username or password',
@@ -129,83 +135,44 @@ export default function SignIn() {
     content: 'Server is offline. Please try again later.',
   };
 
+  // useEffect hook
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    if (token) {
+    if (token && !isAuthenticated) {
       setUsername(token);
       setIsAuthenticated(true);
-      setShowMain(true); // Set showMain to true when login is successful
+      setShowMain(true);
     }
-  }, []);
+  }, [setUsername, isAuthenticated]);
 
-  // Move the useState hook outside of the handleSubmit function
-  const [showMain, setShowMain] = useState<boolean>(false);
-  const [showRegister, setShowRegister] = useState<boolean>(false);
-  const [loading, setLoading] = useState(false);
-  const handleSubmit1 = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    console.log("sending login request")
-    const data = new FormData(event.currentTarget);
-    const email = data.get('email') as string | null;
-    const password = data.get('password') as string | null;
-
-    if (email && password) {
-      try {
-
-        const result = await send_login_request(email, password);
-        console.log(result);
-        setUsername(email);
-        setIsAuthenticated(true);
-        console.log('Result: Login successful.');
-        setShowMain(true); // Set showMain to true when login is successful
-      } catch (error) {
-        console.error('Error:', error);
-        setincorrect_login(true);
-      }
-    }
-  };
-  // Move the useState hook outside of the handleSubmit function
+  // Handle submit function
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    setLoading(true);
     event.preventDefault();
-    console.log("sending login request")
-    const data = new FormData(event.currentTarget);
-    const email = data.get('email') as string | null;
-    const password = data.get('password') as string | null;
-    const token = data.get('token') as string | null;
+    setLoading(true);
 
-    // if (email && password) {
-    if (typeof email === 'string' && typeof password === 'string') {
+    try {
+      const data = new FormData(event.currentTarget);
+      const email = data.get('email') as string;
+      const password = data.get('password') as string;
 
-      try {
-
-
-        // let senderSocket = await connectToRelayServer2();
+      if (email && password) {
         const result = await send_login_request(email, password);
         if (result === 'login success') {
-          console.log(result);
           setUsername(email);
           localStorage.setItem('authToken', email);
           setIsAuthenticated(true);
-          console.log('Result: Login successful.');
-          setShowMain(true); // Set showMain to true when login is successful
-        }
-        if (result === 'login failed') {
-          console.log('Result: Login failed.');
-          setincorrect_login(true);
-          setLoading(false);
-        }
-        else {
-          console.log('Result: Login failed.');
+          setShowMain(true);
+        } else {
           setincorrect_login(true);
         }
-      } catch (error) {
-        console.error('Error:', error);
-        setincorrect_login(true);
       }
+    } catch (error) {
+      console.error('Error:', error);
+      setincorrect_login(true);
+    } finally {
+      setLoading(false);
     }
   };
-
 
   async function send_login_request(username: string, password: string) {
     try {
@@ -242,17 +209,6 @@ export default function SignIn() {
       // Example: scroll.scrollTo('targetSection', { duration: 800, smooth: 'easeInOutQuad' });
     }, 2000); // Adjust the timeout duration as needed
   };
-
-
-
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setUsername(token);
-      setIsAuthenticated(true);
-      setShowMain(true); // Set showMain to true when login is successful
-    }
-  }, []);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -346,13 +302,16 @@ export default function SignIn() {
     }
   };
 
-  if (isAuthenticated || showMain) { // Render Main component if authenticated or showMain is true
+  // Render content based on state
+  if (isAuthenticated || showMain) {
     return <Main />;
   }
-  if (redirect_to_register || showRegister) { // Render Main component if authenticated or showMain is true
+
+  if (redirect_to_register || showRegister) {
     return <Register />;
   }
 
+  // Main render
   return (
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">

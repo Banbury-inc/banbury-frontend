@@ -9,15 +9,13 @@ import Tooltip from '@mui/material/Tooltip';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
-export default function AccountMenuIcon() {
-  const { username, first_name, last_name, picture, setFirstname, setLastname, redirect_to_login, setredirect_to_login } = useAuth();
-  const [showLogin, setShowLogin] = useState<boolean>(false);
-  const navigate = useNavigate();
 
+export default function AccountMenuIcon() {
+  const { username, logout } = useAuth();
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -29,18 +27,21 @@ export default function AccountMenuIcon() {
     setAnchorEl(null);
   };
 
+  React.useEffect(() => {
+    if (username === null) {
+      navigate('/login');
+    }
+  }, [username, navigate]);
+
   const handleLogout = () => {
-    setredirect_to_login(true);
-    localStorage.removeItem('authToken');
-
+    handleClose();
+    logout();
   };
 
-  const handleSettingsClick = () => {
-    // Programmatically navigate to the main page and set the active tab
+  const handleSettingsClick = React.useCallback(() => {
     navigate('/main', { state: { activeTab: 'Settings' } });
-    handleClose(); // Close the menu after clicking on settings
-  };
-
+    handleClose();
+  }, [navigate]);
 
   return (
     <React.Fragment>
@@ -55,20 +56,18 @@ export default function AccountMenuIcon() {
               cursor: 'pointer',
               width: 24,
               height: 24,
-              fontSize: '0.875rem'  // For the fallback initial letter
+              fontSize: '0.875rem'
             }}
           >
-            {picture?.data ? (
-              <>
-                <img
-                  src={`${CONFIG.url}/users/get_profile_picture/${username}/`}
-                  alt="User"
-                  style={{ width: 'inherit', height: 'inherit', objectFit: 'cover' }}
-                  onError={(e) => console.error('Image failed to load:', e)}
-                />
-              </>
+            {username ? (
+              <img
+                src={`${CONFIG.url}/users/get_profile_picture/${username}/`}
+                alt="User"
+                style={{ width: 'inherit', height: 'inherit', objectFit: 'cover' }}
+                onError={(e) => console.error('Image failed to load:', e)}
+              />
             ) : (
-              first_name?.charAt(0) || ''
+              username?.charAt(0) || ''
             )}
           </Avatar>
         </Tooltip>
@@ -110,7 +109,7 @@ export default function AccountMenuIcon() {
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
         <MenuItem onClick={handleClose}>
-          <Avatar src={`${CONFIG.url}/users/get_profile_picture/${username}/`} sx={{ width: 2, height: 2 }} /> Profile
+          <Avatar src={`${CONFIG.url}/users/get_profile_picture/${username}/`} /> Profile
         </MenuItem>
         <Divider />
         <MenuItem onClick={handleClose}>

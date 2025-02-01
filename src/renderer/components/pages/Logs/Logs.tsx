@@ -142,7 +142,7 @@ export default function Logs() {
     setDevices,
     setSyncFiles,
     redirect_to_login,
-    setredirect_to_login,
+    setRedirectToLogin,
     taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();

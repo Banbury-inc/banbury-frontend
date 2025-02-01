@@ -271,7 +271,7 @@ export default function Devices() {
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [disableFetch, setDisableFetch] = useState(false);
-  const { updates, setUpdates, tasks, setTasks, username, first_name, last_name, setFirstname, setLastname, redirect_to_login, setredirect_to_login, taskbox_expanded, setTaskbox_expanded } = useAuth();
+  const { updates, setUpdates, tasks, setTasks, username, first_name, last_name, setFirstname, setLastname, redirect_to_login, setRedirectToLogin, taskbox_expanded, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
   const { showAlert } = useAlert();
@@ -691,7 +691,7 @@ export default function Devices() {
       setTaskbox_expanded(true);
 
       const result = await handlers.devices.addDevice(username ?? '');
-      
+
       if (result === 'success') {
         // Add default directory and refresh device list
         try {
@@ -703,20 +703,20 @@ export default function Devices() {
         } catch (folderError) {
           console.error('Error setting up default directory:', folderError);
           await neuranet.sessions.failTask(
-            username ?? '', 
-            taskInfo, 
-            'Failed to set up default directory', 
-            tasks, 
+            username ?? '',
+            taskInfo,
+            'Failed to set up default directory',
+            tasks,
             setTasks
           );
           showAlert('Error', ['Failed to set up default directory', folderError instanceof Error ? folderError.message : 'Unknown error'], 'error');
         }
       } else {
         await neuranet.sessions.failTask(
-          username ?? '', 
-          taskInfo, 
-          'Failed to add device', 
-          tasks, 
+          username ?? '',
+          taskInfo,
+          'Failed to add device',
+          tasks,
           setTasks
         );
         showAlert('Error', ['Failed to add device'], 'error');
@@ -725,16 +725,16 @@ export default function Devices() {
       console.error('Error adding device:', error);
       try {
         const errorTaskInfo = await neuranet.sessions.addTask(
-          username ?? '', 
-          'Error adding device', 
-          tasks, 
+          username ?? '',
+          'Error adding device',
+          tasks,
           setTasks
         );
         await neuranet.sessions.failTask(
-          username ?? '', 
-          errorTaskInfo, 
-          error instanceof Error ? error.message : 'Unknown error occurred', 
-          tasks, 
+          username ?? '',
+          errorTaskInfo,
+          error instanceof Error ? error.message : 'Unknown error occurred',
+          tasks,
           setTasks
         );
         showAlert('Error', ['Failed to add device', error instanceof Error ? error.message : 'Unknown error'], 'error');
@@ -757,7 +757,7 @@ export default function Devices() {
       setTaskbox_expanded(true);
 
       const result = await neuranet.device.delete_device(username ?? '');
-      
+
       if (result === 'success') {
         await fetchDevices();
         await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
@@ -765,10 +765,10 @@ export default function Devices() {
         showAlert('Success', ['Device(s) deleted successfully'], 'success');
       } else {
         await neuranet.sessions.failTask(
-          username ?? '', 
-          taskInfo, 
-          'Failed to delete device', 
-          tasks, 
+          username ?? '',
+          taskInfo,
+          'Failed to delete device',
+          tasks,
           setTasks
         );
         showAlert('Error', ['Failed to delete device(s)'], 'error');
@@ -777,16 +777,16 @@ export default function Devices() {
       console.error('Error deleting device:', error);
       try {
         const errorTaskInfo = await neuranet.sessions.addTask(
-          username ?? '', 
-          'Error deleting device', 
-          tasks, 
+          username ?? '',
+          'Error deleting device',
+          tasks,
           setTasks
         );
         await neuranet.sessions.failTask(
-          username ?? '', 
-          errorTaskInfo, 
-          error instanceof Error ? error.message : 'Unknown error occurred', 
-          tasks, 
+          username ?? '',
+          errorTaskInfo,
+          error instanceof Error ? error.message : 'Unknown error occurred',
+          tasks,
           setTasks
         );
         showAlert('Error', ['Failed to delete device(s)', error instanceof Error ? error.message : 'Unknown error'], 'error');
@@ -1065,9 +1065,9 @@ export default function Devices() {
       </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
         {/* Left panel: Device table */}
-        <Stack 
-          sx={{ 
-            position: 'relative', 
+        <Stack
+          sx={{
+            position: 'relative',
             width: `${deviceListWidth}px`,
             flexShrink: 0,
             transition: isDragging ? 'none' : 'width 0.3s ease',
@@ -1075,9 +1075,9 @@ export default function Devices() {
             borderColor: 'divider',
           }}
         >
-          <Card variant="outlined" sx={{ 
-            height: '100%', 
-            width: '100%', 
+          <Card variant="outlined" sx={{
+            height: '100%',
+            width: '100%',
             overflow: 'hidden',
             borderLeft: 0,
             borderRight: 0,
@@ -1159,9 +1159,9 @@ export default function Devices() {
         </Stack>
 
         {/* Right panel: Device details */}
-        <Card variant="outlined" sx={{ 
+        <Card variant="outlined" sx={{
           flexGrow: 1,
-          height: '100%', 
+          height: '100%',
           overflow: 'auto',
           borderLeft: 0,
           borderRadius: 0,

@@ -248,7 +248,7 @@ export default function EnhancedTable() {
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [disableFetch, setDisableFetch] = useState(false);
-  const { updates, setUpdates, username, first_name, last_name, devices, setFirstname, setLastname, setDevices, redirect_to_login, setredirect_to_login } = useAuth();
+  const { updates, setUpdates, username, first_name, last_name, devices, setFirstname, setLastname, setDevices, redirect_to_login, setRedirectToLogin } = useAuth();
   const getSelectedFileNames = () => {
     return selected.map(id => {
       const file = fileRows.find(file => file.id === id);

@@ -177,7 +177,7 @@ export default function Sync() {
     setDevices,
     setSyncFiles,
     redirect_to_login,
-    setredirect_to_login,
+    setRedirectToLogin,
     taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();
@@ -544,9 +544,9 @@ export default function Sync() {
         </CardContent>
       </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
-        <Stack 
-          sx={{ 
-            position: 'relative', 
+        <Stack
+          sx={{
+            position: 'relative',
             width: `${fileTreeWidth}px`,
             flexShrink: 0,
             transition: isDragging ? 'none' : 'width 0.3s ease',
@@ -557,11 +557,11 @@ export default function Sync() {
           <Box display="flex" flexDirection="column" height="100%">
             <Card
               variant="outlined"
-              sx={{ 
-                flexGrow: 1, 
-                height: '100%', 
-                overflow: 'hidden', 
-                borderLeft: 0, 
+              sx={{
+                flexGrow: 1,
+                height: '100%',
+                overflow: 'hidden',
+                borderLeft: 0,
                 borderRight: 0,
                 borderRadius: 0,
               }}
@@ -581,10 +581,10 @@ export default function Sync() {
           />
         </Stack>
 
-        <Card variant="outlined" sx={{ 
-          flexGrow: 1, 
-          height: '100%', 
-          width: '100%', 
+        <Card variant="outlined" sx={{
+          flexGrow: 1,
+          height: '100%',
+          width: '100%',
           overflow: 'hidden',
           borderLeft: 0,
           borderRadius: 0,

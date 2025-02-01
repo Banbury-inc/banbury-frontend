@@ -180,7 +180,7 @@ export default function Shared() {
     setDevices,
     setSyncFiles,
     redirect_to_login,
-    setredirect_to_login,
+    setRedirectToLogin,
     taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();
@@ -548,9 +548,9 @@ export default function Shared() {
         </CardContent>
       </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
-        <Stack 
-          sx={{ 
-            position: 'relative', 
+        <Stack
+          sx={{
+            position: 'relative',
             width: `${fileTreeWidth}px`,
             flexShrink: 0,
             transition: isDragging ? 'none' : 'width 0.3s ease',
@@ -561,11 +561,11 @@ export default function Shared() {
           <Box display="flex" flexDirection="column" height="100%">
             <Card
               variant="outlined"
-              sx={{ 
-                flexGrow: 1, 
-                height: '100%', 
-                overflow: 'hidden', 
-                borderLeft: 0, 
+              sx={{
+                flexGrow: 1,
+                height: '100%',
+                overflow: 'hidden',
+                borderLeft: 0,
                 borderRight: 0,
                 borderRadius: 0,
               }}
@@ -584,10 +584,10 @@ export default function Shared() {
             onMouseDown={handleMouseDown}
           />
         </Stack>
-        <Card variant="outlined" sx={{ 
-          flexGrow: 1, 
-          height: '100%', 
-          width: '100%', 
+        <Card variant="outlined" sx={{
+          flexGrow: 1,
+          height: '100%',
+          width: '100%',
           overflow: 'hidden',
           borderLeft: 0,
           borderRadius: 0,
@@ -816,20 +816,20 @@ export default function Shared() {
                         })}
                     </TableBody>
                   </Table>
-              </TableContainer>
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25, 50, 100]}
-                component="div"
-                count={sharedFiles.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+                </TableContainer>
+                <TablePagination
+                  rowsPerPageOptions={[5, 10, 25, 50, 100]}
+                  component="div"
+                  count={sharedFiles.length}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                />
+              </>
+            )}
+          </CardContent>
+        </Card>
       </Stack>
     </Box>
   );

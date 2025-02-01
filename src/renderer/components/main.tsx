@@ -128,9 +128,9 @@ interface TabState {
 export default function PermanentDrawerLeft() {
   const location = useLocation();
   const theme = useTheme();
-  const initialActiveTab = location.state?.activeTab || 'Files';
-  const [activeTab, setActiveTab] = React.useState(initialActiveTab);
   const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, websocket, setSocket } = useAuth();
+
+  const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'Files');
   const [open, setOpen] = React.useState(false);
   const [tabs, setTabs] = useState<TabState[]>([
     {
@@ -147,24 +147,89 @@ export default function PermanentDrawerLeft() {
   } | null>(null);
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
   const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
+  const [downloads, setDownloads] = useState<{
+    filename: string;
+    fileType: string;
+    progress: number;
+    status: 'downloading' | 'completed' | 'failed' | 'skipped';
+    totalSize: number;
+    downloadedSize: number;
+    timeRemaining?: number;
+  }[]>([]);
+  const [uploads, setUploads] = useState<{
+    filename: string;
+    fileType: string;
+    progress: number;
+    status: 'uploading' | 'completed' | 'failed' | 'skipped';
+    totalSize: number;
+    uploadedSize: number;
+    timeRemaining?: number;
+  }[]>([]);
 
   useEffect(() => {
+    let isSubscribed = true; // For cleanup
+
     async function setupConnection() {
       try {
         const fullDeviceSync = CONFIG.full_device_sync;
         const skipDotFiles = CONFIG.skip_dot_files;
         const bcloudDirectoryPath = fullDeviceSync ? os.homedir() : path.join(os.homedir(), 'BCloud');
 
-        const websocket = await neuranet.device.connect(username || "default", tasks || [], setTasks, setTaskbox_expanded);
-        setSocket(websocket);
-        neuranet.device.detectFileChanges(username || "default", bcloudDirectoryPath);
+        if (username && isSubscribed) { // Only connect if we have a username
+          const websocket = await neuranet.device.connect(
+            username,
+            tasks || [],
+            setTasks,
+            setTaskbox_expanded
+          );
+          if (isSubscribed) {
+            setSocket(websocket);
+            neuranet.device.detectFileChanges(username, bcloudDirectoryPath);
+          }
+        }
       } catch (error) {
         console.error("Failed to setup connection:", error);
       }
     }
 
-    setupConnection();
-  }, [username]);
+    if (username) { // Only run if we have a username
+      setupConnection();
+    }
+
+    return () => {
+      isSubscribed = false; // Cleanup to prevent setting state after unmount
+    };
+  }, [username, setSocket, setTasks, setTaskbox_expanded]); // Add all dependencies
+
+  useEffect(() => {
+    const downloadUpdateInterval = setInterval(() => {
+      const currentDownloads = getDownloadsInfo();
+      setDownloads(prev => {
+        // Only update if there are actual changes
+        if (JSON.stringify(prev) !== JSON.stringify(currentDownloads)) {
+          return currentDownloads;
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(downloadUpdateInterval);
+  }, []); // Empty dependency array since this should only run once
+
+  useEffect(() => {
+    const uploadUpdateInterval = setInterval(() => {
+      const currentUploads = getUploadsInfo();
+      setUploads(prev => {
+        // Only update if there are actual changes
+        if (JSON.stringify(prev) !== JSON.stringify(currentUploads)) {
+          return currentUploads;
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(uploadUpdateInterval);
+  }, []); // Empty dependency array since this should only run once
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -181,48 +246,6 @@ export default function PermanentDrawerLeft() {
   if (redirect_to_login) {
     return <Login />;
   }
-
-
-
-
-
-  const [downloads, setDownloads] = useState<{
-    filename: string;
-    fileType: string;
-    progress: number;
-    status: 'downloading' | 'completed' | 'failed' | 'skipped';
-    totalSize: number;
-    downloadedSize: number;
-    timeRemaining?: number;
-  }[]>([]);
-
-  useEffect(() => {
-    const downloadUpdateInterval = setInterval(() => {
-      const currentDownloads = getDownloadsInfo();
-      setDownloads(currentDownloads);
-    }, 1000);
-
-    return () => clearInterval(downloadUpdateInterval);
-  }, []);
-
-  const [uploads, setUploads] = useState<{
-    filename: string;
-    fileType: string;
-    progress: number;
-    status: 'uploading' | 'completed' | 'failed' | 'skipped';
-    totalSize: number;
-    uploadedSize: number;
-    timeRemaining?: number;
-  }[]>([]);
-
-  useEffect(() => {
-    const uploadUpdateInterval = setInterval(() => {
-      const currentUploads = getUploadsInfo();
-      setUploads(currentUploads);
-    }, 1000);
-
-    return () => clearInterval(uploadUpdateInterval);
-  }, []);
 
   const handleCloseTab = (tabId: string) => {
     if (tabs.length === 1) return;
