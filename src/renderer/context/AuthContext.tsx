@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface ImageData {
   content_type: string;
@@ -37,15 +37,16 @@ interface AuthContextType {
   set_Files: (files: any[] | []) => void;
   setSyncFiles: (sync_files: any[] | []) => void;
   setTasks: (tasks: any[] | null) => void;
-  setSocket: (socket: WebSocket) => void;
+  setSocket: (socket: WebSocket | null) => void;
   isAuthenticated: boolean; // Change the type to boolean directly
   redirect_to_login: boolean;
-  setredirect_to_login: (redict_to_login: boolean) => void;
+  setRedirectToLogin: (redirect_to_login: boolean) => void;
   taskbox_expanded: boolean; setTaskbox_expanded: (taskbox_expanded: boolean) => void;
   run_receiver: boolean
   files_is_loading: boolean
   setrun_receiver: (run_receiver: boolean) => void;
   setFilesIsLoading: (files_is_loading: boolean) => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,10 +71,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [fileRows, setFiles] = useState<any[]>([]);
   const [global_file_path, setFile] = useState<string | null>(null);
   const [global_file_path_device, setFile_Device] = useState<string | null>(null);
-  const [redirect_to_login, setredirect_to_login] = useState<boolean>(false); // Add redirect_to_login state
-  const [taskbox_expanded, setTaskbox_expanded] = useState<boolean>(false); // Add redirect_to_login state
-  const [run_receiver, setrun_receiver] = useState<boolean>(false); // Add redirect_to_login state
-  const [files_is_loading, setFilesIsLoading] = useState<boolean>(false); // Add redirect_to_login state
+  const [redirect_to_login, setRedirectToLogin] = useState<boolean>(false);
+  const [taskbox_expanded, setTaskbox_expanded] = useState<boolean>(false);
+  const [run_receiver, setrun_receiver] = useState<boolean>(false);
+  const [files_is_loading, setFilesIsLoading] = useState<boolean>(false);
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
 
   const setUsername = (username: string | null) => {
@@ -123,13 +124,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const setFileRows = (fileRows: any[] | []) => {
     setFiles(fileRows);
   };
-  const setSocket = (socket: WebSocket) => {
+  const setSocket = (socket: WebSocket | null) => {
     setWebsocket(socket)
   }
 
+  const logout = useCallback(() => {
+    // Clear auth token
+    localStorage.removeItem('authToken');
 
+    // Clear all states
+    setUsername(null);
+    setRedirectToLogin(true);
+    setSocket(null);
+    setTasks([]);
+    setTaskbox_expanded(false);
 
+    // Close websocket connection if it exists
+    if (websocket) {
+      websocket.close();
+    }
 
+    // Force reload the application
+    window.location.reload();
+  }, [websocket]);
 
   const isAuthenticated = !!username;
 
@@ -171,13 +188,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSocket,
       isAuthenticated,
       redirect_to_login,
-      setredirect_to_login,
+      setRedirectToLogin,
       taskbox_expanded,
       setTaskbox_expanded,
       run_receiver,
       setrun_receiver,
-
-
+      logout
     }}>
       {children}
     </AuthContext.Provider>

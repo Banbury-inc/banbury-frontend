@@ -21,7 +21,7 @@ import CircularProgress, {
 } from '@mui/material/CircularProgress';
 
 export default function TaskBadge() {
-  const { username, password, first_name, last_name, redirect_to_login, setredirect_to_login, setFirstname, setLastname, } = useAuth();
+  const { username, password, first_name, last_name, redirect_to_login, setRedirectToLogin, setFirstname, setLastname, } = useAuth();
   const [showLogin, setShowLogin] = useState<boolean>(false);
   const navigate = useNavigate();
 

@@ -250,7 +250,7 @@ export default function Files() {
     setSyncFiles,
     setPicture,
     redirect_to_login,
-    setredirect_to_login,
+    setRedirectToLogin,
     taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();
@@ -689,10 +689,10 @@ export default function Files() {
 
 
   return (
-    <Box sx={{ 
-      width: '100%', 
+    <Box sx={{
+      width: '100%',
       height: '100vh', // Fill full viewport height
-      display: 'flex', 
+      display: 'flex',
       flexDirection: 'column'
     }}>
 
@@ -702,12 +702,12 @@ export default function Files() {
             <Grid container justifyContent="flex-start" alignItems="flex-start">
               <Grid item>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                <Grid item paddingRight={1}>
-                  <Tooltip title="Upload">
-                    <NewInputFileUploadButton />
-                  </Tooltip>
-                </Grid>
-                <Grid item paddingRight={1}>
+                  <Grid item paddingRight={1}>
+                    <Tooltip title="Upload">
+                      <NewInputFileUploadButton />
+                    </Tooltip>
+                  </Grid>
+                  <Grid item paddingRight={1}>
                     <DownloadFileButton
                       selectedFileNames={selectedFileNames}
                       selectedFileInfo={selectedFileInfo}
@@ -719,9 +719,9 @@ export default function Files() {
                       setTasks={setTasks}
                       websocket={websocket as WebSocket}
                     />
-                </Grid>
+                  </Grid>
 
-                <Grid item paddingRight={1}>
+                  <Grid item paddingRight={1}>
                     <DeleteFileButton
                       selectedFileNames={selectedFileNames}
                       global_file_path={global_file_path || ''}
@@ -738,89 +738,89 @@ export default function Files() {
                       setTasks={setTasks}
                       websocket={websocket as WebSocket}
                     />
-                </Grid>
-                <Grid item paddingRight={1} paddingLeft={0}>
-                  <Tooltip title="Add to Sync">
-                    <AddFileToSyncButton selectedFileNames={selectedFileNames} />
-                  </Tooltip>
-                </Grid>
-                <Grid item paddingRight={1}>
+                  </Grid>
+                  <Grid item paddingRight={1} paddingLeft={0}>
+                    <Tooltip title="Add to Sync">
+                      <AddFileToSyncButton selectedFileNames={selectedFileNames} />
+                    </Tooltip>
+                  </Grid>
+                  <Grid item paddingRight={1}>
                     <SyncButton />
-                </Grid>
-                <Grid item paddingRight={1}>
+                  </Grid>
+                  <Grid item paddingRight={1}>
                     <ShareFileButton
                       selectedFileNames={selectedFileNames}
                       selectedFileInfo={selectedFileInfo}
                       onShare={() => handleShareModalOpen(selectedFileNames[0])}
                     />
-                </Grid>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 2 }}>
-                  <Tooltip title="Change view">
+                  </Grid>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 2 }}>
+                    <Tooltip title="Change view">
                       <Button
                         onClick={handleViewMenuOpen}
                         sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                       >
-                        {viewType.includes('grid') ? 
-                          <GridViewIcon fontSize="inherit" /> : 
+                        {viewType.includes('grid') ?
+                          <GridViewIcon fontSize="inherit" /> :
                           <ViewListIcon fontSize="inherit" />
                         }
-                  </Button>
-                </Tooltip>
-                </Box>
-                <StyledMenu
-                  anchorEl={viewMenuAnchor}
-                  open={Boolean(viewMenuAnchor)}
-                  onClose={handleViewMenuClose}
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
-                  }}
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                  }}
-                >
-                  {viewOptions.map((option) => (
-                    <MenuItem
-                      key={option.value}
-                      onClick={() => handleViewChange(option.value)}
-                      selected={viewType === option.value}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        color: 'text.primary',
-                        '&.Mui-selected': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                          '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.12)'
+                      </Button>
+                    </Tooltip>
+                  </Box>
+                  <StyledMenu
+                    anchorEl={viewMenuAnchor}
+                    open={Boolean(viewMenuAnchor)}
+                    onClose={handleViewMenuClose}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'right',
+                    }}
+                  >
+                    {viewOptions.map((option) => (
+                      <MenuItem
+                        key={option.value}
+                        onClick={() => handleViewChange(option.value)}
+                        selected={viewType === option.value}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          color: 'text.primary',
+                          '&.Mui-selected': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.12)'
+                            }
                           }
-                        }
-                      }}
-                    >
-                      {option.icon}
-                      <Typography variant="body2">{option.label}</Typography>
-                    </MenuItem>
-                  ))}
-                </StyledMenu>
+                        }}
+                      >
+                        {option.icon}
+                        <Typography variant="body2">{option.label}</Typography>
+                      </MenuItem>
+                    ))}
+                  </StyledMenu>
                 </Box>
               </Grid>
             </Grid>
           </Stack>
         </CardContent>
       </Card>
-      <Stack 
-        direction="row" 
-        spacing={0} 
-        sx={{ 
-          width: '100%', 
+      <Stack
+        direction="row"
+        spacing={0}
+        sx={{
+          width: '100%',
           height: '100%', // Take remaining height
           overflow: 'hidden'
         }}
       >
-        <Stack 
-          sx={{ 
-            position: 'relative', 
+        <Stack
+          sx={{
+            position: 'relative',
             width: `${fileTreeWidth}px`,
             flexShrink: 0,
             height: '100%', // Full height
@@ -829,17 +829,17 @@ export default function Files() {
         >
           <Card
             variant="outlined"
-            sx={{ 
+            sx={{
               height: '100%', // Full height
-              overflow: 'hidden', 
-              borderLeft: 0, 
+              overflow: 'hidden',
+              borderLeft: 0,
               borderRight: 0,
               width: '100%',
               display: 'flex',
               flexDirection: 'column'
             }}
           >
-            <CardContent sx={{ 
+            <CardContent sx={{
               height: '100%',
               p: 2,
               '&:last-child': { pb: 2 }, // Override MUI default padding
@@ -847,7 +847,7 @@ export default function Files() {
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <Box sx={{ 
+              <Box sx={{
                 flexGrow: 1,
                 overflow: 'auto',
                 height: '100%'
@@ -862,22 +862,22 @@ export default function Files() {
           />
         </Stack>
 
-        <Card 
-          variant="outlined" 
-          sx={{ 
-            flexGrow: 1, 
-            height: '100%', 
-            width: '100%', 
+        <Card
+          variant="outlined"
+          sx={{
+            flexGrow: 1,
+            height: '100%',
+            width: '100%',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column'
           }}
         >
-          <CardContent 
-            sx={{ 
-              height: '100%', 
-              width: '100%', 
-              overflow: 'hidden', 
+          <CardContent
+            sx={{
+              height: '100%',
+              width: '100%',
+              overflow: 'hidden',
               padding: 0,
               '&:last-child': { pb: 0 }, // Override MUI default padding
               display: 'flex',
@@ -885,9 +885,9 @@ export default function Files() {
             }}
           >
             <div className="h-full flex flex-col">
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'space-between',
                 pl: 2,
                 pr: 2,
@@ -911,8 +911,8 @@ export default function Files() {
               ) : (
                 <>
                   {viewType.includes('grid') ? (
-                    <Box sx={{ 
-                      height: 'calc(100vh - 180px)', 
+                    <Box sx={{
+                      height: 'calc(100vh - 180px)',
                       overflow: 'auto',
                       px: 0.5 // Add slight padding to account for scrollbar
                     }}>
@@ -924,7 +924,7 @@ export default function Files() {
                               <Card
                                 sx={{
                                   cursor: 'pointer',
-                                  '&:hover': { 
+                                  '&:hover': {
                                     bgcolor: 'action.hover',
                                     '& .selection-checkbox': {
                                       opacity: 1
@@ -987,13 +987,13 @@ export default function Files() {
                                     {row.file_size}
                                   </Typography>
                                   {!isCloudSync && (
-                                    <Typography 
-                                      variant="caption" 
-                                      sx={{ 
-                                        color: row.available === 'Available' 
-                                          ? '#1DB954' 
-                                          : row.available === 'Unavailable' 
-                                            ? 'red' 
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        color: row.available === 'Available'
+                                          ? '#1DB954'
+                                          : row.available === 'Unavailable'
+                                            ? 'red'
                                             : 'inherit'
                                       }}
                                     >
@@ -1277,9 +1277,9 @@ export default function Files() {
                                 </TableRow>
                               );
                             })}
-                        </TableBody>
-                      </Table>
-                      </TableContainer>
+                      </TableBody>
+                    </Table>
+                    </TableContainer>
                   )}
                 </>
               )}
