@@ -52,7 +52,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = ({ onClose, onMinimize, onMaximi
       alignItems: 'center',
       zIndex: 9000,
       justifyContent: isMac ? 'flex-start' : 'flex-end',
-      '-webkit-app-region': 'drag' as 'drag',
+      '-webkit-app-region': 'drag' as const,
     }}>
       {isMac ? (
         <div style={{
@@ -61,7 +61,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = ({ onClose, onMinimize, onMaximi
           gap: '16px',
           height: '100%',
           alignItems: 'center',
-          '-webkit-app-region': 'no-drag' as 'no-drag'
+          '-webkit-app-region': 'no-drag' as const
         }}>
         </div>
       ) : (
@@ -71,7 +71,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = ({ onClose, onMinimize, onMaximi
           width: '100%',
           alignItems: 'flex-end',
           justifyContent: 'flex-end',
-          '-webkit-app-region': 'no-drag' as 'no-drag',
+          '-webkit-app-region': 'no-drag' as const,
           position: 'relative',
         }}>
           <button

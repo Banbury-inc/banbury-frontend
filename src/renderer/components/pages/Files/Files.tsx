@@ -1,20 +1,11 @@
-import AddToQueueIcon from '@mui/icons-material/AddToQueue';
-import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DevicesIcon from '@mui/icons-material/Devices';
-import DownloadIcon from '@mui/icons-material/Download';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import GrainIcon from '@mui/icons-material/Grain';
-import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
-import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
-import { CardContent, Container, Divider, Skeleton, useMediaQuery, LinearProgress } from '@mui/material';
+import { CardContent, Skeleton, useMediaQuery, LinearProgress } from '@mui/material';
 import Box from '@mui/material/Box';
-import Breadcrumbs from '@mui/material/Breadcrumbs'; import Button from '@mui/material/Button';
+import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
 import Grid from '@mui/material/Grid';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -24,60 +15,41 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { visuallyHidden } from '@mui/utils';
 import axios from 'axios';
 import { shell } from 'electron';
 import fs from 'fs';
-import { readdir, stat } from 'fs/promises';
-import isEqual from 'lodash/isEqual';
+import { stat } from 'fs/promises';
 import os from 'os';
 import path, { join } from 'path';
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
 import { neuranet } from '../../../neuranet';
-import { fileWatcherEmitter } from '../../../neuranet/device/watchdog';
-import * as utils from '../../../utils';
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import FileTreeView from './components/NewTreeView/FileTreeView';
 import NewInputFileUploadButton from '../../newuploadfilebutton';
-import TaskBoxButton from '../../common/notifications/NotificationsButton';
 import { fetchDeviceData } from './utils/fetchDeviceData';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
 import ShareFileButton from '../../common/share_file_button/share_file_button';
-import AddIcon from '@mui/icons-material/Add';
-import SyncIcon from '@mui/icons-material/Sync';
 import AddFileToSyncButton from '../../common/add_file_to_sync_button';
 import { EnhancedTableProps, HeadCell } from './types';
-import { useFileData } from './hooks/useFileData';
 import { newUseFileData } from './hooks/newUseFileData';
 import Rating from '@mui/material/Rating';
 import { CONFIG } from '../../../config/config';
 import Dialog from '@mui/material/Dialog';
-import UploadProgress from '../../common/upload_progress/upload_progress';
-import DownloadProgress from '../../common/download_progress/download_progress';
-import { addDownloadsInfo, getDownloadsInfo } from '../../common/download_progress/add_downloads_info';
-import { getUploadsInfo } from '../../common/upload_progress/add_uploads_info';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 import SyncButton from '../../common/sync_button/sync_button';
 import DownloadFileButton from '../../common/DownloadFileButton/DownloadFileButton';
 import DeleteFileButton from '../../common/DeleteFileBtton/DeleteFileButton';
 import { styled } from '@mui/material/styles';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import GridViewIcon from '@mui/icons-material/GridView';
-import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import LoadingButton from '@mui/lab/LoadingButton';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
-import CloseIcon from '@mui/icons-material/Close';
-import { Tabs, Tab } from '../../common/Tabs/Tabs';
-import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 // Rename the interface to avoid collision with DOM Notification
 interface UserNotification {
   id: string;
@@ -438,7 +410,7 @@ export default function Files() {
     const directoryPath = join(os.homedir(), directoryName);
     let fileFound = false;
     let folderFound = false;
-    let filePath = '';
+    const filePath = '';
     try {
       const fileStat = await stat(newSelectedFilePaths[0]);
       if (fileStat.isFile()) {
@@ -462,10 +434,10 @@ export default function Files() {
       if (!fileFound && !folderFound) {
         console.error(`File '${file_name}' not found in directory, searhing other devices`);
 
-        let task_description = 'Opening ' + selectedFileNames.join(', ');
-        let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const task_description = 'Opening ' + selectedFileNames.join(', ');
+        const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
         setTaskbox_expanded(true);
-        let response = await handlers.files.downloadFile(
+        const response = await handlers.files.downloadFile(
           username ?? '',
           selectedFileNames,
           selectedDeviceNames,
@@ -477,13 +449,13 @@ export default function Files() {
           websocket as unknown as WebSocket,
         );
         if (response === 'No file selected') {
-          let task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'File not available') {
-          let task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'success') {
-          let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
@@ -556,26 +528,26 @@ export default function Files() {
 
     console.log('handling add device click');
 
-    let device_name = neuranet.device.name();
-    let task_description = 'Adding device ' + device_name;
-    let result = await handlers.devices.addDevice(username ?? '');
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+    const device_name = neuranet.device.name();
+    const task_description = 'Adding device ' + device_name;
+    const result = await handlers.devices.addDevice(username ?? '');
+    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
     setTaskbox_expanded(true);
 
     if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
     }
   };
   const handleSyncClick = async () => {
     // let result = handlers.files.addFile(username ?? '');
-    let task_description = 'Scanning filesystem';
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+    const task_description = 'Scanning filesystem';
+    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
     setTaskbox_expanded(true);
 
-    let result = await neuranet.device.scanFilesystem(username ?? '');
+    const result = await neuranet.device.scanFilesystem(username ?? '');
 
     if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
       setUpdates(updates + 1);
     }
   };
@@ -633,8 +605,8 @@ export default function Files() {
   const handlePriorityChange = async (row: any, newValue: number | null) => {
     if (newValue === null) return;
 
-    let task_description = 'Updating File Priority';
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+    const task_description = 'Updating File Priority';
+    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
     setTaskbox_expanded(true);
 
     const newPriority = newValue;
@@ -642,7 +614,7 @@ export default function Files() {
     const result = await neuranet.files.updateFilePriority(row._id, username ?? '', newPriority);
 
     if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
       setUpdates(updates + 1);
     }
   };

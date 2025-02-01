@@ -1,5 +1,3 @@
-import axios from 'axios';
-import fs from 'fs';
 import { useEffect, useState } from 'react';
 import { fileWatcherEmitter } from '../../../../neuranet/device/watchdog';
 import path from 'path';

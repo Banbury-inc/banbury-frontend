@@ -1,11 +1,9 @@
-import { neuranet } from '../../neuranet'
 import si from '../../../../dependency/systeminformation'
 import axios from 'axios';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { DateTime } from 'luxon';
-import { handlers } from '../../handlers';
 import { CONFIG } from '../../config/config';
 
 interface CPUPerformance {
@@ -189,17 +187,17 @@ export async function ram_total(): Promise<number> {
   try {
     const memData = await si.mem();
     const totalMemory = memData.total || 0;
-    const usedMemory = memData.used || 0;
-    const freeMemory = memData.free || 0;
+    // const usedMemory = memData.used || 0;
+    // const freeMemory = memData.free || 0;
 
-    const usagePercentage = (usedMemory / totalMemory) * 100;
+    // const usagePercentage = (usedMemory / totalMemory) * 100;
 
-    const ramUsage: memUsage = {
-      total: totalMemory,
-      free: freeMemory,
-      used: usedMemory,
-      usagePercentage: isNaN(usagePercentage) ? 0 : usagePercentage // Handle NaN case
-    };
+    // const ramUsage: memUsage = {
+    //   total: totalMemory,
+    //   free: freeMemory,
+    //   used: usedMemory,
+    //   usagePercentage: isNaN(usagePercentage) ? 0 : usagePercentage // Handle NaN case
+    // };
 
     return isNaN(totalMemory) ? 0 : totalMemory; // Handle NaN case
   } catch (error) {
@@ -210,18 +208,18 @@ export async function ram_total(): Promise<number> {
 export async function ram_free(): Promise<number> {
   try {
     const memData = await si.mem();
-    const totalMemory = memData.total || 0;
-    const usedMemory = memData.used || 0;
+    // const totalMemory = memData.total || 0;
+    // const usedMemory = memData.used || 0;
     const freeMemory = memData.free || 0;
 
-    const usagePercentage = (usedMemory / totalMemory) * 100;
+    // const usagePercentage = (usedMemory / totalMemory) * 100;
 
-    const ramUsage: memUsage = {
-      total: totalMemory,
-      free: freeMemory,
-      used: usedMemory,
-      usagePercentage: isNaN(usagePercentage) ? 0 : usagePercentage // Handle NaN case
-    };
+    // const ramUsage: memUsage = {
+    //   total: totalMemory,
+    //   free: freeMemory,
+    //   used: usedMemory,
+    //   usagePercentage: isNaN(usagePercentage) ? 0 : usagePercentage // Handle NaN case
+    // };
 
     return isNaN(freeMemory) ? 0 : freeMemory; // Handle NaN case
   } catch (error) {
@@ -338,47 +336,8 @@ export async function bluetooth_status(): Promise<boolean> {
   }
 }
 
-async function countFilesAndFolders(directoryPath: string): Promise<number> {
-  let totalCount = 0;
-  const startTime = Date.now();
 
-  // Set up an interval to log the count every 3 seconds
-  const intervalId = setInterval(() => {
-    console.log(`Total number of files and folders: ${totalCount}`);
-  }, 3);
-
-  async function traverseAndCount(currentPath: string): Promise<void> {
-    const files = fs.readdirSync(currentPath);
-    for (const filename of files) {
-      try {
-        const filePath = path.join(currentPath, filename);
-        const stats = fs.statSync(filePath);
-
-        totalCount++; // Count the current file or directory
-
-        if (stats.isDirectory()) {
-          await traverseAndCount(filePath); // Recurse into the directory
-        }
-      } catch (error) {
-        console.error('Error reading file:', error);
-
-        // Skip to the next file
-        continue;
-      }
-    }
-  }
-
-  await traverseAndCount(directoryPath);
-
-  // Clear the interval once done
-  clearInterval(intervalId);
-
-  // Log the final count
-  console.log(`Final total number of files and folders: ${totalCount}`);
-  return totalCount;
-}
-
-export async function directory_info(username: any) {
+export async function directory_info() {
 
   const full_device_sync = CONFIG.full_device_sync; // Change this to your actual server IP
 

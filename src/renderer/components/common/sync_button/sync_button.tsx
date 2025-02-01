@@ -1,26 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button, Popover, Box, Typography, Stack, Autocomplete, TextField, Chip, Paper, Badge, CircularProgress, Switch, LinearProgress, IconButton, Tooltip } from '@mui/material';
+import React, { useState, useRef } from 'react';
+import { Button, Popover, Box, Typography, Stack, LinearProgress, IconButton, Tooltip } from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
-import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
-import LinkIcon from '@mui/icons-material/Link';
-import { styled } from '@mui/material/styles';
-import { handlers } from '../../../handlers';
 import { neuranet } from '../../../neuranet';
 import { useAuth } from '../../../context/AuthContext';
-import CheckIcon from '@mui/icons-material/Check';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import LockIcon from '@mui/icons-material/Lock';
-import { CONFIG } from '../../../config/config';
 import SyncIcon from '@mui/icons-material/Sync';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
 import { getSyncFolders } from './getSyncFolders';
 import path from 'path';
 import CloseIcon from '@mui/icons-material/Close';
-import { ErrorAlert } from '../../../../components/ErrorAlert';
 
 
 
@@ -68,8 +57,8 @@ export default function SyncButton() {
       const absoluteFolderPath = path.dirname(file.path);
 
       // Add the selected folder as a scanned folder
-      let task_description = `Adding scanned folder: ${absoluteFolderPath}`;
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
 
       const addResult = await neuranet.device.add_scanned_folder(absoluteFolderPath, username ?? '');
 
@@ -110,8 +99,8 @@ export default function SyncButton() {
       // Skip already synced files
       if (file.progress === 100) continue;
 
-      let task_description = 'Scanning folder';
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = 'Scanning folder';
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
 
       // Update local state to show scanning started
       setSyncData(prev => ({
@@ -124,7 +113,7 @@ export default function SyncButton() {
       }));
 
       try {
-        let result = await neuranet.device.scanFolder(
+        const result = await neuranet.device.scanFolder(
           username ?? '',
           file.filename,
           (progress, speed) => {
@@ -141,7 +130,7 @@ export default function SyncButton() {
         );
 
         if (result === 'success') {
-          let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         }
       } catch (error) {
         console.error('Sync error:', error);
@@ -162,8 +151,8 @@ export default function SyncButton() {
 
   const handleRemoveFolder = async (folderPath: string) => {
     try {
-      let task_description = `Removing folder: ${folderPath}`;
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = `Removing folder: ${folderPath}`;
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
 
       const removeResult = await neuranet.device.remove_scanned_folder(folderPath, username ?? '');
 

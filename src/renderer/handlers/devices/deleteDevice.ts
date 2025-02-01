@@ -5,16 +5,16 @@ export function deleteDevice(device_name: string[]): string {
   const senderSocket = neuranet.networking.connect();
   const endOfHeader = Buffer.from('END_OF_HEADER');
   const credentials = CredentialUtils.loadCredentials();
-  let username = Object.keys(credentials)[0];
+  const username = Object.keys(credentials)[0];
   const file_size = ""
   let header: string | null = null;
   let buffer = Buffer.alloc(0);
-  let null_arg = ""
+  const null_arg = ""
   const fileHeader = `DEVICE_DELETE_REQUEST:${device_name}:${null_arg}:${username}:`;
   senderSocket.write(fileHeader);
   senderSocket.write(endOfHeader);
 
-  let jobCompleted = false;
+  const jobCompleted = false;
   senderSocket.on('data', (data) => {
     buffer = Buffer.concat([buffer, data]);
     let fileType = 'Unknown';

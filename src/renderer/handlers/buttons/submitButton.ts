@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
 
 export async function submitButton(
   username: string | null,
@@ -16,25 +15,8 @@ export async function submitButton(
     const result = response.data.result;
     if (result === 'success') {
       console.log("File added successfully");
-      let taskInfo = {
-        name: 'update settings',
-        device: sync_entire_device_checked,
-        status: 'complete',
-      }
-      let task = await neuranet.sessions.updateTask(username, taskInfo);
       return 'success';
     } else if (result === 'fail') {
-      let taskInfo = {
-        name: 'update settings',
-        device: sync_entire_device_checked,
-        status: 'fail',
-      }
-
-      let task_name = taskInfo.name;
-      let task_device = taskInfo.device;
-      let task_status = taskInfo.status;
-
-      let task = await neuranet.sessions.updateTask(username, taskInfo);
 
       console.log("Failed to add file");
       return 'failed';

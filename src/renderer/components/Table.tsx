@@ -1,23 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import os from 'os';
-import { ipcRenderer } from 'electron';
 import Stack from '@mui/material/Stack';
-import { exec } from "child_process";
 import { join } from 'path';
 import { shell } from 'electron';
 import isEqual from 'lodash/isEqual';
 import axios from 'axios';
 import { useMediaQuery } from '@mui/material';
 import ButtonBase from '@mui/material/ButtonBase';
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import { readdir, stat } from 'fs/promises';
+import { stat } from 'fs/promises';
 import Table from '@mui/material/Table';
 import DownloadIcon from '@mui/icons-material/Download';
 import fs from 'fs';
 import TableBody from '@mui/material/TableBody';
-import LoadingButton from '@mui/lab/LoadingButton';
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import DevicesIcon from '@mui/icons-material/Devices';
 import TableCell from '@mui/material/TableCell';
 
@@ -28,51 +23,29 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
-import HomeIcon from '@mui/icons-material/Home';
-import WhatshotIcon from '@mui/icons-material/Whatshot';
 import GrainIcon from '@mui/icons-material/Grain';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import * as path from "path";
 import Button from '@mui/material/Button';
-import Autocomplete from '@mui/material/Autocomplete';
-import FileUploadIcon from '@mui/icons-material/FileUpload';
-import Toolbar from '@mui/material/Toolbar';
-import InputAdornment from '@mui/material/InputAdornment';
-import SearchIcon from '@mui/icons-material/Search';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
-import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
 import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
-import { CardContent, Container } from "@mui/material";
-import Avatar from '@mui/material/Avatar';
-import Chip from '@mui/material/Chip';
-import InputFileUploadButton from './uploadfilebutton';
+import { CardContent } from "@mui/material";
 import NewInputFileUploadButton from './newuploadfilebutton';
 import AccountMenuIcon from './common/AccountMenuIcon';
 import { useAuth } from '../context/AuthContext';
 import Card from '@mui/material/Card';
-import { SnackbarProvider, VariantType, useSnackbar } from 'notistack';
-import { TreeView } from '@mui/x-tree-view';
-import AddIcon from '@mui/icons-material/Add';
 import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
 import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
 import TextField from '@mui/material/TextField';
 import CircularProgress, {
   CircularProgressProps,
 } from '@mui/material/CircularProgress';
-import Snackbar from '@mui/material/Snackbar';
-import DataManagementCard from './common/TreeView/TreeView';
 import CustomizedTreeView from './common/TreeView/TreeView';
-import { BorderLeft, NavigateBefore } from '@mui/icons-material';
-import TaskBadge from './TaskBadge';
 import { handlers } from '../handlers'
 
 
@@ -476,7 +449,7 @@ export default function EnhancedTable() {
 
     let fileFound = false;
     let folderFound = false;
-    let filePath = '';
+    const filePath = '';
 
     try {
 

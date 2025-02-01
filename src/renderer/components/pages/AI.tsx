@@ -4,15 +4,8 @@ import { exec } from "child_process";
 import axios from 'axios';
 import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import DownloadIcon from '@mui/icons-material/Download';
-import TableBody from '@mui/material/TableBody';
-import LoadingButton from '@mui/lab/LoadingButton';
 import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import { Skeleton } from '@mui/material';
 import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
 import HomeIcon from '@mui/icons-material/Home';
@@ -23,33 +16,21 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import SendIcon from '@mui/icons-material/Send';
 import * as path from "path";
 import Button from '@mui/material/Button';
-import Autocomplete from '@mui/material/Autocomplete';
-import FileUploadIcon from '@mui/icons-material/FileUpload';
 import Toolbar from '@mui/material/Toolbar';
 import InputAdornment from '@mui/material/InputAdornment';
-import SearchIcon from '@mui/icons-material/Search';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
-import { CardContent, Container } from "@mui/material";
-import Avatar from '@mui/material/Avatar';
-import Chip from '@mui/material/Chip';
+import { CardContent } from "@mui/material";
 import AccountMenuIcon from '../common/AccountMenuIcon';
 import { useAuth } from '../../context/AuthContext';
 import Card from '@mui/material/Card';
-import { SnackbarProvider, VariantType, useSnackbar } from 'notistack';
-import { TreeView } from '@mui/x-tree-view';
-import AddIcon from '@mui/icons-material/Add';
-import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
-import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
+import { VariantType, useSnackbar } from 'notistack';
 import TextField from '@mui/material/TextField';
 
 
@@ -58,7 +39,6 @@ import TextField from '@mui/material/TextField';
 import CircularProgress, {
   CircularProgressProps,
 } from '@mui/material/CircularProgress';
-import Snackbar from '@mui/material/Snackbar';
 import TaskBadge from '../TaskBadge';
 
 
@@ -404,8 +384,8 @@ export default function AI() {
       let baseDir = '';
       let filename = '';
       let command = '';
-      let devbaseDir = '';
-      let prodbaseDir = path.join(process.resourcesPath, 'python');
+      const devbaseDir = '';
+      const prodbaseDir = path.join(process.resourcesPath, 'python');
       if (env === 'development') {
         baseDir = devbaseDir;
         filename = 'python/upload.py';

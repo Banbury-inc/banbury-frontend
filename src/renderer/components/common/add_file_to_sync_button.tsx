@@ -1,9 +1,7 @@
 import React, { useState, useRef } from 'react';
 
 import { Tooltip } from '@mui/material';
-import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import LoadingButton from '@mui/lab/LoadingButton';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { useAuth } from '../../context/AuthContext';
 import { neuranet } from '../../neuranet';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -39,7 +37,7 @@ export default function AddFileToSyncButton({ selectedFileNames }: { selectedFil
       let taskInfo = null;
       try {
         // Add the selected folder as a scanned folder
-        let task_description = `Adding file to sync: ${file}`;
+        const task_description = `Adding file to sync: ${file}`;
         taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
         setTaskbox_expanded(true);
 

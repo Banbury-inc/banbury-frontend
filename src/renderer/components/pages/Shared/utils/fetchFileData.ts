@@ -1,8 +1,5 @@
 import axios from 'axios';
-import fs from 'fs';
 import { DatabaseData } from '../components/NewTreeView/types';
-import { useState } from 'react';
-import { useAuth } from '../../../../context/AuthContext';
 import { CONFIG } from '../../../../config/config';
 
 export const fetchFileData = async (

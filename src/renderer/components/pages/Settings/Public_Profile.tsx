@@ -32,8 +32,8 @@ export default function Public_Profile() {
         picture: any | null) => {
 
         try {
-            let task_description = 'Updating Settings';
-            let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+            const task_description = 'Updating Settings';
+            const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
             setTaskbox_expanded(true);
 
             const pictureData = localPicture ? {
@@ -41,7 +41,7 @@ export default function Public_Profile() {
                 content_type: localPicture.content_type
             } : undefined;
 
-            let response = await handlers.users.change_profile_info(
+            const response = await handlers.users.change_profile_info(
                 username ?? '',
                 first_name,
                 last_name,

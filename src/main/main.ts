@@ -1,15 +1,10 @@
 import * as path from "path";
 import * as url from "url";
 import axios from 'axios'; // Adjusted import for axios
-import net from 'net';
 import { BrowserWindow, app, dialog, ipcMain } from "electron";
 import { autoUpdater } from "electron-updater";
-import { exec } from "child_process";
-import { resolve } from 'path';
 import { shell } from "electron";
-import { useEffect } from 'react';
 
-import { useAuth } from '../renderer/context/AuthContext';
 import { UpdateService } from './update-service';
 
 const fs = require('fs').promises;

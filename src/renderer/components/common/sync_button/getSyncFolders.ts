@@ -1,5 +1,4 @@
 import { neuranet } from "../../../neuranet";
-import { useAuth } from "../../../context/AuthContext";
 
 export const getSyncFolders = async (devices: any[], username: string) => {
     try {

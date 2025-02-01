@@ -1,12 +1,8 @@
 import axios from 'axios';
-import { neuranet } from '..';
 import { CONFIG } from '../../config/config';
-
-
 
 export async function getNotifications(username: string) {
     try {
-        const deviceName = neuranet.device.name();
         const url = `${CONFIG.url}/notifications/get_notifications/${username}/`;
 
         const response = await axios.get(url);

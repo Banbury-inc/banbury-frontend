@@ -1,32 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios';
-import { alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
-import Checkbox from '@mui/material/Checkbox';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import { Container, Typography, Grid, Button } from "@mui/material";
-import Chip from '@mui/material/Chip';
-import Avatar from '@mui/material/Avatar';
+import { Typography, Grid, Button } from "@mui/material";
 import { Stack } from '@mui/material';
-import { exec } from "child_process";
 import AccountMenuIcon from '../common/AccountMenuIcon';
 import { useAuth } from '../../context/AuthContext';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Divider from '@mui/material/Divider';
 import { Email } from '@mui/icons-material';
-import * as path from "path";
 import { handlers } from '../../handlers';
 
 interface Device {

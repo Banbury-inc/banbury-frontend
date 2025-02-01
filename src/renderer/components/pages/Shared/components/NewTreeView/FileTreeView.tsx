@@ -10,10 +10,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import VideocamIcon from '@mui/icons-material/Videocam'; import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import DescriptionIcon from '@mui/icons-material/Description';
 
-import { fileWatcherEmitter } from '../../../../../neuranet/device/watchdog';
 
-import axios from 'axios';
-import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
@@ -23,9 +20,7 @@ const directory_path: string = path.join(os.homedir(), directory_name);
 const snapshot_json: string = path.join(directory_path, file_name);
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../../context/AuthContext';
-import * as utils from '../../../../../utils';
 import { buildTree } from './utils/buildTree';
-import { fetchFileData } from '../../utils/fetchFileData'
 import { DatabaseData } from './types';
 import { fetchFileSyncData } from '../../utils/fetchFileSyncData';
 

@@ -49,8 +49,8 @@ export default function DeleteFileButton({
         return;
       }
 
-      let task_description = 'Deleting ' + selectedFileNames.join(', ');
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = 'Deleting ' + selectedFileNames.join(', ');
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const response = await handlers.files.deleteFile(

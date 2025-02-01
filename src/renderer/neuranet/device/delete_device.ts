@@ -1,7 +1,5 @@
 import axios from 'axios';
 import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
@@ -10,13 +8,13 @@ export async function delete_device(
 ) {
 
 
-  let user = username;
+  const user = username;
 
   let url
 
     url = `${CONFIG.url}/devices/delete_device/${username}/`;
 
-  let device_name = neuranet.device.name();
+  const device_name = neuranet.device.name();
 
   try {
     const response = await axios.post<{ result: string; user: string; }>(url, {

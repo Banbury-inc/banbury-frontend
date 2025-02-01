@@ -23,8 +23,8 @@ export default function RemoveFileFromSyncButton({ selectedFileNames, onFinish }
         console.log("file", file);
 
         // Add the selected folder as a scanned folder
-        let task_description = `Removing file from sync: ${file}`;
-        let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const task_description = `Removing file from sync: ${file}`;
+        const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
         setTaskbox_expanded(true);
 
         const removeResult = await neuranet.device.remove_file_from_sync(file, username ?? '');

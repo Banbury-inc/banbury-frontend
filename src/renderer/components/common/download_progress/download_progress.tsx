@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import UploadIcon from '@mui/icons-material/Upload'; // For the trigger button
+// For the trigger button
 
 interface DownloadProgressProps {
   downloads: {

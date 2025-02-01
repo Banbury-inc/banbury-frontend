@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
-import { Divider, TextField, Typography, useMediaQuery, Theme } from '@mui/material';
+import { Divider, TextField, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
-import { CardContent, Container, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { CardContent } from "@mui/material";
 import AccountMenuIcon from '../../common/AccountMenuIcon';
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText } from '@mui/material';
 import { neuranet } from '../../../neuranet'
-import TaskBoxButton from '../../common/notifications/NotificationsButton';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
@@ -17,20 +16,15 @@ import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, InputAdornment, Badge, Avatar, Tabs, Tab } from '@mui/material';
 import { handlers } from '../../../handlers';
 import { useAuth } from '../../../context/AuthContext';
-import { TailwindButton } from './Tailwindbutton';
-import { Button } from '../../../../components/button'
-import { Heading, Subheading } from '../../../../components/heading'
-import { Text } from '../../../../components/text'
+import { Heading } from '../../../../components/heading'
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import { CircularProgress } from '@mui/material';
 import Skeleton from '@mui/material/Skeleton';
 import NotificationsButton from '../../common/notifications/NotificationsButton';
-import UploadProgress from '../../common/upload_progress/upload_progress';
-import DownloadProgress from '../../common/download_progress/download_progress';
 import { useAlert } from '../../../context/AlertContext';
-import { styled, Theme as MuiTheme } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 
 interface SearchResult {
   id: number;

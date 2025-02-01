@@ -1,12 +1,8 @@
 import * as React from 'react';
-import { exec } from "child_process";
 import { useState } from 'react';
 import { styled } from '@mui/material/styles';
-import Button from '@mui/material/Button';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import LoadingButton from '@mui/lab/LoadingButton';
-import { useAuth } from '../context/AuthContext';
 import { handlers } from '../handlers'
 
 const VisuallyHiddenInput = styled('input')({

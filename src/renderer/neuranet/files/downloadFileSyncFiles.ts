@@ -1,30 +1,16 @@
-import axios from 'axios';
 import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
-import { handlers } from '../../handlers';
 import { downloadFile } from '../../handlers/files/downloadFile';
 import path from 'path';
 import fs from 'fs';
 
 
-/**
- * Downloads files from available online devices in the sync queue
- * @param username - The username of the current user
- * @param download_queue - Array of files that need to be downloaded
- * @param devices - Array of available devices in the network
- * @param taskInfo - Information about the current download task
- * @returns Array of successfully downloaded file names
- */
 export async function downloadFileSyncFiles(
   username: string,
   download_queue: {
     files: any[];
     files_available_for_download: number;
   },
-  devices: any[],
-  taskInfo: any,
   tasks: any[] | null,
   setTasks: any,
   setTaskbox_expanded: any,
@@ -53,14 +39,13 @@ export async function downloadFileSyncFiles(
   }
 
   // Array to track successfully downloaded files
-  let downloaded_files = [];
-  let failed_files = [];
+  const downloaded_files = [];
+  const failed_files = [];
   let download_task: any;
   // Iterate through each file in the download queue
   for (let i = 0; i < download_queue.files.length; i++) {
     // Create a single task for the entire download process
-    let task_progress = i / download_queue.files.length;
-    let task_name = `Downloading files`;
+    const task_name = `Downloading files`;
 
     if (i === 0) {
       download_task = await neuranet.sessions.addTask(username ?? '', task_name, tasks, setTasks);
@@ -71,23 +56,21 @@ export async function downloadFileSyncFiles(
       if (download_task) {
         download_task.task_name = task_name;
         download_task.task_progress = i / download_queue.files.length * 100;
-        const update_response = await neuranet.sessions.updateTask(username ?? '', download_task);
       }
     }
 
     setTaskbox_expanded(true);
 
-    let file = download_queue.files[i];
+    const file = download_queue.files[i];
 
-    let file_name = file.file_name;
-    let source_device = file.device_name;
+    const file_name = file.file_name;
+    const source_device = file.device_name;
 
     // Check if file already exists in destination path
     const destination_path = path.join(CONFIG.download_destination, file_name);
     if (fs.existsSync(destination_path)) {
       console.log(`File ${file_name} already exists in ${destination_path}`);
       downloaded_files.push(file_name);
-      const response = await neuranet.files.add_device_id_to_file_sync_file(file_name, username);
       continue;
     }
     else {
@@ -150,7 +133,6 @@ export async function downloadFileSyncFiles(
   if (download_task && typeof download_task !== 'string') {
     download_task.task_progress = 100;
     download_task.task_status = 'complete';
-    const update_response = await neuranet.sessions.updateTask(username ?? '', download_task);
   }
 
   const final_result = {

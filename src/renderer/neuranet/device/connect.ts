@@ -1,16 +1,10 @@
-import axios from 'axios';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import { arrayBuffer } from 'stream/consumers';
 import { neuranet } from '../../neuranet'
 import { CONFIG } from '../../config/config';
-import { useAuth } from '../../context/AuthContext';
-import { Socket } from 'net';
-import { wakeOnLan, isValidMacAddress } from './wol';
 import { addDownloadsInfo } from '../../components/common/download_progress/add_downloads_info';
 import { addUploadsInfo } from '../../components/common/upload_progress/add_uploads_info';
-import { fetchNotifications } from '../../components/common/notifications/fetchNotifications';
 
 // Add state all file chunks with a reset function
 let accumulatedData: Buffer[] = [];
@@ -329,8 +323,6 @@ export async function createWebSocketConnection(
       };
       handleReceivedFileChunk(event.data, downloadDetails);
 
-      // Calculate total received bytes
-      const downloadedSize = accumulatedData.reduce((sum, chunk) => sum + chunk.length, 0);
 
 
     } else {
@@ -343,7 +335,6 @@ export async function createWebSocketConnection(
           console.log("Received file request:", data);
           const file_path = data.file_path;
           const file_name = data.file_name;
-          const transfer_room = data.transfer_room;
 
           try {
             const fileStream = fs.createReadStream(file_path);
@@ -503,7 +494,7 @@ export async function createWebSocketConnection(
         }
 
         if (data.request_type === 'device_info') {
-          let device_info = await neuranet.device.getDeviceInfo();
+          const device_info = await neuranet.device.getDeviceInfo();
           const message = {
             message: `device_info_response`,
             username: username,
@@ -518,45 +509,13 @@ export async function createWebSocketConnection(
           const download_queue = data.download_queue?.download_queue;
 
           if (download_queue && Array.isArray(download_queue.files)) {
-            const response = await neuranet.files.downloadFileSyncFiles(
-              username,
-              download_queue,
-              [],
-              taskInfo,
-              tasks,
-              setTasks,
-              setTaskbox_expanded,
-              socket as unknown as WebSocket,
-            );
           } else {
             console.error('Invalid download queue format received:', download_queue);
           }
         }
 
-        if (data.request_type === "wake_device") {
-          try {
-            const result = await wakeDevice(data.mac_address);
-            const response = {
-              message_type: 'wake_device_response',
-              username: username,
-              device_name: device_name,
-              success: result,
-              mac_address: data.mac_address
-            };
-            socket.send(JSON.stringify(response));
-          } catch (error) {
-            console.error('Error in wake device request:', error);
-            const response = {
-              message_type: 'wake_device_response',
-              username: username,
-              device_name: device_name,
-              success: false,
-              error: (error as Error).message,
-              mac_address: data.mac_address
-            };
-            socket.send(JSON.stringify(response));
-          }
-        }
+
+
       } catch (error) {
         console.error('Error processing message:', error);
       }
@@ -683,20 +642,6 @@ export function updateDownloadProgress(fileInfo: any, bytesReceived: number) {
   }]);
 }
 
-// Add this new function
-export async function wakeDevice(macAddress: string): Promise<boolean> {
-  try {
-    if (!isValidMacAddress(macAddress)) {
-      throw new Error('Invalid MAC address format');
-    }
-
-    const result = await wakeOnLan(macAddress);
-    return result;
-  } catch (error) {
-    console.error('Error waking device:', error);
-    throw error;
-  }
-}
 
 // Add a map to track total bytes uploaded for each file
 const fileUploadProgress = new Map<string, number>();
@@ -735,9 +680,6 @@ export function handleUploadProgress(chunk: string | Buffer, fileInfo: any) {
 }
 
 // Usage of the functions
-const username = 'mmills';
-const file_name = 'Logo.png';
-const file_path = path.join(os.homedir(), 'Downloads');  // Use a proper path
 const device_name = os.hostname();
 const taskInfo: TaskInfo = {
   task_name: 'download_file',

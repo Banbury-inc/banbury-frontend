@@ -51,24 +51,17 @@ export async function update_database_files(username: string) {
     // Add files to the database if available
     if (files_to_add.length > 0) {
       result = await neuranet.files.addFiles(username, files_to_add);
-      if (result === 'success') {
-      } else {
-      }
-    } else {
     }
 
     // Remove files if available
     if (files_to_remove.length > 0) {
       const device_name = os.hostname();
       result = await neuranet.files.removeFiles(username, device_name, files_to_remove);
-      if (result === 'success') {
-      } else {
-      }
-    } else {
     }
     return 'success';
 
   } catch (error) {
+    console.error('Error updating database:', error);
     return 'error';
   }
 }

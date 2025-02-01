@@ -1,7 +1,5 @@
 import axios from 'axios';
 import { neuranet } from '../../neuranet'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
@@ -10,9 +8,9 @@ export async function declare_offline(
 ) {
 
 
-  let user = username;
+  const user = username;
 
-  let device_name = neuranet.device.name();
+  const device_name = neuranet.device.name();
 
   try {
     const url = `${CONFIG.url}/devices/declare_offline/${username}/`;

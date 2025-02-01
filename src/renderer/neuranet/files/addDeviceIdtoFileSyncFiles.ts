@@ -1,8 +1,6 @@
 
 import axios from 'axios';
 import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
@@ -11,16 +9,11 @@ export async function add_device_id_to_file_sync_file(
   username: string,
 ) {
 
-
-  let user = username;
-
-  let device_name = neuranet.device.name();
+  const device_name = neuranet.device.name();
   console.log(file_name);
 
 
-  let url = `${CONFIG.url}/predictions/add_device_id_to_file_sync_file/${username}/`;
-
-
+  const url = `${CONFIG.url}/predictions/add_device_id_to_file_sync_file/${username}/`;
 
   const response = await axios.post<{ result: string; username: string; }>(url, {
     device_name: device_name,

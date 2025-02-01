@@ -41,7 +41,7 @@ export function downloadFile(files: string[], devices: string[]): Promise<string
             const directory_name: string = "BCloud";
             const directory_path: string = path.join(os.homedir(), directory_name);
             const file_save_path: string = path.join(directory_path, file_name);
-            let request_file_name = path.basename(file_save_path);
+            const request_file_name = path.basename(file_save_path);
 
             try {
               // Attempt to open the file

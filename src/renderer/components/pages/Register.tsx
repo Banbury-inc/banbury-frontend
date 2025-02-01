@@ -1,22 +1,16 @@
 import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import { useState } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import theme from "../../theme";
-import { exec } from "child_process";
 import SignIn from './Login';
-import * as path from "path";
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
 import { handlers } from '../../handlers';
 import axios from 'axios';
@@ -88,7 +82,7 @@ export default function SignUp() {
     });
 
     try {
-      let result = await handlers.users.registerUser(
+      const result = await handlers.users.registerUser(
         data.get('firstName') as string,
         data.get('lastName') as string,
         data.get('username') as string,

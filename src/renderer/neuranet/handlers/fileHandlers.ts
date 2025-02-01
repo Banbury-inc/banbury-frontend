@@ -18,10 +18,8 @@ export async function file_request(senderSocket: net.Socket, file_name: string, 
     const file_header = `FILE_REQUEST_RESPONSE:${request_file_name}:${file_size}:${null_string}:END_OF_HEADER`;
     senderSocket.write(file_header);
 
-    let total_bytes_sent = 0;
     file.on('data', (bytes_read: Buffer) => {
       senderSocket.write(bytes_read);
-      total_bytes_sent += bytes_read.length;
     });
 
     file.on('end', () => {

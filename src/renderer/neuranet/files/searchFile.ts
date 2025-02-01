@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
 import os from 'os';
 import { CONFIG } from '../../config/config';
 
@@ -15,7 +14,6 @@ export async function searchFile(username: string, fileName: string) {
     });
 
     if (response.data.result === 'success') {
-      const fileData = response.data.file;
       return response.data.file;
     } else if (response.data.result === 'device_not_found') {
       return 'device not found';
@@ -28,6 +26,7 @@ export async function searchFile(username: string, fileName: string) {
       return response.data.result;
     }
   } catch (error) {
+    console.error('Error fetching data:', error);
     return 'error';
   }
 }

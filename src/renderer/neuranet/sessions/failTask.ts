@@ -1,6 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
-import * as DateUtils from '../../utils/dateUtils';
 import { CONFIG } from '../../config/config';
 
 /**
@@ -18,9 +16,6 @@ export async function failTask(
   setTasks: any
 
 ) {
-
-
-  const user = username;
   const task_response = response;
 
   try {

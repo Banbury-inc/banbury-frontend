@@ -1,24 +1,15 @@
 import * as React from 'react';
 import Badge from '@mui/material/Badge';
-import MailIcon from '@mui/icons-material/Mail';
 import { Box } from '@mui/system';
 import ShareIcon from '@mui/icons-material/Share';
-import { Avatar } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
-import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
-import Stack from '@mui/material';
 
 
 
