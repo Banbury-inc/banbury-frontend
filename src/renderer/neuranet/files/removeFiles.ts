@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
 import { CONFIG } from '../../config/config';
 
 export async function removeFiles(

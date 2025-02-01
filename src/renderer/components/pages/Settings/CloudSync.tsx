@@ -22,11 +22,11 @@ export default function CloudSync() {
         predicted_download_speed_weighting: number) => {
 
         try {
-            let task_description = 'Updating Settings';
-            let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+            const task_description = 'Updating Settings';
+            const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
             setTaskbox_expanded(true);
 
-            let response = await neuranet.settings.updatePerformanceScoreWeightings(
+            const response = await neuranet.settings.updatePerformanceScoreWeightings(
                 username,
                 predicted_cpu_usage_weighting,
                 predicted_ram_usage_weighting,

@@ -1,11 +1,8 @@
 
-import { neuranet } from '../../neuranet';
-import axios from 'axios';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { DateTime } from 'luxon';
-import { handlers } from '../../handlers';
 import { CONFIG } from '../../config/config';
 
 export async function save_snapshot(username: string) {
@@ -15,7 +12,7 @@ export async function save_snapshot(username: string) {
   // Determine the directory path based on the fullDeviceSync flag
   const bcloudDirectoryPath = fullDeviceSync ? os.homedir() : path.join(os.homedir(), 'BCloud');
 
-  let filesInfo: any[] = [];
+  const filesInfo: any[] = [];
 
   // Check if the directory exists, create if it does not and create a welcome text file
   if (!fs.existsSync(bcloudDirectoryPath)) {

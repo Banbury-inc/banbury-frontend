@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import * as deviceInfo from '../deviceInfo';
 
 test('cpu_usage returns a number between 0 and 100', async () => {

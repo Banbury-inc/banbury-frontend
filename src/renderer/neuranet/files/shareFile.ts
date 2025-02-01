@@ -1,24 +1,12 @@
 
 import axios from 'axios';
-import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
-
 
 export async function shareFile(
     file_name: string,
     username: string | null,
     friend_username: string | null,
 ) {
-
-
-    console.log('shareFile called with file_name: ', file_name, 'username: ', username, 'friend_username: ', friend_username);
-
-
-    let user = username;
-
-    let device_name = neuranet.device.name();
 
     let url = ''
 

@@ -1,7 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
@@ -18,7 +15,7 @@ export async function addNotification(
 
 
 
-    let url = `${CONFIG.url}/notifications/add_notification/${username}/`;
+    const url = `${CONFIG.url}/notifications/add_notification/${username}/`;
 
 
 

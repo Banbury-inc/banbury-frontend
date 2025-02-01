@@ -1,6 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
-import * as DateUtils from '../../utils/dateUtils';
 import { CONFIG } from '../../config/config';
 
 /**

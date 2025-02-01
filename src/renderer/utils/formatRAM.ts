@@ -2,7 +2,7 @@
 // Add this utility function at the top of the file, outside of any component
 export function formatRAM(capacity: string | number): string {
   // Convert capacity to number if it's a string
-  let capacityInBytes = typeof capacity === 'string' ? parseFloat(capacity) : capacity;
+ const capacityInBytes = typeof capacity === 'string' ? parseFloat(capacity) : capacity;
 
   // If conversion failed or capacity is not a valid number, return as is
   if (isNaN(capacityInBytes)) {

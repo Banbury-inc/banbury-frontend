@@ -47,6 +47,7 @@ export function Alert({ title, messages, variant = 'info', isVisible }: AlertPro
                 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}
                 ${config.bgColor} text-white border-[0.5px] border-white/10
                 shadow-[0_0_1px_rgba(255,255,255,0.1)]
+                z-[10000]
             `}
             style={{ maxWidth: '400px' }}
         >

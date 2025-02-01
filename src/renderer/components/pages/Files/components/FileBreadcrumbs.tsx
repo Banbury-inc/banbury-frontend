@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from '@mui/material';
 import { Breadcrumbs } from '@mui/material';
 import GrainIcon from '@mui/icons-material/Grain';
-import DevicesIcon from '@mui/icons-material/Devices';
 import { useAuth } from '../../../../context/AuthContext';
 
 export function FileBreadcrumbs() {

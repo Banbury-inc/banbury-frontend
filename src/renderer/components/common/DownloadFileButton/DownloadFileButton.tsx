@@ -52,8 +52,8 @@ export default function DownloadFileButton({
       // Add to downloads tracking
       addDownloadsInfo(initialDownloads);
 
-      let task_description = 'Downloading ' + selectedFileNames.join(', ');
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = 'Downloading ' + selectedFileNames.join(', ');
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       // Add timeout promise

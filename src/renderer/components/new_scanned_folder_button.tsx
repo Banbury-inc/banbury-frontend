@@ -6,7 +6,6 @@ interface NewScannedFolderButtonProps {
 import { Tooltip } from '@mui/material';
 import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import LoadingButton from '@mui/lab/LoadingButton';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { useAuth } from '../context/AuthContext';
 import { neuranet } from '../neuranet';
 import path from 'path';
@@ -36,8 +35,8 @@ export default function NewScannedFolderButton({ fetchDevices }: NewScannedFolde
       const absoluteFolderPath = path.dirname(file.path);
 
       // Add the selected folder as a scanned folder
-      let task_description = `Adding scanned folder: ${absoluteFolderPath}`;
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const addResult = await neuranet.device.add_scanned_folder(absoluteFolderPath, username ?? '');

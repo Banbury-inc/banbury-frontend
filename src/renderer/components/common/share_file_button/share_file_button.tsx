@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Popover, Box, Typography, Stack, Autocomplete, TextField, Chip, Paper, Badge, CircularProgress, Switch, Tooltip } from '@mui/material';
+import { Button, Popover, Box, Typography, Stack, Autocomplete, TextField, Chip, Paper, CircularProgress, Switch, Tooltip } from '@mui/material';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import LinkIcon from '@mui/icons-material/Link';
@@ -10,7 +10,6 @@ import { useAuth } from '../../../context/AuthContext';
 import CheckIcon from '@mui/icons-material/Check';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LockIcon from '@mui/icons-material/Lock';
-import { CONFIG } from '../../../config/config';
 import { useAlert } from '../../../context/AlertContext';
 
 interface ShareFileButtonProps {

@@ -6,17 +6,12 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { fontSize } from '@mui/system';
 import { CONFIG } from '../../config/config';
 export default function AccountMenuIcon() {
   const { username, first_name, last_name, picture, setFirstname, setLastname, redirect_to_login, setredirect_to_login } = useAuth();
@@ -49,7 +44,7 @@ export default function AccountMenuIcon() {
 
   return (
     <React.Fragment>
-      <Box sx={{ mr: '20px', pb: '2px', display: 'flex', alignItems: 'center', textAlign: 'center' }}>
+      <Box sx={{ zIndex: 9999, mr: '20px', pr: '10px', pb: '2px', display: 'flex', alignItems: 'center', textAlign: 'center' }}>
         <Tooltip title="Account">
           <Avatar
             onClick={handleClick}

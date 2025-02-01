@@ -2,14 +2,12 @@ import chokidar from 'chokidar';
 import { CONFIG } from '../../config/config';
 import os from 'os';
 import path from 'path';
-import { handlers } from '../../handlers';
 import fs from 'fs';
-import si from '../../../../dependency/systeminformation'
 import { DateTime } from 'luxon';
 import { neuranet } from '../../neuranet'
+import { EventEmitter } from 'events';
 
 
-const EventEmitter = require('events');
 export const fileWatcherEmitter = new EventEmitter();
 
 
@@ -103,11 +101,8 @@ function onFileAdded(filePath: string, username: string) {
 
   // Read the snapshot JSON file
   const data = fs.readFileSync(snapshot_json, 'utf8');
-  let database_snapshot = JSON.parse(data);  // Parse JSON data
+  const database_snapshot = JSON.parse(data);  // Parse JSON data
 
-  // File to delete (you can adjust this filePath)
-  const file_name_to_add = path.basename(filePath);
-  const file_path_to_add = path.join(path.dirname(filePath), path.basename(filePath));
 
   // Check if the file already exists in the snapshot
   const existingFileIndex = database_snapshot.findIndex(
@@ -207,16 +202,16 @@ export function detectFileChanges(directoryPath: string, username: string) {
     .on('unlink', (filePath) => {
       onFileDeleted(filePath, username); // Call the onFileAdded function
     })
-    .on('change', (filePath) => {
+    .on('change', () => {
       // Silently handle file changes
     })
-    .on('addDir', (filePath) => {
+    .on('addDir', () => {
       // Silently handle directory additions
     })
-    .on('unlinkDir', (filePath) => {
+    .on('unlinkDir', () => {
       // Silently handle directory removals
     })
-    .on('error', (error) => {
+    .on('error', () => {
       // Silently handle errors
     })
     .on('ready', () => {

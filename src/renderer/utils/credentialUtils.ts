@@ -16,6 +16,7 @@ export function loadCredentials(): Record<string, string> {
     const credentialsFilePath = path.join(BANBURY_FOLDER, credentialsFile);
     return JSON.parse(fs.readFileSync(credentialsFilePath, 'utf-8'));
   } catch (error) {
+    console.error('Error loading credentials:', error);
     return {};
   }
 }

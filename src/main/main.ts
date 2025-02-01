@@ -1,15 +1,10 @@
 import * as path from "path";
 import * as url from "url";
 import axios from 'axios'; // Adjusted import for axios
-import net from 'net';
 import { BrowserWindow, app, dialog, ipcMain } from "electron";
 import { autoUpdater } from "electron-updater";
-import { exec } from "child_process";
-import { resolve } from 'path';
 import { shell } from "electron";
-import { useEffect } from 'react';
 
-import { useAuth } from '../renderer/context/AuthContext';
 import { UpdateService } from './update-service';
 
 const fs = require('fs').promises;
@@ -25,7 +20,7 @@ function createWindow(): void {
     // backgroundColor: "#23272a",
     backgroundColor: "rgb(33, 33, 33)",
     titleBarStyle: 'hidden' || 'customButtonsOnHover',
-    trafficLightPosition: { x: 15, y: 15 },
+    trafficLightPosition: { x: 15, y: 12 },
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

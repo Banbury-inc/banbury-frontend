@@ -1,15 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import os from 'os';
 import Stack from '@mui/material/Stack';
-import { Button, Divider, FormControlLabel, FormGroup, Slider, Switch, TextField, Typography, useMediaQuery } from '@mui/material';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
-import { CardContent, Container, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { CardContent } from "@mui/material";
 import AccountMenuIcon from '../../common/AccountMenuIcon';
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText } from '@mui/material';
-import { neuranet } from '../../../neuranet'
-import TaskBoxButton from '../../common/notifications/NotificationsButton';
 import App from './App';
 import CloudSync from './CloudSync';
 import Public_Profile from './Public_Profile';

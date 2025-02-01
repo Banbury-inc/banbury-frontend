@@ -5,7 +5,7 @@ export async function addFile(
   username: string,
   fileInfo: any) {
 
-  let taskInfo = {
+  const taskInfo = {
     name: 'add file ' + fileInfo.file_name,
     device: fileInfo.original_device,
     status: 'pending',
@@ -31,20 +31,20 @@ export async function addFile(
     const result = response.data.result;
     if (result === 'success') {
       console.log("File added successfully");
-      let taskInfo = {
+      const taskInfo = {
         name: 'add file ' + fileInfo.file_name,
         device: fileInfo.original_device,
         status: 'complete',
       }
-      let task = await neuranet.sessions.updateTask(username, taskInfo);
+      const task = await neuranet.sessions.updateTask(username, taskInfo);
       return 'success';
     } else if (result === 'fail') {
-      let taskInfo = {
+      const taskInfo = {
         name: 'add file ' + fileInfo.file_name,
         device: fileInfo.original_device,
         status: 'fail',
       }
-      let task = await neuranet.sessions.updateTask(username, taskInfo);
+      const task = await neuranet.sessions.updateTask(username, taskInfo);
 
       console.log("Failed to add file");
       return 'failed';

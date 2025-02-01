@@ -1,7 +1,5 @@
 import axios from 'axios';
 import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
@@ -11,12 +9,12 @@ export async function add_file_to_sync(
 ) {
 
 
-  let user = username;
+  const user = username;
 
-  let device_name = neuranet.device.name();
+  const device_name = neuranet.device.name();
 
 
-    let url = `${CONFIG.url}/predictions/add_file_to_sync/${username}/`;
+    const url = `${CONFIG.url}/predictions/add_file_to_sync/${username}/`;
 
     
 

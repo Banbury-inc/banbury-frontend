@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
 import os from 'os';
 import { CONFIG } from '../../config/config';
 
@@ -31,6 +30,7 @@ export async function addFiles(
       return 'add file failed';
     }
   } catch (error) {
+    console.error('Error adding file:', error);
     return 'error';
   }
 }

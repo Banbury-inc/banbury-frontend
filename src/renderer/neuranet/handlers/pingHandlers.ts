@@ -12,7 +12,7 @@ export async function small_ping_request(username: string, senderSocket: net.Soc
   // let user = Object.keys(credentials)[0];
   const device_number = 0;
   const device_name = neuranet.device.name();
-  const files = await neuranet.device.directory_info(username);
+  const files = await neuranet.device.directory_info();
   const date_added = DateUtils.get_current_date_and_time();
 
   const device_info_json: SmallDeviceInfoType = {
@@ -32,7 +32,7 @@ export async function ping_request(username: string, senderSocket: net.Socket): 
   const user = username;
   const device_number = 1;
   const device_name = neuranet.device.name();
-  const files = await neuranet.device.directory_info(username);
+  const files = await neuranet.device.directory_info();
   const storage_capacity_GB = await neuranet.device.storage_capacity();
   const max_storage_capacity_GB = 50;
   const date_added = DateUtils.get_current_date_and_time();

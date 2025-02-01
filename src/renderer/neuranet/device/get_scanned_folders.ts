@@ -1,7 +1,5 @@
 import axios from 'axios';
 import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
@@ -10,12 +8,12 @@ export async function get_scanned_folders(
 ) {
 
 
-  let user = username;
+  const user = username;
 
-  let device_name = neuranet.device.name();
+  const device_name = neuranet.device.name();
 
 
-    let url = `${CONFIG.url}/files/get_scanned_folders/${username}/`;
+    const url = `${CONFIG.url}/files/get_scanned_folders/${username}/`;
 
 
 

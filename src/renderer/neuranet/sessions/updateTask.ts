@@ -1,6 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
-import * as DateUtils from '../../utils/dateUtils';
 import { CONFIG } from '../../config/config';
 
 /**
@@ -12,10 +10,6 @@ export async function updateTask(
   username: string | null,
   taskInfo: any
 ) {
-
-
-  const user = username;
-
 
   try {
     const url = `${CONFIG.url}/tasks/update_task/${username}/`;

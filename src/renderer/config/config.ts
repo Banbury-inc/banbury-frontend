@@ -1,6 +1,5 @@
 import path from 'path';
 import os from 'os';
-import { getDeviceId } from '../neuranet/device';
 
 
 export const CONFIG = {

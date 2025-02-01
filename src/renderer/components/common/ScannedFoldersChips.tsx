@@ -1,7 +1,6 @@
 import React from 'react';
 import { Stack, Chip } from '@mui/material';
 import { neuranet } from '../../neuranet';
-import { useAuth } from '../../context/AuthContext';
 
 interface ScannedFoldersChipsProps {
   scanned_folders: string[];

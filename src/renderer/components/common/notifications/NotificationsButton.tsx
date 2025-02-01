@@ -1,14 +1,11 @@
 import * as React from 'react';
-import { Box, Button, Typography, Popover, IconButton, Stack, Divider, Tooltip } from '@mui/material';
+import { Box, Button, Typography, Popover, IconButton, Stack, Tooltip } from '@mui/material';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
-import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import { formatDistanceToNow } from 'date-fns';
-import { deleteNotification, getNotifications, markNotificationAsRead } from '../../../neuranet/notifications';
+import { deleteNotification, markNotificationAsRead } from '../../../neuranet/notifications';
 import DoneIcon from '@mui/icons-material/Done';
 import { useAuth } from '../../../context/AuthContext';
 import { fetchNotifications } from './fetchNotifications';
-import { neuranet } from '../../../neuranet';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 interface UserNotification {
@@ -130,7 +127,8 @@ export default function NotificationsButton({ }: {
           paddingLeft: '4px',
           paddingRight: '4px',
           minWidth: '30px',
-          position: 'relative'
+          position: 'relative',
+          zIndex: 9999
         }}
       >
         <NotificationsOutlinedIcon sx={{ fontSize: 'inherit' }} />

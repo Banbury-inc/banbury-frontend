@@ -1,8 +1,5 @@
 
 import axios from 'axios';
-import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
@@ -13,7 +10,6 @@ export async function makeFilePrivate(
 ) {
 
     console.log('makeFilePrivate called with file_name: ', file_name, 'username: ', username);
-    let user = username;
     let url = ''
     try {
         url = `${CONFIG.url}/files/make_file_private/`;

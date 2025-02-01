@@ -4,25 +4,17 @@ import Stack from '@mui/material/Stack';
 import { join } from 'path';
 import { shell } from 'electron';
 import axios from 'axios';
-import { FormControlLabel, FormGroup, Switch, useMediaQuery } from '@mui/material';
-import ButtonBase from '@mui/material/ButtonBase';
+import { Switch, useMediaQuery } from '@mui/material';
 import Box from '@mui/material/Box';
-import { readdir, stat } from 'fs/promises';
+import { stat } from 'fs/promises';
 import Table from '@mui/material/Table';
 import Chip from '@mui/material/Chip';
 import TableBody from '@mui/material/TableBody';
 import DevicesIcon from '@mui/icons-material/Devices';
-import MemoryIcon from '@mui/icons-material/Memory';
-import SpeedIcon from '@mui/icons-material/Speed';
 import TableCell from '@mui/material/TableCell';
-import CloudIcon from '@mui/icons-material/Cloud';
 import TableContainer from '@mui/material/TableContainer';
 import { Skeleton } from '@mui/material';
 import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import Breadcrumbs from '@mui/material/Breadcrumbs';
-import Link from '@mui/material/Link';
-import GrainIcon from '@mui/icons-material/Grain';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import Button from '@mui/material/Button';
@@ -31,9 +23,8 @@ import Checkbox from '@mui/material/Checkbox';
 import Tooltip from '@mui/material/Tooltip';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LineChart } from '@mui/x-charts/LineChart';
-import StarIcon from '@mui/icons-material/Star';
 import { visuallyHidden } from '@mui/utils';
-import { CardContent, Container, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import AccountMenuIcon from '../common/AccountMenuIcon';
 import ScannedFoldersChips from '../common/ScannedFoldersChips';
 import AddToQueueIcon from '@mui/icons-material/AddToQueue';
@@ -47,24 +38,10 @@ import path from 'path';
 import fs from 'fs';
 import { neuranet } from '../../neuranet';
 import { formatRAM } from '../../utils';
-import { fileWatcherEmitter } from '../../neuranet/device/watchdog';
-import TaskBoxButton from '../common/notifications/NotificationsButton';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
-import DeviceHubIcon from '@mui/icons-material/DeviceHub';
-import SettingsIcon from '@mui/icons-material/Settings';
-import StorageIcon from '@mui/icons-material/Storage';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import FolderSpecialIcon from '@mui/icons-material/FolderSpecial';
-import LaunchIcon from '@mui/icons-material/Launch';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import PendingIcon from '@mui/icons-material/Pending';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { CONFIG } from '../../config/config';
 import NotificationsButton from '../common/notifications/NotificationsButton';
 import { useAlert } from '../../context/AlertContext';
@@ -229,7 +206,7 @@ function formatStorageCapacity(capacity: string | number): string {
 // Add this utility function at the top of the file, outside of any component
 function formatTotalRAM(capacity: string | number): string {
   // Convert capacity to number if it's a string
-  let capacityInBytes = typeof capacity === 'string' ? parseFloat(capacity) : capacity;
+  const capacityInBytes = typeof capacity === 'string' ? parseFloat(capacity) : capacity;
 
   // If conversion failed or capacity is not a valid number, return as is
   if (isNaN(capacityInBytes)) {
@@ -600,7 +577,7 @@ export default function Devices() {
     const directoryPath = join(os.homedir(), directoryName);
     let fileFound = false;
     let folderFound = false;
-    let filePath = '';
+    const filePath = '';
     try {
       const deviceStat = await stat(newSelectedDeviceNames[0]);
       if (deviceStat.isFile()) {
@@ -625,10 +602,10 @@ export default function Devices() {
 
         console.error(`File '${file_name}' not found in directory, searhing other devices`);
 
-        let task_description = 'Opening ' + selectedDeviceNames.join(', ');
-        let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const task_description = 'Opening ' + selectedDeviceNames.join(', ');
+        const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
         setTaskbox_expanded(true);
-        let response = await handlers.files.downloadFile(
+        const response = await handlers.files.downloadFile(
           username ?? '',
           selectedDeviceNames,
           selectedDeviceNames,
@@ -640,13 +617,13 @@ export default function Devices() {
           websocket as unknown as WebSocket,
         );
         if (response === 'No file selected') {
-          let task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'File not available') {
-          let task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'success') {
-          let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
@@ -708,9 +685,9 @@ export default function Devices() {
   const handleAddDeviceClick = async () => {
     try {
       console.log("handling add device click");
-      let device_name = neuranet.device.name();
-      let task_description = 'Adding device ' + device_name;
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const device_name = neuranet.device.name();
+      const task_description = 'Adding device ' + device_name;
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const result = await handlers.devices.addDevice(username ?? '');
@@ -775,8 +752,8 @@ export default function Devices() {
     }
 
     try {
-      let task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const result = await neuranet.device.delete_device(username ?? '');
@@ -905,14 +882,14 @@ export default function Devices() {
   const handleSyncStorageChange = async (value: string) => {
     try {
       console.log(value);
-      let task_description = 'Updating Sync Storage Capacity';
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = 'Updating Sync Storage Capacity';
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      let result = await neuranet.device.update_sync_storage_capacity(username ?? '', value);
+      const result = await neuranet.device.update_sync_storage_capacity(username ?? '', value);
 
       if (result === 'success') {
-        let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         setUpdates(updates + 1);
         fetchDevices();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
@@ -931,28 +908,26 @@ export default function Devices() {
   const handleGetDownloadQueue = async (value: string) => {
     console.log(value);
 
-    let task_name = 'Getting Download Queue';
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_name, tasks, setTasks);
+    const task_name = 'Getting Download Queue';
+    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_name, tasks, setTasks);
     setTaskbox_expanded(true);
 
     // let response = await neuranet.files.getDownloadQueue(username ?? '');
-    let response = await neuranet.files.runPipeline(username ?? '');
+    const response = await neuranet.files.runPipeline(username ?? '');
 
     console.log('response: ', response);
 
-    let result = (response as any).result;
-    let download_queue = (response as any).download_queue;
+    const result = (response as any).result;
+    const download_queue = (response as any).download_queue;
 
 
     if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
       setUpdates(updates + 1);
       fetchDevices();
-      let downloadResult = await neuranet.files.downloadFileSyncFiles(
+      const downloadResult = await neuranet.files.downloadFileSyncFiles(
         username ?? '',
         download_queue ?? { files: [], files_available_for_download: 0 },
-        allDevices,
-        taskInfo,
         tasks ?? [],
         setTasks,
         setTaskbox_expanded,
@@ -973,8 +948,8 @@ export default function Devices() {
     useDeviceinFileSync: boolean
   ) => {
     try {
-      let task_description = 'Updating prediction preferences';
-      let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const task_description = 'Updating prediction preferences';
+      const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const result = await neuranet.device.updateScoreConfigurationPreferences(
@@ -991,7 +966,7 @@ export default function Devices() {
       );
 
       if (result === 'success') {
-        let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         showAlert('Success', ['Prediction preferences updated successfully'], 'success');
       } else {
         await neuranet.sessions.failTask(username ?? '', taskInfo, 'Failed to update prediction preferences', tasks, setTasks);

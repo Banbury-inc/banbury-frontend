@@ -3,7 +3,6 @@
   "plugins": [
     "react",
     "@typescript-eslint",
-    "prettier",
     "jsdoc",
     "unused-imports"
   ],
@@ -11,7 +10,6 @@
     "eslint:recommended",
     "plugin:react/recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier",
     "plugin:jsdoc/recommended"
   ],
   "env": {
@@ -35,19 +33,60 @@
     "react/react-in-jsx-scope": 0,
     "react/display-name": 0,
     "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-inferrable-types": "off",
+    "@typescript-eslint/ban-types": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/ban-ts-require": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-var-requires": "off",
     "unused-imports/no-unused-imports": "error",
-    "react/prop-types": 0,
-    "jsdoc/require-jsdoc": [
-      "warn",
+    "unused-imports/no-unused-vars": [
+      "error",
       {
-        "require": {
-          "FunctionDeclaration": false,
-          "MethodDefinition": false,
-          "ClassDeclaration": false,
-          "ArrowFunctionExpression": false,
-          "FunctionExpression": false
-        }
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
       }
-    ]
-  }
+    ],
+    "react/prop-types": 0,
+    "@typescript-eslint/no-unused-expressions": [
+      "error",
+      {
+        "allowShortCircuit": true,
+        "allowTernary": true,
+        "allowTaggedTemplates": true
+      }
+    ],
+    "jsdoc/require-jsdoc": "off",
+    "jsdoc/require-param": "off",
+    "jsdoc/require-param-description": "off",
+    "jsdoc/require-param-type": "off",
+    "jsdoc/check-param-names": "off",
+    "jsdoc/require-returns": "off",
+    "jsdoc/require-returns-description": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "build",
+    "public",
+    "static",
+    "src/renderer/components/common/upload_progress/upload_progress.tsx",
+    "dependency",
+    "docs",
+    "jest.config.js",
+    "postcss.config.js",
+    "tailwind.config.js",
+    "tsconfig.json",
+    "tsconfig.node.json",
+    "webpack.config.js",
+    "webpack.config.ts",
+    "webpack.config.tsx",
+    "notarize.ts"
+  ]
 }

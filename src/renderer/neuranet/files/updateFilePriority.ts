@@ -1,7 +1,5 @@
 
 import axios from 'axios';
-import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
 import { CONFIG } from '../../config/config';
 
 
@@ -14,10 +12,6 @@ export async function updateFilePriority(
 
     console.log('updateFilePriority called with file_id: ', file_id, 'username: ', username, 'priority: ', priority);
 
-
-    let user = username;
-
-    let device_name = neuranet.device.name();
 
     let url = ''
 

@@ -33,8 +33,6 @@ describe('downloadFileSyncFiles', () => {
       mockUsername,
       download_queue,
       [],
-      {},
-      [],
       mockSetTasks,
       mockSetTaskboxExpanded,
       mockWebsocket,
@@ -59,8 +57,6 @@ describe('downloadFileSyncFiles', () => {
     const result = await downloadFileSyncFiles(
       mockUsername,
       download_queue,
-      [],
-      {},
       [],
       mockSetTasks,
       mockSetTaskboxExpanded,
@@ -87,8 +83,6 @@ describe('downloadFileSyncFiles', () => {
       mockUsername,
       download_queue,
       [],
-      {},
-      [],
       mockSetTasks,
       mockSetTaskboxExpanded,
       mockWebsocket,
@@ -96,6 +90,6 @@ describe('downloadFileSyncFiles', () => {
 
     expect(result).toEqual([]);
     expect(neuranet.sessions.failTask).toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalled;
+    expect(console.error).toHaveBeenCalled();
   });
 }); 

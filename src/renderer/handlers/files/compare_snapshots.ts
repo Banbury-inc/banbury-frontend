@@ -124,7 +124,7 @@ export async function compare_snapshots() {
 
   if (!serverFiles || !clientFiles) {
     console.error('Failed to load snapshots.');
-    let result = 'error';
+    const result = 'error';
     return result;
   }
 
@@ -140,7 +140,7 @@ export async function compare_snapshots() {
   fs.writeFileSync(comparisonFilePath, JSON.stringify(comparisonResult, null, 2));
   //
   // console.log(`Comparison result saved to ${comparisonFilePath}`);
-  let result = 'success';
+  const result = 'success';
   return result;
 
 }

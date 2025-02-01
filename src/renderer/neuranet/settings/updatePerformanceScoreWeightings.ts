@@ -1,7 +1,5 @@
 
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
-import * as DateUtils from '../../utils/dateUtils';
 import { CONFIG } from '../../config/config';
 
 /**
@@ -17,10 +15,6 @@ export async function updatePerformanceScoreWeightings(
   predicted_download_speed_weighting: any,
   predicted_upload_speed_weighting: any
 ) {
-
-
-  const user = username;
-
 
   try {
 

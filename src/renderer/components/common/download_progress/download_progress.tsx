@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import UploadIcon from '@mui/icons-material/Upload'; // For the trigger button
+// For the trigger button
 
 interface DownloadProgressProps {
   downloads: {
@@ -54,7 +54,7 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
     <>
       <Button
         onClick={handleClick}
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }}
       >
         <DownloadIcon sx={{ fontSize: 'inherit' }} />
         {activeDownloads > 0 && (

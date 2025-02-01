@@ -1,16 +1,12 @@
 
 import axios from 'axios';
-import { neuranet } from '..'
-import * as DateUtils from '../../utils/dateUtils';
-import { useAuth } from '../../context/AuthContext';
 import { CONFIG } from '../../config/config';
 
 
 export async function runPipeline(
   username: string,
 ) {
-  let device_name = neuranet.device.name();
-  let url = `${CONFIG.url}/predictions/run_pipeline/${username}/`;
+  const url = `${CONFIG.url}/predictions/run_pipeline/${username}/`;
 
   try {
     const response = await axios.get<{ result: string; username: string; }>(url);

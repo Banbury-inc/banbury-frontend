@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { handlers } from '../index'; // Adjust the path according to your project structure
+// Adjust the path according to your project structure
 
 export async function deleteFile(
   setSelectedFileNames: (selectedFileNames: string[]) => void,

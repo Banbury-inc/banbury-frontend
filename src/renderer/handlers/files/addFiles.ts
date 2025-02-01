@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
 import os from 'os';
 import { CONFIG } from '../../config/config';
 

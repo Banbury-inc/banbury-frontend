@@ -24,7 +24,8 @@
     "src/**/**/test/**/*.tsx",
     "src/**/*.ts",
     "src/**/*.tsx",
-    "src/renderer/neuranet/device/**/*.ts"
+    "src/renderer/neuranet/device/**/*.ts",
+    "src/renderer/types/*.d.ts"
   ],
   "exclude": [
     "node_modules",

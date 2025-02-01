@@ -8,7 +8,7 @@ export async function updateDevice(username: any) {
     const user = username || "user";
     const device_number = 0;
     const device_name = neuranet.device.name();
-    const files = await neuranet.device.directory_info(username);
+    const files = await neuranet.device.directory_info();
     const date_added = DateUtils.get_current_date_and_time();
 
     interface SmallDeviceInfo {

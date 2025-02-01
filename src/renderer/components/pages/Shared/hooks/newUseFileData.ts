@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { fetchDeviceData } from '../utils/fetchDeviceData';
 import { fetchSharedFilesData } from '../utils/fetchSharedFilesData';
 
 
