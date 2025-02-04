@@ -150,7 +150,6 @@ const ResizeHandle = styled('div')(({ theme }) => ({
 }));
 
 export default function Shared() {
-  const isSmallScreen = useMediaQuery('(max-width:960px)');
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DatabaseData>('file_name');
   const [selected, setSelected] = useState<readonly string[]>([]);
@@ -159,11 +158,8 @@ export default function Shared() {
   const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [isAddingFolder, setIsAddingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
   const [disableFetch, setDisableFetch] = useState(false);
   const {
     updates,
@@ -171,59 +167,18 @@ export default function Shared() {
     tasks,
     setTasks,
     username,
-    sync_files,
-    first_name,
-    last_name,
     devices,
     setFirstname,
     setLastname,
     setDevices,
-    setSyncFiles,
-    redirect_to_login,
-    setRedirectToLogin,
-    taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();
-  const getSelectedFileNames = () => {
-    return selected
-      .map((id) => {
-        const file = sharedFiles.find((file: any) => file.id === id);
-        return file ? file.file_name : null;
-      })
-      .filter((file_name) => file_name !== null); // Filter out any null values if a file wasn't found
-  };
 
 
 
-  // useEffect(() => {
-  //   const fetchAndUpdateDevices = async () => {
-  //     const new_devices = await fetchDeviceData(
-  //       username || '',
-  //       disableFetch,
-  //       global_file_path || '',
-  //       {
-  //         setFirstname,
-  //         setLastname,
-  //         setDevices,
-  //       },
-  //     );
-
-  //     if (new_devices) {
-  //       if (devices) {
-  //         const updatedDevices = [...devices, ...new_devices];
-  //         setDevices(updatedDevices);
-  //       } else {
-  //         setDevices(new_devices);
-  //       }
-  //     }
-  //   };
-
-  //   fetchAndUpdateDevices();
-  // }, [username, disableFetch, updates, global_file_path]);
 
 
-
-  const { isLoading, allFiles, sharedFiles, setSharedFiles } = newUseFileData(
+  const { isLoading, allFiles, sharedFiles} = newUseFileData(
     username,
     disableFetch,
     updates,
@@ -282,11 +237,8 @@ export default function Shared() {
       .map((id) => sharedFiles.find((file: any) => file.id === id)?.file_path)
       .filter((name) => name !== undefined) as string[];
     console.log(newSelectedFilePaths[0]);
-    const directoryName = 'BCloud';
-    const directoryPath = join(os.homedir(), directoryName);
     let fileFound = false;
     let folderFound = false;
-    const filePath = '';
     try {
       const fileStat = await stat(newSelectedFilePaths[0]);
       if (fileStat.isFile()) {
@@ -324,14 +276,7 @@ export default function Shared() {
           setTaskbox_expanded,
           websocket as unknown as WebSocket,
         );
-        if (response === 'No file selected') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
-        }
-        if (response === 'File not available') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
-        }
         if (response === 'success') {
-          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
@@ -375,7 +320,6 @@ export default function Shared() {
     }
     setSelected(newSelected);
 
-    const file_name = sharedFiles.find((file: any) => file._id === id)?.file_name;
     const newSelectedFileNames = newSelected
       .map((id) => sharedFiles.find((file: any) => file._id === id)?.file_name)
       .filter((name) => name !== undefined) as string[];
@@ -402,7 +346,6 @@ export default function Shared() {
 
   // Avoid a layout jump when reaching the last page with empty rows.
   // Calculate empty rows for pagination
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - sharedFiles.length) : 0;
 
   function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
     return array
@@ -433,30 +376,6 @@ export default function Shared() {
     }
     return 0;
   }
-
-  const handlePriorityChange = async (row: any, newValue: number | null) => {
-    if (newValue === null) return;
-
-
-    const task_description = 'Updating File Priority';
-    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
-
-    const newPriority = newValue;
-
-    const result = await neuranet.files.updateFilePriority(row._id, username ?? '', newPriority);
-
-    if (result === 'success') {
-      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      setUpdates(updates + 1);
-    }
-
-
-
-  };
-
-  const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
 
   const fetchUserInfo = async () => {
     try {

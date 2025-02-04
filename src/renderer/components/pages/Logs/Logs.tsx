@@ -1,20 +1,9 @@
-import AddToQueueIcon from '@mui/icons-material/AddToQueue';
-import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DevicesIcon from '@mui/icons-material/Devices';
-import DownloadIcon from '@mui/icons-material/Download';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import GrainIcon from '@mui/icons-material/Grain';
-import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
-import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
 import { CardContent, Container, Divider, Skeleton, useMediaQuery, LinearProgress } from '@mui/material';
 import Box from '@mui/material/Box';
-import Breadcrumbs from '@mui/material/Breadcrumbs'; import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
-import Checkbox from '@mui/material/Checkbox';
 import Grid from '@mui/material/Grid';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -24,7 +13,6 @@ import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { visuallyHidden } from '@mui/utils';
 import { shell } from 'electron';
@@ -32,7 +20,7 @@ import fs from 'fs';
 import { stat } from 'fs/promises';
 import os from 'os';
 import path, { join } from 'path';
-import React, { useEffect, useState } from 'react';
+import React, {useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
 import { neuranet } from '../../../neuranet';
@@ -41,12 +29,8 @@ import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
 
 
-import SyncIcon from '@mui/icons-material/Sync';
-import AddFileToSyncButton from '../../common/add_file_to_sync_button';
 import { EnhancedTableProps, HeadCell } from './types';
 import { UseLogData } from './hooks/newUseLogData';
-import Rating from '@mui/material/Rating';
-import { CONFIG } from '../../../config/config';
 import NotificationsButton from '../../common/notifications/NotificationsButton';
 
 
@@ -124,8 +108,6 @@ export default function Logs() {
   const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [isAddingFolder, setIsAddingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
   const [disableFetch, setDisableFetch] = useState(false);
   const {
     updates,
@@ -133,17 +115,10 @@ export default function Logs() {
     tasks,
     setTasks,
     username,
-    sync_files,
-    first_name,
-    last_name,
     devices,
     setFirstname,
     setLastname,
     setDevices,
-    setSyncFiles,
-    redirect_to_login,
-    setRedirectToLogin,
-    taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();
   const getSelectedFileNames = () => {
@@ -156,7 +131,7 @@ export default function Logs() {
   };
 
 
-  let { isLoading, logs, setLogs } = UseLogData(
+  let { isLoading, logs} = UseLogData(
     username,
     disableFetch,
     updates,
@@ -248,14 +223,7 @@ export default function Logs() {
           setTaskbox_expanded,
           websocket as unknown as WebSocket,
         );
-        if (response === 'No file selected') {
-          let task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
-        }
-        if (response === 'File not available') {
-          let task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
-        }
         if (response === 'success') {
-          let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
@@ -299,7 +267,6 @@ export default function Logs() {
 
   // Avoid a layout jump when reaching the last page with empty rows.
   // Calculate empty rows for pagination
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - logs.length) : 0;
 
   function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
     return array
@@ -330,34 +297,6 @@ export default function Logs() {
     }
     return 0;
   }
-
-  const handlePriorityChange = async (row: any, newValue: number | null) => {
-    if (newValue === null) return;
-
-
-    let task_description = 'Updating File Priority';
-    let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
-
-    const newPriority = newValue;
-
-    const result = await neuranet.files.updateFilePriority(row._id, username ?? '', newPriority);
-
-    if (result === 'success') {
-      let task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      setUpdates(updates + 1);
-    }
-
-
-
-  };
-
-  const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
-
-
-
-
 
   return (
     // <Box sx={{ width: '100%', pl: 4, pr: 4, mt: 0, pt: 5 }}>

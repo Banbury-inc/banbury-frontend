@@ -505,17 +505,6 @@ export async function createWebSocketConnection(
           socket.send(JSON.stringify(message));
         }
 
-        if (data.request_type === 'file_sync_request') {
-          const download_queue = data.download_queue?.download_queue;
-
-          if (download_queue && Array.isArray(download_queue.files)) {
-          } else {
-            console.error('Invalid download queue format received:', download_queue);
-          }
-        }
-
-
-
       } catch (error) {
         console.error('Error processing message:', error);
       }

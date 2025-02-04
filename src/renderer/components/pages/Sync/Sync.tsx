@@ -31,8 +31,6 @@ import RemoveFileFromSyncButton from './components/remove_file_from_sync_button/
 import FileTreeView from './components/NewTreeView/FileTreeView';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
-
-
 import { EnhancedTableProps, HeadCell } from './types';
 import { newUseFileData } from './hooks/newUseFileData';
 import Rating from '@mui/material/Rating';
@@ -40,7 +38,7 @@ import { CONFIG } from '../../../config/config';
 import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { styled } from '@mui/material/styles';
 
-const getHeadCells = (isCloudSync: boolean): HeadCell[] => [
+const getHeadCells = (): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'file_size', numeric: false, label: 'Size', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'device_ids', numeric: false, label: 'Coverage', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -52,7 +50,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   const isSmallScreen = useMediaQuery('(max-width:960px)');
   const { global_file_path } = useAuth();
   const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
+  const headCells = getHeadCells();
   const createSortHandler = (property: keyof DatabaseData) => (event: React.MouseEvent<unknown>) => {
     onRequestSort(event, property);
   };
@@ -147,7 +145,6 @@ const ResizeHandle = styled('div')(({ theme }) => ({
 }));
 
 export default function Sync() {
-  const isSmallScreen = useMediaQuery('(max-width:960px)');
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DatabaseData>('file_name');
   const [selected, setSelected] = useState<readonly string[]>([]);
@@ -156,11 +153,8 @@ export default function Sync() {
   const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [isAddingFolder, setIsAddingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
   const [disableFetch, setDisableFetch] = useState(false);
   const {
     updates,
@@ -168,59 +162,15 @@ export default function Sync() {
     tasks,
     setTasks,
     username,
-    sync_files,
-    first_name,
-    last_name,
     devices,
     setFirstname,
     setLastname,
     setDevices,
-    setSyncFiles,
-    redirect_to_login,
-    setRedirectToLogin,
-    taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();
-  const getSelectedFileNames = () => {
-    return selected
-      .map((id) => {
-        const file = syncRows.find((file: any) => file.id === id);
-        return file ? file.file_name : null;
-      })
-      .filter((file_name) => file_name !== null); // Filter out any null values if a file wasn't found
-  };
 
 
-
-  // useEffect(() => {
-  //   const fetchAndUpdateDevices = async () => {
-  //     const new_devices = await fetchDeviceData(
-  //       username || '',
-  //       disableFetch,
-  //       global_file_path || '',
-  //       {
-  //         setFirstname,
-  //         setLastname,
-  //         setDevices,
-  //       },
-  //     );
-
-  //     if (new_devices) {
-  //       if (devices) {
-  //         const updatedDevices = [...devices, ...new_devices];
-  //         setDevices(updatedDevices);
-  //       } else {
-  //         setDevices(new_devices);
-  //       }
-  //     }
-  //   };
-
-  //   fetchAndUpdateDevices();
-  // }, [username, disableFetch, updates, global_file_path]);
-
-
-
-  const { isLoading, allFiles, syncRows, setSyncRows } = newUseFileData(
+  const { isLoading, syncRows} = newUseFileData(
     username,
     disableFetch,
     updates,
@@ -452,8 +402,6 @@ export default function Sync() {
 
   };
 
-  const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
 
   const fetchUserInfo = async () => {
     try {

@@ -33,17 +33,6 @@ interface Message {
   content: string;
 }
 
-// Define the type for the return value of send_login_request
-interface LoginSuccess {
-  result: 'login success';
-  token: string;
-}
-
-interface LoginFailure {
-  result: 'login failed';
-}
-
-
 process.on('uncaughtException', (err: Error & { code?: string }) => {
   switch (err.code) {
     case 'ECONNREFUSED':
@@ -92,27 +81,6 @@ if (!fs.existsSync(CONFIG_FILE)) {
   fs.writeFileSync(CONFIG_FILE, config.toString());
 }
 
-function loadCredentials(): Record<string, string> {
-  try {
-    const config = new ConfigParser();
-    config.read(CONFIG_FILE);
-    const credentialsFile = config.get('banbury_cloud', 'credentials_file') || 'default_filename.json';
-    const credentialsFilePath = path.join(BANBURY_FOLDER, credentialsFile);
-    return JSON.parse(fs.readFileSync(credentialsFilePath, 'utf-8'));
-  } catch (error) {
-    return {};
-  }
-}
-
-
-
-function saveCredentials(credentials: Record<string, string>): void {
-  const config = new ConfigParser();
-  config.read(CONFIG_FILE);
-  const credentialsFile = config.get('banbury_cloud', 'credentials_file') || 'default_filename.json';
-  const credentialsFilePath = path.join(BANBURY_FOLDER, credentialsFile);
-  fs.writeFileSync(credentialsFilePath, JSON.stringify(credentials));
-}
 
 export default function SignIn() {
   // Move ALL hooks to the top of the component
@@ -200,15 +168,6 @@ export default function SignIn() {
       console.error('Error fetching data:', error);
     }
   }
-  const handleClick = () => {
-    setLoading(true);
-    // Simulate a network request or any asynchronous operation
-    setTimeout(() => {
-      setLoading(false);
-      // Your scroll or any other logic goes here
-      // Example: scroll.scrollTo('targetSection', { duration: 800, smooth: 'easeInOutQuad' });
-    }, 2000); // Adjust the timeout duration as needed
-  };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -236,13 +195,6 @@ export default function SignIn() {
                 const picture = response.data.user.picture;
 
                 try {
-                  // Try to get user info to check if user exists
-                  const userInfoResponse = await axios.get<{
-                    first_name: string;
-                    last_name: string;
-                    phone_number: string;
-                    email: string;
-                  }>(`${CONFIG.url}/users/getuserinfo/${username}/`);
 
                   // User exists, set authenticated
                   setIsAuthenticated(true);

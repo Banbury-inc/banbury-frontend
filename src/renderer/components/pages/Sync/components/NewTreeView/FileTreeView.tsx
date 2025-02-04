@@ -9,27 +9,13 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ImageIcon from '@mui/icons-material/Image';
 import VideocamIcon from '@mui/icons-material/Videocam'; import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import DescriptionIcon from '@mui/icons-material/Description';
-
-import { fileWatcherEmitter } from '../../../../../neuranet/device/watchdog';
-
-import axios from 'axios';
-import fs from 'fs';
 import path from 'path';
 import os from 'os';
-
-const file_name: string = 'treeview_data_snapshot.json';
-const directory_name: string = 'BCloud';
-const directory_path: string = path.join(os.homedir(), directory_name);
-const snapshot_json: string = path.join(directory_path, file_name);
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../../context/AuthContext';
-import * as utils from '../../../../../utils';
 import { buildTree } from './utils/buildTree';
-import { fetchFileData } from '../../utils/fetchFileData'
 import { DatabaseData } from './types';
 import { fetchFileSyncData } from '../../utils/fetchFileSyncData';
-
-
 
 const EventEmitter = require('events');
 
@@ -67,17 +53,7 @@ export default function FileTreeView() {
   const [disableFetch, setDisableFetch] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
-
-  const file_name: string = 'mmills_database_snapshot.json';
   const directory_name: string = 'BCloud';
-  const directory_path: string = path.join(os.homedir(), directory_name);
-  const snapshot_json: string = path.join(directory_path, file_name);
-
-  const cache = new Map<string, DatabaseData[]>();
-
-
-
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -122,29 +98,6 @@ export default function FileTreeView() {
     return null;
   };
 
-  // const handleNodeSelect = (event: React.SyntheticEvent, nodeId: string) => {
-  //   const selectedNode = findNodeById(fileRows, nodeId);
-  //   if (selectedNode) {
-  //     // Don't set path for root core node
-  //     if (selectedNode.id === 'Core') {
-  //       setGlobal_file_path(selectedNode.id);
-  //       setGlobal_file_path_device('');
-  //       return;
-  //     }
-  //     // Don't set path for main Devices or Cloud Sync nodes
-  //     if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync') {
-  //       setGlobal_file_path(`Core/${selectedNode.id}`);
-  //       setGlobal_file_path_device('');
-  //       return;
-  //     }
-
-  //     let newFilePath = '';
-  //     setGlobal_file_path(newFilePath);
-  //     setGlobal_file_path_device(selectedNode.device_name);
-
-
-  //   }
-  // };
 
   // Monitor changes to global_file_path in useEffect
   useEffect(() => {
