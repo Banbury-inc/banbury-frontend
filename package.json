@@ -24,7 +24,8 @@
     "package:dist": "electron-builder --mac",
     "package:app": "electron-builder --dir",
     "docs": "typedoc --out docs --entryPointStrategy expand src/renderer/neuranet",
-    "test": "jest"
+    "test": "jest",
+    "coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "Banbury <mmills6060@gmail.com>",
