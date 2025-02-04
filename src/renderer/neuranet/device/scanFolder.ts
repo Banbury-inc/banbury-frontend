@@ -11,9 +11,7 @@ export async function scanFolder(
   folder: string,
   onProgress?: (progress: number, speed: string) => void
 ): Promise<string> {
-  const fullDeviceSync = CONFIG.full_device_sync;
   const skipDotFiles = CONFIG.skip_dot_files;
-  const scanSelectedFolders = CONFIG.scan_selected_folders;
   let totalFiles = 0;
   let processedFiles = 0;
 

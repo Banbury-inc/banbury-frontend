@@ -8,16 +8,8 @@ export async function remove_file_from_sync(
   username: string,
 ) {
 
-
-  const user = username;
-
   const device_name = neuranet.device.name();
-
-
   const url = `${CONFIG.url}/predictions/remove_file_from_sync/${username}/`;
-
-
-
   const response = await axios.post<{ result: string; username: string; }>(url, {
     device_name: device_name,
     file_path: file_path,

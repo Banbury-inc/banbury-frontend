@@ -9,8 +9,6 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ImageIcon from '@mui/icons-material/Image';
 import VideocamIcon from '@mui/icons-material/Videocam'; import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import DescriptionIcon from '@mui/icons-material/Description';
-import path from 'path';
-import os from 'os';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../../context/AuthContext';
 import { buildTree } from './utils/buildTree';
@@ -46,14 +44,12 @@ function getIconForKind(kind: string) {
 
 
 export default function FileTreeView() {
-  const { updates, files, set_Files, sync_files, setSyncFiles, setUpdates, global_file_path, global_file_path_device, username, setFirstname, setLastname, setGlobal_file_path, setGlobal_file_path_device } = useAuth();
+  const {setSyncFiles, global_file_path, global_file_path_device, username, setFirstname, setLastname} = useAuth();
   const [syncRows, setSyncRows] = useState<DatabaseData[]>([]);
-  const [expanded, setExpanded] = useState<string[]>(['core']);
   const [allFiles, setAllFiles] = useState<DatabaseData[]>([]);
   const [disableFetch, setDisableFetch] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
-  const directory_name: string = 'BCloud';
 
   useEffect(() => {
     const fetchData = async () => {

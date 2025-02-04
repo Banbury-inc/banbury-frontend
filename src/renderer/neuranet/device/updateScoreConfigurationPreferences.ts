@@ -21,9 +21,6 @@ export async function updateScoreConfigurationPreferences(
 ) {
 
 
-  const user = username;
-
-
   try {
 
     const url = `${CONFIG.url}/devices/update_device_configurations/${username}/`;

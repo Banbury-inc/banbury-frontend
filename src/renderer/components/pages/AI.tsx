@@ -42,12 +42,6 @@ import CircularProgress, {
 import TaskBadge from '../TaskBadge';
 
 
-interface Device {
-  id: string;
-  name: string;
-  files: File[];
-}
-
 // Simplified data interface to match your file structure
 interface FileData {
   id: number;
@@ -68,12 +62,6 @@ const headCells = [
 
 type Order = 'asc' | 'desc';
 
-interface HeadCell {
-  disablePadding?: boolean;
-  id: keyof FileData;
-  label: string;
-  numeric: boolean;
-}
 
 interface EnhancedTableProps {
   numSelected: number;
@@ -85,154 +73,13 @@ interface EnhancedTableProps {
 }
 
 
-function EnhancedTableHead(props: EnhancedTableProps) {
-  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
-  const createSortHandler = (property: keyof FileData) => (event: React.MouseEvent<unknown>) => {
-    onRequestSort(event, property);
-  };
-
-  function handleClick(event: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-    event.preventDefault();
-    console.info('You clicked a breadcrumb.');
-  }
-
-
-
-  return (
-
-    <TableHead>
-      <TableRow>
-        <TableCell colSpan={headCells.length + 1} style={{ padding: 0 }}> {/* Ensure this TableCell spans all columns */}
-          <div role="presentation" onClick={handleClick} style={{ display: 'flex', width: '100%' }}>
-            <Breadcrumbs aria-label="breadcrumb" style={{ flexGrow: 1 }}>
-              <Link
-                underline="hover"
-                color="inherit"
-                href="/"
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                <HomeIcon style={{ marginRight: 5 }} fontSize="inherit" />
-                Home
-              </Link>
-              <Link
-                underline="hover"
-                color="inherit"
-                href="/material-ui/getting-started/installation/"
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                <WhatshotIcon style={{ marginRight: 5 }} fontSize="inherit" />
-                Core
-              </Link>
-              <Typography
-                color="text.primary"
-                style={{ display: 'flex', alignItems: 'center' }}
-              >
-                <GrainIcon style={{ marginRight: 5 }} fontSize="inherit" />
-                All Files
-              </Typography>
-            </Breadcrumbs>
-          </div>
-        </TableCell>
-      </TableRow>
-      <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            color="secondary"
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{
-              'aria-label': 'select all desserts',
-            }}
-          />
-        </TableCell>
-        {headCells.map((headCell) => (
-          <TableCell
-            key={headCell.id}
-            align={headCell.numeric ? 'right' : 'left'}
-            sortDirection={orderBy === headCell.id ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === headCell.id}
-              direction={orderBy === headCell.id ? order : 'asc'}
-            >
-              {headCell.label}
-              {orderBy === headCell.id ? (
-                <Box component="span" sx={visuallyHidden}>
-                  {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                </Box>
-              ) : null}
-            </TableSortLabel>
-          </TableCell>
-        ))}
-      </TableRow>
-    </TableHead>
-  );
-}
-
-interface EnhancedTableToolbarProps {
-  numSelected: number;
-}
-
-function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-  const { numSelected } = props;
-
-  return (
-    <Toolbar
-      sx={{
-        pl: { sm: 2 },
-        pr: { xs: 1, sm: 1 },
-        ...(numSelected > 0 && {
-          bgcolor: (theme) =>
-            alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity),
-        }),
-      }}
-    >
-      {numSelected > 0 ? (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          color="inherit"
-          variant="subtitle1"
-          component="div"
-        >
-          {numSelected} selected
-        </Typography>
-      ) : (
-        <Typography
-          sx={{ flex: '1 1 100%' }}
-          variant="h6"
-          id="tableTitle"
-          component="div"
-        >
-        </Typography>
-      )}
-      {numSelected > 0 ? (
-        <Tooltip title="Delete">
-          <IconButton>
-            <DeleteIcon />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Tooltip title="Filter list">
-          <IconButton>
-            <FilterListIcon />
-          </IconButton>
-        </Tooltip>
-      )}
-    </Toolbar>
-  );
-}
 
 
 
 export default function AI() {
-  const [order, setOrder] = useState<Order>('asc');
-  const [orderBy, setOrderBy] = useState<keyof FileData>('fileName');
   const [selected, setSelected] = useState<readonly number[]>([]);
   const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
-  const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
   const [page, setPage] = useState(0);
   const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -246,33 +93,6 @@ export default function AI() {
   const [messages, setMessages] = useState([
     { id: 0, text: 'Hello! How can I assist you today?', sender: 'bot' }
   ]);
-  const handleApiCall = async () => {
-    const selectedFileNames = getSelectedFileNames();
-
-    // Prepare the request options for fetch
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include other headers as needed
-      },
-      body: JSON.stringify({
-        files: selectedFileNames,
-      }),
-    };
-
-    try {
-      const response = await fetch('http://localhost:5000/request_file_test', requestOptions);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('API Response:', data);
-      // Handle your response here
-    } catch (error) {
-      console.error('API call error:', error);
-    }
-  };
 
 
   function formatBytes(bytes: number, decimals: number = 2): string {
@@ -375,98 +195,14 @@ export default function AI() {
     []);
 
 
-
-  const [deleteloading, setdeleteLoading] = useState<boolean>(false);
-  const handleUploadClick = async () => {
-    try {
-
-      const env = process.env.NODE_ENV || 'development';
-      let baseDir = '';
-      let filename = '';
-      let command = '';
-      const devbaseDir = '';
-      const prodbaseDir = path.join(process.resourcesPath, 'python');
-      if (env === 'development') {
-        baseDir = devbaseDir;
-        filename = 'python/upload.py';
-        command = process.platform === 'win32' ? 'venv\\Scripts\\python.exe' : 'venv/bin/python3';
-      } else if (env === 'production') {
-        baseDir = prodbaseDir;
-        filename = 'upload.py';
-        command = process.platform === 'win32' ? 'Scripts\\python.exe' : 'bin/python3';
-
-      }
-      // const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
-
-      const exactcommand = path.join(baseDir, command);
-      const scriptPath = path.join(baseDir, filename);
-
-
-
-
-
-      exec(`${exactcommand} "${scriptPath}" "${selectedFileNames}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          return;
-        }
-        if (stderr) {
-          console.error(`Python Script Error: ${stderr}`);
-          return
-        }
-        if (stdout) {
-          console.log(`Python Script Message: ${stdout}`);
-          return
-        }
-        console.log(`Python Script Message: ${stdout}`);
-
-      });
-    } catch (error) {
-      console.error('There was an error!', error);
-
-    }
-  };
-
-
-
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleChangeDense = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setDense(event.target.checked);
-  };
-
-  const isSelected = (id: number) => selected.indexOf(id) !== -1;
-
   // Avoid a layout jump when reaching the last page with empty rows.
   // Calculate empty rows for pagination
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - fileRows.length) : 0;
 
-  function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
-    return array
-      .map((el, index) => ({ el, index })) // Attach the original index to each element
-      .sort((a, b) => {
-        const order = comparator(a.el, b.el);
-        if (order !== 0) return order; // If elements are not equal, sort them according to `comparator`
-        return a.index - b.index; // If elements are equal, sort them according to their original position
-      })
-      .map(({ el }) => el); // Extract the sorted elements
-  }
 
-  function getComparator<Key extends keyof any>(
-    order: Order,
-    orderBy: Key,
-  ): (a: { [key in Key]: number | string }, b: { [key in Key]: number | string }) => number {
-    return order === 'desc'
-      ? (a, b) => descendingComparator(a, b, orderBy)
-      : (a, b) => -descendingComparator(a, b, orderBy);
-  }
 
   function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
     if (b[orderBy] < a[orderBy]) {
@@ -478,85 +214,8 @@ export default function AI() {
     return 0;
   }
 
-  function CircularProgressWithLabel(
-    props: CircularProgressProps & { value: number },
-  ) {
-    return (
-      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-        <CircularProgress variant="determinate" {...props} />
-        <Box
-          sx={{
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-            position: 'absolute',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography
-            variant="caption"
-            component="div"
-            color="text.secondary"
-          >{`${Math.round(props.value)}%`}</Typography>
-        </Box>
-      </Box>
-    );
-  }
 
 
-  function MyApp() {
-
-    const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-    const [progress, setProgress] = useState(0);
-    const [trigger, setTrigger] = useState(false); // State to trigger re-renders
-    const [showAgents, setShowAgents] = useState(false); // State to trigger re-renders
-    const timerRef = useRef<number | null>(null); // Ref to store timer
-
-    useEffect(() => {
-      timerRef.current = window.setInterval(() => {
-        setProgress((prevProgress) => (prevProgress >= 100 ? 0 : prevProgress + 10));
-        setTrigger((prevTrigger) => !prevTrigger); // Toggle trigger to force re-render
-      }, 1000);
-      return () => {
-        if (timerRef.current !== null) {
-          clearInterval(timerRef.current);
-        }
-      };
-    }, []);
-
-
-
-
-    const handleClick = async () => {
-
-      enqueueSnackbar('Downloading' + { selectedFileNames }, {
-        variant: 'default' as VariantType,
-        autoHideDuration: null, // Snackbar will not automatically close
-        action: (
-          <React.Fragment>
-            <CircularProgress value={progress} />
-            <Button color="inherit" size="small" onClick={handleClose}>
-              Close
-            </Button>
-          </React.Fragment>
-        ),
-      });
-
-    };
-
-    const handleClose = () => {
-      closeSnackbar();
-    };
-
-    return (
-      <React.Fragment>
-        <Button variant='outlined' size='small' onClick={handleClick}>Download</Button>
-      </React.Fragment>
-    );
-  }
 
 
 

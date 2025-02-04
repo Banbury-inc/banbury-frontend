@@ -1,16 +1,8 @@
 import axios from 'axios';
-import { neuranet } from '../../neuranet'
 
 export async function addFile(
   username: string,
   fileInfo: any) {
-
-  const taskInfo = {
-    name: 'add file ' + fileInfo.file_name,
-    device: fileInfo.original_device,
-    status: 'pending',
-  }
-
 
   try {
     const response = await axios.post<{
@@ -30,21 +22,8 @@ export async function addFile(
 
     const result = response.data.result;
     if (result === 'success') {
-      console.log("File added successfully");
-      const taskInfo = {
-        name: 'add file ' + fileInfo.file_name,
-        device: fileInfo.original_device,
-        status: 'complete',
-      }
-      const task = await neuranet.sessions.updateTask(username, taskInfo);
       return 'success';
     } else if (result === 'fail') {
-      const taskInfo = {
-        name: 'add file ' + fileInfo.file_name,
-        device: fileInfo.original_device,
-        status: 'fail',
-      }
-      const task = await neuranet.sessions.updateTask(username, taskInfo);
 
       console.log("Failed to add file");
       return 'failed';

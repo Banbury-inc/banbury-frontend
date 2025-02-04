@@ -14,7 +14,7 @@ export async function update_database_files(username: string) {
     if (result !== 'success') throw new Error('Failed to save snapshot');
 
     // Get the snapshot
-    result = await handlers.files.get_snapshot(username);
+    result = await handlers.files.get_snapshot();
     if (result !== 'success') throw new Error('Failed to get snapshot');
 
     // Compare the snapshots

@@ -16,15 +16,6 @@ interface CPUPerformance {
 }
 
 
-interface memUsage {
-  total: number;
-  free: number;
-  used: number;
-  usagePercentage: number;
-}
-
-
-
 export function name(): string {
   return os.hostname();
 }
@@ -166,16 +157,9 @@ export async function ram_usage(): Promise<number> {
     const memData = await si.mem();
     const totalMemory = memData.total || 0;
     const usedMemory = memData.used || 0;
-    const freeMemory = memData.free || 0;
 
     const usagePercentage = (usedMemory / totalMemory) * 100;
 
-    const ramUsage: memUsage = {
-      total: totalMemory,
-      free: freeMemory,
-      used: usedMemory,
-      usagePercentage: isNaN(usagePercentage) ? 0 : usagePercentage // Handle NaN case
-    };
 
     return isNaN(usagePercentage) ? 0 : usagePercentage; // Handle NaN case
   } catch (error) {

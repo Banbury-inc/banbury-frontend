@@ -6,7 +6,6 @@ export function deleteDevice(device_name: string[]): string {
   const endOfHeader = Buffer.from('END_OF_HEADER');
   const credentials = CredentialUtils.loadCredentials();
   const username = Object.keys(credentials)[0];
-  const file_size = ""
   let header: string | null = null;
   let buffer = Buffer.alloc(0);
   const null_arg = ""

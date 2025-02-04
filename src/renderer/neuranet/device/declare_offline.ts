@@ -8,7 +8,6 @@ export async function declare_offline(
 ) {
 
 
-  const user = username;
 
   const device_name = neuranet.device.name();
 

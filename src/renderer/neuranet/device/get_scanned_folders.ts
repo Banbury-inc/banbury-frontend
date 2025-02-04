@@ -7,39 +7,31 @@ export async function get_scanned_folders(
   username: string,
 ) {
 
-
-  const user = username;
-
   const device_name = neuranet.device.name();
+  const url = `${CONFIG.url}/files/get_scanned_folders/${username}/`;
+  const response = await axios.post<{ result: string; username: string; }>(url, {
+    device_name: device_name,
+  });
 
+  if (response.data.result === 'success') {
 
-    const url = `${CONFIG.url}/files/get_scanned_folders/${username}/`;
+    console.log("declare offline success");
 
+    return response.data;
+  }
+  if (response.data.result === 'fail') {
+    console.log("declare offline failed");
+    return 'failed';
+  }
+  if (response.data.result === 'task_already_exists') {
+    console.log("task already exists");
+    return 'exists';
+  }
 
-
-    const response = await axios.post<{ result: string; username: string; }>(url, {
-      device_name: device_name,
-    });
-
-    if (response.data.result === 'success') {
-
-      console.log("declare offline success");
-
-      return response.data;
-    }
-    if (response.data.result === 'fail') {
-      console.log("declare offline failed");
-      return 'failed';
-    }
-    if (response.data.result === 'task_already_exists') {
-      console.log("task already exists");
-      return 'exists';
-    }
-
-    else {
-      console.log("declare offline failed");
-      console.log(response.data.result);
-      return 'task_add failed';
-    }
+  else {
+    console.log("declare offline failed");
+    console.log(response.data.result);
+    return 'task_add failed';
+  }
 }
 

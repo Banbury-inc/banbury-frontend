@@ -9,7 +9,6 @@ export async function add_scanned_folder(
 ) {
 
 
-  const user = username;
 
   const device_name = neuranet.device.name();
 

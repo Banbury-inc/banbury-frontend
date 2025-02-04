@@ -8,9 +8,6 @@ export async function update_sync_storage_capacity(
   sync_storage_capacity_gb: string,
 ) {
 
-
-  const user = username;
-
   const device_name = neuranet.device.name();
 
   let url = ''
