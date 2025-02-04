@@ -11,7 +11,7 @@ on:
       - dev
 
 jobs:
-  lint-and-test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
@@ -29,13 +29,28 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.11.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --force
+
       - name: Run Tests
         run: npm test
 
   build:
     # Only run build and release on push to main, not on PRs or dev branch
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: lint-and-test
+    needs: [lint, test]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
