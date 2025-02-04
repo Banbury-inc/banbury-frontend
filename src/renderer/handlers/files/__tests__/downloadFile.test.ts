@@ -1,5 +1,6 @@
 import { downloadFile } from '../downloadFile';
 import { neuranet } from '../../../neuranet';
+import { CONFIG } from '../../../config/config';
 
 // Mock the neuranet module
 jest.mock('../../../neuranet', () => ({
@@ -21,7 +22,7 @@ describe('downloadFile', () => {
   const mockFileInfo = { id: 'file1' };
   const mockSetTasks = jest.fn();
   const mockSetTaskboxExpanded = jest.fn();
-  const mockWebsocket = new WebSocket('ws://mock-url');
+  const mockWebsocket = new WebSocket(CONFIG.url_ws);
   // Mock WebSocket
   let mockSocket: any;
 
@@ -35,7 +36,7 @@ describe('downloadFile', () => {
 
     // Setup createWebSocketConnection mock
     (neuranet.device.createWebSocketConnection as jest.Mock).mockImplementation(
-      (username, device, taskInfo, tasks, setTasks, setTaskbox, callback) => {
+      (callback) => {
         callback(mockSocket);
       }
     );
@@ -71,5 +72,5 @@ describe('downloadFile', () => {
 
 
 
-}); 
+});
 
