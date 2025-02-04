@@ -1,13 +1,12 @@
-import * as path from "path";
-import { Configuration } from "webpack";
+const path = require('path');
 
 const rootPath = path.resolve(__dirname, "..");
 
-const config: Configuration = {
+const config = {
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
     alias: {
-      'osx-temperature-sensor': false // Set the alias to false to ignore the missing module
+      'osx-temperature-sensor': false
     }
   },
   devtool: "source-map",
@@ -34,7 +33,4 @@ const config: Configuration = {
   },
 };
 
-export default config;
-
-
-
+module.exports = config; 
