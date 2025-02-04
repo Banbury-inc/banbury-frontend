@@ -7,12 +7,10 @@ export function downloadFile(username: string, files: string[], devices: string[
       return;
     }
 
-    console.log("Downloading file:", files[0], fileInfo, taskInfo);
-
     try {
       neuranet.analytics.addFileRequest();
     } catch (error) {
-      console.error('Error adding file request:', error);
+      return error;
     }
 
     // Create timeout ID that we can clear later
