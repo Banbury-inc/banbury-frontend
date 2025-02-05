@@ -27,6 +27,7 @@ import { CONFIG } from '../../config/config';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { shell } from 'electron';
 import http from 'http';
+import path from 'path';
 
 interface Message {
   type: string;
@@ -64,7 +65,6 @@ function Copyright(props: any) {
 
 dotenv.config();
 
-const path = require('path');
 
 
 const homeDirectory = os.homedir();
@@ -90,7 +90,6 @@ export default function SignIn() {
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
   const [showMain, setShowMain] = useState<boolean>(false);
-  const [showRegister, setShowRegister] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
 
   // Messages can be defined after hooks
@@ -259,7 +258,7 @@ export default function SignIn() {
     return <Main />;
   }
 
-  if (redirect_to_register || showRegister) {
+  if (redirect_to_register) {
     return <Register />;
   }
 

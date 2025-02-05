@@ -28,8 +28,7 @@ export default function Public_Profile() {
         first_name: string,
         last_name: string,
         phone_number: string,
-        email: string,
-        picture: any | null) => {
+        email: string) => {
 
         try {
             const task_description = 'Updating Settings';
@@ -277,7 +276,6 @@ export default function Public_Profile() {
                                     last_name ?? '',
                                     phone_number ?? '',
                                     email ?? '',
-                                    localPicture
                                 )
                             }}
                             sx={{ mt: 2, fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}

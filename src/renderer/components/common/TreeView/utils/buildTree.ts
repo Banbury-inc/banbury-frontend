@@ -1,11 +1,7 @@
 import { DatabaseData } from '../types';
 
 export function buildTree(files: DatabaseData[]): DatabaseData[] {
-  // Move the entire buildTree function here
-  // ... (keep the existing buildTree implementation)
 
-
-  // Create the root "Core" node
   const coreNode: DatabaseData = {
     id: 'core',
     file_type: 'directory',

@@ -1,12 +1,10 @@
 import React from 'react';
 import { Link } from '@mui/material';
 import { Breadcrumbs } from '@mui/material';
-import GrainIcon from '@mui/icons-material/Grain';
-import DevicesIcon from '@mui/icons-material/Devices';
 import { useAuth } from '../../../../context/AuthContext';
 
 export function FileBreadcrumbs() {
-  const { files, global_file_path, global_file_path_device } = useAuth();
+  const { global_file_path } = useAuth();
   const pathSegments = global_file_path ? global_file_path.split('/').filter(Boolean) : [];
 
   const handleBreadcrumbClick = (path: string) => {

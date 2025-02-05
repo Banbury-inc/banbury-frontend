@@ -8,12 +8,11 @@ import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import theme from "../../theme";
 import SignIn from './Login';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
 import { handlers } from '../../handlers';
-import axios from 'axios';
 
 function Copyright(props: any) {
   return (
@@ -34,34 +33,7 @@ interface Message {
 }
 
 
-async function send_login_request(username: string, password: string) {
-  try {
-    const response = await axios.get<{
-      result: string;
-      username: string;
-      // }>('https://website2-v3xlkt54dq-uc.a.run.app/getuserinfo2/' + username + '/');
-    }>('https://website2-v3xlkt54dq-uc.a.run.app/getuserinfo3/' + username + '/' + password + '/');
-    // }>('https://website2-v3xlkt54dq-uc.a.run.app/getuserinfo/');
-    const result = response.data.result;
-    if (result === 'success') {
-      console.log("login success");
-      return 'login success';
-    }
-    if (result === 'fail') {
-      console.log("login failed");
-      return 'login failed';
-    }
-    else {
-      console.log("login failed");
-      return 'login failed';
-    }
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  }
-}
 
-// TODO remove, this demo shouldn't need to reset the theme.
-const defaultTheme = createTheme();
 
 export default function SignUp() {
   const [registration_success, setregistration_success] = useState(false);
@@ -73,7 +45,6 @@ export default function SignUp() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const email = data.get('email') as string; // Cast the value to string
     console.log({
       firstName: data.get('firstName'),
       lastName: data.get('lastName'),

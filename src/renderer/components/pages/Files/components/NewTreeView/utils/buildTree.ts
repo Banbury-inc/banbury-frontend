@@ -1,34 +1,6 @@
 import { DatabaseData } from '../types';
 
 export function buildTree(files: DatabaseData[]): DatabaseData[] {
-  // Move the entire buildTree function here
-  // ... (keep the existing buildTree implementation)
-
-
-  // Build final tree
-  const allFilesData = files.flatMap((file, fileIndex) => ({
-    id: `device-${file.deviceID}-file-${fileIndex}`,
-    file_type: file.file_type,
-    file_name: file.file_name,
-    file_size: file.file_size,
-    file_path: file.file_path,
-    shared_with: file.shared_with,
-    is_public: file.is_public,
-    kind: file.kind,
-    helpers: file.helpers,
-    date_uploaded: file.date_uploaded,
-    deviceID: file.deviceID,
-    device_name: file.device_name,
-    file_parent: file.file_parent,
-    original_device: file.original_device,
-    available: file.available,
-  }));
-
-
-
-
-
-  const fileMap = new Map<string, DatabaseData>();
 
 
   // Create the root "Core" node

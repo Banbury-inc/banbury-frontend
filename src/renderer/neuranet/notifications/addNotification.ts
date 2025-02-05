@@ -12,13 +12,7 @@ export async function addNotification(
         read: boolean;
     },
 ) {
-
-
-
     const url = `${CONFIG.url}/notifications/add_notification/${username}/`;
-
-
-
     const response = await axios.post<{ result: string; username: string; }>(url, {
         notification: notification,
     });

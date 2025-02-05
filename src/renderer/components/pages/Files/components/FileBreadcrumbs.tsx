@@ -5,7 +5,7 @@ import GrainIcon from '@mui/icons-material/Grain';
 import { useAuth } from '../../../../context/AuthContext';
 
 export function FileBreadcrumbs() {
-  const { files, global_file_path, setGlobal_file_path } = useAuth();
+  const { global_file_path, setGlobal_file_path } = useAuth();
   const pathSegments = global_file_path ? global_file_path.split('/').filter(Boolean) : [];
 
   const handleBreadcrumbClick = (path: string) => {
