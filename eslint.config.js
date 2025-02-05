@@ -2,7 +2,6 @@ const js = require("@eslint/js");
 const tsParser = require("@typescript-eslint/parser");
 const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const reactPlugin = require("eslint-plugin-react");
-const jsdocPlugin = require("eslint-plugin-jsdoc");
 
 module.exports = [
   js.configs.recommended,
@@ -51,7 +50,6 @@ module.exports = [
     plugins: {
       "@typescript-eslint": tsPlugin,
       "react": reactPlugin,
-      "jsdoc": jsdocPlugin,
     },
     settings: {
       react: {
@@ -63,7 +61,7 @@ module.exports = [
       "react/react-in-jsx-scope": 0,
       "react/display-name": 0,
       "react/prop-types": 0,
-      
+
       // TypeScript rules
       "no-unused-vars": "off",
       "no-undef": "off",
@@ -90,15 +88,7 @@ module.exports = [
           allowTaggedTemplates: true
         }
       ],
-      
-      // JSDoc rules
-      "jsdoc/require-jsdoc": "off",
-      "jsdoc/require-param": "off",
-      "jsdoc/require-param-description": "off",
-      "jsdoc/require-param-type": "off",
-      "jsdoc/check-param-names": "off",
-      "jsdoc/require-returns": "off",
-      "jsdoc/require-returns-description": "off"
+
     }
   }
 ]; 
