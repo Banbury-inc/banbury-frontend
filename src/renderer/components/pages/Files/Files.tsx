@@ -94,11 +94,9 @@ const ResizeHandle = styled('div')(({ theme }) => ({
   }
 }));
 
+
 function EnhancedTableHead(props: EnhancedTableProps) {
   const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
-  const isSmallScreen = useMediaQuery('(max-width:960px)');
-  const { global_file_path } = useAuth();
-  const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
   const headCells = getHeadCells();
   const createSortHandler = (property: keyof DatabaseData) => (event: React.MouseEvent<unknown>) => {
     onRequestSort(event, property);
@@ -125,18 +123,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           />
         </TableCell>
         {headCells
-          .filter((headCell: HeadCell) => {
-            const isVisibleOnCurrentScreen = !isSmallScreen || headCell.isVisibleOnSmallScreen;
-
-            if (isCloudSync) {
-              // Show only these specific columns in Cloud Sync view
-              const cloudSyncColumns = ['file_name', 'file_size', 'device_ids', 'file_priority'];
-              return isVisibleOnCurrentScreen && cloudSyncColumns.includes(headCell.id);
-            } else {
-              // In regular view, show all except Cloud Sync specific columns
-              return isVisibleOnCurrentScreen && headCell.isVisibleNotOnCloudSync;
-            }
-          })
           .map((headCell: HeadCell, index: number) => (
             <TableCell
               key={`${headCell.id}-${index}`}
@@ -208,7 +194,7 @@ export default function Files() {
   const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(100);
-  const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
+  const { websocket } = useAuth();
   const [disableFetch, setDisableFetch] = useState(false);
   const {
     updates,
@@ -234,6 +220,8 @@ export default function Files() {
   const dragStartWidth = useRef(0);
   const [viewType, setViewType] = useState<ViewType>('list');
   const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
+  const [filePathDevice, setFilePathDevice] = useState('');
+  const [filePath, setFilePath] = useState<string>('');
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -267,11 +255,11 @@ export default function Files() {
   };
 
 
-  const { isLoading, fileRows} = newUseFileData(
+  const { isLoading, fileRows } = newUseFileData(
     username,
     disableFetch,
-    global_file_path,
-    global_file_path_device,
+    filePath,
+    filePathDevice,
     setFirstname,
     setLastname,
     files,
@@ -346,7 +334,7 @@ export default function Files() {
       }
       if (fileStat.isDirectory()) {
         folderFound = true;
-        setGlobal_file_path(newSelectedFilePaths[0]);
+        setFilePath(newSelectedFilePaths[0]);
       }
       if (fileFound) {
         // Send an IPC message to the main process to handle opening the file
@@ -505,7 +493,7 @@ export default function Files() {
     }
   };
 
-  const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
+  const isCloudSync = filePath?.includes('Cloud Sync') ?? false;
 
   const fetchUserInfo = async () => {
     try {
@@ -608,7 +596,7 @@ export default function Files() {
                   <Grid item paddingRight={1}>
                     <DeleteFileButton
                       selectedFileNames={selectedFileNames}
-                      global_file_path={global_file_path || ''}
+                      filePath={filePath}
                       setSelectedFileNames={setSelectedFileNames}
                       updates={updates}
                       setUpdates={setUpdates}
@@ -731,7 +719,12 @@ export default function Files() {
                 overflow: 'auto',
                 height: '100%'
               }}>
-                <FileTreeView />
+                <FileTreeView
+                  filePath={filePath}
+                  setFilePath={setFilePath}
+                  filePathDevice={filePathDevice}
+                  setFilePathDevice={setFilePathDevice}
+                />
               </Box>
             </CardContent>
           </Card>
@@ -774,7 +767,7 @@ export default function Files() {
                 minHeight: 40
               }}>
                 <Box sx={{ flexGrow: 1 }}>
-                  <FileBreadcrumbs />
+                  <FileBreadcrumbs filePath={filePath} setFilePath={setFilePath} />
                 </Box>
               </Box>
               {fileRows.length === 0 ? (

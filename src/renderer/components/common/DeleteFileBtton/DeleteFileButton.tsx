@@ -8,7 +8,7 @@ import { handlers } from "../../../handlers";
 
 interface DeleteFileButtonProps {
   selectedFileNames: string[];
-  global_file_path: string;
+  filePath: string;
   setSelectedFileNames: (files: string[]) => void;
   updates: number;
   setUpdates: (updates: number) => void;
@@ -20,7 +20,7 @@ interface DeleteFileButtonProps {
 
 export default function DeleteFileButton({ 
   selectedFileNames,
-  global_file_path,
+  filePath,
   setSelectedFileNames,
   updates,
   setUpdates,
@@ -46,7 +46,7 @@ export default function DeleteFileButton({
       const response = await handlers.files.deleteFile(
         setSelectedFileNames,
         selectedFileNames,
-        global_file_path,
+        filePath,
         updates,
         setUpdates,
       ) as string;

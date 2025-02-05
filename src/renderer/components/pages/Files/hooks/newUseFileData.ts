@@ -6,8 +6,8 @@ import { fetchDeviceData } from '../utils/fetchDeviceData';
 export const newUseFileData = (
   username: string | null,
   disableFetch: boolean,
-  global_file_path: string | null,
-  global_file_path_device: string | null,
+  filePath: string | null,
+  filePathDevice: string | null,
   setFirstname: (name: string) => void,
   setLastname: (name: string) => void,
   files: any,
@@ -18,9 +18,6 @@ export const newUseFileData = (
   const [isLoading, setIsLoading] = useState(true);
   const [allFiles, setAllFiles] = useState<any[]>([]);
   const [fileRows, setFileRows] = useState<any[]>([]);
-
-
-
 
   // Helper function to map devices to files
   const mapDevicesToFiles = (devices: any[], files: any[]) => {
@@ -77,23 +74,23 @@ export const newUseFileData = (
     setAllFiles(allFilesData);
 
     // Then filter the mapped files
-    const file_path = global_file_path?.split('/').slice(3).join('/');
+    const file_path = filePath?.split('/').slice(3).join('/');
     const pathToShow = '/' + (file_path || '/');
     const pathSegments = pathToShow.split('/').filter(Boolean).length;
 
     const filteredFiles = allFilesData.filter((file: any) => {
-      if (!global_file_path && !global_file_path_device) {
+      if (!filePath && !filePathDevice) {
         return true; // Show all files
       }
 
-      if (global_file_path === "Core/Cloud Sync") {
+      if (filePath === "Core/Cloud Sync") {
         setFileRows(sync_files);
         // Show any file that contains "Cloud Sync" in its path
         return sync_files;
       }
 
-      if (!global_file_path && global_file_path_device) {
-        return file.device_name === global_file_path_device; // Filter by device
+      if (!filePath && filePathDevice) {
+        return file.device_name === filePathDevice; // Filter by device
       }
 
       if (!file.file_path) {
@@ -107,7 +104,7 @@ export const newUseFileData = (
       return isInSameDirectory || isFile;
     });
 
-    if (global_file_path === "Core/Cloud Sync") {
+    if (filePath === "Core/Cloud Sync") {
       setFileRows(sync_files);
     } else {
       setFileRows(filteredFiles);
@@ -117,7 +114,7 @@ export const newUseFileData = (
       setIsLoading(false);
     }
 
-  }, [global_file_path, global_file_path_device, files, devices, setDevices]);
+  }, [filePath, filePathDevice, files, devices, setDevices]);
 
   // Add effect to listen for device status changes
   useEffect(() => {
@@ -142,7 +139,7 @@ export const newUseFileData = (
     return () => {
       fileWatcherEmitter.off('deviceStatusChange', handleDeviceStatusChange);
     };
-  }, [username, disableFetch, global_file_path, setFirstname, setLastname, setDevices]);
+  }, [username, disableFetch, filePath, setFirstname, setLastname, setDevices]);
 
 
 

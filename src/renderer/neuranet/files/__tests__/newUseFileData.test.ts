@@ -6,9 +6,9 @@ const mockFetchDeviceData = fetchDeviceData as jest.MockedFunction<typeof fetchD
 
 // Mock React hooks
 jest.mock('react', () => ({
-  ...jest.requireActual('react'),
-  useEffect: (cb: Function) => cb(),
-  useState: (initialValue: any) => [initialValue, jest.fn()],
+    ...jest.requireActual('react'),
+    useEffect: (cb: Function) => cb(),
+    useState: (initialValue: any) => [initialValue, jest.fn()],
 }));
 
 describe('newUseFileData', () => {
@@ -16,11 +16,11 @@ describe('newUseFileData', () => {
     const setFirstname = jest.fn();
     const setLastname = jest.fn();
     const setDevices = jest.fn();
-    
+
     beforeEach(() => {
         jest.clearAllMocks();
-        jest.spyOn(console, 'error').mockImplementation(() => {});
-        jest.spyOn(console, 'log').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => { });
+        jest.spyOn(console, 'log').mockImplementation(() => { });
     });
 
     afterEach(() => {
@@ -46,7 +46,7 @@ describe('newUseFileData', () => {
         mockFetchDeviceData.mockResolvedValueOnce(mockDevices);
 
         const propsWithNullDevices = { ...defaultProps, devices: null };
-        
+
         // Import and call the hook function directly
         const { newUseFileData } = require('../../../components/pages/Files/hooks/newUseFileData');
         newUseFileData(...Object.values(propsWithNullDevices));

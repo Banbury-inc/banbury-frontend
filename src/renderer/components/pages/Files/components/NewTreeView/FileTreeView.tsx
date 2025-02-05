@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { Typography, Box, Skeleton } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { TreeView, TreeItem } from '@mui/x-tree-view';
+import type { TreeItemProps } from '@mui/x-tree-view/TreeItem';
+import type { TreeViewProps } from '@mui/x-tree-view/TreeView';
 import GrainIcon from '@mui/icons-material/Grain';
 import DevicesIcon from '@mui/icons-material/Devices';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -15,6 +15,7 @@ import { useAuth } from '../../../../../context/AuthContext';
 import { buildTree } from './utils/buildTree';
 import { fetchFileData } from '../../utils/fetchFileData'
 import { DatabaseData } from './types';
+import { handleNodeSelect } from './handleNodeSelect';
 
 
 function getIconForKind(kind: string) {
@@ -40,8 +41,8 @@ function getIconForKind(kind: string) {
 
 
 
-export default function FileTreeView() {
-  const { updates, set_Files, global_file_path, global_file_path_device, username, setFirstname, setLastname, setGlobal_file_path, setGlobal_file_path_device } = useAuth();
+export default function FileTreeView({ filePath, setFilePath, filePathDevice, setFilePathDevice }: { filePath: string, setFilePath: (filePath: string) => void, filePathDevice: string, setFilePathDevice: (filePathDevice: string) => void }) {
+  const { updates, set_Files, username, setFirstname, setLastname } = useAuth();
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
   const disableFetch = false;
@@ -52,7 +53,7 @@ export default function FileTreeView() {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(
         username || '',
-        global_file_path || '',
+        filePath || '',
         {
           setFirstname,
           setLastname,
@@ -93,14 +94,14 @@ export default function FileTreeView() {
     };
 
     fetchAndUpdateFiles();
-  }, [username, disableFetch, updates, global_file_path]);
+  }, [username, disableFetch, updates, filePath]);
 
 
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(
         username || '',
-        global_file_path || '',
+        filePath || '',
         {
           setFirstname,
           setLastname,
@@ -126,14 +127,14 @@ export default function FileTreeView() {
     };
 
     fetchAndUpdateFiles();
-  }, [username, disableFetch, updates, global_file_path]);
+  }, [username, disableFetch, updates, filePath]);
 
 
   useEffect(() => {
     const handleFileChange = async () => {
       const new_files = await fetchFileData(
         username || '',
-        global_file_path || '',
+        filePath || '',
         {
           setFirstname,
           setLastname,
@@ -160,76 +161,27 @@ export default function FileTreeView() {
     };
   }, [username, disableFetch]);
 
-  const handleNodeSelect = (_event: React.SyntheticEvent, nodeId: string) => {
-
-
-
-
-
-    const findNodeById = (nodes: DatabaseData[], id: any): DatabaseData | null => {
-      for (const node of nodes) {
-        if (node.id === id) {
-          return node;
-        }
-        if (node.children) {
-          const childNode = findNodeById(node.children, id);
-          if (childNode) {
-            return childNode;
-          }
-        }
-      }
-      return null;
-    };
-    const selectedNode = findNodeById(fileRows, nodeId);
-    if (selectedNode) {
-      // Don't set path for root core node
-      if (selectedNode.id === 'Core') {
-        setGlobal_file_path(selectedNode.id);
-        setGlobal_file_path_device('');
-        return;
-      }
-      // Don't set path for main Devices or Cloud Sync nodes
-      if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync') {
-        setGlobal_file_path(`Core/${selectedNode.id}`);
-        setGlobal_file_path_device('');
-        return;
-      }
-
-      let newFilePath = '';
-      // If it's a device node (direct child of 'Devices')
-      if (selectedNode.file_parent === 'Devices') {
-        newFilePath = `Core/Devices/${selectedNode.file_name}`;
-      }
-      // For files and folders under devices
-      else if (selectedNode.file_path) {
-        newFilePath = `Core/Devices/${selectedNode.device_name}${selectedNode.file_path}`;
-      }
-      // Set the global file path and device
-      setGlobal_file_path(newFilePath);
-      setGlobal_file_path_device(selectedNode.device_name);
-      // Log the node information
-
-    }
-  };
 
   // Monitor changes to global_file_path in useEffect
   useEffect(() => {
-    if (global_file_path) {
-      console.log('Global file path has been updated:', global_file_path);
+    if (filePath) {
+      console.log('Global file path has been updated:', filePath);
     }
-  }, [global_file_path]);
+  }, [filePath]);
 
   useEffect(() => {
-    if (global_file_path_device) {
-      console.log('Global file path device has been updated:', global_file_path_device);
+    if (filePathDevice) {
+      console.log('Global file path device has been updated:', filePathDevice);
     }
-  }, [global_file_path_device]);
+  }, [filePathDevice]);
+
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => (
       <TreeItem
         key={node.id}
-        itemId={node.id}
+        itemId={node.id.toString()}
+        onClick={() => handleNodeSelect(setFilePath, fileRows, setFilePathDevice, node.id)}
         label={
           <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             {getIconForKind(node.kind)}
@@ -243,7 +195,6 @@ export default function FileTreeView() {
                 textOverflow: 'ellipsis',
                 maxWidth: 'calc(100% - 24px)',
               }}
-
             >
               {node.file_name}
             </Typography>
@@ -253,7 +204,7 @@ export default function FileTreeView() {
         {node.children && renderTreeItems(node.children)}
       </TreeItem>
     ));
-  }, []);
+  }, [fileRows, setFilePath, setFilePathDevice]);
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
