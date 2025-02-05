@@ -43,9 +43,6 @@ export class UpdateService {
         autoUpdater.logger = electronLog;
         electronLog.transports.file.level = 'debug';
 
-        // Add this to see the current configuration
-        console.log('Update config:', autoUpdater.getFeedURL() || 'No feed URL set');
-        console.log('Current version:', autoUpdater.currentVersion);
 
         // Listen for update events
         autoUpdater.on('checking-for-update', () => {
@@ -77,7 +74,7 @@ export class UpdateService {
             );
         });
 
-        autoUpdater.on('update-downloaded', (info) => {
+        autoUpdater.on('update-downloaded', () => {
             this.sendStatusToWindow('Update downloaded; will install on quit');
             this.mainWindow.webContents.send('update-downloaded');
         });

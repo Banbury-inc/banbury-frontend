@@ -198,13 +198,7 @@ export default function SignIn() {
                   // User exists, set authenticated
                   setIsAuthenticated(true);
                 } catch (error) {
-
-                  console.log("username: ", username)
-                  console.log("first_name: ", first_name)
-                  console.log("last_name: ", last_name)
-                  console.log("phone_number: ", phone_number)
-                  console.log("email: ", email)
-                  console.log("picture: ", picture)
+                  console.error('Error fetching user data:', error);
 
                   // User doesn't exist, register them
                   const registerResponse = await handlers.users.registerUser(username, username, first_name, last_name, phone_number, email, picture);

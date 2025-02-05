@@ -5,7 +5,7 @@ interface StdoutContextType {
   setStdout: (data: string) => void;
 }
 
-const StdoutContext = createContext<StdoutContextType>({ stdoutData: '', setStdout: (data: string) => { } });
+const StdoutContext = createContext<StdoutContextType>({ stdoutData: '', setStdout: () => { } });
 
 export const useStdout = () => useContext(StdoutContext);
 

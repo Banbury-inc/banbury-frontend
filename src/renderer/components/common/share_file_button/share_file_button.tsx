@@ -28,7 +28,7 @@ interface User {
   avatar_url?: string;
 }
 
-const ShareButton = styled(Button)(({ theme }) => ({
+const ShareButton = styled(Button)(({ }) => ({
   width: '100%',
   justifyContent: 'flex-start',
   padding: '12px 16px',
@@ -38,11 +38,10 @@ const ShareButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-export default function ShareFileButton({ selectedFileNames, selectedFileInfo, onShare }: ShareFileButtonProps) {
+export default function ShareFileButton({ selectedFileNames, selectedFileInfo}: ShareFileButtonProps) {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -50,7 +49,6 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
   const { username } = useAuth();
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
-  const [togglePublicSuccess, setTogglePublicSuccess] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [copyLinkSuccess, setCopyLinkSuccess] = useState(false);
   const { showAlert } = useAlert();
@@ -66,7 +64,6 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
     setShowPermissions(false);
     setSelectedUsers([]);
     setSearchResults([]);
-    setSearchQuery('');
     setIsSharing(false);
     setShareSuccess(false);
     setCopyLinkSuccess(false);
@@ -114,7 +111,6 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
 
   // Update search handler to handle the API response correctly
   const handleSearch = async (query: string) => {
-    setSearchQuery(query);
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -149,11 +145,6 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
     }
   };
 
-  // Add debounced search
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value;
-    handleSearch(query);
-  };
 
   const handleShare = async () => {
     setIsSharing(true);
@@ -202,7 +193,6 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
           neuranet.files.makeFilePublic(username, file, device_name)
         )
       );
-      setTogglePublicSuccess(true);
 
       setTimeout(() => {
         handleClose();
@@ -233,7 +223,6 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
           neuranet.files.makeFilePrivate(username, file, device_name)
         )
       );
-      setTogglePublicSuccess(true);
 
       setTimeout(() => {
         handleClose();
@@ -310,7 +299,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo, o
                     autoHighlight
                     options={searchResults}
                     value={selectedUsers}
-                    onChange={(event, newValue) => setSelectedUsers(newValue)}
+                    onChange={(_event, newValue) => setSelectedUsers(newValue)}
                     getOptionLabel={(option) => `${option.first_name} ${option.last_name}`}
                     renderInput={(params) => (
                       <TextField

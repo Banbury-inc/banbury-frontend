@@ -1,18 +1,11 @@
 import { useEffect, useState } from 'react';
 import { fileWatcherEmitter } from '../../../../neuranet/device/watchdog';
-import path from 'path';
-import os from 'os';
 import { fetchDeviceData } from '../utils/fetchDeviceData';
 
-const file_name: string = 'mmills_database_snapshot.json';
-const directory_name: string = 'BCloud';
-const directory_path: string = path.join(os.homedir(), directory_name);
-const snapshot_json: string = path.join(directory_path, file_name);
 
 export const newUseFileData = (
   username: string | null,
   disableFetch: boolean,
-  updates: number,
   global_file_path: string | null,
   global_file_path_device: string | null,
   setFirstname: (name: string) => void,
@@ -62,11 +55,7 @@ export const newUseFileData = (
     if (!devices) {
       // Fetch devices if they're not available
       console.log("Fetching devices from newUseFileData");
-      fetchDeviceData(username || '', disableFetch, global_file_path || '', {
-        setFirstname,
-        setLastname,
-        setDevices,
-      })
+      fetchDeviceData(username || '')
         .then((new_devices) => {
           if (new_devices) {
             setDevices(new_devices);
@@ -135,11 +124,7 @@ export const newUseFileData = (
     const handleDeviceStatusChange = () => {
       // Refetch device data when status changes
       console.log("Refetching devices from newUseFileData line 139");
-      fetchDeviceData(username || '', disableFetch, global_file_path || '', {
-        setFirstname,
-        setLastname,
-        setDevices,
-      })
+      fetchDeviceData(username || '')
         .then((new_devices) => {
           if (new_devices) {
             setDevices(new_devices);

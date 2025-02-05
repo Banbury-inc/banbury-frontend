@@ -120,7 +120,7 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, 
   </div>
 );
 
-const DropIndicator = ({ edge, gap, left }: { edge: Edge; gap: string; left: number }) => (
+const DropIndicator = ({ left }: { edge: Edge; gap: string; left: number }) => (
   <div
     style={{
       position: 'fixed',
@@ -146,8 +146,6 @@ export const Tabs: React.FC<TabsProps> = ({
   onTabAdd,
   onReorder
 }) => {
-  const [draggedTab, setDraggedTab] = useState<string | null>(null);
-  const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
   const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
   const [indicatorPosition, setIndicatorPosition] = useState<number | null>(null);
   const [newTabId, setNewTabId] = useState<string | null>(null);
@@ -228,9 +226,6 @@ export const Tabs: React.FC<TabsProps> = ({
         draggable({
           element,
           getInitialData: () => ({ id: tab.id, index, type: 'tab' }),
-          onDragStart: () => {
-            setDraggedTab(tab.id);
-          },
           onGenerateDragPreview: ({ nativeSetDragImage }) => {
             if (!nativeSetDragImage) return;
             
@@ -254,10 +249,6 @@ export const Tabs: React.FC<TabsProps> = ({
               document.body.removeChild(previewEl);
             }, 0);
           },
-          onDrag: () => {},
-          onDrop: () => {
-            setDraggedTab(null);
-          }
         }),
         dropTargetForElements({
           element,
@@ -273,18 +264,15 @@ export const Tabs: React.FC<TabsProps> = ({
             const edge = extractClosestEdge(args.self.data);
             if (edge) {
               const rect = element.getBoundingClientRect();
-              setDraggedOverTab(tab.id);
               setClosestEdge(edge);
               setIndicatorPosition(edge === 'left' ? rect.left : rect.right);
             }
           },
           onDragLeave() {
-            setDraggedOverTab(null);
             setClosestEdge(null);
             setIndicatorPosition(null);
           },
           onDrop() {
-            setDraggedOverTab(null);
             setClosestEdge(null);
             setIndicatorPosition(null);
           }

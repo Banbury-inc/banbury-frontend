@@ -97,7 +97,7 @@ export default function PermanentDrawerLeft() {
   const theme = useTheme();
   const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, setSocket } = useAuth();
   const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'Files');
-  const [open, setOpen] = React.useState(false);
+  const open = false;
   const [tabs, setTabs] = useState<TabState[]>([
     {
       id: 'tab-1',
@@ -111,8 +111,6 @@ export default function PermanentDrawerLeft() {
     mouseY: number;
     tabId: string;
   } | null>(null);
-  const [draggedTab, setDraggedTab] = useState<string | null>(null);
-  const [draggedOverTab, setDraggedOverTab] = useState<string | null>(null);
   const [downloads, setDownloads] = useState<{
     filename: string;
     fileType: string;

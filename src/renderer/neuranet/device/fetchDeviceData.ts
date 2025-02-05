@@ -13,8 +13,6 @@ export const fetchDeviceData = async (
       axios.get<{ devices: any[]; }>(`${CONFIG.url}/devices/getdeviceinfo/${username}/`)
     ]);
 
-    console.log(deviceInfoResponse.data.devices)
-
 
     return deviceInfoResponse.data.devices;
 

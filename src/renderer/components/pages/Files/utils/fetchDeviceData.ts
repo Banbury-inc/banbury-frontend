@@ -5,13 +5,6 @@ import { CONFIG } from '../../../../config/config';
 
 export const fetchDeviceData = async (
   username: string,
-  disableFetch: boolean,
-  global_file_path: string,
-  options: {
-    setFirstname: (value: string) => void;
-    setLastname: (value: string) => void;
-    setDevices: (value: any[]) => void;
-  },
 ) => {
 
 

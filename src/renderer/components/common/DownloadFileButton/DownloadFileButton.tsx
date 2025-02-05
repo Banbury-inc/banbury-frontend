@@ -11,7 +11,6 @@ export default function DownloadFileButton({
   selectedFileNames, 
   selectedFileInfo, 
   selectedDeviceNames, 
-  setSelectedFiles, 
   setSelected, 
   setTaskbox_expanded, 
   tasks, 

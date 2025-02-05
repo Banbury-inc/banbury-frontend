@@ -14,6 +14,7 @@ import { useAuth } from '../../../../../context/AuthContext';
 import { buildTree } from './utils/buildTree';
 import { DatabaseData } from './types';
 import { fetchFileSyncData } from '../../utils/fetchFileSyncData';
+import Skeleton from '@mui/material/Skeleton';
 
 
 function getIconForKind(kind: string) {
@@ -41,7 +42,7 @@ function getIconForKind(kind: string) {
 export default function FileTreeView() {
   const {setSyncFiles, global_file_path, global_file_path_device, username, setFirstname, setLastname} = useAuth();
   const [syncRows, setSyncRows] = useState<DatabaseData[]>([]);
-  const [disableFetch, setDisableFetch] = useState(false);
+  const disableFetch = false;
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -67,20 +68,6 @@ export default function FileTreeView() {
   }, [username, disableFetch, global_file_path]);
 
 
-  const findNodeById = (nodes: DatabaseData[], id: any): DatabaseData | null => {
-    for (const node of nodes) {
-      if (node.id === id) {
-        return node;
-      }
-      if (node.children) {
-        const childNode = findNodeById(node.children, id);
-        if (childNode) {
-          return childNode;
-        }
-      }
-    }
-    return null;
-  };
 
 
   // Monitor changes to global_file_path in useEffect
@@ -100,7 +87,7 @@ export default function FileTreeView() {
     return nodes.map((node) => (
       <TreeItem
         key={node.id}
-        nodeId={node.id}
+        itemId={node.id}
         label={
           <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             {getIconForKind(node.kind)}
@@ -128,18 +115,24 @@ export default function FileTreeView() {
 
   return (
     <Box sx={{ width: 300, height: '100%', overflow: 'auto' }}>
+      {isLoading ? (
+        <>
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 2 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 2 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 4 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 4 }} />
+        </>
+      ) : (
       <TreeView
         aria-label="file system navigator"
-        defaultCollapseIcon={<ExpandMoreIcon />}
-        defaultExpandIcon={<ChevronRightIcon />}
         sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
-      // onNodeSelect={handleNodeSelect}
       >
         {renderTreeItems(syncRows)}
       </TreeView>
+      )}
     </Box>
   )
-
 }
 
 

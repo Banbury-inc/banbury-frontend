@@ -10,34 +10,24 @@ interface DeleteFileButtonProps {
   selectedFileNames: string[];
   global_file_path: string;
   setSelectedFileNames: (files: string[]) => void;
-  setdeleteLoading: (loading: boolean) => void;
-  setIsAddingFolder: (adding: boolean) => void;
-  setNewFolderName: (name: string) => void;
-  setDisableFetch: (disable: boolean) => void;
   updates: number;
   setUpdates: (updates: number) => void;
   setSelected: (selected: readonly number[]) => void;
   setTaskbox_expanded: (expanded: boolean) => void;
   tasks: any[];
   setTasks: (tasks: any[]) => void;
-  websocket: WebSocket;
 }
 
 export default function DeleteFileButton({ 
   selectedFileNames,
   global_file_path,
   setSelectedFileNames,
-  setdeleteLoading,
-  setIsAddingFolder,
-  setNewFolderName,
-  setDisableFetch,
   updates,
   setUpdates,
   setSelected,
   setTaskbox_expanded,
   tasks,
   setTasks,
-  websocket
 }: DeleteFileButtonProps) {
   const { username } = useAuth();
   const { showAlert } = useAlert();
@@ -57,11 +47,6 @@ export default function DeleteFileButton({
         setSelectedFileNames,
         selectedFileNames,
         global_file_path,
-        setdeleteLoading,
-        setIsAddingFolder,
-        setNewFolderName,
-        setDisableFetch,
-        username,
         updates,
         setUpdates,
       ) as string;

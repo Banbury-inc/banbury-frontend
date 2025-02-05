@@ -120,10 +120,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
     onRequestSort(event, property);
   };
 
-  const { files, set_Files, global_file_path, global_file_path_device, websocket } = useAuth();  // Assuming global_file_path is available via context
-  const pathSegments = global_file_path ? global_file_path.split('/').filter(Boolean) : []; // Split and remove empty segments safely
-
-
   return (
     <TableHead>
       <TableRow>
@@ -219,14 +215,11 @@ const ResizeHandle = styled('div')(({ theme }) => ({
 export default function Devices() {
   const order = 'asc';
   const orderBy = 'device_name';
-  const [selected, setSelected] = useState<readonly number[]>([]);
-  const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(0);
+  const page = 0;
   const rowsPerPage = 10;
-  const [deviceRows, setDeviceRows] = useState<DeviceData[]>([]); // State for storing fetched file data
   const [allDevices, setAllDevices] = useState<DeviceData[]>([]);
-  const { global_file_path, global_file_path_device} = useAuth();
+  const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const { updates, setUpdates, tasks, setTasks, username, setFirstname, setLastname, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
@@ -438,40 +431,6 @@ export default function Devices() {
   }, [username, updates]);
 
 
-
-
-
-  useEffect(() => {
-    const pathToShow = global_file_path || '/';
-    const pathSegments = pathToShow.split('/').filter(Boolean).length;
-
-    const filteredDevices = allDevices.filter(device => {
-      if (!global_file_path && !global_file_path_device) {
-        return true; // Show all files
-      }
-
-      if (!global_file_path && global_file_path_device) {
-        return device.device_name === global_file_path_device; // Show all files for the specified device
-      }
-
-      // Add a check to ensure filePath is defined
-      if (!device.device_name) {
-        return false; // Skip files with undefined filePath
-      }
-
-      const deviceSegments = device.device_name.split('/').filter(Boolean).length;
-      const isInSameDirectory = device.device_name.startsWith(pathToShow) && deviceSegments === pathSegments + 1;
-      const isFile = device.device_name === pathToShow;
-
-      return isInSameDirectory || isFile;
-    });
-
-    setDeviceRows(filteredDevices);
-
-  }, [global_file_path, global_file_path_device, allDevices]);
-
-  const [selectedDevices, setSelectedDevices] = useState<readonly number[]>([]);
-
   const handleAddDeviceClick = async () => {
     try {
       console.log("handling add device click");
@@ -551,7 +510,7 @@ export default function Devices() {
       if (result === 'success') {
         await fetchDevices();
         await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-        setSelectedDevices([]);
+        setSelectedDeviceNames([]);
         showAlert('Success', ['Device(s) deleted successfully'], 'success');
       } else {
         await neuranet.sessions.failTask(
@@ -587,7 +546,6 @@ export default function Devices() {
     }
   };
 
-  const isSelected = (id: number) => selected.indexOf(id) !== -1;
 
   // Avoid a layout jump when reaching the last page with empty rows.
   // Calculate empty rows for pagination
@@ -786,7 +744,6 @@ export default function Devices() {
         </CardContent>
       </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
-        {/* Left panel: Device table */}
         <Stack
           sx={{
             position: 'relative',
@@ -809,7 +766,7 @@ export default function Devices() {
               <TableContainer sx={{ maxHeight: '96%', overflowY: 'auto', overflowX: 'auto' }}>
                 <Table aria-labelledby="tableTitle" size="small">
                   <EnhancedTableHead
-                    numSelected={selected.length}
+                    numSelected={0}
                     order={order}
                     orderBy={orderBy}
                     onSelectAllClick={() => { }}
@@ -840,7 +797,6 @@ export default function Devices() {
                       stableSort(allDevices, getComparator(order, orderBy))
                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                         .map((row, index) => {
-                          const isItemSelected = isSelected(row.id);
                           const labelId = `enhanced-table-checkbox-${index}`;
 
                           return (
@@ -848,7 +804,6 @@ export default function Devices() {
                               hover
                               onClick={() => handleDeviceClick(row)}
                               role="checkbox"
-                              aria-checked={isItemSelected}
                               tabIndex={-1}
                               key={row.id}
                               selected={!!selectedDevice && selectedDevice.id === row.id}
@@ -856,7 +811,6 @@ export default function Devices() {
                               <TableCell padding="checkbox">
                                 <Checkbox
                                   color="primary"
-                                  checked={isItemSelected}
                                   inputProps={{
                                     'aria-labelledby': labelId,
                                   }}

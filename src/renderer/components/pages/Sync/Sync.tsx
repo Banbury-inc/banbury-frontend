@@ -21,7 +21,7 @@ import { shell } from 'electron';
 import fs from 'fs';
 import { stat } from 'fs/promises';
 import os from 'os';
-import path, { join } from 'path';
+import path from 'path';
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
@@ -165,7 +165,6 @@ export default function Sync() {
     devices,
     setFirstname,
     setLastname,
-    setDevices,
     setTaskbox_expanded,
   } = useAuth();
 
@@ -228,11 +227,8 @@ export default function Sync() {
       .map((id) => syncRows.find((file: any) => file.id === id)?.file_path)
       .filter((name) => name !== undefined) as string[];
     console.log(newSelectedFilePaths[0]);
-    const directoryName = 'BCloud';
-    const directoryPath = join(os.homedir(), directoryName);
     let fileFound = false;
     let folderFound = false;
-    const filePath = '';
     try {
       const fileStat = await stat(newSelectedFilePaths[0]);
       if (fileStat.isFile()) {
@@ -705,7 +701,7 @@ export default function Sync() {
                                       backgroundColor: 'transparent',
                                       borderRadius: '1px',  // Match the outer border radius
                                       '& .MuiLinearProgress-bar': {
-                                        backgroundColor: (theme) => {
+                                        backgroundColor: () => {
                                           const percentage = Array.isArray(row.device_ids) ? (row.device_ids.length / (devices?.length || 1)) * 100 : 0;
                                           if (percentage >= 80) return '#1DB954';
                                           if (percentage >= 50) return '#CD853F';

@@ -6,11 +6,6 @@ export async function deleteFile(
   setSelectedFileNames: (selectedFileNames: string[]) => void,
   selectedFileNames: string[],
   global_file_path: string | null,
-  setdeleteLoading: (loading: boolean) => void,
-  setIsAddingFolder: (adding: boolean) => void,
-  setNewFolderName: (name: string) => void,
-  setDisableFetch: (disable: boolean) => void,
-  username: string | null,
   updates: number,
   setUpdates: (updates: number) => void
 ): Promise<string> {
@@ -18,13 +13,11 @@ export async function deleteFile(
     return 'No file selected';
   }
 
-  setdeleteLoading(true);
   const deletePromises: Promise<void>[] = [];  // Array to hold promises for deletion operations
 
   selectedFileNames.forEach((fileName: string) => {
     const currentPath: string = global_file_path ?? '';
     const filePath: string = path.join(currentPath, fileName);
-    console.log(filePath);
 
     // Create a promise for each file operation and push it to the array
     const deletePromise = new Promise<void>((resolve, reject) => {
@@ -64,7 +57,6 @@ export async function deleteFile(
   try {
     await Promise.all(deletePromises);
     setSelectedFileNames([]);
-    setdeleteLoading(false);
     setUpdates(updates + 1);
     return 'success';
   } catch (error) {

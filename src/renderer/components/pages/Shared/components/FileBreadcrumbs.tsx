@@ -4,7 +4,7 @@ import { Breadcrumbs } from '@mui/material';
 import { useAuth } from '../../../../context/AuthContext';
 
 export function FileBreadcrumbs() {
-  const { files, global_file_path, global_file_path_device } = useAuth();
+  const { global_file_path } = useAuth();
   const pathSegments = global_file_path ? global_file_path.split('/').filter(Boolean) : [];
 
   const handleBreadcrumbClick = (path: string) => {

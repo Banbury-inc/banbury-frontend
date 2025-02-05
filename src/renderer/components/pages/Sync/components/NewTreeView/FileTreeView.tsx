@@ -75,7 +75,7 @@ export default function FileTreeView() {
     return nodes.map((node) => (
       <TreeItem
         key={node.id}
-        nodeId={node.id}
+        itemId={node.id}
         label={
           <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             {getIconForKind(node.kind)}
@@ -105,8 +105,6 @@ export default function FileTreeView() {
     <Box sx={{ width: 300, height: '100%', overflow: 'auto' }}>
       <TreeView
         aria-label="file system navigator"
-        defaultCollapseIcon={<ExpandMoreIcon />}
-        defaultExpandIcon={<ChevronRightIcon />}
         sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
       // onNodeSelect={handleNodeSelect}
       >

@@ -1,7 +1,4 @@
 import axios from 'axios';
-import fs from 'fs';
-import { useState } from 'react';
-import { useAuth } from '../../../../context/AuthContext';
 import { CONFIG } from '../../../../config/config';
 
 

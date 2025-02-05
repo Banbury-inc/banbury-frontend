@@ -30,8 +30,6 @@ export default function NewScannedFolderButton({ fetchDevices }: NewScannedFolde
     setLoading(true);
     try {
       // Get the folder path from the first file
-      const entirepath = file.webkitRelativePath;
-      const folderPath = file.webkitRelativePath.split('/')[0];
       const absoluteFolderPath = path.dirname(file.path);
 
       // Add the selected folder as a scanned folder

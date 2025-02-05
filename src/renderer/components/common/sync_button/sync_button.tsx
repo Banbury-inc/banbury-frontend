@@ -4,7 +4,6 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { neuranet } from '../../../neuranet';
 import { useAuth } from '../../../context/AuthContext';
 import SyncIcon from '@mui/icons-material/Sync';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
 import { getSyncFolders } from './getSyncFolders';
@@ -51,9 +50,6 @@ export default function SyncButton() {
     if (!file) return;
 
     try {
-      // Get the folder path from the first file
-      const entirepath = file.webkitRelativePath;
-      const folderPath = file.webkitRelativePath.split('/')[0];
       const absoluteFolderPath = path.dirname(file.path);
 
       // Add the selected folder as a scanned folder
@@ -72,7 +68,7 @@ export default function SyncButton() {
         setSyncData(updatedFolders);
       }
     } catch (err) {
-      console.error('Failed to sync folder. Please try again.');
+      console.error('Failed to sync folder. Please try again. Error:', err);
     }
   };
 
@@ -130,7 +126,7 @@ export default function SyncButton() {
         );
 
         if (result === 'success') {
-          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         }
       } catch (error) {
         console.error('Sync error:', error);
@@ -338,22 +334,3 @@ export default function SyncButton() {
   );
 }
 
-// Helper component for file icons
-function FileIcon({ filename }: { filename: string }) {
-  // Add logic to determine icon based on file extension
-  return (
-    <Box
-      sx={{
-        width: 32,
-        height: 32,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        borderRadius: 1,
-      }}
-    >
-      <InsertDriveFileIcon sx={{ fontSize: 20, color: 'rgba(255, 255, 255, 0.7)' }} />
-    </Box>
-  );
-}

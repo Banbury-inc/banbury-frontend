@@ -23,7 +23,7 @@ import { shell } from 'electron';
 import fs from 'fs';
 import { stat } from 'fs/promises';
 import os from 'os';
-import path, { join } from 'path';
+import path from 'path';
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
@@ -52,7 +52,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 // Rename the interface to avoid collision with DOM Notification
 
-const getHeadCells = (isCloudSync: boolean): HeadCell[] => [
+const getHeadCells = (): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'file_size', numeric: false, label: 'Size', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'kind', numeric: false, label: 'Kind', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -99,7 +99,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   const isSmallScreen = useMediaQuery('(max-width:960px)');
   const { global_file_path } = useAuth();
   const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
+  const headCells = getHeadCells();
   const createSortHandler = (property: keyof DatabaseData) => (event: React.MouseEvent<unknown>) => {
     onRequestSort(event, property);
   };
@@ -174,7 +174,7 @@ interface ViewOption {
   icon: React.ReactNode;
 }
 
-const StyledMenu = styled(Menu)(({ theme }) => ({
+const StyledMenu = styled(Menu)(({ }) => ({
   '& .MuiPaper-root': {
     backgroundColor: '#000000',
     borderRadius: '12px',
@@ -209,8 +209,6 @@ export default function Files() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [isAddingFolder, setIsAddingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
   const [disableFetch, setDisableFetch] = useState(false);
   const {
     updates,
@@ -230,7 +228,6 @@ export default function Files() {
     setTaskbox_expanded,
   } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState('');
   const [fileTreeWidth, setFileTreeWidth] = useState(250);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
@@ -273,7 +270,6 @@ export default function Files() {
   const { isLoading, fileRows} = newUseFileData(
     username,
     disableFetch,
-    updates,
     global_file_path,
     global_file_path_device,
     setFirstname,
@@ -292,13 +288,6 @@ export default function Files() {
     const fetchAndUpdateDevices = async () => {
       const new_devices = await fetchDeviceData(
         username || '',
-        disableFetch,
-        global_file_path || '',
-        {
-          setFirstname,
-          setLastname,
-          setDevices,
-        },
       );
 
       if (new_devices) {
@@ -310,7 +299,7 @@ export default function Files() {
 
   }, []);
 
-  const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
+  const handleRequestSort = (_event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
@@ -347,11 +336,8 @@ export default function Files() {
       .map((id) => fileRows.find((file) => file.id === id)?.file_path)
       .filter((name) => name !== undefined) as string[];
     console.log(newSelectedFilePaths[0]);
-    const directoryName = 'BCloud';
-    const directoryPath = join(os.homedir(), directoryName);
     let fileFound = false;
     let folderFound = false;
-    const filePath = '';
     try {
       const fileStat = await stat(newSelectedFilePaths[0]);
       if (fileStat.isFile()) {
@@ -403,7 +389,7 @@ export default function Files() {
           shell.openPath(file_save_path);
 
           // Create a file watcher
-          const watcher = fs.watch(file_save_path, (eventType, filename) => {
+          const watcher = fs.watch(file_save_path, (eventType) => {
             if (eventType === 'rename' || eventType === 'change') {
               // The file has been closed, so we can delete it
               watcher.close(); // Stop watching the file
@@ -458,13 +444,9 @@ export default function Files() {
     console.log(newSelectedFileInfo);
   };
 
-  const [selectedfiles, setSelectedFiles] = useState<readonly number[]>([]);
 
 
-  const [deleteloading, setdeleteLoading] = useState<boolean>(false);
-
-
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -556,8 +538,7 @@ export default function Files() {
     fetchUserInfo();
   }, [username]);
 
-  const handleShareModalOpen = (fileName: string) => {
-    setSelectedFileName(fileName);
+  const handleShareModalOpen = () => {
     setIsShareModalOpen(true);
   };
 
@@ -615,7 +596,7 @@ export default function Files() {
                       selectedFileNames={selectedFileNames}
                       selectedFileInfo={selectedFileInfo}
                       selectedDeviceNames={selectedDeviceNames}
-                      setSelectedFiles={setSelectedFiles}
+                      setSelectedFiles={setSelectedFileNames}
                       setSelected={setSelected}
                       setTaskbox_expanded={setTaskbox_expanded}
                       tasks={tasks || []}
@@ -629,17 +610,12 @@ export default function Files() {
                       selectedFileNames={selectedFileNames}
                       global_file_path={global_file_path || ''}
                       setSelectedFileNames={setSelectedFileNames}
-                      setdeleteLoading={setdeleteLoading}
-                      setIsAddingFolder={setIsAddingFolder}
-                      setNewFolderName={setNewFolderName}
-                      setDisableFetch={setDisableFetch}
                       updates={updates}
                       setUpdates={setUpdates}
                       setSelected={setSelected}
                       setTaskbox_expanded={setTaskbox_expanded}
                       tasks={tasks || []}
                       setTasks={setTasks}
-                      websocket={websocket as WebSocket}
                     />
                   </Grid>
                   <Grid item paddingRight={1} paddingLeft={0}>
@@ -654,7 +630,7 @@ export default function Files() {
                     <ShareFileButton
                       selectedFileNames={selectedFileNames}
                       selectedFileInfo={selectedFileInfo}
-                      onShare={() => handleShareModalOpen(selectedFileNames[0])}
+                      onShare={() => handleShareModalOpen()}
                     />
                   </Grid>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 2 }}>
@@ -1103,7 +1079,7 @@ export default function Files() {
                                             backgroundColor: 'transparent',
                                             borderRadius: '1px',  // Match the outer border radius
                                             '& .MuiLinearProgress-bar': {
-                                              backgroundColor: (theme) => {
+                                              backgroundColor: () => {
                                                 const percentage = Array.isArray(row.device_ids) ? (row.device_ids.length / (devices?.length || 1)) * 100 : 0;
                                                 if (percentage >= 80) return '#1DB954';
                                                 if (percentage >= 50) return '#CD853F';
@@ -1147,11 +1123,11 @@ export default function Files() {
                                         name={`priority-${row.id}`}
                                         value={Number(row.file_priority)}
                                         max={5}
-                                        onChange={(event, newValue) => handlePriorityChange(row, newValue)}
+                                        onChange={(_event, newValue) => handlePriorityChange(row, newValue)}
                                         sx={{
                                           fontSize: '16px',
                                           '& .MuiRating-iconFilled': {
-                                            color: (theme) => {
+                                            color: () => {
                                               const priority = Number(row.file_priority);
                                               if (priority >= 4) return '#FF9500';
                                               if (priority === 3) return '#FFCC00';

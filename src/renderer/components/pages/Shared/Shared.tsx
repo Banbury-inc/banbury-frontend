@@ -21,7 +21,7 @@ import { shell } from 'electron';
 import fs from 'fs';
 import { stat } from 'fs/promises';
 import os from 'os';
-import path, { join } from 'path';
+import path from 'path';
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
@@ -39,7 +39,7 @@ import { CONFIG } from '../../../config/config';
 import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { styled } from '@mui/material/styles';
 
-const getHeadCells = (isCloudSync: boolean): HeadCell[] => [
+const getHeadCells = (): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'file_size', numeric: false, label: 'Size', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'kind', numeric: false, label: 'Kind', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -55,7 +55,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   const isSmallScreen = useMediaQuery('(max-width:960px)');
   const { global_file_path } = useAuth();
   const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
+  const headCells = getHeadCells();
   const createSortHandler = (property: keyof DatabaseData) => (event: React.MouseEvent<unknown>) => {
     onRequestSort(event, property);
   };

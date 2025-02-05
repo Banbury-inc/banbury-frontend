@@ -1,5 +1,4 @@
 import { fetchDeviceData } from '../../../components/pages/Files/utils/fetchDeviceData';
-import { fileWatcherEmitter } from '../../device/watchdog';
 
 // Mock the fetchDeviceData function
 jest.mock('../../../components/pages/Files/utils/fetchDeviceData');
