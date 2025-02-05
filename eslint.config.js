@@ -16,6 +16,8 @@ module.exports = [
       // Specific files to ignore
       "src/renderer/components/common/upload_progress/upload_progress.tsx"
     ],
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,
