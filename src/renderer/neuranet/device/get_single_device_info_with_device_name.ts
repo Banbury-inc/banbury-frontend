@@ -10,9 +10,6 @@ export async function getSingleDeviceInfoWithDeviceName(username: string | undef
   try {
     const response = await axios.get(`http://${CONFIG.url}/devices/get_single_device_info_with_device_name/${username}/${device_name}`);
 
-    console.log(response)
-
-
     const deviceInfo = response.data.device_info;
     return deviceInfo;
   } catch (error) {
