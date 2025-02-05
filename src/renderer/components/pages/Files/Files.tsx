@@ -51,20 +51,6 @@ import MenuItem from '@mui/material/MenuItem';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 // Rename the interface to avoid collision with DOM Notification
-interface UserNotification {
-  id: string;
-  type: 'share' | 'upload' | 'system';
-  title: string;
-  timestamp: string;
-  read: boolean;
-  folderName?: string;
-  actionLabel?: string;
-}
-
-interface NotificationResponse {
-  result: 'success' | 'fail';
-  notifications: UserNotification[];
-}
 
 const getHeadCells = (isCloudSync: boolean): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -213,7 +199,6 @@ const StyledMenu = styled(Menu)(({ theme }) => ({
 }));
 
 export default function Files() {
-  const isSmallScreen = useMediaQuery('(max-width:960px)');
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DatabaseData>('file_name');
   const [selected, setSelected] = useState<readonly number[]>([]);
@@ -222,7 +207,6 @@ export default function Files() {
   const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
   const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
   const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
   const [isAddingFolder, setIsAddingFolder] = useState(false);
@@ -236,22 +220,13 @@ export default function Files() {
     username,
     files,
     sync_files,
-    first_name,
-    last_name,
-    phone_number,
-    email,
-    picture,
     devices,
     setFirstname,
     setLastname,
     setPhoneNumber,
     setEmail,
     setDevices,
-    setSyncFiles,
     setPicture,
-    redirect_to_login,
-    setRedirectToLogin,
-    taskbox_expanded,
     setTaskbox_expanded,
   } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -294,42 +269,8 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
-  const getSelectedFileNames = () => {
-    return selected
-      .map((id) => {
-        const file = fileRows.find((file) => file.id === id);
-        return file ? file.file_name : null;
-      })
-      .filter((file_name) => file_name !== null); // Filter out any null values if a file wasn't found
-  };
 
-  // useEffect(() => {
-  //   const fetchAndUpdateDevices = async () => {
-  //     const new_devices = await fetchDeviceData(
-  //       username || '',
-  //       disableFetch,
-  //       global_file_path || '',
-  //       {
-  //         setFirstname,
-  //         setLastname,
-  //         setDevices,
-  //       },
-  //     );
-
-  //     if (new_devices) {
-  //       if (devices) {
-  //         const updatedDevices = [...devices, ...new_devices];
-  //         setDevices(updatedDevices);
-  //       } else {
-  //         setDevices(new_devices);
-  //       }
-  //     }
-  //   };
-
-  //   fetchAndUpdateDevices();
-  // }, [username, disableFetch, updates, global_file_path]);
-
-  const { isLoading, allFiles, fileRows, setAllFiles } = newUseFileData(
+  const { isLoading, fileRows} = newUseFileData(
     username,
     disableFetch,
     updates,
@@ -449,13 +390,13 @@ export default function Files() {
           websocket as unknown as WebSocket,
         );
         if (response === 'No file selected') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'File not available') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'success') {
-          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
@@ -498,8 +439,6 @@ export default function Files() {
     }
     setSelected(newSelected);
 
-    const file_name = fileRows.find((file) => file.id === id)?.file_name;
-    const device_name = fileRows.find((file) => file.id === id)?.device_name;
     console.log(newSelected)
     const newSelectedFileNames = newSelected
       .map((id) => fileRows.find((file) => file.id === id)?.file_name)
@@ -521,41 +460,9 @@ export default function Files() {
 
   const [selectedfiles, setSelectedFiles] = useState<readonly number[]>([]);
 
-  const handleAddDeviceClick = async () => {
-    // Here, we are specifically adding the task after the device has been created
-    // Because the database will not know what device to add it to, as the device does not
-    // exist yet
-
-    console.log('handling add device click');
-
-    const device_name = neuranet.device.name();
-    const task_description = 'Adding device ' + device_name;
-    const result = await handlers.devices.addDevice(username ?? '');
-    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
-
-    if (result === 'success') {
-      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-    }
-  };
-  const handleSyncClick = async () => {
-    // let result = handlers.files.addFile(username ?? '');
-    const task_description = 'Scanning filesystem';
-    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-    setTaskbox_expanded(true);
-
-    const result = await neuranet.device.scanFilesystem(username ?? '');
-
-    if (result === 'success') {
-      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      setUpdates(updates + 1);
-    }
-  };
 
   const [deleteloading, setdeleteLoading] = useState<boolean>(false);
 
-  const [backHistory, setBackHistory] = useState<any[]>([]);
-  const [forwardHistory, setForwardHistory] = useState<any[]>([]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -568,9 +475,6 @@ export default function Files() {
 
   const isSelected = (id: number) => selected.indexOf(id) !== -1;
 
-  // Avoid a layout jump when reaching the last page with empty rows.
-  // Calculate empty rows for pagination
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - fileRows.length) : 0;
 
   function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
     return array
@@ -614,13 +518,12 @@ export default function Files() {
     const result = await neuranet.files.updateFilePriority(row._id, username ?? '', newPriority);
 
     if (result === 'success') {
-      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
       setUpdates(updates + 1);
     }
   };
 
   const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
 
   const fetchUserInfo = async () => {
     try {

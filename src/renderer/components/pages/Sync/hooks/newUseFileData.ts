@@ -7,7 +7,6 @@ import { fetchFileSyncData } from '../utils/fetchFileSyncData';
 const file_name: string = 'mmills_database_snapshot.json';
 const directory_name: string = 'BCloud';
 const directory_path: string = path.join(os.homedir(), directory_name);
-const snapshot_json: string = path.join(directory_path, file_name);
 
 export const newUseFileData = (
   username: string | null,
@@ -54,18 +53,10 @@ export const newUseFileData = (
   }, [updates]);
 
 
-  const set_Files = (files: any[]) => {
-    console.log('files', files);
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       if (!devices) {
-        fetchDeviceData(username || '', disableFetch, global_file_path || '', {
-          setFirstname,
-          setLastname,
-          setDevices,
-        });
+        fetchDeviceData(username || '');
         return;
       }
 

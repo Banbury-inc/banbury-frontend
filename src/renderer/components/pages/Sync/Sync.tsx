@@ -170,7 +170,7 @@ export default function Sync() {
   } = useAuth();
 
 
-  const { isLoading, syncRows} = newUseFileData(
+  const { isLoading, syncRows } = newUseFileData(
     username,
     disableFetch,
     updates,
@@ -322,7 +322,6 @@ export default function Sync() {
     }
     setSelected(newSelected);
 
-    const file_name = syncRows.find((file: any) => file._id === id)?.file_name;
     const newSelectedFileNames = newSelected
       .map((id) => syncRows.find((file: any) => file._id === id)?.file_name)
       .filter((name) => name !== undefined) as string[];
@@ -349,7 +348,6 @@ export default function Sync() {
 
   // Avoid a layout jump when reaching the last page with empty rows.
   // Calculate empty rows for pagination
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - syncRows.length) : 0;
 
   function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
     return array
@@ -383,10 +381,6 @@ export default function Sync() {
 
   const handlePriorityChange = async (row: any, newValue: number | null) => {
     if (newValue === null) return;
-
-
-    const task_description = 'Updating File Priority';
-    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
     setTaskbox_expanded(true);
 
     const newPriority = newValue;
@@ -394,7 +388,6 @@ export default function Sync() {
     const result = await neuranet.files.updateFilePriority(row._id, username ?? '', newPriority);
 
     if (result === 'success') {
-      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
       setUpdates(updates + 1);
     }
 

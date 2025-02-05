@@ -7,7 +7,6 @@ export const fetchDeviceData = async (
   username: string,
 ) => {
 
-
   try {
     // Fetch fresh data from API
     const [deviceInfoResponse] = await Promise.all([

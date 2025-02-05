@@ -13,8 +13,6 @@ export async function addDevice(username: string) {
   const max_storage_capacity_GB = 50;
   const date_added = DateUtils.get_current_date_and_time();
   const ip_address = await neuranet.device.ip_address();
-  const upload_network_speed = 0;
-  const download_network_speed = 0;
   const gpu_usage = await neuranet.device.gpu_usage();
   const cpu_usage = await neuranet.device.cpu_usage();
   const ram_usage = await neuranet.device.ram_usage();
@@ -24,9 +22,6 @@ export async function addDevice(username: string) {
   const sync_status = false;
   const optimization_status = false;
   const online = true;
-
-
-
 
   try {
     const url = `${CONFIG.url}/devices/add_device/${username}/${device_name}/`;

@@ -38,14 +38,6 @@ interface Device {
   // Add more device properties as needed
 }
 
-interface UserResponse {
-  devices: Device[];
-  first_name: string;
-  last_name: string;
-  email: string;
-  password: string;
-  // Include other fields from your API response as needed
-}
 
 
 const { ipcRenderer } = window.require('electron');
@@ -68,7 +60,6 @@ export default function Profile() {
   const [phone_number, setPhonenumber] = useState<string>('');
   const [lastname, setLastname] = useState<string>('');
   const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
 
   const [deviceRows, setDeviceRows] = useState<Device[]>([]); // State for storing fetched file data
   const getSelectedDeviceNames = () => {
@@ -81,22 +72,6 @@ export default function Profile() {
 
 
 
-  function formatBytes(gigabytes: number, decimals: number = 2): string {
-    if (gigabytes === 0) return '0 GB';
-
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    // Since we're starting from GB, there's no need to find the initial index based on the log.
-    // Instead, we convert the input gigabytes to bytes to use the original formula,
-    // adjusting it to start from GB.
-    const bytes = gigabytes * Math.pow(k, 3); // Converting GB to Bytes for calculation
-    const i = Math.floor(Math.log(bytes) / Math.log(k)) - 3; // Adjusting index to start from GB
-
-    // Ensure the index does not fall below 0
-    const adjustedIndex = Math.max(i, 0);
-    return parseFloat((gigabytes / Math.pow(k, adjustedIndex)).toFixed(dm)) + ' ' + sizes[adjustedIndex];
-  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,14 +93,6 @@ export default function Profile() {
   }, []);
 
 
-  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      const newSelected = devices.map((device) => device.device_number);
-      setSelected(newSelected);
-    } else {
-      setSelected([]);
-    }
-  };
 
   const handleClick = (event: React.MouseEvent<unknown>, device_number: number) => {
     const selectedIndex = selected.indexOf(device_number);
@@ -151,11 +118,6 @@ export default function Profile() {
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-  const isSelected = (device_number: number) => selected.indexOf(device_number) !== -1;
 
 
 

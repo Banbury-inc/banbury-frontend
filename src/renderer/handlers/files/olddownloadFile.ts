@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { CONFIG } from '../../config/config';
-export function downloadFile(files: string[], devices: string[]): Promise<string> {
+export function downloadFile(files: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
 
     const RELAY_HOST = CONFIG.relayHost; // Change this to your actual server IP
@@ -48,12 +48,9 @@ export function downloadFile(files: string[], devices: string[]): Promise<string
               const null_string: string = "";
               const file_header: string = `FILE_REQUEST_RESPONSE:${request_file_name}:${file_size}:${null_string}:END_OF_HEADER`;
               senderSocket.write(file_header);
-
-              let total_bytes_sent: number = 0;
               file.on('data', (bytes_read: Buffer) => {
                 console.log("sending file...");
                 senderSocket.write(bytes_read);
-                total_bytes_sent += bytes_read.length;
               });
 
               file.on('end', () => {

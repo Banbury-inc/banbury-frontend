@@ -101,9 +101,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const setLastname = (last_name: string | null) => {
     setLast(last_name);
   };
-  const setPic = (picture: ImageData | null) => {
-    setPicture(picture);
-  };
   const setUpdates = (updates: number) => {
     setUp(updates);
   };
@@ -112,9 +109,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
   const set_Files = (files: any[] | []) => {
     setFi(files);
-  };
-  const setSync_Files = (sync_files: any[] | []) => {
-    setSyncFiles(sync_files);
   };
 
   const setTasks = (tasks: any[] | null) => {

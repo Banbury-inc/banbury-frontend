@@ -16,15 +16,12 @@ export function deleteDevice(device_name: string[]): string {
   const jobCompleted = false;
   senderSocket.on('data', (data) => {
     buffer = Buffer.concat([buffer, data]);
-    let fileType = 'Unknown';
     if (buffer.includes(endOfHeader) && !header) {
       const endOfHeaderIndex = buffer.indexOf(endOfHeader);
       if (endOfHeaderIndex !== -1) {
         const headerPart = buffer.slice(0, endOfHeaderIndex);
         const content = buffer.slice(endOfHeaderIndex + endOfHeader.length);
         header = headerPart.toString();
-        const splitHeader = header.split(':');
-        fileType = splitHeader[0];
         buffer = content;
       }
     }

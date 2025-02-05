@@ -15,10 +15,6 @@ import { buildTree } from './utils/buildTree';
 import { DatabaseData } from './types';
 import { fetchFileSyncData } from '../../utils/fetchFileSyncData';
 
-const EventEmitter = require('events');
-
-
-
 
 function getIconForKind(kind: string) {
   switch (kind) {
@@ -40,7 +36,6 @@ function getIconForKind(kind: string) {
       return <FolderIcon style={{ marginRight: 5 }} fontSize="inherit" />;
   }
 }
-
 
 
 export default function FileTreeView() {
