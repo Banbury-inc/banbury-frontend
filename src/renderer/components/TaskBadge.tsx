@@ -2,7 +2,6 @@ import * as React from 'react';
 import Badge from '@mui/material/Badge';
 import { Box } from '@mui/system';
 import ShareIcon from '@mui/icons-material/Share';
-import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -14,17 +13,12 @@ import Typography from '@mui/material/Typography';
 
 
 
-import { useNavigate } from 'react-router-dom';
 import CircularProgress, {
 
   CircularProgressProps,
 } from '@mui/material/CircularProgress';
 
 export default function TaskBadge() {
-  const { username, password, first_name, last_name, redirect_to_login, setRedirectToLogin, setFirstname, setLastname, } = useAuth();
-  const [showLogin, setShowLogin] = useState<boolean>(false);
-  const navigate = useNavigate();
-
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);

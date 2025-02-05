@@ -4,17 +4,9 @@ import { CONFIG } from '../../../../config/config';
 
 export const fetchFileData = async (
     username: string,
-    disableFetch: boolean,
-    snapshot_json: string,
     global_file_path: string,
     {
-        setFirstname,
-        setLastname,
-        setFileRows,
-        setAllFiles,
-        set_Files,
         setIsLoading,
-        cache,
         existingFiles,
     }: {
         setFirstname: (name: string) => void;

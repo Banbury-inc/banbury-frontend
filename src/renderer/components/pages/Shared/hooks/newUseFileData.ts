@@ -4,17 +4,9 @@ import { fetchSharedFilesData } from '../utils/fetchSharedFilesData';
 
 export const newUseFileData = (
   username: string | null,
-  disableFetch: boolean,
   updates: number,
-  global_file_path: string | null,
-  global_file_path_device: string | null,
-  setFirstname: (name: string) => void,
-  setLastname: (name: string) => void,
-  devices: any,
-  setDevices: (devices: any[]) => void,
 ) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [allFiles, setAllFiles] = useState<any[]>([]);
   const [sharedFiles, setSharedFiles] = useState<any[]>([]);
 
   useEffect(() => {
@@ -67,7 +59,7 @@ export const newUseFileData = (
     }
   }, [username, updates]);
 
-  return { isLoading, allFiles, sharedFiles, setSharedFiles };
+  return { isLoading, sharedFiles, setSharedFiles };
 };
 
 

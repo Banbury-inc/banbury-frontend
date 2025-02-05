@@ -38,14 +38,11 @@ function getIconForKind(kind: string) {
 }
 
 
-
 export default function FileTreeView() {
   const {setSyncFiles, global_file_path, global_file_path_device, username, setFirstname, setLastname} = useAuth();
   const [syncRows, setSyncRows] = useState<DatabaseData[]>([]);
-  const [allFiles, setAllFiles] = useState<DatabaseData[]>([]);
   const [disableFetch, setDisableFetch] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,19 +53,14 @@ export default function FileTreeView() {
           setFirstname,
           setLastname,
           setSyncRows,
-          setAllFiles,
           setIsLoading,
           cache: new Map(),
         },
       );
 
       setSyncFiles(new_synced_files || []);
-      setFetchedFiles(new_synced_files || []);
       const treeData = buildTree(new_synced_files || []);
       setSyncRows(treeData);
-      if (!disableFetch) {
-        setAllFiles(treeData);
-      }
     };
 
     fetchData();

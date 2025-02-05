@@ -1,4 +1,4 @@
-import { Order, DatabaseData } from '../types';
+import { Order } from '../types';
 
 export function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
   return array

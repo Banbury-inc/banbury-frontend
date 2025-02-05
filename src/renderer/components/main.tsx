@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
 import { styled, useTheme, Theme, CSSObject } from '@mui/material/styles';
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
 import MuiDrawer from '@mui/material/Drawer';
@@ -68,36 +67,6 @@ const closedMixin = (theme: Theme): CSSObject => ({
   },
 });
 
-const DrawerHeader = styled('div')(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
-  padding: theme.spacing(1, 1),
-  ...theme.mixins.toolbar,
-}));
-
-interface AppBarProps extends MuiAppBarProps {
-  open?: boolean;
-}
-
-const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})<AppBarProps>(({ theme, open }) => ({
-  zIndex: theme.zIndex.drawer + 1,
-  transition: theme.transitions.create(['width', 'margin'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  ...(open && {
-    marginLeft: drawerWidth,
-    width: `calc(100% - ${drawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  }),
-}));
-
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
   ({ theme, open }) => ({
     width: drawerWidth,
@@ -126,8 +95,7 @@ interface TabState {
 export default function PermanentDrawerLeft() {
   const location = useLocation();
   const theme = useTheme();
-  const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, websocket, setSocket } = useAuth();
-
+  const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, setSocket } = useAuth();
   const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'Files');
   const [open, setOpen] = React.useState(false);
   const [tabs, setTabs] = useState<TabState[]>([
@@ -170,7 +138,6 @@ export default function PermanentDrawerLeft() {
     async function setupConnection() {
       try {
         const fullDeviceSync = CONFIG.full_device_sync;
-        const skipDotFiles = CONFIG.skip_dot_files;
         const bcloudDirectoryPath = fullDeviceSync ? os.homedir() : path.join(os.homedir(), 'BCloud');
 
         if (username && isSubscribed) { // Only connect if we have a username
@@ -229,17 +196,6 @@ export default function PermanentDrawerLeft() {
     return () => clearInterval(uploadUpdateInterval);
   }, []); // Empty dependency array since this should only run once
 
-  const handleDrawerOpen = () => {
-    setOpen(true);
-  };
-
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
-
-  const toggleDrawer = () => {
-    setOpen(!open);
-  };
 
   if (redirect_to_login) {
     return <Login />;
@@ -290,42 +246,6 @@ export default function PermanentDrawerLeft() {
     if (tab) {
       setActiveTab(tab.view); // Restore the view associated with this tab
     }
-  };
-
-  // Handle tab reordering
-  const handleDragStart = (tabId: string) => {
-    setDraggedTab(tabId);
-  };
-
-  const handleDragEnd = () => {
-    if (draggedTab && draggedOverTab) {
-      const draggedIndex = tabs.findIndex(tab => tab.id === draggedTab);
-      const dropIndex = tabs.findIndex(tab => tab.id === draggedOverTab);
-
-      const newTabs = [...tabs];
-      const [draggedItem] = newTabs.splice(draggedIndex, 1);
-      newTabs.splice(dropIndex, 0, draggedItem);
-
-      setTabs(newTabs);
-    }
-    setDraggedTab(null);
-    setDraggedOverTab(null);
-  };
-
-  const handleDragOver = (tabId: string) => {
-    if (draggedTab && draggedTab !== tabId) {
-      setDraggedOverTab(tabId);
-    }
-  };
-
-  // Context menu handlers
-  const handleContextMenu = (event: React.MouseEvent, tabId: string) => {
-    event.preventDefault();
-    setContextMenu({
-      mouseX: event.clientX,
-      mouseY: event.clientY,
-      tabId,
-    });
   };
 
   const handleContextMenuClose = () => {

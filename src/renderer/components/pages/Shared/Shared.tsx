@@ -159,35 +159,24 @@ export default function Shared() {
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(100);
-  const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [disableFetch, setDisableFetch] = useState(false);
+  const {setGlobal_file_path, websocket } = useAuth();
   const {
     updates,
     setUpdates,
     tasks,
     setTasks,
     username,
-    devices,
     setFirstname,
     setLastname,
-    setDevices,
     setTaskbox_expanded,
   } = useAuth();
 
 
 
 
-
-  const { isLoading, allFiles, sharedFiles} = newUseFileData(
-    username,
-    disableFetch,
+  const { isLoading, sharedFiles} = newUseFileData(
+    username || '',
     updates,
-    global_file_path,
-    global_file_path_device,
-    setFirstname,
-    setLastname,
-    devices,
-    setDevices,
   );
 
 
@@ -200,7 +189,7 @@ export default function Shared() {
 
 
 
-  const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
+  const handleRequestSort = (_event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
@@ -283,7 +272,7 @@ export default function Shared() {
           shell.openPath(file_save_path);
 
           // Create a file watcher
-          const watcher = fs.watch(file_save_path, (eventType, filename) => {
+          const watcher = fs.watch(file_save_path, (eventType,) => {
             if (eventType === 'rename' || eventType === 'change') {
               // The file has been closed, so we can delete it
               watcher.close(); // Stop watching the file
@@ -326,8 +315,12 @@ export default function Shared() {
     const newSelectedDeviceNames = newSelected
       .map((id) => sharedFiles.find((file: any) => file._id === id)?.device_name)
       .filter((name) => name !== undefined) as string[];
+    const newSelectedFileInfo = newSelected
+      .map((id) => sharedFiles.find((file: any) => file._id === id))
+      .filter((info) => info !== undefined);
     setSelectedFileNames(newSelectedFileNames);
     setSelectedDeviceNames(newSelectedDeviceNames);
+    setSelectedFileInfo(newSelectedFileInfo);
     console.log(newSelectedFileNames);
     console.log(selectedFileNames);
   };
@@ -624,7 +617,6 @@ export default function Shared() {
                                     event.stopPropagation();
                                     handleFileNameClick(row._id as string);
                                   }}
-                                  style={{ textDecoration: 'none' }}
                                 >
                                   {row.file_name}
                                 </ButtonBase>

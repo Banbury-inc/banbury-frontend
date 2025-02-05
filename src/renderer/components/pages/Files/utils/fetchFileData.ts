@@ -4,24 +4,14 @@ import { CONFIG } from '../../../../config/config';
 
 export const fetchFileData = async (
     username: string,
-    disableFetch: boolean,
-    snapshot_json: string,
     global_file_path: string,
     {
-        setFirstname,
-        setLastname,
-        setFileRows,
-        setAllFiles,
-        set_Files,
         setIsLoading,
-        cache,
         existingFiles,
     }: {
         setFirstname: (name: string) => void;
         setLastname: (name: string) => void;
         setFileRows: (rows: DatabaseData[]) => void;
-        setAllFiles: (files: DatabaseData[]) => void;
-        set_Files: (files: any[]) => void;
         setIsLoading: (loading: boolean) => void;
         cache: Map<string, DatabaseData[]>;
         existingFiles: DatabaseData[];
@@ -34,7 +24,6 @@ export const fetchFileData = async (
                 global_file_path: global_file_path
             }
         );
-
 
         // Filter out files that already exist before returning
         const existingFileKeys = new Set(

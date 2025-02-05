@@ -6,12 +6,6 @@ export const UseLogData = (
   username: string | null,
   disableFetch: boolean,
   updates: number,
-  global_file_path: string | null,
-  global_file_path_device: string | null,
-  setFirstname: (name: string) => void,
-  setLastname: (name: string) => void,
-  devices: any,
-  setDevices: (devices: any[]) => void,
 ) => {
   const [isLoading, setIsLoading] = useState(true);
   const [logs, setLogs] = useState<LogData[]>([]);

@@ -1,5 +1,5 @@
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import { CardContent, Container, Divider, Skeleton, useMediaQuery, LinearProgress } from '@mui/material';
+import { CardContent, Skeleton} from '@mui/material';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
@@ -15,15 +15,8 @@ import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import Typography from '@mui/material/Typography';
 import { visuallyHidden } from '@mui/utils';
-import { shell } from 'electron';
-import fs from 'fs';
-import { stat } from 'fs/promises';
-import os from 'os';
-import path, { join } from 'path';
 import React, {useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { handlers } from '../../../handlers';
-import { neuranet } from '../../../neuranet';
 import AccountMenuIcon from '../../common/AccountMenuIcon';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
@@ -34,7 +27,7 @@ import { UseLogData } from './hooks/newUseLogData';
 import NotificationsButton from '../../common/notifications/NotificationsButton';
 
 
-const getHeadCells = (isCloudSync: boolean): HeadCell[] => [
+const getHeadCells = (): HeadCell[] => [
   { id: 'task_name', numeric: false, label: 'Name' },
   { id: 'task_device', numeric: false, label: 'Device' },
   { id: 'task_status', numeric: false, label: 'Status' },
@@ -50,11 +43,8 @@ type LogData = {
 };
 
 function EnhancedTableHead(props: EnhancedTableProps) {
-  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
-  const isSmallScreen = useMediaQuery('(max-width:960px)');
-  const { global_file_path } = useAuth();
-  const isCloudSync = global_file_path?.includes('Cloud Sync') ?? false;
-  const headCells = getHeadCells(isCloudSync);
+  const { order, orderBy, onRequestSort } = props;
+  const headCells = getHeadCells();
   const createSortHandler = (property: keyof LogData) => (event: React.MouseEvent<unknown>) => {
     onRequestSort(event, property);
   };
@@ -63,10 +53,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
     <TableHead>
       <TableRow>
         {headCells
-          .filter((headCell: HeadCell) => {
-            return true;
-
-          })
           .map((headCell: HeadCell, index: number) => (
             <TableCell
               key={`${headCell.id}-${index}`}
@@ -96,55 +82,25 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 }
 
 export default function Logs() {
-  const isSmallScreen = useMediaQuery('(max-width:960px)');
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DatabaseData>('file_name');
   const [selected, setSelected] = useState<readonly string[]>([]);
-  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
-  const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
-  const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
-  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(100);
-  const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [disableFetch, setDisableFetch] = useState(false);
+  const disableFetch = false;
   const {
     updates,
-    setUpdates,
-    tasks,
-    setTasks,
     username,
-    devices,
-    setFirstname,
-    setLastname,
-    setDevices,
-    setTaskbox_expanded,
   } = useAuth();
-  const getSelectedFileNames = () => {
-    return selected
-      .map((id) => {
-        const file = logs.find((file: any) => file.id === id);
-        return file ? file.task_name : null;
-      })
-      .filter((file_name) => file_name !== null); // Filter out any null values if a file wasn't found
-  };
-
 
   let { isLoading, logs} = UseLogData(
     username,
     disableFetch,
     updates,
-    global_file_path,
-    global_file_path_device,
-    setFirstname,
-    setLastname,
-    devices,
-    setDevices,
   );
 
 
-  const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
+  const handleRequestSort = (_event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
@@ -159,102 +115,7 @@ export default function Logs() {
     setSelected([]);
   };
 
-  const handleFileNameClick = async (id: string) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly string[] = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-    }
-    const file_name = logs.find((file: any) => file.id === id)?.task_name;
-    const newSelectedFileNames = newSelected
-      .map((id) => logs.find((file: any) => file.id === id)?.task_name)
-      .filter((name) => name !== undefined) as string[];
-    console.log(newSelectedFileNames);
-    const newSelectedFilePaths = newSelected
-      .map((id) => logs.find((file: any) => file.id === id)?.task_device)
-      .filter((name) => name !== undefined) as string[];
-    console.log(newSelectedFilePaths[0]);
-    const directoryName = 'BCloud';
-    const directoryPath = join(os.homedir(), directoryName);
-    let fileFound = false;
-    let folderFound = false;
-    let filePath = '';
-    try {
-      const fileStat = await stat(newSelectedFilePaths[0]);
-      if (fileStat.isFile()) {
-        fileFound = true;
-        console.log(`File '${file_name}' found in directory.`);
-      }
-      if (fileStat.isDirectory()) {
-        folderFound = true;
-        setGlobal_file_path(newSelectedFilePaths[0]);
-      }
-      if (fileFound) {
-        // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening file '${file_name}'...`);
-        shell.openPath(newSelectedFilePaths[0]);
-      }
-      if (folderFound) {
-        // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening folder '${file_name}'...`);
-        // shell.openPath(newSelectedFilePaths[0]);
-      }
-      if (!fileFound && !folderFound) {
-        console.error(`File '${file_name}' not found in directory, searhing other devices`);
-
-        let task_description = 'Opening ' + selectedFileNames.join(', ');
-        let taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-        setTaskbox_expanded(true);
-        let response = await handlers.files.downloadFile(
-          username ?? '',
-          selectedFileNames,
-          selectedDeviceNames,
-          selectedFileInfo,
-          taskInfo,
-          tasks || [],
-          setTasks,
-          setTaskbox_expanded,
-          websocket as unknown as WebSocket,
-        );
-        if (response === 'success') {
-          const directory_name: string = 'BCloud';
-          const directory_path: string = path.join(os.homedir(), directory_name);
-          const file_save_path: string = path.join(directory_path, file_name ?? '');
-          shell.openPath(file_save_path);
-
-          // Create a file watcher
-          const watcher = fs.watch(file_save_path, (eventType, filename) => {
-            if (eventType === 'rename' || eventType === 'change') {
-              // The file has been closed, so we can delete it
-              watcher.close(); // Stop watching the file
-
-              fs.unlink(file_save_path, (err) => {
-                if (err) {
-                  console.error('Error deleting file:', err);
-                } else {
-                  console.log(`File ${file_save_path} successfully deleted.`);
-                }
-              });
-            }
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Error searching for file:', err);
-    }
-  };
-
-
-
-
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -387,8 +248,6 @@ export default function Logs() {
                               tabIndex={-1}
                               key={row._id}
                               selected={isItemSelected}
-                              onMouseEnter={() => setHoveredRowId(row._id as string)}
-                              onMouseLeave={() => setHoveredRowId(null)}
                             >
                               <TableCell
                                 sx={{
@@ -405,7 +264,6 @@ export default function Logs() {
                                 <ButtonBase
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    handleFileNameClick(row._id as string);
                                   }}
                                   style={{ textDecoration: 'none' }}
                                 >
