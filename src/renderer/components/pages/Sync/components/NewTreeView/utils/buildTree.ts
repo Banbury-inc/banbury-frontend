@@ -5,30 +5,6 @@ export function buildTree(files: DatabaseData[]): DatabaseData[] {
   // ... (keep the existing buildTree implementation)
 
 
-  // Build final tree
-  const allFilesData = files.flatMap((file, fileIndex) => ({
-    id: `device-${file.deviceID}-file-${fileIndex}`,
-    file_type: file.file_type,
-    file_name: file.file_name,
-    file_size: file.file_size,
-    file_path: file.file_path,
-    kind: file.kind,
-    helpers: file.helpers,
-    date_uploaded: file.date_uploaded,
-    deviceID: file.deviceID,
-    device_name: file.device_name,
-    file_parent: file.file_parent,
-    original_device: file.original_device,
-    available: file.available,
-  }));
-
-
-
-
-
-  const fileMap = new Map<string, DatabaseData>();
-
-
   // Create only the "Cloud Sync" node
   const cloudSyncNode: DatabaseData = {
     _id: 'Cloud Sync',
@@ -48,7 +24,7 @@ export function buildTree(files: DatabaseData[]): DatabaseData[] {
     original_device: '',
   };
 
-  files.forEach((file, index) => {
+  files.forEach((file) => {
     // Skip files without a device name
     if (!file.device_name) {
       return;

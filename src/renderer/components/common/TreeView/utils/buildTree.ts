@@ -4,7 +4,6 @@ export function buildTree(files: DatabaseData[]): DatabaseData[] {
   // Move the entire buildTree function here
   // ... (keep the existing buildTree implementation)
 
-  const fileMap = new Map<string, DatabaseData>();
 
   // Create the root "Core" node
   const coreNode: DatabaseData = {

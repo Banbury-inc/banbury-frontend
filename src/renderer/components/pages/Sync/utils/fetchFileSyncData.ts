@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { DatabaseData } from '../components/NewTreeView/types';
 import { CONFIG } from '../../../../config/config';
 
 
@@ -7,16 +6,7 @@ import { CONFIG } from '../../../../config/config';
 export const fetchFileSyncData = async (
   username: string,
   global_file_path: string,
-  options: {
-    setFirstname: (value: string) => void;
-    setLastname: (value: string) => void;
-    setSyncRows: (value: DatabaseData[]) => void;
-    setAllFiles: (value: DatabaseData[]) => void;
-    setIsLoading: (value: boolean) => void;
-    cache: Map<string, DatabaseData[]>;
-  },
 ) => {
-
 
   try {
 
@@ -34,6 +24,5 @@ export const fetchFileSyncData = async (
   } catch (error) {
     console.error('Error fetching data:', error);
   } finally {
-    options.setIsLoading(false);
   }
 } 

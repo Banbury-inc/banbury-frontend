@@ -14,7 +14,6 @@ import Files from './pages/Files/Files';
 import Friends from './pages/Friends/Friends';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import Devices from './pages/Devices';
-import AI from './pages/AI';
 import Settings from './pages/Settings/Settings';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import DevicesIcon from '@mui/icons-material/Devices';
@@ -34,7 +33,6 @@ import Logs from './pages/Logs/Logs';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { Stack } from '@mui/material';
 import { handlers } from '../handlers';
-const { ipcRenderer } = window.require('electron');
 import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
 import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
 import UploadProgress from './common/upload_progress/upload_progress';
@@ -531,8 +529,6 @@ export default function PermanentDrawerLeft() {
                         return <Devices />;
                       case 'Logs':
                         return <Logs />;
-                      case 'AI':
-                        return <AI />;
                       case 'Friends':
                         return <Friends />;
                       case 'Settings':

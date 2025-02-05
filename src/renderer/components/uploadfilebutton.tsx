@@ -37,12 +37,9 @@ const InputFileUploadButton: React.FC = () => {
   const runPythonScript = async (file: File) => {
 
     setLoading(true);
-    handlers.files.uploadFile(file.path, file.path);
+    handlers.files.uploadFile(file.path);
     setLoading(false);
-
   }
-
-
 
   return (
     <LoadingButton component="label"

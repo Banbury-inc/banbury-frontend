@@ -12,66 +12,17 @@ import Divider from '@mui/material/Divider';
 import { Email } from '@mui/icons-material';
 import { handlers } from '../../handlers';
 
-interface Device {
-  device_number: number;
-  device_name: string;
-  storage_capacity_GB: any;
-  average_cpu_usage: number;
-  average_download_speed: number;
-  average_gpu_usage: number;
-  average_ram_usage: number;
-  average_time_online: number;
-  average_upload_speed: number;
-  onlineStatus: string;
-  cpu_usage: number[];
-  date_added: Date[];
-  device_priority: number;
-  download_network_speed: number[];
-  gpu_usage: number[];
-  ip_address: string;
-  network_reliability: number;
-  optimization_status: boolean;
-  ram_usage: number[];
-  sync_status: boolean;
-  upload_network_speed: number[];
-  online: boolean;
-  // Add more device properties as needed
-}
-
-
-
 const { ipcRenderer } = window.require('electron');
 
-ipcRenderer.on('python-output', (event: any, data: any) => {
+ipcRenderer.on('python-output', (_event: any, data: any) => {
   console.log('Received Python output:', data);
 });
 
-
-
-
 export default function Profile() {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [selected, setSelected] = useState<number[]>([]);
-  const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const { username } = useAuth();
   const [firstname, setFirstname] = useState<string>('');
-  const [phone_number, setPhonenumber] = useState<string>('');
   const [lastname, setLastname] = useState<string>('');
   const [email, setEmail] = useState<string>('');
-
-  const [deviceRows, setDeviceRows] = useState<Device[]>([]); // State for storing fetched file data
-  const getSelectedDeviceNames = () => {
-    return selected.map(device_number => {
-      const device = deviceRows.find(device => device.device_number === device_number);
-      return device ? device.device_name : null;
-    }).filter(deviceName => deviceName !== null); // Filter out any null values if a file wasn't found
-  };
-
-
-
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,11 +30,9 @@ export default function Profile() {
         const response = await axios.get(`https://website2-v3xlkt54dq-uc.a.run.app/get_small_user_info/${username}/`);
         const fetchedFirstname = response.data.first_name;
         const fetchedLastname = response.data.last_name;
-        const fetchedPhonenumber = response.data.phone_number;
         const fetchedemail = response.data.email;
         setFirstname(fetchedFirstname);
         setLastname(fetchedLastname);
-        setPhonenumber(fetchedPhonenumber);
         setEmail(fetchedemail);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -91,34 +40,6 @@ export default function Profile() {
     };
     fetchData();
   }, []);
-
-
-
-  const handleClick = (event: React.MouseEvent<unknown>, device_number: number) => {
-    const selectedIndex = selected.indexOf(device_number);
-    let newSelected: number[] = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, device_number);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1),
-      );
-    }
-    setSelected(newSelected);
-
-    const newSelectedDeviceNames = newSelected.map(device_number => deviceRows.find(device => device.device_number === device_number)?.device_name).filter(name => name !== undefined) as string[];
-    setSelectedDeviceNames(newSelectedDeviceNames);
-  };
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
 
 
   const [showFirstnameTextField, setShowFirstnameTextField] = useState(false);
@@ -138,7 +59,6 @@ export default function Profile() {
   };
 
   const [showLastnameTextField, setShowLastnameTextField] = useState(false);
-  const [new_last_name, set_new_last_name] = useState('');
   const handleLastnameClick = async () => {
     try {
       setShowLastnameTextField(!showLastnameTextField);
@@ -158,7 +78,6 @@ export default function Profile() {
 
 
   const [showUsernameTextField, setShowUsernameTextField] = useState(false);
-  const [new_username, set_new_username] = useState('');
   const handleUsernameClick = async () => {
     try {
       setShowUsernameTextField(!showUsernameTextField);
@@ -176,7 +95,6 @@ export default function Profile() {
   };
 
   const [showEmailTextField, setShowEmailTextField] = useState(false);
-  const [new_email, set_new_email] = useState('');
   const handleEmailClick = async () => {
     try {
       setShowEmailTextField(!showEmailTextField);
@@ -195,7 +113,6 @@ export default function Profile() {
 
 
   const [showPasswordTextField, setShowPasswordTextField] = useState(false);
-  const [new_password, set_new_password] = useState('');
   const handlePasswordClick = async () => {
     try {
       setShowPasswordTextField(!showPasswordTextField);
@@ -282,7 +199,6 @@ export default function Profile() {
                             id="Lastname"
                             size='small'
                             defaultValue={lastname}
-                            onChange={(event) => set_new_last_name(event.target.value)}
                           />
                         ) : (
                           <Typography variant="body2" gutterBottom>{lastname}</Typography>
@@ -319,7 +235,6 @@ export default function Profile() {
                             id="Username"
                             size='small'
                             defaultValue={username}
-                            onChange={(event) => set_new_username(event.target.value)}
                           />
                         ) : (
                           <Typography variant="body2" gutterBottom>{username}</Typography>
@@ -357,7 +272,6 @@ export default function Profile() {
                             id="email"
                             size='small'
                             defaultValue={Email}
-                            onChange={(event) => set_new_email(event.target.value)}
                           />
                         ) : (
                           <Typography variant="body2" gutterBottom>{email}</Typography>
@@ -395,7 +309,6 @@ export default function Profile() {
                             size='small'
                             defaultValue=""
                             type="password"
-                            onChange={(event) => set_new_password(event.target.value)}
                           />
                         ) : (
                           <Typography variant="body2" gutterBottom>Change your account password.</Typography>

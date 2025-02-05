@@ -150,12 +150,12 @@ export default function Sync() {
   const [selected, setSelected] = useState<readonly string[]>([]);
   const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
-  const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
+  const selectedFileInfo = selected.map((id) => syncRows.find((file: any) => file._id === id));
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [disableFetch, setDisableFetch] = useState(false);
+  const disableFetch = false;
   const {
     updates,
     setUpdates,
@@ -179,7 +179,6 @@ export default function Sync() {
     setFirstname,
     setLastname,
     devices,
-    setDevices,
   );
 
 
@@ -192,7 +191,7 @@ export default function Sync() {
 
 
 
-  const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
+  const handleRequestSort = (_event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
@@ -272,20 +271,19 @@ export default function Sync() {
           websocket as unknown as WebSocket,
         );
         if (response === 'No file selected') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'File not available') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
         }
         if (response === 'success') {
-          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
           shell.openPath(file_save_path);
 
           // Create a file watcher
-          const watcher = fs.watch(file_save_path, (eventType, filename) => {
+          const watcher = fs.watch(file_save_path, (eventType) => {
             if (eventType === 'rename' || eventType === 'change') {
               // The file has been closed, so we can delete it
               watcher.close(); // Stop watching the file
@@ -307,7 +305,7 @@ export default function Sync() {
   };
 
 
-  const handleClick = (event: React.MouseEvent<unknown>, id: string) => {
+  const handleClick = (_event: React.MouseEvent<unknown>, id: string) => {
     const selectedIndex = selected.indexOf(id);
     let newSelected: readonly string[] = [];
 
@@ -335,7 +333,7 @@ export default function Sync() {
   };
 
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -749,11 +747,11 @@ export default function Sync() {
                                   name={`priority-${row.id}`}
                                   value={Number(row.file_priority)}
                                   max={5}
-                                  onChange={(event, newValue) => handlePriorityChange(row, newValue)}
+                                  onChange={(_event, newValue) => handlePriorityChange(row, newValue)}
                                   sx={{
                                     fontSize: '16px',
                                     '& .MuiRating-iconFilled': {
-                                      color: (theme) => {
+                                      color: () => {
                                         const priority = Number(row.file_priority);
                                         if (priority >= 4) return '#FF9500';
                                         if (priority === 3) return '#FFCC00';

@@ -39,56 +39,24 @@ function getIconForKind(kind: string) {
 
 
 export default function FileTreeView() {
-  const {setSyncFiles, global_file_path, global_file_path_device, username, setFirstname, setLastname} = useAuth();
+  const {setSyncFiles, global_file_path, global_file_path_device, username} = useAuth();
   const [syncRows, setSyncRows] = useState<DatabaseData[]>([]);
-  const [allFiles, setAllFiles] = useState<DatabaseData[]>([]);
-  const [disableFetch, setDisableFetch] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
+  const disableFetch = false;
 
   useEffect(() => {
     const fetchData = async () => {
       const new_synced_files = await fetchFileSyncData(
         username || '',
         global_file_path || '',
-        {
-          setFirstname,
-          setLastname,
-          setSyncRows,
-          setAllFiles,
-          setIsLoading,
-          cache: new Map(),
-        },
       );
 
       setSyncFiles(new_synced_files || []);
-      setFetchedFiles(new_synced_files || []);
       const treeData = buildTree(new_synced_files || []);
       setSyncRows(treeData);
-      if (!disableFetch) {
-        setAllFiles(treeData);
-      }
     };
 
     fetchData();
   }, [username, disableFetch, global_file_path]);
-
-
-  const findNodeById = (nodes: DatabaseData[], id: any): DatabaseData | null => {
-    for (const node of nodes) {
-      if (node.id === id) {
-        return node;
-      }
-      if (node.children) {
-        const childNode = findNodeById(node.children, id);
-        if (childNode) {
-          return childNode;
-        }
-      }
-    }
-    return null;
-  };
-
 
   // Monitor changes to global_file_path in useEffect
   useEffect(() => {

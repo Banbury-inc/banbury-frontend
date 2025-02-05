@@ -1,12 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import os from 'os';
 import Stack from '@mui/material/Stack';
-import { join } from 'path';
-import { shell } from 'electron';
 import axios from 'axios';
 import { Switch, useMediaQuery } from '@mui/material';
 import Box from '@mui/material/Box';
-import { stat } from 'fs/promises';
 import Table from '@mui/material/Table';
 import Chip from '@mui/material/Chip';
 import TableBody from '@mui/material/TableBody';
@@ -35,7 +32,6 @@ import Card from '@mui/material/Card';
 import TextField from '@mui/material/TextField';
 import { handlers } from '../../handlers';
 import path from 'path';
-import fs from 'fs';
 import { neuranet } from '../../neuranet';
 import { formatRAM } from '../../utils';
 import Divider from '@mui/material/Divider';
@@ -169,9 +165,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   );
 }
 
-
-const file_name: string = 'mmills_database_snapshot.json';
-
 // Add this utility function at the top of the file, outside of any component
 function formatSpeed(speed: number | string): string {
   if (typeof speed === 'number') {
@@ -224,21 +217,17 @@ const ResizeHandle = styled('div')(({ theme }) => ({
 }));
 
 export default function Devices() {
-  const [order, setOrder] = useState<Order>('asc');
-  const [orderBy, setOrderBy] = useState<keyof DeviceData>('device_name');
+  const order = 'asc';
+  const orderBy = 'device_name';
   const [selected, setSelected] = useState<readonly number[]>([]);
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(100);
+  const rowsPerPage = 10;
   const [deviceRows, setDeviceRows] = useState<DeviceData[]>([]); // State for storing fetched file data
   const [allDevices, setAllDevices] = useState<DeviceData[]>([]);
-  const { global_file_path, global_file_path_device, setGlobal_file_path, websocket } = useAuth();
-  const [isAddingFolder, setIsAddingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [disableFetch, setDisableFetch] = useState(false);
-  const { updates, setUpdates, tasks, setTasks, username, first_name, last_name, setFirstname, setLastname, setTaskbox_expanded } = useAuth();
+  const { global_file_path, global_file_path_device} = useAuth();
+  const { updates, setUpdates, tasks, setTasks, username, setFirstname, setLastname, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
   const { showAlert } = useAlert();
@@ -247,7 +236,7 @@ export default function Devices() {
   const [selectedTab, setSelectedTab] = useState(0);
 
   // Add this function to handle tab changes
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
   };
 
@@ -481,41 +470,7 @@ export default function Devices() {
 
   }, [global_file_path, global_file_path_device, allDevices]);
 
-
-
-
-
-
-  const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly number[] = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1),
-      );
-    }
-    setSelected(newSelected);
-
-    const device_name = deviceRows.find(device => device.id === id)?.device_name;
-    const newSelectedDeviceNames = newSelected.map(id => deviceRows.find(device => device.id === id)?.device_name).filter(name => name !== undefined) as string[];
-    setSelectedDeviceNames(newSelectedDeviceNames);
-    console.log(newSelectedDeviceNames)
-    console.log(selectedDeviceNames)
-
-  };
-
-
   const [selectedDevices, setSelectedDevices] = useState<readonly number[]>([]);
-
-
 
   const handleAddDeviceClick = async () => {
     try {
@@ -631,14 +586,6 @@ export default function Devices() {
       }
     }
   };
-
-
-
-
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
 
   const isSelected = (id: number) => selected.indexOf(id) !== -1;
 

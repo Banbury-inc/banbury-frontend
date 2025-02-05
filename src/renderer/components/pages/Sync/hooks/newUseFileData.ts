@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react';
-import path from 'path';
-import os from 'os';
 import { fetchDeviceData } from '../utils/fetchDeviceData';
 import { fetchFileSyncData } from '../utils/fetchFileSyncData';
 
-const file_name: string = 'mmills_database_snapshot.json';
-const directory_name: string = 'BCloud';
-const directory_path: string = path.join(os.homedir(), directory_name);
 
 export const newUseFileData = (
   username: string | null,
@@ -17,7 +12,6 @@ export const newUseFileData = (
   setFirstname: (name: string) => void,
   setLastname: (name: string) => void,
   devices: any,
-  setDevices: (devices: any[]) => void,
 ) => {
   const [isLoading, setIsLoading] = useState(true);
   const [allFiles, setAllFiles] = useState<any[]>([]);
@@ -26,14 +20,7 @@ export const newUseFileData = (
   // Initial load effect
   useEffect(() => {
     const fetchInitialData = async () => {
-      const sync_files_data = await fetchFileSyncData(username || '', global_file_path || '', {
-        setFirstname,
-        setLastname,
-        setSyncRows,
-        setAllFiles,
-        setIsLoading,
-        cache: new Map(),
-      });
+      const sync_files_data = await fetchFileSyncData(username || '', global_file_path || '');
 
       if (sync_files_data) {
         setSyncRows(sync_files_data);
@@ -60,14 +47,7 @@ export const newUseFileData = (
         return;
       }
 
-      const sync_files_data = await fetchFileSyncData(username || '', global_file_path || '', {
-        setFirstname,
-        setLastname,
-        setSyncRows,
-        setAllFiles,
-        setIsLoading,
-        cache: new Map(),
-      });
+      const sync_files_data = await fetchFileSyncData(username || '', global_file_path || '');
 
       if (sync_files_data) {
         setSyncRows([]);
