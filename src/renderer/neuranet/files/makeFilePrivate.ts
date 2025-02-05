@@ -9,7 +9,6 @@ export async function makeFilePrivate(
     device_name: string,
 ) {
 
-    console.log('makeFilePrivate called with file_name: ', file_name, 'username: ', username);
     let url = ''
     try {
         url = `${CONFIG.url}/files/make_file_private/`;
