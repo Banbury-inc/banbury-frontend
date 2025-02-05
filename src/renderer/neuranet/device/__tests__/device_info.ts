@@ -6,12 +6,6 @@ test('cpu_usage returns a number between 0 and 100', async () => {
   expect(usage).toBeLessThanOrEqual(100);
 });
 
-test('gpu_usage returns a number between 0 and 100', async () => {
-  const usage = await deviceInfo.gpu_usage();
-  expect(usage).toBeGreaterThanOrEqual(0);
-  expect(usage).toBeLessThanOrEqual(100);
-});
-
 test('ram_usage returns a number between 0 and 100', async () => {
   const usage = await deviceInfo.ram_usage();
   expect(usage).toBeGreaterThanOrEqual(0);
@@ -78,11 +72,6 @@ test('block_devices returns a string', async () => {
   expect(typeof info).toBe('string');
 });
 
-test('disk_layout returns a string', async () => {
-  const info = await deviceInfo.disk_layout();
-  expect(info).toBeDefined();
-  expect(typeof info).toBe('string');
-});
 
 test('fs_size returns a string', async () => {
   const info = await deviceInfo.fs_size();

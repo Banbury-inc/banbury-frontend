@@ -12,7 +12,6 @@ export function downloadFile(files: string[], devices: string[]): Promise<string
     const senderSocket = new net.Socket();
 
     senderSocket.connect(RELAY_PORT, RELAY_HOST, () => {
-      const null_arg = '';
       const file_header = `FILE_REQUEST:${files}:7679671:mmills6060:END_OF_HEADER`;
       senderSocket.write(file_header);
       // senderSocket.write("END_OF_HEADER");

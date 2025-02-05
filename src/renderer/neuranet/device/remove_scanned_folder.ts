@@ -9,8 +9,6 @@ export async function remove_scanned_folder(
 ) {
 
 
-  const user = username;
-
   const device_name = neuranet.device.name();
 
   let url = ''

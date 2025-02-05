@@ -171,9 +171,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
 
 
 const file_name: string = 'mmills_database_snapshot.json';
-const directory_name: string = 'BCloud';
-const directory_path: string = path.join(os.homedir(), directory_name);
-const snapshot_json: string = path.join(directory_path, file_name);
 
 // Add this utility function at the top of the file, outside of any component
 function formatSpeed(speed: number | string): string {
@@ -184,10 +181,6 @@ function formatSpeed(speed: number | string): string {
   return speed as string; // If it's not a number, return as is (e.g., 'N/A')
 }
 
-// Add this utility function at the top of the file, outside of any component
-function formatBatteryStatus(status: string): string {
-  return status === 'N/A' ? status : `${status}%`;
-}
 
 // Add this utility function at the top of the file, outside of any component
 function formatStorageCapacity(capacity: string | number): string {
@@ -200,29 +193,6 @@ function formatStorageCapacity(capacity: string | number): string {
   }
   return capacity as string; // If it's not a number or valid numeric string, return as is (e.g., 'N/A')
 }
-
-
-
-// Add this utility function at the top of the file, outside of any component
-function formatTotalRAM(capacity: string | number): string {
-  // Convert capacity to number if it's a string
-  const capacityInBytes = typeof capacity === 'string' ? parseFloat(capacity) : capacity;
-
-  // If conversion failed or capacity is not a valid number, return as is
-  if (isNaN(capacityInBytes)) {
-    return capacity as string; // Return original string for invalid input, e.g., 'N/A'
-  }
-
-  // Check size and convert to MB or GB as needed
-  if (capacityInBytes >= 1e9) { // Greater than or equal to 1 GB
-    return `${(capacityInBytes / 1e9).toFixed(2)} GB`;
-  } else if (capacityInBytes >= 1e6) { // Greater than or equal to 1 MB
-    return `${(capacityInBytes / 1e6).toFixed(2)} MB`;
-  } else {
-    return `${capacityInBytes} bytes`; // For smaller values, return in bytes
-  }
-}
-
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -254,16 +224,13 @@ const ResizeHandle = styled('div')(({ theme }) => ({
 }));
 
 export default function Devices() {
-  const isSmallScreen = useMediaQuery('(max-width:960px)');
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DeviceData>('device_name');
   const [selected, setSelected] = useState<readonly number[]>([]);
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
   const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
   const [page, setPage] = useState(0);
-  const [dense, setDense] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const [deviceRows, setDeviceRows] = useState<DeviceData[]>([]); // State for storing fetched file data
   const [allDevices, setAllDevices] = useState<DeviceData[]>([]);
@@ -271,7 +238,7 @@ export default function Devices() {
   const [isAddingFolder, setIsAddingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [disableFetch, setDisableFetch] = useState(false);
-  const { updates, setUpdates, tasks, setTasks, username, first_name, last_name, setFirstname, setLastname, redirect_to_login, setRedirectToLogin, taskbox_expanded, setTaskbox_expanded } = useAuth();
+  const { updates, setUpdates, tasks, setTasks, username, first_name, last_name, setFirstname, setLastname, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
   const { showAlert } = useAlert();
@@ -320,12 +287,6 @@ export default function Devices() {
     dragStartWidth.current = deviceListWidth;
   };
 
-  const getSelectedDeviceNames = () => {
-    return selected.map(id => {
-      const device = deviceRows.find(device => device.id === id);
-      return device ? device.device_name : null;
-    }).filter(device_name => device_name !== null); // Filter out any null values if a file wasn't found
-  };
 
 
   const fetchDevices = async () => {
@@ -522,135 +483,9 @@ export default function Devices() {
 
 
 
-  const handleRequestSort = (
-    event: React.MouseEvent<unknown>,
-    property: keyof DeviceData,
-  ) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
 
-  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      const newSelected = deviceRows.map((n) => n.id);
-      setSelected(newSelected);
-      return;
-    }
-    setSelected([]);
-  };
 
-  const handle_add_scanned_folder = async (scanned_folder: string, username: string) => {
-    try {
-      const result = await neuranet.device.add_scanned_folder(scanned_folder, username);
-      console.log(result);
-      if (result === 'success') {
-        await fetchDevices(); // Ensure fetchDevices is awaited to complete before proceeding
-      }
-    } catch (error) {
-      console.error('Error adding scanned folder:', error);
-    }
-  }
 
-  const handleFileNameClick = async (id: number) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly number[] = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(
-        selected.slice(0, selectedIndex),
-        selected.slice(selectedIndex + 1),
-      );
-    }
-    const device_name = deviceRows.find(device => device.id === id)?.device_name;
-    const newSelectedDeviceNames = newSelected
-      .map(id => deviceRows.find(device => device.id === id)?.device_name)
-      .filter(name => name !== undefined) as string[];
-    console.log(newSelectedDeviceNames[0]);
-    const directoryName = "BCloud";
-    const directoryPath = join(os.homedir(), directoryName);
-    let fileFound = false;
-    let folderFound = false;
-    const filePath = '';
-    try {
-      const deviceStat = await stat(newSelectedDeviceNames[0]);
-      if (deviceStat.isFile()) {
-        fileFound = true;
-        console.log(`File '${file_name}' found in directory.`);
-      }
-      if (deviceStat.isDirectory()) {
-        folderFound = true;
-        setGlobal_file_path(newSelectedDeviceNames[0]);
-      }
-      if (fileFound) {
-        // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening file '${file_name}'...`);
-        shell.openPath(newSelectedDeviceNames[0]);
-      }
-      if (folderFound) {
-        // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening folder '${file_name}'...`);
-        // shell.openPath(newSelectedDeviceNames[0]);
-      }
-      if (!fileFound && !folderFound) {
-
-        console.error(`File '${file_name}' not found in directory, searhing other devices`);
-
-        const task_description = 'Opening ' + selectedDeviceNames.join(', ');
-        const taskInfo = await neuranet.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-        setTaskbox_expanded(true);
-        const response = await handlers.files.downloadFile(
-          username ?? '',
-          selectedDeviceNames,
-          selectedDeviceNames,
-          selectedFileInfo,
-          taskInfo,
-          tasks || [],
-          setTasks,
-          setTaskbox_expanded,
-          websocket as unknown as WebSocket,
-        );
-        if (response === 'No file selected') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
-        }
-        if (response === 'File not available') {
-          const task_result = await neuranet.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
-        }
-        if (response === 'success') {
-          const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-          const directory_name: string = 'BCloud';
-          const directory_path: string = path.join(os.homedir(), directory_name);
-          const file_save_path: string = path.join(directory_path, file_name ?? '');
-          shell.openPath(file_save_path);
-
-          // Create a file watcher
-          const watcher = fs.watch(file_save_path, (eventType, filename) => {
-            if (eventType === 'rename' || eventType === 'change') {
-              // The file has been closed, so we can delete it
-              watcher.close(); // Stop watching the file
-
-              fs.unlink(file_save_path, (err) => {
-                if (err) {
-                  console.error('Error deleting file:', err);
-                } else {
-                  console.log(`File ${file_save_path} successfully deleted.`);
-                }
-              });
-            }
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Error searching for file:', err);
-
-    }
-  };
   const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
     const selectedIndex = selected.indexOf(id);
     let newSelected: readonly number[] = [];
@@ -798,41 +633,17 @@ export default function Devices() {
   };
 
 
-  const [deleteloading, setdeleteLoading] = useState<boolean>(false);
 
-  const [backHistory, setBackHistory] = useState<any[]>([]);
-  const [forwardHistory, setForwardHistory] = useState<any[]>([]);
 
-  const handleKeyPress = async (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      await handlers.keybinds.foldernameSave(
-        newFolderName,
-        setIsAddingFolder,
-        setUpdates,
-        updates,
-        global_file_path ?? '',
-        setDeviceRows,
-        setNewFolderName,
-        setDisableFetch,
-        username
-      );
-    }
-  }
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
 
   const isSelected = (id: number) => selected.indexOf(id) !== -1;
 
   // Avoid a layout jump when reaching the last page with empty rows.
   // Calculate empty rows for pagination
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - deviceRows.length) : 0;
 
   function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
     return array
@@ -889,7 +700,6 @@ export default function Devices() {
       const result = await neuranet.device.update_sync_storage_capacity(username ?? '', value);
 
       if (result === 'success') {
-        const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         setUpdates(updates + 1);
         fetchDevices();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
@@ -901,40 +711,6 @@ export default function Devices() {
       console.error('Error updating sync storage:', error);
       showAlert('Error', ['Failed to update sync storage capacity', error instanceof Error ? error.message : 'Unknown error'], 'error');
     }
-  };
-
-
-
-  const handleGetDownloadQueue = async (value: string) => {
-    console.log(value);
-
-    const task_name = 'Getting Download Queue';
-    const taskInfo = await neuranet.sessions.addTask(username ?? '', task_name, tasks, setTasks);
-    setTaskbox_expanded(true);
-
-    // let response = await neuranet.files.getDownloadQueue(username ?? '');
-    const response = await neuranet.files.runPipeline(username ?? '');
-
-    console.log('response: ', response);
-
-    const result = (response as any).result;
-    const download_queue = (response as any).download_queue;
-
-
-    if (result === 'success') {
-      const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-      setUpdates(updates + 1);
-      fetchDevices();
-      const downloadResult = await neuranet.files.downloadFileSyncFiles(
-        username ?? '',
-        download_queue ?? { files: [], files_available_for_download: 0 },
-        tasks ?? [],
-        setTasks,
-        setTaskbox_expanded,
-        websocket as unknown as WebSocket,
-      );
-    }
-
   };
 
   const handleSavePredictionPreferences = async (
@@ -966,7 +742,6 @@ export default function Devices() {
       );
 
       if (result === 'success') {
-        const task_result = await neuranet.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         showAlert('Success', ['Prediction preferences updated successfully'], 'success');
       } else {
         await neuranet.sessions.failTask(username ?? '', taskInfo, 'Failed to update prediction preferences', tasks, setTasks);

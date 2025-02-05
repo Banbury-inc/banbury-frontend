@@ -1,32 +1,22 @@
-const js = require("@eslint/js");
 const tsParser = require("@typescript-eslint/parser");
 const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const reactPlugin = require("eslint-plugin-react");
-const jsdocPlugin = require("eslint-plugin-jsdoc");
 
 module.exports = [
-  js.configs.recommended,
+  // js.configs.recommended,
+  // Main TypeScript/React configuration
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
     ignores: [
-      "**/node_modules/**",
-      "**/dist/**",
+      // Build and distribution directories
+      "dist/**/*",
       "**/build/**",
-      "**/public/**",
-      "**/static/**",
-      "**/src/renderer/components/common/upload_progress/upload_progress.tsx",
+      "**/node_modules/**",
       "**/dependency/**",
-      "**/docs/**",
-      "**/jest.config.js",
-      "**/postcss.config.js",
-      "**/tailwind.config.js",
-      "**/tsconfig.json",
-      "**/tsconfig.node.json",
-      "**/webpack.config.js",
-      "**/webpack.config.ts",
-      "**/webpack.config.tsx",
-      "**/notarize.ts"
+
+      // Specific files to ignore
+      "src/renderer/components/common/upload_progress/upload_progress.tsx"
     ],
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -51,7 +41,6 @@ module.exports = [
     plugins: {
       "@typescript-eslint": tsPlugin,
       "react": reactPlugin,
-      "jsdoc": jsdocPlugin,
     },
     settings: {
       react: {
@@ -63,7 +52,7 @@ module.exports = [
       "react/react-in-jsx-scope": 0,
       "react/display-name": 0,
       "react/prop-types": 0,
-      
+
       // TypeScript rules
       "no-unused-vars": "off",
       "no-undef": "off",
@@ -82,6 +71,8 @@ module.exports = [
       "@typescript-eslint/no-empty-interface": "off",
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/no-var-requires": "off",
+      "@typescript-eslint/no-extraneous-dependencies": "off",
+
       "@typescript-eslint/no-unused-expressions": [
         "error",
         {
@@ -90,15 +81,7 @@ module.exports = [
           allowTaggedTemplates: true
         }
       ],
-      
-      // JSDoc rules
-      "jsdoc/require-jsdoc": "off",
-      "jsdoc/require-param": "off",
-      "jsdoc/require-param-description": "off",
-      "jsdoc/require-param-type": "off",
-      "jsdoc/check-param-names": "off",
-      "jsdoc/require-returns": "off",
-      "jsdoc/require-returns-description": "off"
-    }
-  }
+
+    },
+  },
 ]; 

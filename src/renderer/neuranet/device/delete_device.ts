@@ -7,9 +7,6 @@ export async function delete_device(
   username: string,
 ) {
 
-
-  const user = username;
-
   let url
 
     url = `${CONFIG.url}/devices/delete_device/${username}/`;
