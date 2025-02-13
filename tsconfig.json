@@ -19,13 +19,21 @@
     "allowSyntheticDefaultImports": true
   },
   "include": [
-    "src/renderer/neuranet/**/*.ts",
-    "src/**/**/test/**/*.ts",
-    "src/**/**/test/**/*.tsx",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/renderer/neuranet/device/**/*.ts",
-    "src/renderer/types/*.d.ts"
+    "packages/frontend/src/renderer/neuranet/**/*.ts",
+    "packages/frontend/src/**/**/test/**/*.ts",
+    "packages/frontend/src/**/**/test/**/*.tsx",
+    "packages/frontend/src/**/*.ts",
+    "packages/frontend/src/**/*.tsx",
+    "packages/frontend/src/renderer/neuranet/device/**/*.ts",
+    "packages/frontend/src/renderer/types/*.d.ts",
+    "packages/frontend/declaration.d.ts",
+    "packages/frontend/globals.d.ts",
+    "packages/frontend/preload.ts",
+    "packages/frontend/setupTests.ts",
+    "packages/core/src/device/add_downloads_info.ts",
+    "packages/core/src/device/add_uploads_info.ts",
+    "packages/core/src/files/downloadFile.ts",
+    "packages/core/src/device/fetchDeviceData.ts"
   ],
   "exclude": [
     "node_modules",
