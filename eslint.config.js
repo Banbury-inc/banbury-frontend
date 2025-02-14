@@ -1,24 +1,23 @@
 const tsParser = require("@typescript-eslint/parser");
 const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const reactPlugin = require("eslint-plugin-react");
+const js = require("@eslint/js");
 
 module.exports = [
-  // js.configs.recommended,
-  // Main TypeScript/React configuration
+  js.configs.recommended,
   {
     ignores: [
       // Build and distribution directories
-      "dist/**/*",
+      "**/dist/**/*",
       "**/build/**",
       "**/node_modules/**",
       "**/dependency/**",
-
       // Specific files to ignore
-      "src/renderer/components/common/upload_progress/upload_progress.tsx"
+      "**/src/renderer/components/common/upload_progress/upload_progress.tsx"
     ],
   },
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ["**/*.{ts,tsx,js,jsx}"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -58,7 +57,7 @@ module.exports = [
       // TypeScript rules
       "no-unused-vars": "off",
       "no-undef": "off",
-      "@typescript-eslint/no-unused-vars": ["warn", {
+      "@typescript-eslint/no-unused-vars": ["error", {
         "vars": "all",
         "args": "after-used",
         "ignoreRestSiblings": true,
@@ -73,7 +72,6 @@ module.exports = [
       "@typescript-eslint/no-empty-interface": "off",
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/no-var-requires": "off",
-      "@typescript-eslint/no-extraneous-dependencies": "off",
 
       "@typescript-eslint/no-unused-expressions": [
         "error",
@@ -83,7 +81,6 @@ module.exports = [
           allowTaggedTemplates: true
         }
       ],
-
     },
   },
 ]; 
