@@ -22,7 +22,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { visuallyHidden } from '@mui/utils';
 import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import AccountMenuIcon from '../common/AccountMenuIcon';
 import ScannedFoldersChips from '../common/ScannedFoldersChips';
 import AddToQueueIcon from '@mui/icons-material/AddToQueue';
 import { styled } from '@mui/material/styles';
@@ -38,7 +37,6 @@ import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import NotificationsButton from '../common/notifications/NotificationsButton';
 import { useAlert } from '../../context/AlertContext';
 
 
@@ -696,7 +694,7 @@ export default function Devices() {
   return (
     <Box sx={{ width: '100%', pt: 0 }}>
       <Card variant='outlined' sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
+        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
             <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
 
@@ -723,21 +721,6 @@ export default function Devices() {
                 </Tooltip>
               </Grid>
               <NewScannedFolderButton fetchDevices={fetchDevices} />
-            </Grid>
-            <Grid container justifyContent='flex-end' alignItems='flex-end'>
-              <Grid item>
-              </Grid>
-              <Grid item>
-
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                  <Stack direction="row">
-                    <NotificationsButton />
-                  </Stack>
-                  <Stack paddingLeft={1} direction="row">
-                    <AccountMenuIcon />
-                  </Stack>
-                </Box>
-              </Grid>
             </Grid>
           </Stack>
         </CardContent>

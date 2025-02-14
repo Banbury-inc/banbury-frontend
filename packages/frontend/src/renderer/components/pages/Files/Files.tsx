@@ -56,10 +56,7 @@ const getHeadCells = (): HeadCell[] => [
   { id: 'kind', numeric: false, label: 'Kind', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'device_name', numeric: false, label: 'Location', isVisibleOnSmallScreen: false, isVisibleNotOnCloudSync: true },
   { id: 'available', numeric: false, label: 'Status', isVisibleOnSmallScreen: false, isVisibleNotOnCloudSync: true },
-  { id: 'device_ids', numeric: false, label: 'Coverage', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: false },
   { id: 'file_priority', numeric: false, label: 'Priority', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: false },
-  // { id: 'shared_with', numeric: false, label: 'Shared With', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-  { id: 'is_public', numeric: false, label: 'Public', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
   { id: 'date_uploaded', numeric: true, label: 'Date Uploaded', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
 ];
 

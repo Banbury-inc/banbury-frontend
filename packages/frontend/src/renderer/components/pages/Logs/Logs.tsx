@@ -3,7 +3,6 @@ import { CardContent, Skeleton} from '@mui/material';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
-import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -17,14 +16,12 @@ import Typography from '@mui/material/Typography';
 import { visuallyHidden } from '@mui/utils';
 import React, {useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
 
 
 import { EnhancedTableProps, HeadCell } from './types';
 import { UseLogData } from './hooks/newUseLogData';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 
 
 const getHeadCells = (): HeadCell[] => [
@@ -162,25 +159,6 @@ export default function Logs() {
   return (
     // <Box sx={{ width: '100%', pl: 4, pr: 4, mt: 0, pt: 5 }}>
     <Box sx={{ width: '100%', pt: 0 }}>
-      <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
-          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
-            <Grid container justifyContent="flex-end" alignItems="flex-end">
-              <Grid item></Grid>
-              <Grid item>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                  <Stack direction="row">
-                    <NotificationsButton />
-                  </Stack>
-                  <Stack paddingLeft={1} direction="row">
-                    <AccountMenuIcon />
-                  </Stack>
-                </Box>
-              </Grid>
-            </Grid>
-          </Stack>
-        </CardContent>
-      </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
         <Stack>
           <Box display="flex" flexDirection="column" height="100%">

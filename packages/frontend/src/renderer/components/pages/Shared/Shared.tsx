@@ -1,5 +1,5 @@
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import { CardContent, Skeleton, useMediaQuery, LinearProgress } from '@mui/material';
+import { CardContent, Skeleton, useMediaQuery} from '@mui/material';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
@@ -26,7 +26,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
 import { banbury } from '@banbury/core';
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import RemoveFileFromSyncButton from './components/remove_file_from_sync_button/remove_file_from_sync_button';
 import FileTreeView from './components/NewTreeView/FileTreeView';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
@@ -35,7 +34,6 @@ import { DatabaseData, Order } from './types/index';
 
 import { EnhancedTableProps, HeadCell } from './types';
 import { newUseFileData } from './hooks/newUseFileData';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { styled } from '@mui/material/styles';
 
 const getHeadCells = (): HeadCell[] => [
@@ -431,7 +429,7 @@ export default function Shared() {
   return (
     <Box sx={{ width: '100%', pt: 0 }}>
       <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
+        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
             <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
 
@@ -440,19 +438,6 @@ export default function Shared() {
                   selectedFileNames={selectedFileNames}
                   onFinish={handleFinish}
                 />
-              </Grid>
-            </Grid>
-            <Grid container justifyContent="flex-end" alignItems="flex-end">
-              <Grid item></Grid>
-              <Grid item>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                  <Stack direction="row">
-                    <NotificationsButton />
-                  </Stack>
-                  <Stack paddingLeft={1} direction="row">
-                    <AccountMenuIcon />
-                  </Stack>
-                </Box>
               </Grid>
             </Grid>
           </Stack>
@@ -482,7 +467,7 @@ export default function Shared() {
               }}
             >
               <CardContent>
-                <Grid container spacing={4} sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
+                <Grid container spacing={4} sx={{ flexGrow: 1, overflow: 'hidden', maxHeight: 'calc(100vh - 120px)' }}>
                   <Grid item sx={{ width: '100%' }}>
                     <FileTreeView />
                   </Grid>
@@ -507,7 +492,6 @@ export default function Shared() {
             <FileBreadcrumbs />
             {isLoading ? (
               <Box sx={{ width: '100%', mb: 2 }}>
-                <LinearProgress />
                 <TableContainer>
                   <Table aria-labelledby="tableTitle" size="small" stickyHeader>
                     <TableBody>

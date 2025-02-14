@@ -1,15 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
 import { CardContent } from "@mui/material";
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText } from '@mui/material';
 import App from './App';
 import CloudSync from './CloudSync';
 import Public_Profile from './Public_Profile';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 
@@ -109,30 +106,6 @@ export default function Settings() {
 
   return (
     <Box sx={{ width: '100%', pt: 0 }}>
-      <Card variant='outlined' sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
-          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
-            <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
-
-            </Grid>
-            <Grid container justifyContent='flex-end' alignItems='flex-end'>
-              <Grid item>
-              </Grid>
-              <Grid item>
-
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                  <Stack direction="row">
-                    <NotificationsButton />
-                  </Stack>
-                  <Stack paddingLeft={1} direction="row">
-                    <AccountMenuIcon />
-                  </Stack>
-                </Box>
-              </Grid>
-            </Grid>
-          </Stack>
-        </CardContent>
-      </Card>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
         <Stack 
           sx={{ 
