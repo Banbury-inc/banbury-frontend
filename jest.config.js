@@ -12,6 +12,7 @@ module.exports = {
       tsconfig: '<rootDir>/packages/core/tsconfig.test.json'
     }]
   },
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   roots: [
     '<rootDir>/packages/frontend/src',

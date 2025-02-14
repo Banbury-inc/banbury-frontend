@@ -6,8 +6,6 @@ import { CONFIG } from '../config';
 export const fetchDeviceData = async (
   username: string,
 ) => {
-
-
   try {
     // Fetch fresh data from API
     const [deviceInfoResponse] = await Promise.all([
@@ -15,7 +13,6 @@ export const fetchDeviceData = async (
     ]);
 
     return deviceInfoResponse.data.devices;
-
 
   } catch (error) {
     return error;

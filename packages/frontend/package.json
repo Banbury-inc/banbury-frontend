@@ -24,7 +24,7 @@
     "package:dist": "electron-builder --mac",
     "package:app": "electron-builder --dir",
     "docs": "typedoc --out docs --entryPointStrategy expand src/renderer/neuranet",
-    "test": "jest --verbose",
+    "test": "jest --verbose --passWithNoTests --coverage",
     "coverage": "jest --coverage",
     "clean": "rimraf dist"
   },
