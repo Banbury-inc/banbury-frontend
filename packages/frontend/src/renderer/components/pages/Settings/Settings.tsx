@@ -1,15 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
 import { CardContent } from "@mui/material";
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText } from '@mui/material';
 import App from './App';
 import CloudSync from './CloudSync';
 import Public_Profile from './Public_Profile';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 

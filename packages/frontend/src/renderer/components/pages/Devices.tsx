@@ -22,7 +22,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { visuallyHidden } from '@mui/utils';
 import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import AccountMenuIcon from '../common/AccountMenuIcon';
 import ScannedFoldersChips from '../common/ScannedFoldersChips';
 import AddToQueueIcon from '@mui/icons-material/AddToQueue';
 import { styled } from '@mui/material/styles';
@@ -38,7 +37,6 @@ import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import NotificationsButton from '../common/notifications/NotificationsButton';
 import { useAlert } from '../../context/AlertContext';
 
 

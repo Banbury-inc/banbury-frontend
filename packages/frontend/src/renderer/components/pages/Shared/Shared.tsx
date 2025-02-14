@@ -1,5 +1,5 @@
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import { CardContent, Skeleton, useMediaQuery, LinearProgress } from '@mui/material';
+import { CardContent, Skeleton, useMediaQuery} from '@mui/material';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
@@ -26,7 +26,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
 import { banbury } from '@banbury/core';
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import RemoveFileFromSyncButton from './components/remove_file_from_sync_button/remove_file_from_sync_button';
 import FileTreeView from './components/NewTreeView/FileTreeView';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
@@ -35,7 +34,6 @@ import { DatabaseData, Order } from './types/index';
 
 import { EnhancedTableProps, HeadCell } from './types';
 import { newUseFileData } from './hooks/newUseFileData';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { styled } from '@mui/material/styles';
 
 const getHeadCells = (): HeadCell[] => [

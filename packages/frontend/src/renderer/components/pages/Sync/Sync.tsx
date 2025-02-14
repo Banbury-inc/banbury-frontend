@@ -25,7 +25,6 @@ import path from 'path';
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { handlers } from '../../../handlers';
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import RemoveFileFromSyncButton from './components/remove_file_from_sync_button/remove_file_from_sync_button';
 import FileTreeView from './components/NewTreeView/FileTreeView';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
@@ -33,7 +32,6 @@ import { DatabaseData, Order } from './types/index';
 import { EnhancedTableProps, HeadCell } from './types';
 import { newUseFileData } from './hooks/newUseFileData';
 import Rating from '@mui/material/Rating';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { styled } from '@mui/material/styles';
 import banbury from '@banbury/core';
 

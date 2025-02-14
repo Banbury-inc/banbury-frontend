@@ -4,7 +4,6 @@ import { Divider, TextField, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import { CardContent } from "@mui/material";
-import AccountMenuIcon from '../../common/AccountMenuIcon';
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -21,7 +20,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import { CircularProgress } from '@mui/material';
 import Skeleton from '@mui/material/Skeleton';
-import NotificationsButton from '../../common/notifications/NotificationsButton';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 
