@@ -494,7 +494,6 @@ export default function Shared() {
             <FileBreadcrumbs />
             {isLoading ? (
               <Box sx={{ width: '100%', mb: 2 }}>
-                <LinearProgress />
                 <TableContainer>
                   <Table aria-labelledby="tableTitle" size="small" stickyHeader>
                     <TableBody>
