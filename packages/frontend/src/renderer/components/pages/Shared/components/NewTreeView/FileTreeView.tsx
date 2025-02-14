@@ -111,7 +111,7 @@ export default function FileTreeView() {
   }, []);
 
   return (
-    <Box sx={{ width: 300, height: '100%', overflow: 'auto' }}>
+    <Box sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
       {isLoading ? (
         <>
           <Skeleton variant="rectangular" height={28} sx={{ mb: 1 }} />

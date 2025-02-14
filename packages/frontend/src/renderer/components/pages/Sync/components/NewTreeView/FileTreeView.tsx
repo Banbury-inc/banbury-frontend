@@ -100,7 +100,7 @@ export default function FileTreeView() {
   }, []);
 
   return (
-    <Box sx={{ width: 300, height: '100%', overflow: 'auto' }}>
+    <Box sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
       <TreeView
         aria-label="file system navigator"
         sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}

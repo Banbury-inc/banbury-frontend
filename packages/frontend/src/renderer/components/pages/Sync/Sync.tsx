@@ -488,7 +488,7 @@ export default function Sync() {
               }}
             >
               <CardContent>
-                <Grid container spacing={4} sx={{ flexGrow: 1, overflow: 'auto', maxHeight: 'calc(100vh - 120px)' }}>
+                <Grid container spacing={4} sx={{ flexGrow: 1, overflow: 'hidden', maxHeight: 'calc(100vh - 120px)' }}>
                   <Grid item sx={{ width: '100%' }}>
                     <FileTreeView />
                   </Grid>
