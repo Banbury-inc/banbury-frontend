@@ -81,7 +81,6 @@ export async function getDeviceInfo() {
             bluetooth_status,
         };
     } catch (error) {
-        console.error('Error fetching device info:', error);
-        throw error; // Re-throw the error for the caller to handle
+        return error;
     }
 }

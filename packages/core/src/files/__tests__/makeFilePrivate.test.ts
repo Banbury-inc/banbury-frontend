@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { makeFilePrivate } from '../makeFilePrivate';
 import { CONFIG } from '../../config';
+import type { Mocked } from 'jest-mock';
 
 // Mock axios
 jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+const mockedAxios: Mocked<typeof axios> = axios as any;
 
 describe('makeFilePrivate', () => {
     beforeEach(() => {

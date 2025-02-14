@@ -2,13 +2,29 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@banbury/core$': '<rootDir>/packages/core/src'
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
-    }],
+      tsconfig: '<rootDir>/packages/core/tsconfig.test.json'
+    }]
   },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  roots: [
+    '<rootDir>/packages/frontend/src',
+    '<rootDir>/packages/core/src'
+  ],
+  modulePaths: [
+    '<rootDir>/packages/frontend/src',
+    '<rootDir>/packages/core/src'
+  ],
+  testMatch: [
+    '**/__tests__/**/*.[jt]s?(x)',
+    '**/?(*.)+(spec|test).[jt]s?(x)'
+  ],
+  transformIgnorePatterns: [
+    '/node_modules/(?!axios)/'
+  ]
 };

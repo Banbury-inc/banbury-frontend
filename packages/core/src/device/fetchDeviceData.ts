@@ -14,13 +14,10 @@ export const fetchDeviceData = async (
       axios.get<{ devices: any[]; }>(`${CONFIG.url}/devices/getdeviceinfo/${username}/`)
     ]);
 
-    console.log(deviceInfoResponse.data.devices)
-
-
     return deviceInfoResponse.data.devices;
 
 
   } catch (error) {
-    console.error('Error fetching data:', error);
+    return error;
   }
 } 

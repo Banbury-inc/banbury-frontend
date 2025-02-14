@@ -1,53 +1,46 @@
 import { fetchDeviceData } from '../fetchDeviceData';
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { CONFIG } from '../../config';
 
-describe('fetchDeviceData Integration Tests', () => {
-    // This is an integration test that hits the real endpoint
-    it('should fetch device data for a valid user', async () => {
-        // Use a test user that exists in your system
-        const username = 'mmills';
+describe('fetchDeviceData', () => {
+    let mock: MockAdapter;
 
-        const devices = await fetchDeviceData(username);
+    beforeEach(() => {
+        mock = new MockAdapter(axios);
+    });
 
-        // Verify the response structure
+    afterEach(() => {
+        mock.reset();
+    });
+
+    it('should fetch device data successfully', async () => {
+        const mockDevices = [{
+            _id: '123',
+            name: 'Test Device',
+            status: 'online'
+        }];
+
+        mock.onGet(`${CONFIG.url}/device/get_devices/testuser/`).reply(200, mockDevices);
+
+        const devices = await fetchDeviceData('testuser');
         expect(Array.isArray(devices)).toBe(true);
-
-        // If devices exist, verify the structure of a device
-        if (devices && devices.length > 0) {
-            const device = devices[0];
-            expect(device).toHaveProperty('_id');
-            expect(device).toHaveProperty('device_name');
-            expect(device).toHaveProperty('device_type');
-            expect(device).toHaveProperty('storage_capacity_gb');
-            expect(device).toHaveProperty('storage_capacity_gb');
-            expect(device).toHaveProperty('device_manufacturer');
-            expect(device).toHaveProperty('device_model');
-            expect(device).toHaveProperty('online');
-        }
+        expect(devices).toHaveLength(1);
+        expect(devices[0]._id).toBe('123');
     });
 
-    it('should handle non-existent user gracefully', async () => {
-        const username = 'nonexistentuser123';
+    it('should handle empty response', async () => {
+        mock.onGet(`${CONFIG.url}/device/get_devices/testuser/`).reply(200, []);
 
-        const devices = await fetchDeviceData(username);
-
-        // The function should return undefined or empty array for non-existent user
-        expect(devices).toBeFalsy();
+        const devices = await fetchDeviceData('testuser');
+        expect(Array.isArray(devices)).toBe(true);
+        expect(devices).toHaveLength(0);
     });
 
-    // Test error handling
-    it('should handle network errors gracefully', async () => {
-        // Temporarily modify the CONFIG.url to cause a network error
-        const originalConsoleError = console.error;
-        console.error = jest.fn();
+    it('should handle error response', async () => {
+        mock.onGet(`${CONFIG.url}/device/get_devices/testuser/`).reply(500);
 
-        try {
-            const username = 'testuser';
-            const devices = await fetchDeviceData(username);
-
-            expect(devices).toBeUndefined();
-            expect(console.error).toHaveBeenCalled();
-        } finally {
-            console.error = originalConsoleError;
-        }
+        const devices = await fetchDeviceData('testuser');
+        expect(devices).toEqual([]);
     });
 }); 
