@@ -67,7 +67,7 @@ export default function SyncButton() {
         // Get fresh devices data first
         const updatedDevices = await fetchDeviceData(username ?? '');
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(updatedDevices || [], username || '');
+        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
         setSyncData(updatedFolders);
       }
     } catch (err) {
@@ -160,7 +160,7 @@ export default function SyncButton() {
         // Get fresh devices data first
         const updatedDevices = await fetchDeviceData(username ?? '');
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(updatedDevices || [], username || '');
+        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
         setSyncData(updatedFolders);
       }
     } catch (error) {

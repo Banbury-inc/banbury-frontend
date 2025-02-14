@@ -270,13 +270,8 @@ export default function Files() {
 
   useEffect(() => {
     const fetchAndUpdateDevices = async () => {
-      const new_devices = await fetchDeviceData(
-        username || '',
-      );
-
-      if (new_devices) {
-        setDevices(new_devices);
-      }
+      const new_devices = await fetchDeviceData(username || '');
+      setDevices(Array.isArray(new_devices) ? new_devices : []);
     };
 
     fetchAndUpdateDevices();
@@ -373,12 +368,12 @@ export default function Files() {
           shell.openPath(file_save_path);
 
           // Create a file watcher
-          const watcher = fs.watch(file_save_path, (eventType) => {
+          const watcher = fs.watch(file_save_path, (eventType: string) => {
             if (eventType === 'rename' || eventType === 'change') {
               // The file has been closed, so we can delete it
               watcher.close(); // Stop watching the file
 
-              fs.unlink(file_save_path, (err) => {
+              fs.unlink(file_save_path, (err: any) => {
                 if (err) {
                   console.error('Error deleting file:', err);
                 } else {

@@ -53,8 +53,10 @@ export const newUseFileData = (
       console.log("Fetching devices from newUseFileData");
       fetchDeviceData(username || '')
         .then((new_devices) => {
-          if (new_devices) {
+          if (new_devices && Array.isArray(new_devices)) {
             setDevices(new_devices);
+          } else {
+            setDevices([]);
           }
         })
         .catch((error) => {
@@ -122,8 +124,10 @@ export const newUseFileData = (
       console.log("Refetching devices from newUseFileData line 139");
       fetchDeviceData(username || '')
         .then((new_devices) => {
-          if (new_devices) {
+          if (new_devices && Array.isArray(new_devices)) {
             setDevices(new_devices);
+          } else {
+            setDevices([]);
           }
         })
         .catch((error) => {
