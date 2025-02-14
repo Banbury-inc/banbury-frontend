@@ -158,7 +158,7 @@ interface ViewOption {
   icon: React.ReactNode;
 }
 
-const StyledMenu = styled(Menu)(({ }) => ({
+const StyledMenu = styled(Menu)(() => ({
   '& .MuiPaper-root': {
     backgroundColor: '#000000',
     borderRadius: '12px',

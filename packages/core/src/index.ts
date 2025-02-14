@@ -7,7 +7,7 @@ import * as files from './files';
 import * as settings from './settings';
 import * as notifications from './notifications';
 import * as analytics from './analytics';
-import { config, Config } from './config';
+import { config } from './config';
 /**
  * The main entry point for the neuranet library.
  */

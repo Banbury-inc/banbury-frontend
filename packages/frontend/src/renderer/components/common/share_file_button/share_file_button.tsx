@@ -28,7 +28,7 @@ interface User {
   avatar_url?: string;
 }
 
-const ShareButton = styled(Button)(({ }) => ({
+const ShareButton = styled(Button)(() => ({
   width: '100%',
   justifyContent: 'flex-start',
   padding: '12px 16px',

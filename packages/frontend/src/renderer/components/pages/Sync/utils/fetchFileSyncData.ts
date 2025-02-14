@@ -23,6 +23,5 @@ export const fetchFileSyncData = async (
 
   } catch (error) {
     console.error('Error fetching data:', error);
-  } finally {
   }
 } 

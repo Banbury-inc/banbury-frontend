@@ -61,7 +61,7 @@ export async function update_database_files(username: string) {
     return 'success';
 
   } catch (error) {
-    return 'error';
+    return 'error: ' + error;
   }
 }
 

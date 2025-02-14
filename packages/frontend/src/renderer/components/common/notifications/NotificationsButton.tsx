@@ -18,8 +18,7 @@ interface UserNotification {
 }
 
 
-export default function NotificationsButton({ }: {
-}) {
+export default function NotificationsButton() {
 
   const { username, websocket } = useAuth();
   const [notifications, setNotifications] = React.useState<UserNotification[]>([]);
