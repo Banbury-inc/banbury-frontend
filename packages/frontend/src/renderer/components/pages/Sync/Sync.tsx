@@ -450,7 +450,7 @@ export default function Sync() {
   return (
     <Box sx={{ width: '100%', pt: 0 }}>
       <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '2px !important', paddingTop: '46px' }}>
+        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
             <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
 
@@ -459,19 +459,6 @@ export default function Sync() {
                   selectedFileNames={selectedFileNames}
                   onFinish={handleFinish}
                 />
-              </Grid>
-            </Grid>
-            <Grid container justifyContent="flex-end" alignItems="flex-end">
-              <Grid item></Grid>
-              <Grid item>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                  <Stack direction="row">
-                    <NotificationsButton />
-                  </Stack>
-                  <Stack paddingLeft={1} direction="row">
-                    <AccountMenuIcon />
-                  </Stack>
-                </Box>
               </Grid>
             </Grid>
           </Stack>
