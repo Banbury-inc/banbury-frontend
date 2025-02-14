@@ -17,5 +17,8 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.20.0"
+    },
+    "dependencies": {
+        "ollama": "^0.5.13"
     }
 }

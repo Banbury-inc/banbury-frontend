@@ -44,6 +44,8 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { getDownloadsInfo } from '@banbury/core/src/device/add_downloads_info';
 import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
+import AI from './pages/AI/AI';
+import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 
 const drawerWidth = 240;  // Change the width as needed
 
@@ -389,6 +391,7 @@ export default function PermanentDrawerLeft() {
               {['Files',
                 'Sync',
                 'Shared',
+                'AI',
                 'Devices',
                 'Friends'].map((text) => (
                   <Tooltip title={text} key={text} placement="right">
@@ -404,6 +407,7 @@ export default function PermanentDrawerLeft() {
                         {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
                         {text === 'Sync' && <CloudOutlinedIcon fontSize='inherit' />}
                         {text === 'Shared' && <FolderSharedOutlinedIcon fontSize='inherit' />}
+                        {text === 'AI' && <ChatOutlinedIcon fontSize='inherit' />}
                         {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
                         {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
                       </Button>
@@ -444,6 +448,8 @@ export default function PermanentDrawerLeft() {
                         return <Sync />;
                       case 'Shared':
                         return <Shared />;
+                      case 'AI':
+                        return <AI />;
                       case 'Devices':
                         return <Devices />;
                       case 'Logs':

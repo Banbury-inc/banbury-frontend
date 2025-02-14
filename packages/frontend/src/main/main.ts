@@ -5,11 +5,13 @@ import { BrowserWindow, app, dialog, ipcMain } from "electron";
 import { autoUpdater } from "electron-updater";
 import { shell } from "electron";
 import { UpdateService } from './update-service';
+import { OllamaService } from './ollama-service';
 
 const fs = require('fs').promises;
 
-
 let mainWindow: BrowserWindow | null;
+let ollamaService: OllamaService;
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1366,
@@ -27,7 +29,6 @@ function createWindow(): void {
     },
   });
 
-
   if (process.env.NODE_ENV === "development") {
     mainWindow.loadURL("http://localhost:8081");
   } else {
@@ -39,9 +40,6 @@ function createWindow(): void {
       })
     );
   }
-
-
-  // mainWindow.loadURL(startURL);
 
   mainWindow.on("closed", () => {
     mainWindow = null;
@@ -59,6 +57,42 @@ function createWindow(): void {
   updateService.checkForUpdates();
 }
 
+// Initialize Ollama service
+async function initializeOllama() {
+  ollamaService = new OllamaService();
+  try {
+    await ollamaService.start();
+    if (mainWindow) {
+      mainWindow.webContents.send('ollama-ready');
+    }
+  } catch (error: any) {
+    console.error('Failed to start Ollama:', error);
+    if (mainWindow) {
+      mainWindow.webContents.send('ollama-error', error.message);
+    }
+  }
+}
+
+// Add IPC handlers for Ollama status
+ipcMain.handle('get-ollama-status', async () => {
+  try {
+    const response = await fetch('http://localhost:11434/api/version');
+    const data = await response.json();
+    return { status: 'running', version: data.version };
+  } catch {
+    return { status: 'stopped' };
+  }
+});
+
+ipcMain.handle('restart-ollama', async () => {
+  try {
+    ollamaService.stop();
+    await ollamaService.start();
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
 
 ipcMain.on('fetch-data', async (event) => {
   try {
@@ -74,7 +108,7 @@ autoUpdater.checkForUpdatesAndNotify();
 autoUpdater.on('update-available', () => {
   // Start downloading the update
   autoUpdater.downloadUpdate();
-  
+
   dialog.showMessageBox({
     type: 'info',
     title: 'Update available',
@@ -106,7 +140,6 @@ autoUpdater.on('update-downloaded', () => {
 });
 
 ipcMain.on('update-username', (_event, username) => {
-
   let GlobalUsername: string | null = null;
   GlobalUsername = username;
   console.log('Updated username:', GlobalUsername);
@@ -129,11 +162,10 @@ ipcMain.on('open-file', async (_event, filePath) => {
   }
 });
 
-
-app.on("ready", () => {
+app.on("ready", async () => {
   createWindow();
+  await initializeOllama();
 });
-
 
 ipcMain.on('close-window', () => {
   if (mainWindow) {
@@ -157,10 +189,9 @@ ipcMain.on('maximize-window', () => {
   }
 });
 
-
-
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
+    ollamaService?.stop();
     app.quit();
   }
 });
