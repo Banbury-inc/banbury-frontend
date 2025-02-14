@@ -7,7 +7,6 @@ import { CardContent } from "@mui/material";
 import AccountMenuIcon from '../../common/AccountMenuIcon';
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText } from '@mui/material';
-import { banbury } from '@banbury/core';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';

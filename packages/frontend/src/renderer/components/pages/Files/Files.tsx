@@ -18,7 +18,6 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { visuallyHidden } from '@mui/utils';
-import axios from 'axios';
 import { shell } from 'electron';
 import fs from 'fs';
 import { stat } from 'fs/promises';
@@ -205,10 +204,10 @@ export default function Files() {
     devices,
     setFirstname,
     setLastname,
-    setPhoneNumber,
-    setEmail,
+    setPhoneNumber: _setPhoneNumber,
+    setEmail: _setEmail,
     setDevices,
-    setPicture,
+    setPicture: _setPicture,
     setTaskbox_expanded,
   } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
