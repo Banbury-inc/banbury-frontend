@@ -3,7 +3,7 @@ import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import { CardContent, TextField, Typography, Paper, Tooltip } from "@mui/material";
 import Card from '@mui/material/Card';
-import { List, ListItemButton, ListItemText, IconButton } from '@mui/material';
+import { Grid, List, ListItemButton, ListItemText, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
@@ -13,6 +13,7 @@ import { OllamaClient, ChatMessage } from '@banbury/core/src/ai';
 import type { Theme } from '@mui/material/styles';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import ConversationsButton from './components/ConversationsButton';
 
 interface MessageBubbleProps {
   isUser: boolean;
@@ -160,6 +161,15 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
   );
 };
 
+interface Conversation {
+  id: string;
+  title: string;
+  lastMessage: string;
+  timestamp: Date;
+  messages: ChatMessage[];
+  category?: string;
+}
+
 export default function AI() {
   const { showAlert } = useAlert();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -167,18 +177,79 @@ export default function AI() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
+  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
 
   useEffect(() => {
     // Initialize Ollama client
     const client = new OllamaClient();
     setOllamaClient(client);
+    
+    // Focus the input field
+    inputRef.current?.focus();
   }, []);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
+
+  const saveConversation = (messages: ChatMessage[]) => {
+    if (messages.length === 0) return;
+
+    const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
+    const lastMessage = messages[messages.length - 1].content.slice(0, 100) + 
+      (messages[messages.length - 1].content.length > 100 ? '...' : '');
+
+    const conversation: Conversation = {
+      id: currentConversation?.id || crypto.randomUUID(),
+      title,
+      lastMessage,
+      timestamp: new Date(),
+      messages: messages.filter(msg => 
+        msg.role === 'user' || msg.role === 'assistant'
+      )
+    };
+
+    // Load existing conversations
+    const savedConversations = localStorage.getItem('ai_conversations');
+    let conversations: Conversation[] = [];
+    if (savedConversations) {
+      try {
+        conversations = JSON.parse(savedConversations);
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+      }
+    }
+
+    // Update or add the conversation
+    const existingIndex = conversations.findIndex(c => c.id === conversation.id);
+    if (existingIndex !== -1) {
+      conversations[existingIndex] = conversation;
+    } else {
+      conversations.unshift(conversation);
+    }
+
+    // Save back to localStorage
+    localStorage.setItem('ai_conversations', JSON.stringify(conversations));
+    setCurrentConversation(conversation);
+  };
+
+  const handleSelectConversation = (conversation: Conversation) => {
+    setCurrentConversation(conversation);
+    setMessages(conversation.messages);
+    setStreamingMessage('');
+    setInputMessage('');
+  };
+
+  const handleNewChat = () => {
+    setCurrentConversation(null);
+    setMessages([]);
+    setInputMessage('');
+    setStreamingMessage('');
+    inputRef.current?.focus();
+  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !ollamaClient || isLoading) return;
@@ -208,8 +279,10 @@ export default function AI() {
           role: 'assistant',
           content: completeMessage
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        const updatedMessages = [...messages, userMessage, assistantMessage];
+        setMessages(updatedMessages);
         setStreamingMessage('');
+        saveConversation(updatedMessages);
       } else {
         // Handle non-streaming response (fallback)
         const chatResponse = response as unknown as ChatResponse;
@@ -217,7 +290,9 @@ export default function AI() {
           role: 'assistant',
           content: chatResponse.message.content
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        const updatedMessages = [...messages, userMessage, assistantMessage];
+        setMessages(updatedMessages);
+        saveConversation(updatedMessages);
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -236,7 +311,23 @@ export default function AI() {
 
   return (
     <Box sx={{ width: '100%', pt: 0 }}>
-      <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 36px)', overflow: 'hidden' }}>
+      <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
+        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '36px' }}>
+          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
+            <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
+              <Grid item paddingRight={1}>
+                <ConversationsButton 
+                  onSelectConversation={handleSelectConversation}
+                  currentConversation={currentConversation}
+                  onNewChat={handleNewChat}
+                />
+              </Grid>
+            </Grid>
+          </Stack>
+        </CardContent>
+      </Card>
+      <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
+
         <Card variant="outlined" sx={{
           height: '100%',
           width: '100%',
@@ -285,6 +376,8 @@ export default function AI() {
                 onKeyPress={handleKeyPress}
                 placeholder="Type a message..."
                 disabled={isLoading}
+                inputRef={inputRef}
+                autoFocus
                 sx={{ 
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 3,
