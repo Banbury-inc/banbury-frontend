@@ -9,6 +9,8 @@ import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage } from '@banbury/core/src/ai';
 import type { Theme } from '@mui/material/styles';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface MessageBubbleProps {
   isUser: boolean;
@@ -25,6 +27,19 @@ interface ChatResponse {
   done: boolean;
 }
 
+// Customize the VSC Dark Plus theme
+const customizedTheme = {
+  ...vscDarkPlus,
+  'pre[class*="language-"]': {
+    ...vscDarkPlus['pre[class*="language-"]'],
+    background: '#000000',
+  },
+  'code[class*="language-"]': {
+    ...vscDarkPlus['code[class*="language-"]'],
+    background: '#000000',
+  },
+};
+
 const MessageBubble = styled(Paper, {
   shouldForwardProp: (prop) => prop !== 'isUser'
 })<MessageBubbleProps>(({ theme, isUser }) => ({
@@ -35,7 +50,55 @@ const MessageBubble = styled(Paper, {
   backgroundColor: isUser ? theme.palette.primary.main : theme.palette.background.paper,
   color: isUser ? theme.palette.primary.contrastText : theme.palette.text.primary,
   borderRadius: theme.spacing(2),
+  '& pre': {
+    margin: 0,
+    padding: theme.spacing(1),
+    borderRadius: theme.spacing(1),
+    backgroundColor: '#000000',
+  }
 }));
+
+const MessageContent: React.FC<{ content: string }> = ({ content }) => {
+  const parts = content.split(/(```[\s\S]*?```)/);
+  
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith('```') && part.endsWith('```')) {
+          // Extract language and code
+          const match = part.match(/```(\w+)?\n([\s\S]+?)```/);
+          if (match) {
+            const [, language = 'text', code] = match;
+            return (
+              <Box key={index} sx={{ my: 1 }}>
+                <SyntaxHighlighter
+                  language={language}
+                  style={customizedTheme}
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: '8px',
+                    backgroundColor: '#000000',
+                    fontSize: '14px',
+                  }}
+                  showLineNumbers
+                  wrapLines
+                  wrapLongLines
+                >
+                  {code.trim()}
+                </SyntaxHighlighter>
+              </Box>
+            );
+          }
+        }
+        return (
+          <Typography key={index} variant="body1" component="span" sx={{ whiteSpace: 'pre-wrap' }}>
+            {part}
+          </Typography>
+        );
+      })}
+    </>
+  );
+};
 
 export default function AI() {
   const { showAlert } = useAlert();
@@ -133,9 +196,7 @@ export default function AI() {
                 isUser={message.role === 'user'}
                 elevation={1}
               >
-                <Typography variant="body1">
-                  {message.content}
-                </Typography>
+                <MessageContent content={message.content} />
               </MessageBubble>
             ))}
             <div ref={messagesEndRef} />
