@@ -405,11 +405,11 @@ export default function AI() {
                     },
                   },
                   '& .MuiOutlinedInput-input': {
-                    padding: '12px 14px',
+                    padding: '4px 14px',
                     paddingRight: '44px',
                     fontSize: '0.875rem',
                     lineHeight: 1.3,
-                    minHeight: '20px',
+                    minHeight: '10px',
                     maxHeight: '600px',
                     overflow: 'auto !important',
                     '&::placeholder': {
@@ -436,8 +436,11 @@ export default function AI() {
                   width: '28px',
                   height: '28px',
                   minWidth: '28px',
-                  minHeight: '28px',
+                  minHeight: '18px',
                   padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   backgroundColor: (theme) => theme.palette.primary.main,
                   color: (theme) => theme.palette.primary.contrastText,
                   boxShadow: '0 1px 4px rgba(0, 0, 0, 0.2)',
@@ -456,11 +459,15 @@ export default function AI() {
                     boxShadow: 'none',
                   },
                   transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '& .MuiSvgIcon-root': {
+                    display: 'flex',
+                    margin: 'auto',
+                  }
                 }}
               >
                 <SendIcon sx={{ 
                   fontSize: '1.1rem',
-                  transform: 'translateX(1px)',
+                  display: 'block',
                 }} />
               </IconButton>
             </Box>
