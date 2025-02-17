@@ -165,6 +165,7 @@ export default function AI() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
 
@@ -175,9 +176,9 @@ export default function AI() {
   }, []);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
+    // Scroll to bottom when messages change or streaming content updates
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingMessage]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !ollamaClient || isLoading) return;
@@ -190,23 +191,27 @@ export default function AI() {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
+    setStreamingMessage('');
 
     try {
-      const response = await ollamaClient.chat([...messages, userMessage], { stream: false });
+      const response = await ollamaClient.chat([...messages, userMessage], { stream: true });
       
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
-        let fullContent = '';
+        let completeMessage = '';
         for await (const chunk of response as AsyncIterable<ChatResponse>) {
-          fullContent += chunk.message.content;
+          completeMessage += chunk.message.content;
+          setStreamingMessage(completeMessage);
         }
+        // After streaming is complete, add the message to the list
         const assistantMessage: ChatMessage = {
           role: 'assistant',
-          content: fullContent
+          content: completeMessage
         };
         setMessages(prev => [...prev, assistantMessage]);
+        setStreamingMessage('');
       } else {
-        // Handle regular response
+        // Handle non-streaming response (fallback)
         const chatResponse = response as unknown as ChatResponse;
         const assistantMessage: ChatMessage = {
           role: 'assistant',
@@ -259,6 +264,14 @@ export default function AI() {
                 <MessageContent content={message.content} />
               </MessageBubble>
             ))}
+            {streamingMessage && (
+              <MessageBubble 
+                isUser={false}
+                elevation={1}
+              >
+                <MessageContent content={streamingMessage} />
+              </MessageBubble>
+            )}
             <div ref={messagesEndRef} />
           </CardContent>
           <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
