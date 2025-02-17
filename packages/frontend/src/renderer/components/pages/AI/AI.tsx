@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import { CardContent, TextField, Typography, Paper } from "@mui/material";
+import { CardContent, TextField, Typography, Paper, Tooltip } from "@mui/material";
 import Card from '@mui/material/Card';
 import { List, ListItemButton, ListItemText, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage } from '@banbury/core/src/ai';
@@ -58,6 +60,78 @@ const MessageBubble = styled(Paper, {
   }
 }));
 
+interface CodeBlockProps {
+  language: string;
+  code: string;
+}
+
+const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
+  const [copied, setCopied] = useState(false);
+  const copyTimeout = useRef<NodeJS.Timeout>();
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      
+      if (copyTimeout.current) {
+        clearTimeout(copyTimeout.current);
+      }
+      
+      copyTimeout.current = setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  };
+
+  return (
+    <Box sx={{ position: 'relative' }}>
+      <Box 
+        sx={{ 
+          position: 'absolute', 
+          top: 8, 
+          right: 8, 
+          zIndex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          borderRadius: '4px',
+        }}
+      >
+        <Tooltip title={copied ? "Copied!" : "Copy code"}>
+          <IconButton 
+            size="small" 
+            onClick={handleCopy}
+            sx={{ 
+              color: copied ? 'success.main' : 'grey.400',
+              '&:hover': {
+                color: copied ? 'success.main' : 'grey.100',
+              }
+            }}
+          >
+            {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <SyntaxHighlighter
+        language={language}
+        style={customizedTheme}
+        customStyle={{
+          margin: 0,
+          borderRadius: '8px',
+          backgroundColor: '#000000',
+          fontSize: '14px',
+        }}
+        showLineNumbers
+        wrapLines
+        wrapLongLines
+      >
+        {code.trim()}
+      </SyntaxHighlighter>
+    </Box>
+  );
+};
+
 const MessageContent: React.FC<{ content: string }> = ({ content }) => {
   const parts = content.split(/(```[\s\S]*?```)/);
   
@@ -71,21 +145,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
             const [, language = 'text', code] = match;
             return (
               <Box key={index} sx={{ my: 1 }}>
-                <SyntaxHighlighter
-                  language={language}
-                  style={customizedTheme}
-                  customStyle={{
-                    margin: 0,
-                    borderRadius: '8px',
-                    backgroundColor: '#000000',
-                    fontSize: '14px',
-                  }}
-                  showLineNumbers
-                  wrapLines
-                  wrapLongLines
-                >
-                  {code.trim()}
-                </SyntaxHighlighter>
+                <CodeBlock language={language} code={code} />
               </Box>
             );
           }
