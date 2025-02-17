@@ -12,7 +12,7 @@ const fs = require('fs').promises;
 let mainWindow: BrowserWindow | null;
 let ollamaService: OllamaService;
 
-function createWindow(): void {
+async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow({
     width: 1366,
     height: 768,
@@ -30,6 +30,7 @@ function createWindow(): void {
   });
 
   if (process.env.NODE_ENV === "development") {
+    await waitForWebpackReady("http://localhost:8081");
     mainWindow.loadURL("http://localhost:8081");
   } else {
     mainWindow.loadURL(
@@ -55,6 +56,19 @@ function createWindow(): void {
 
   // Check for updates when app starts
   updateService.checkForUpdates();
+}
+
+// Add helper function to wait for webpack dev server
+async function waitForWebpackReady(url: string): Promise<void> {
+  const axios = require('axios');
+  while (true) {
+    try {
+      await axios.get(url);
+      break;
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
 }
 
 // Initialize Ollama service
@@ -162,8 +176,8 @@ ipcMain.on('open-file', async (_event, filePath) => {
   }
 });
 
-app.on("ready", async () => {
-  createWindow();
+app.whenReady().then(async () => {
+  await createWindow();
   await initializeOllama();
 });
 
