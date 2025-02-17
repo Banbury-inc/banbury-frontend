@@ -371,7 +371,7 @@ export default function AI() {
             borderColor: 'divider',
             backgroundColor: (theme) => theme.palette.background.paper,
           }}>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Box sx={{ position: 'relative' }}>
               <TextField
                 fullWidth
                 multiline
@@ -405,7 +405,8 @@ export default function AI() {
                     },
                   },
                   '& .MuiOutlinedInput-input': {
-                    padding: '6px 10px',
+                    padding: '12px 14px',
+                    paddingRight: '44px',
                     fontSize: '0.875rem',
                     lineHeight: 1.3,
                     minHeight: '20px',
@@ -429,10 +430,13 @@ export default function AI() {
                 color="primary"
                 size="small"
                 sx={{ 
-                  width: '32px',
-                  height: '32px',
-                  minWidth: '32px',
-                  minHeight: '32px',
+                  position: 'absolute',
+                  right: '8px',
+                  bottom: '8px',
+                  width: '28px',
+                  height: '28px',
+                  minWidth: '28px',
+                  minHeight: '28px',
                   padding: 0,
                   backgroundColor: (theme) => theme.palette.primary.main,
                   color: (theme) => theme.palette.primary.contrastText,
@@ -459,7 +463,7 @@ export default function AI() {
                   transform: 'translateX(1px)',
                 }} />
               </IconButton>
-            </Stack>
+            </Box>
           </Box>
         </Card>
       </Stack>
