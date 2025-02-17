@@ -152,7 +152,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
           }
         }
         return (
-          <Typography key={index} variant="body1" component="span" sx={{ whiteSpace: 'pre-wrap' }}>
+          <Typography key={index} variant="inherit" component="span" sx={{ whiteSpace: 'pre-wrap' }}>
             {part}
           </Typography>
         );
@@ -365,12 +365,18 @@ export default function AI() {
             )}
             <div ref={messagesEndRef} />
           </CardContent>
-          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Stack direction="row" spacing={1}>
+          <Box sx={{ 
+            p: 1.5, 
+            borderTop: 0, 
+            borderColor: 'divider',
+            backgroundColor: (theme) => theme.palette.background.paper,
+          }}>
+            <Stack direction="row" spacing={1} alignItems="center">
               <TextField
                 fullWidth
                 multiline
-                maxRows={4}
+                maxRows={20}
+                size="small"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -380,17 +386,78 @@ export default function AI() {
                 autoFocus
                 sx={{ 
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 3,
-                  }
+                    borderRadius: 1,
+                    minHeight: '32px',
+                    backgroundColor: (theme) => theme.palette.background.default,
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: (theme) => theme.palette.action.hover,
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: (theme) => theme.palette.background.default,
+                      '& fieldset': {
+                        borderColor: (theme) => theme.palette.primary.main,
+                        borderWidth: '1px',
+                      },
+                    },
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    padding: '6px 10px',
+                    fontSize: '0.875rem',
+                    lineHeight: 1.3,
+                    minHeight: '20px',
+                    maxHeight: '600px',
+                    overflow: 'auto !important',
+                    '&::placeholder': {
+                      fontSize: '0.875rem',
+                      opacity: 0.7,
+                    },
+                  },
+                  '& textarea': {
+                    resize: 'none',
+                    marginTop: '0 !important',
+                    marginBottom: '0 !important',
+                  },
                 }}
               />
               <IconButton 
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading}
                 color="primary"
-                sx={{ alignSelf: 'flex-end' }}
+                size="small"
+                sx={{ 
+                  width: '32px',
+                  height: '32px',
+                  minWidth: '32px',
+                  minHeight: '32px',
+                  padding: 0,
+                  backgroundColor: (theme) => theme.palette.primary.main,
+                  color: (theme) => theme.palette.primary.contrastText,
+                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.2)',
+                  '&:hover': {
+                    backgroundColor: (theme) => theme.palette.primary.dark,
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+                  },
+                  '&:disabled': {
+                    backgroundColor: (theme) => theme.palette.action.disabledBackground,
+                    color: (theme) => theme.palette.action.disabled,
+                    boxShadow: 'none',
+                  },
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
               >
-                <SendIcon />
+                <SendIcon sx={{ 
+                  fontSize: '1.1rem',
+                  transform: 'translateX(1px)',
+                }} />
               </IconButton>
             </Stack>
           </Box>
