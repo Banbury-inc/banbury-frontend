@@ -407,7 +407,7 @@ export default function PermanentDrawerLeft() {
                         {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
                         {text === 'Sync' && <CloudOutlinedIcon fontSize='inherit' />}
                         {text === 'Shared' && <FolderSharedOutlinedIcon fontSize='inherit' />}
-                        {text === 'AI' && <ChatOutlinedIcon fontSize='inherit' />}
+                        {text === 'AI' && < ChatOutlinedIcon fontSize='inherit' />}
                         {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
                         {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
                       </Button>

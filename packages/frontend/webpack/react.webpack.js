@@ -71,7 +71,7 @@ const config = {
   output: {
     path: path.resolve(rootPath, "dist/renderer"),
     filename: "js/[name].js",
-    publicPath: './'
+    publicPath: process.env.NODE_ENV === "development" ? "/" : "./"
   },
   plugins: [
     new HtmlWebpackPlugin({
