@@ -46,7 +46,7 @@ const customizedTheme = {
 const MessageBubble = styled(Paper, {
   shouldForwardProp: (prop) => prop !== 'isUser'
 })<MessageBubbleProps>(({ theme, isUser }) => ({
-  padding: theme.spacing(1.5),
+  padding: theme.spacing(1),
   marginBottom: theme.spacing(1),
   maxWidth: '80%',
   alignSelf: isUser ? 'flex-end' : 'flex-start',
