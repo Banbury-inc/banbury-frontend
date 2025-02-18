@@ -15,6 +15,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConversationsButton from './components/ConversationsButton';
 import ModelSelectorButton from './components/ModelSelectorButton';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 interface MessageBubbleProps {
   isUser: boolean;
@@ -146,6 +148,7 @@ const ThinkingBlock = styled(Paper)(({ theme }) => ({
   color: theme.palette.grey[400],
   borderRadius: theme.spacing(1),
   border: `1px solid ${theme.palette.grey[800]}`,
+  transition: 'all 0.2s ease-in-out',
   '& pre': {
     margin: 0,
     padding: theme.spacing(1),
@@ -156,19 +159,45 @@ const ThinkingBlock = styled(Paper)(({ theme }) => ({
 
 const MessageContent: React.FC<{ content: string; thinking?: string }> = ({ content, thinking }) => {
   const parts = content.split(/(```[\s\S]*?```)/);
+  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
   
   return (
     <>
       {thinking && (
         <ThinkingBlock elevation={0}>
           <Stack spacing={1}>
-            <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span role="img" aria-label="thinking">💭</span>
-              Thinking Process
-            </Typography>
-            <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
-              {thinking}
-            </Typography>
+            <Stack 
+              direction="row" 
+              spacing={1} 
+              alignItems="center" 
+              sx={{ 
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8
+                }
+              }}
+              onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
+            >
+              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span role="img" aria-label="thinking">💭</span>
+                Thinking Process
+              </Typography>
+              {isThinkingExpanded ? (
+                <ExpandLessIcon fontSize="small" sx={{ color: 'grey.500' }} />
+              ) : (
+                <ExpandMoreIcon fontSize="small" sx={{ color: 'grey.500' }} />
+              )}
+            </Stack>
+            <Box sx={{ 
+              maxHeight: isThinkingExpanded ? '1000px' : '0px',
+              overflow: 'hidden',
+              transition: 'all 0.3s ease-in-out',
+              opacity: isThinkingExpanded ? 1 : 0
+            }}>
+              <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+                {thinking}
+              </Typography>
+            </Box>
           </Stack>
         </ThinkingBlock>
       )}
@@ -226,6 +255,7 @@ export default function AI() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [streamingThinking, setStreamingThinking] = useState<string>('');
   const [currentModel, setCurrentModel] = useState<string>('llama2');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -314,6 +344,7 @@ export default function AI() {
     setInputMessage('');
     setIsLoading(true);
     setStreamingMessage('');
+    setStreamingThinking('');
 
     try {
       const response = await ollamaClient.chat([...messages, userMessage], { 
@@ -326,7 +357,11 @@ export default function AI() {
         let completeMessage = '';
         for await (const chunk of response as AsyncIterable<ChatResponse>) {
           completeMessage += chunk.message.content;
-          setStreamingMessage(completeMessage);
+          const { thinking, cleanContent } = extractThinkingContent(completeMessage);
+          setStreamingMessage(cleanContent);
+          if (thinking) {
+            setStreamingThinking(thinking);
+          }
         }
         // After streaming is complete, add the message to the list
         const { thinking, cleanContent } = extractThinkingContent(completeMessage);
@@ -338,6 +373,7 @@ export default function AI() {
         const updatedMessages = [...messages, userMessage, assistantMessage];
         setMessages(updatedMessages);
         setStreamingMessage('');
+        setStreamingThinking('');
         saveConversation(updatedMessages);
       } else {
         // Handle non-streaming response (fallback)
@@ -424,7 +460,7 @@ export default function AI() {
                 isUser={false}
                 elevation={1}
               >
-                <MessageContent content={streamingMessage} />
+                <MessageContent content={streamingMessage} thinking={streamingThinking} />
               </MessageBubble>
             )}
             <div ref={messagesEndRef} />
