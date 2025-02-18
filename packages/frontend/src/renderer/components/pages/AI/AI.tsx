@@ -9,7 +9,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
-import { OllamaClient, ChatMessage } from '@banbury/core/src/ai';
+import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import type { Theme } from '@mui/material/styles';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -134,11 +134,44 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
   );
 };
 
-const MessageContent: React.FC<{ content: string }> = ({ content }) => {
+interface ExtendedChatMessage extends CoreChatMessage {
+  thinking?: string;
+}
+
+const ThinkingBlock = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(1),
+  maxWidth: '100%',
+  backgroundColor: theme.palette.grey[900],
+  color: theme.palette.grey[400],
+  borderRadius: theme.spacing(1),
+  border: `1px solid ${theme.palette.grey[800]}`,
+  '& pre': {
+    margin: 0,
+    padding: theme.spacing(1),
+    borderRadius: theme.spacing(1),
+    backgroundColor: '#000000',
+  }
+}));
+
+const MessageContent: React.FC<{ content: string; thinking?: string }> = ({ content, thinking }) => {
   const parts = content.split(/(```[\s\S]*?```)/);
   
   return (
     <>
+      {thinking && (
+        <ThinkingBlock elevation={0}>
+          <Stack spacing={1}>
+            <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <span role="img" aria-label="thinking">💭</span>
+              Thinking Process
+            </Typography>
+            <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+              {thinking}
+            </Typography>
+          </Stack>
+        </ThinkingBlock>
+      )}
       {parts.map((part, index) => {
         if (part.startsWith('```') && part.endsWith('```')) {
           // Extract language and code
@@ -167,13 +200,29 @@ interface Conversation {
   title: string;
   lastMessage: string;
   timestamp: Date;
-  messages: ChatMessage[];
+  messages: ExtendedChatMessage[];
   category?: string;
 }
 
+const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
+  const thinkRegex = /<think>([\s\S]*?)<\/think>/;
+  const match = content.match(thinkRegex);
+  
+  if (match) {
+    // Remove all <think> blocks from the content
+    const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    return {
+      thinking: match[1].trim(),
+      cleanContent
+    };
+  }
+  
+  return { cleanContent: content };
+};
+
 export default function AI() {
   const { showAlert } = useAlert();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
@@ -197,7 +246,7 @@ export default function AI() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
 
-  const saveConversation = (messages: ChatMessage[]) => {
+  const saveConversation = (messages: ExtendedChatMessage[]) => {
     if (messages.length === 0) return;
 
     const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
@@ -256,7 +305,7 @@ export default function AI() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !ollamaClient || isLoading) return;
 
-    const userMessage: ChatMessage = {
+    const userMessage: ExtendedChatMessage = {
       role: 'user',
       content: inputMessage.trim()
     };
@@ -280,9 +329,11 @@ export default function AI() {
           setStreamingMessage(completeMessage);
         }
         // After streaming is complete, add the message to the list
-        const assistantMessage: ChatMessage = {
+        const { thinking, cleanContent } = extractThinkingContent(completeMessage);
+        const assistantMessage: ExtendedChatMessage = {
           role: 'assistant',
-          content: completeMessage
+          content: cleanContent,
+          thinking
         };
         const updatedMessages = [...messages, userMessage, assistantMessage];
         setMessages(updatedMessages);
@@ -291,9 +342,11 @@ export default function AI() {
       } else {
         // Handle non-streaming response (fallback)
         const chatResponse = response as unknown as ChatResponse;
-        const assistantMessage: ChatMessage = {
+        const { thinking, cleanContent } = extractThinkingContent(chatResponse.message.content);
+        const assistantMessage: ExtendedChatMessage = {
           role: 'assistant',
-          content: chatResponse.message.content
+          content: cleanContent,
+          thinking
         };
         const updatedMessages = [...messages, userMessage, assistantMessage];
         setMessages(updatedMessages);
@@ -363,7 +416,7 @@ export default function AI() {
                 isUser={message.role === 'user'}
                 elevation={1}
               >
-                <MessageContent content={message.content} />
+                <MessageContent content={message.content} thinking={message.thinking} />
               </MessageBubble>
             ))}
             {streamingMessage && (

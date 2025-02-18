@@ -76,21 +76,28 @@ function registerIpcHandlers() {
       console.error('Error fetching data:', error);
     }
   });
+
+  ipcMain.on('show-alert', (_event, alertData) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('show-alert', alertData);
+    }
+  });
 }
 
 // Initialize Ollama service
 async function initializeOllama() {
-  ollamaService = new OllamaService();
+  if (!mainWindow) return;
+  
+  ollamaService = new OllamaService(mainWindow);
   try {
     await ollamaService.start();
-    if (mainWindow) {
-      mainWindow.webContents.send('ollama-ready');
-    }
+    mainWindow.webContents.send('ollama-ready');
   } catch (error: any) {
-    console.error('Failed to start Ollama:', error);
-    if (mainWindow) {
-      mainWindow.webContents.send('ollama-error', error.message);
-    }
+    mainWindow.webContents.send('show-alert', {
+      title: 'Ollama Error',
+      messages: [error.message],
+      variant: 'error'
+    });
   }
 }
 
@@ -129,9 +136,8 @@ async function createWindow(): Promise<void> {
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
-    // This event is triggered when the main window has finished loading
-    // Now you can safely execute any code that interacts with the mainWindow
-    // initialize_receiver();
+    // Initialize services after window is ready
+    initializeOllama();
   });
 
   const updateService = new UpdateService(mainWindow);
@@ -158,7 +164,6 @@ app.whenReady().then(async () => {
   registerIpcHandlers();
   
   // Then initialize services and create window
-  await initializeOllama();
   await createWindow();
 });
 

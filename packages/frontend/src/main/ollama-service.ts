@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
@@ -26,11 +26,13 @@ export class OllamaService {
     private readonly port: number = 11434;
     private isSystemOllama: boolean = false;
     private readonly configPath: string;
+    private mainWindow: BrowserWindow | null = null;
 
-    constructor() {
+    constructor(window?: BrowserWindow) {
         this.ollamaPath = path.join(app.getPath('userData'), 'ollama');
         this.configPath = path.join(app.getPath('userData'), 'ollama-config.json');
         this.isSnap = process.env.SNAP !== undefined;
+        this.mainWindow = window || null;
         this.ensureOllamaDirectory();
     }
 
@@ -73,30 +75,35 @@ export class OllamaService {
         return path.join(this.ollamaPath, binaryName);
     }
 
-    private validateBinary(binaryPath: string): boolean {
-        try {
-            // Check if file exists and is executable
-            fs.accessSync(binaryPath, fs.constants.X_OK);
+    private sendError(title: string, message: string, variant: 'error' | 'warning' = 'error') {
+        if (this.mainWindow) {
+            this.mainWindow.webContents.send('show-alert', {
+                title,
+                messages: [message],
+                variant
+            });
+        }
+        console.error(`${title}: ${message}`);
+    }
 
-            // Read first few bytes to check if it's a valid ELF file (Linux) or Mach-O (macOS)
+    private async validateBinary(binaryPath: string): Promise<boolean> {
+        try {
+            fs.accessSync(binaryPath, fs.constants.X_OK);
             const header = Buffer.alloc(4);
             const fd = fs.openSync(binaryPath, 'r');
             fs.readSync(fd, header, 0, 4, 0);
             fs.closeSync(fd);
 
-            // Check for ELF magic number (Linux)
             if (header[0] === 0x7F && header[1] === 0x45 && header[2] === 0x4C && header[3] === 0x46) {
                 return true;
             }
-
-            // Check for Mach-O magic number (macOS)
             if (header.readUInt32BE(0) === 0xFEEDFACE || header.readUInt32BE(0) === 0xFEEDFACF) {
                 return true;
             }
-
+            this.sendError('Binary Validation Failed', 'Invalid binary format');
             return false;
         } catch (error) {
-            console.error('Binary validation failed:', error);
+            this.sendError('Binary Validation Error', error instanceof Error ? error.message : 'Unknown error');
             return false;
         }
     }
@@ -116,7 +123,9 @@ export class OllamaService {
         return new Promise((resolve, reject) => {
             const handleResponse = (response: any) => {
                 if (response.statusCode !== 200) {
-                    reject(new Error(`Failed to download: ${response.statusCode} ${response.statusMessage}`));
+                    const error = `Failed to download: ${response.statusCode} ${response.statusMessage}`;
+                    this.sendError('Download Failed', error);
+                    reject(new Error(error));
                     return;
                 }
 
@@ -129,18 +138,23 @@ export class OllamaService {
                         fs.chmodSync(binaryPath, 0o755);
                         if (!this.validateBinary(binaryPath)) {
                             fs.unlinkSync(binaryPath);
-                            reject(new Error('Downloaded binary validation failed'));
+                            const error = 'Downloaded binary validation failed';
+                            this.sendError('Validation Error', error);
+                            reject(new Error(error));
                             return;
                         }
                         console.log('Successfully downloaded and validated binary');
                         resolve();
                     } catch (error) {
-                        reject(new Error(`Failed to process binary: ${error}`));
+                        const errorMsg = `Failed to process binary: ${error}`;
+                        this.sendError('Binary Processing Error', errorMsg);
+                        reject(new Error(errorMsg));
                     }
                 });
 
                 fileStream.on('error', (error) => {
                     fs.unlinkSync(binaryPath);
+                    this.sendError('File Write Error', error.message);
                     reject(new Error(`Failed to write binary: ${error}`));
                 });
             };
@@ -149,11 +163,17 @@ export class OllamaService {
                 if (response.statusCode === 302 || response.statusCode === 301) {
                     console.log('Following redirect to:', response.headers.location);
                     https.get(response.headers.location!, handleResponse)
-                        .on('error', reject);
+                        .on('error', (error) => {
+                            this.sendError('Download Error', error.message);
+                            reject(error);
+                        });
                 } else {
                     handleResponse(response);
                 }
-            }).on('error', reject);
+            }).on('error', (error) => {
+                this.sendError('Network Error', error.message);
+                reject(error);
+            });
         });
     }
 
@@ -362,19 +382,21 @@ export class OllamaService {
                 const errorMsg = data.toString().trim();
                 console.error(`Ollama stderr: ${errorMsg}`);
                 if (errorMsg.includes('bind: address already in use')) {
-                    console.log('Port already in use, will try to use existing instance');
+                    this.sendError('Port In Use', 'Ollama port is already in use by another process', 'warning');
                     this.isSystemOllama = true;
                 }
             });
 
             this.ollamaProcess.on('error', (error) => {
-                console.error('Failed to start Ollama process:', error);
+                this.sendError('Process Error', `Failed to start Ollama process: ${error.message}`);
                 this.isStarting = false;
                 this.ollamaProcess = null;
             });
 
             this.ollamaProcess.on('close', (code, signal) => {
-                console.log(`Ollama process exited with code ${code} and signal ${signal}`);
+                if (code !== 0) {
+                    this.sendError('Process Closed', `Ollama process exited with code ${code} and signal ${signal}`);
+                }
                 this.ollamaProcess = null;
                 this.isStarting = false;
             });
@@ -385,7 +407,8 @@ export class OllamaService {
             // Wait for Ollama to be responsive
             await this.waitForOllamaStart();
         } catch (error) {
-            console.error('Error during Ollama startup:', error);
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+            this.sendError('Startup Error', `Error during Ollama startup: ${errorMsg}`);
             this.isStarting = false;
             if (this.ollamaProcess) {
                 this.ollamaProcess.kill();
@@ -445,9 +468,11 @@ export class OllamaService {
                 
                 const isNowResponsive = await this.checkOllamaAPI();
                 if (!isNowResponsive) {
+                    this.sendError('Service Error', 'Ollama service failed to start');
                     throw new Error('Ollama service failed to start');
                 }
             } catch (error) {
+                this.sendError('Service Error', 'Ollama service is not running and could not be started');
                 throw new Error('Ollama service is not running and could not be started');
             }
         }
@@ -513,7 +538,7 @@ export class OllamaService {
                             throw new Error(data.error);
                         }
                     } catch (e) {
-                        console.error('Failed to parse progress data:', e);
+                        this.sendError('Download Error', `Failed to download model ${modelName}: ${e}`);
                     }
                 }
             });
@@ -524,9 +549,8 @@ export class OllamaService {
             });
 
         } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Model download failed: ${error.message}`);
-            }
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+            this.sendError('Download Error', `Failed to download model ${modelName}: ${errorMsg}`);
             throw error;
         }
     }
@@ -557,7 +581,7 @@ export class OllamaService {
         } catch (error) {
             console.error('Failed to load config:', error);
         }
-        return { selectedModel: 'llama2' }; // Default model
+        return { selectedModel: 'llama3.2:latest' }; // Default model
     }
 
     public async getDownloadedModels(): Promise<string[]> {
