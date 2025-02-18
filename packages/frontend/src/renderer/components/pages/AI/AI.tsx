@@ -77,11 +77,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
-      
+
       if (copyTimeout.current) {
         clearTimeout(copyTimeout.current);
       }
-      
+
       copyTimeout.current = setTimeout(() => {
         setCopied(false);
       }, 2000);
@@ -92,21 +92,21 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
 
   return (
     <Box sx={{ position: 'relative' }}>
-      <Box 
-        sx={{ 
-          position: 'absolute', 
-          top: 8, 
-          right: 8, 
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
           zIndex: 1,
           backgroundColor: 'rgba(0, 0, 0, 0.6)',
           borderRadius: '4px',
         }}
       >
         <Tooltip title={copied ? "Copied!" : "Copy code"}>
-          <IconButton 
-            size="small" 
+          <IconButton
+            size="small"
             onClick={handleCopy}
-            sx={{ 
+            sx={{
               color: copied ? 'success.main' : 'grey.400',
               '&:hover': {
                 color: copied ? 'success.main' : 'grey.100',
@@ -160,17 +160,17 @@ const ThinkingBlock = styled(Paper)(({ theme }) => ({
 const MessageContent: React.FC<{ content: string; thinking?: string }> = ({ content, thinking }) => {
   const parts = content.split(/(```[\s\S]*?```)/);
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
-  
+
   return (
     <>
       {thinking && (
         <ThinkingBlock elevation={0}>
           <Stack spacing={1}>
-            <Stack 
-              direction="row" 
-              spacing={1} 
-              alignItems="center" 
-              sx={{ 
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{
                 cursor: 'pointer',
                 '&:hover': {
                   opacity: 0.8
@@ -188,7 +188,7 @@ const MessageContent: React.FC<{ content: string; thinking?: string }> = ({ cont
                 <ExpandMoreIcon fontSize="small" sx={{ color: 'grey.500' }} />
               )}
             </Stack>
-            <Box sx={{ 
+            <Box sx={{
               maxHeight: isThinkingExpanded ? '1000px' : '0px',
               overflow: 'hidden',
               transition: 'all 0.3s ease-in-out',
@@ -236,7 +236,7 @@ interface Conversation {
 const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
   const thinkRegex = /<think>([\s\S]*?)<\/think>/;
   const match = content.match(thinkRegex);
-  
+
   if (match) {
     // Remove all <think> blocks from the content
     const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
@@ -245,7 +245,7 @@ const extractThinkingContent = (content: string): { thinking?: string; cleanCont
       cleanContent
     };
   }
-  
+
   return { cleanContent: content };
 };
 
@@ -266,7 +266,7 @@ export default function AI() {
     // Initialize Ollama client
     const client = new OllamaClient('http://localhost:11434', currentModel);
     setOllamaClient(client);
-    
+
     // Focus the input field
     inputRef.current?.focus();
   }, [currentModel]);
@@ -280,7 +280,7 @@ export default function AI() {
     if (messages.length === 0) return;
 
     const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
-    const lastMessage = messages[messages.length - 1].content.slice(0, 100) + 
+    const lastMessage = messages[messages.length - 1].content.slice(0, 100) +
       (messages[messages.length - 1].content.length > 100 ? '...' : '');
 
     const conversation: Conversation = {
@@ -288,7 +288,7 @@ export default function AI() {
       title,
       lastMessage,
       timestamp: new Date(),
-      messages: messages.filter(msg => 
+      messages: messages.filter(msg =>
         msg.role === 'user' || msg.role === 'assistant'
       )
     };
@@ -347,11 +347,11 @@ export default function AI() {
     setStreamingThinking('');
 
     try {
-      const response = await ollamaClient.chat([...messages, userMessage], { 
+      const response = await ollamaClient.chat([...messages, userMessage], {
         stream: true,
-        model: currentModel 
+        model: currentModel
       });
-      
+
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
         let completeMessage = '';
@@ -404,13 +404,43 @@ export default function AI() {
   };
 
   return (
-    <Box sx={{ width: '100%', pt: 0 }}>
-      <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '36px' }}>
-          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
-            <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
-              <Grid item paddingRight={1}>
-                <ConversationsButton 
+    <Box sx={{
+      width: '100%',
+      position: 'fixed',
+      top: '0px',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <Card variant="outlined" sx={{
+        borderTop: 0,
+        borderLeft: 0,
+        borderBottom: 0,
+        flexShrink: 0,
+        borderRadius: 0,
+        backgroundColor: (theme) => theme.palette.background.paper
+      }}>
+        <CardContent sx={{ py: 0, px: 0 }}>
+          <Stack spacing={2} direction="row" sx={{
+            paddingLeft: 8,
+            paddingTop: 3,
+            paddingBottom: 0,
+            marginTop: '20px',
+            flexWrap: 'nowrap',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            height: 30
+          }}>
+            <Grid container sx={{
+              justifyContent: 'flex-start',
+              alignItems: 'center',
+              gap: 1,
+              height: '100%'
+            }}>
+              <Grid item>
+                <ConversationsButton
                   onSelectConversation={handleSelectConversation}
                   currentConversation={currentConversation}
                   onNewChat={handleNewChat}
@@ -426,10 +456,16 @@ export default function AI() {
           </Stack>
         </CardContent>
       </Card>
-      <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
-
+      <Stack
+        direction="row"
+        spacing={0}
+        sx={{
+          width: '100%',
+          flexGrow: 1,
+          overflow: 'hidden'
+        }}
+      >
         <Card variant="outlined" sx={{
-          height: '100%',
           width: '100%',
           overflow: 'hidden',
           borderLeft: 0,
@@ -438,17 +474,20 @@ export default function AI() {
           display: 'flex',
           flexDirection: 'column',
         }}>
-          <CardContent sx={{ 
-            flexGrow: 1, 
+          <CardContent sx={{
+            flexGrow: 1,
             overflow: 'auto',
             display: 'flex',
             flexDirection: 'column',
             gap: 1,
-            p: 2,
+            p: 0,
+            '&:last-child': {
+              pb: 0
+            }
           }}>
             {messages.map((message, index) => (
-              <MessageBubble 
-                key={index} 
+              <MessageBubble
+                key={index}
                 isUser={message.role === 'user'}
                 elevation={1}
               >
@@ -456,7 +495,7 @@ export default function AI() {
               </MessageBubble>
             ))}
             {streamingMessage && (
-              <MessageBubble 
+              <MessageBubble
                 isUser={false}
                 elevation={1}
               >
@@ -465,11 +504,12 @@ export default function AI() {
             )}
             <div ref={messagesEndRef} />
           </CardContent>
-          <Box sx={{ 
-            p: 1.5, 
-            borderTop: 0, 
+          <Box sx={{
+            p: 2,
+            borderTop: 1,
             borderColor: 'divider',
             backgroundColor: (theme) => theme.palette.background.paper,
+            flexShrink: 0
           }}>
             <Box sx={{ position: 'relative' }}>
               <TextField
@@ -484,7 +524,7 @@ export default function AI() {
                 disabled={isLoading}
                 inputRef={inputRef}
                 autoFocus
-                sx={{ 
+                sx={{
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 1,
                     minHeight: '32px',
@@ -524,12 +564,12 @@ export default function AI() {
                   },
                 }}
               />
-              <IconButton 
+              <IconButton
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading}
                 color="primary"
                 size="small"
-                sx={{ 
+                sx={{
                   position: 'absolute',
                   right: '8px',
                   bottom: '8px',
@@ -565,7 +605,7 @@ export default function AI() {
                   }
                 }}
               >
-                <SendIcon sx={{ 
+                <SendIcon sx={{
                   fontSize: '1.1rem',
                   display: 'block',
                 }} />

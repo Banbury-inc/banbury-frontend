@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Button, Popover, Box, Typography, Stack, List, ListItem, ListItemText, 
+import {
+  Button, Popover, Box, Typography, Stack, List, ListItem, ListItemText,
   IconButton, Tooltip, Divider, TextField, Menu, MenuItem, Dialog,
   DialogTitle, DialogContent, DialogActions, InputAdornment
 } from '@mui/material';
@@ -62,7 +62,7 @@ export default function ConversationsButton({ onSelectConversation, currentConve
           timestamp: new Date(conv.timestamp)
         }));
         setConversations(loadedConversations);
-        
+
         // Extract unique categories
         const uniqueCategories = Array.from(new Set(loadedConversations
           .map((conv: Conversation) => conv.category)
@@ -176,9 +176,9 @@ export default function ConversationsButton({ onSelectConversation, currentConve
   };
 
   const filteredConversations = conversations
-    .filter(conv => 
+    .filter(conv =>
       (!selectedCategory || conv.category === selectedCategory) &&
-      (!searchQuery || 
+      (!searchQuery ||
         conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()))
     );
@@ -287,7 +287,7 @@ export default function ConversationsButton({ onSelectConversation, currentConve
             )}
 
             <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-            
+
             <List sx={{ maxHeight: '400px', overflow: 'auto' }}>
               {filteredConversations.map((conversation) => (
                 <ListItem
@@ -297,7 +297,7 @@ export default function ConversationsButton({ onSelectConversation, currentConve
                     borderRadius: 1,
                     mb: 1,
                     cursor: 'pointer',
-                    backgroundColor: currentConversation?.id === conversation.id 
+                    backgroundColor: currentConversation?.id === conversation.id
                       ? 'rgba(255, 255, 255, 0.08)'
                       : 'transparent',
                     '&:hover': {
@@ -306,8 +306,8 @@ export default function ConversationsButton({ onSelectConversation, currentConve
                   }}
                   secondaryAction={
                     <Stack direction="row" spacing={1}>
-                      <IconButton 
-                        edge="end" 
+                      <IconButton
+                        edge="end"
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -317,8 +317,8 @@ export default function ConversationsButton({ onSelectConversation, currentConve
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
-                      <IconButton 
-                        edge="end" 
+                      <IconButton
+                        edge="end"
                         size="small"
                         onClick={(e) => handleDeleteConversation(e, conversation.id)}
                         sx={{ color: 'grey.500' }}
@@ -351,9 +351,9 @@ export default function ConversationsButton({ onSelectConversation, currentConve
                 </ListItem>
               ))}
               {filteredConversations.length === 0 && (
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     color: 'grey.500',
                     textAlign: 'center',
                     py: 2
@@ -376,6 +376,7 @@ export default function ConversationsButton({ onSelectConversation, currentConve
             backgroundColor: '#1e1e1e',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '8px',
+            paddingTop: 10
           }
         }}
       >
@@ -397,8 +398,8 @@ export default function ConversationsButton({ onSelectConversation, currentConve
         onChange={handleImport}
       />
 
-      <Dialog 
-        open={Boolean(editingConversation)} 
+      <Dialog
+        open={Boolean(editingConversation)}
         onClose={() => setEditingConversation(null)}
         PaperProps={{
           sx: {
