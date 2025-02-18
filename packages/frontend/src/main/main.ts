@@ -108,6 +108,20 @@ ipcMain.handle('restart-ollama', async () => {
   }
 });
 
+ipcMain.handle('download-ollama-model', async (event, modelName: string) => {
+  try {
+    await ollamaService.downloadModel(modelName, (progress) => {
+      // Send progress updates to the renderer
+      if (mainWindow) {
+        mainWindow.webContents.send('ollama-model-progress', { modelName, progress });
+      }
+    });
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.on('fetch-data', async (event) => {
   try {
     const response = await axios.get('https://catfact.ninja/fact');

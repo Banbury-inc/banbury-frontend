@@ -208,16 +208,19 @@ export default function ConversationsButton({ onSelectConversation, currentConve
         PaperProps={{
           sx: {
             width: '300px',
-            backgroundColor: '#1e1e1e',
+            backgroundColor: '#000000',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '12px',
             mt: 1,
             boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)',
+            '& .MuiTypography-root': {
+              color: '#ffffff',
+            },
           },
         }}
       >
         <Box sx={{ p: 2 }}>
-          <Stack spacing={2}>
+          <Stack spacing={1}>
             <Stack direction="row" spacing={1}>
               <Button
                 fullWidth

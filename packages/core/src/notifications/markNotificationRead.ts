@@ -10,7 +10,6 @@ export async function markNotificationAsRead(
         notification_id: notification_id,
     });
     const result = response.data.result;
-    console.log(result);
 
     if (result === 'success') {
 

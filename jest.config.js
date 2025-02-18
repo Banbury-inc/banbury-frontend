@@ -28,5 +28,7 @@ module.exports = {
   ],
   transformIgnorePatterns: [
     '/node_modules/(?!axios)/'
-  ]
+  ],
+  silent: true,
+  errorOnDeprecated: false
 };

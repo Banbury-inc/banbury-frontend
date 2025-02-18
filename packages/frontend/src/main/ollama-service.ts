@@ -302,4 +302,61 @@ export class OllamaService {
         // Ensure any remaining Ollama processes are killed
         await this.killExistingOllama();
     }
+
+    public async downloadModel(modelName: string, onProgress?: (progress: string) => void): Promise<void> {
+        if (!this.ollamaProcess) {
+            throw new Error('Ollama service is not running');
+        }
+
+        const url = 'http://localhost:11434/api/pull';
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: modelName }),
+                signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to start model download: ${response.statusText}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('Failed to get response reader');
+            }
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const text = new TextDecoder().decode(value);
+                const lines = text.split('\n').filter(line => line.trim());
+
+                for (const line of lines) {
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.status) {
+                            onProgress?.(data.status);
+                        }
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse progress data:', e);
+                    }
+                }
+            }
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new Error(`Model download failed: ${error.message}`);
+            }
+            throw error;
+        }
+    }
 } 

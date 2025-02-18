@@ -55,7 +55,6 @@ export class OllamaClient {
                 return response;
             }
         } catch (error) {
-            console.error('Error in Ollama chat:', error);
             throw error;
         }
     }
@@ -68,7 +67,6 @@ export class OllamaClient {
             const models = await this.client.list();
             return models;
         } catch (error) {
-            console.error('Error listing models:', error);
             throw error;
         }
     }
@@ -100,7 +98,6 @@ export class OllamaClient {
                 return response;
             }
         } catch (error) {
-            console.error('Error in Ollama generate:', error);
             throw error;
         }
     }

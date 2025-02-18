@@ -1,0 +1,25 @@
+{
+    "ignore": [
+        "node_modules",
+        "dist",
+        "coverage",
+        ".git",
+        "*.log",
+        "*.lock",
+        "*.map"
+    ],
+    "defaultLang": "typescript",
+    "fileLimit": 10000,
+    "maxFileSize": 1000000,
+    "maxLineLength": 120,
+    "maxTokenLength": 100000,
+    "searchDepth": 5,
+    "searchFileTypes": [
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".json",
+        ".md"
+    ]
+} 

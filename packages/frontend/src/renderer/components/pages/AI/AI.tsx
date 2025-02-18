@@ -14,6 +14,7 @@ import type { Theme } from '@mui/material/styles';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConversationsButton from './components/ConversationsButton';
+import ModelSelectorButton from './components/ModelSelectorButton';
 
 interface MessageBubbleProps {
   isUser: boolean;
@@ -176,6 +177,7 @@ export default function AI() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [currentModel, setCurrentModel] = useState<string>('llama2');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
@@ -183,12 +185,12 @@ export default function AI() {
 
   useEffect(() => {
     // Initialize Ollama client
-    const client = new OllamaClient();
+    const client = new OllamaClient('http://localhost:11434', currentModel);
     setOllamaClient(client);
     
     // Focus the input field
     inputRef.current?.focus();
-  }, []);
+  }, [currentModel]);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
@@ -265,7 +267,10 @@ export default function AI() {
     setStreamingMessage('');
 
     try {
-      const response = await ollamaClient.chat([...messages, userMessage], { stream: true });
+      const response = await ollamaClient.chat([...messages, userMessage], { 
+        stream: true,
+        model: currentModel 
+      });
       
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
@@ -320,6 +325,12 @@ export default function AI() {
                   onSelectConversation={handleSelectConversation}
                   currentConversation={currentConversation}
                   onNewChat={handleNewChat}
+                />
+              </Grid>
+              <Grid item>
+                <ModelSelectorButton
+                  currentModel={currentModel}
+                  onModelChange={setCurrentModel}
                 />
               </Grid>
             </Grid>
