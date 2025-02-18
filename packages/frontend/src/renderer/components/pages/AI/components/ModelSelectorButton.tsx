@@ -336,12 +336,20 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
             />
 
             {categories.length > 0 && (
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+              <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
                 <Button
                   size="small"
                   variant={selectedCategory === null ? "contained" : "outlined"}
                   onClick={() => setSelectedCategory(null)}
-                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                  sx={{ 
+                    borderRadius: 1.5,
+                    textTransform: 'none',
+                    py: 0.25,
+                    px: 1,
+                    minHeight: 0,
+                    fontSize: '0.75rem',
+                    lineHeight: 1.2
+                  }}
                 >
                   All
                 </Button>
@@ -351,7 +359,15 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
                     size="small"
                     variant={selectedCategory === category ? "contained" : "outlined"}
                     onClick={() => setSelectedCategory(category)}
-                    sx={{ borderRadius: 2, textTransform: 'none' }}
+                    sx={{ 
+                      borderRadius: 1.5,
+                      textTransform: 'none',
+                      py: 0.25,
+                      px: 1,
+                      minHeight: 0,
+                      fontSize: '0.75rem',
+                      lineHeight: 1.2
+                    }}
                   >
                     {category}
                   </Button>
