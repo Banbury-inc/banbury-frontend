@@ -76,7 +76,13 @@ const AVAILABLE_MODELS: ModelInfo[] = [
   { name: 'deepseek:7b', category: 'Research Models', size: '3.8 GB' },
   { name: 'deepseek:33b', category: 'Research Models', size: '18.7 GB' },
   { name: 'deepseek:67b', category: 'Research Models', size: '37.8 GB' },
-  { name: 'deepseek-r1', category: 'Research Models', size: '3.8 GB' },
+  { name: 'deepseek-r1:1.5b', category: 'Research Models', size: '1.1 GB' },
+  { name: 'deepseek-r1:7b', category: 'Research Models', size: '4.7 GB' },
+  { name: 'deepseek-r1:8b', category: 'Research Models', size: '4.9 GB' },
+  { name: 'deepseek-r1:14b', category: 'Research Models', size: '9.0 GB' },
+  { name: 'deepseek-r1:32b', category: 'Research Models', size: '20 GB' },
+  { name: 'deepseek-r1:70b', category: 'Research Models', size: '43 GB' },
+  { name: 'deepseek-r1:671b', category: 'Research Models', size: '404 GB' },
   { name: 'phi', category: 'Research Models', size: '1.6 GB' },
   { name: 'phi:2.7b', category: 'Research Models', size: '1.6 GB' },
   { name: 'qwen', category: 'Research Models', size: '3.8 GB' },
@@ -126,6 +132,19 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   const ollamaClient = new OllamaClient();
 
   useEffect(() => {
+    // Load the initial model selection
+    const initializeModel = async () => {
+      try {
+        const selectedModel = await ipcRenderer.invoke('get-selected-model');
+        onModelChange(selectedModel);
+      } catch (error) {
+        console.error('Failed to get initial model:', error);
+      }
+    };
+    initializeModel();
+  }, []);
+
+  useEffect(() => {
     if (open) {
       loadModels();
     }
@@ -171,8 +190,14 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
     setSearchQuery('');
   };
 
-  const handleModelSelect = (modelName: string) => {
+  const handleModelSelect = async (modelName: string) => {
     onModelChange(modelName);
+    // Save the selected model
+    try {
+      await ipcRenderer.invoke('set-selected-model', modelName);
+    } catch (error) {
+      console.error('Failed to save model selection:', error);
+    }
     handleClose();
   };
 

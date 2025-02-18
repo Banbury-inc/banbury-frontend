@@ -8,6 +8,16 @@ import * as crypto from 'crypto';
 import * as net from 'net';
 import axios from 'axios';
 
+interface DownloadProgress {
+    totalParts: number;
+    currentPart: number;
+    totalSize: number;
+    downloadedSize: number;
+    startTime: number;
+    lastUpdateTime: number;
+    speed: number; // bytes per second
+}
+
 export class OllamaService {
     private ollamaProcess: ChildProcess | null = null;
     private readonly ollamaPath: string;
@@ -15,9 +25,11 @@ export class OllamaService {
     private isSnap: boolean;
     private readonly port: number = 11434;
     private isSystemOllama: boolean = false;
+    private readonly configPath: string;
 
     constructor() {
         this.ollamaPath = path.join(app.getPath('userData'), 'ollama');
+        this.configPath = path.join(app.getPath('userData'), 'ollama-config.json');
         this.isSnap = process.env.SNAP !== undefined;
         this.ensureOllamaDirectory();
     }
@@ -383,16 +395,54 @@ export class OllamaService {
         }
     }
 
+    private formatSize(bytes: number): string {
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+        return `${size.toFixed(1)} ${units[unitIndex]}`;
+    }
+
+    private formatTime(seconds: number): string {
+        if (seconds < 60) {
+            return `${Math.round(seconds)}s`;
+        } else if (seconds < 3600) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.round(seconds % 60);
+            return `${minutes}m ${remainingSeconds}s`;
+        } else {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+    }
+
+    private parseSize(sizeStr: string): number {
+        const match = sizeStr.match(/(\d+(?:\.\d+)?)\s*([KMGT]?B)/i);
+        if (!match) return 0;
+        
+        const [, value, unit] = match;
+        const multipliers: { [key: string]: number } = {
+            'B': 1,
+            'KB': 1024,
+            'MB': 1024 * 1024,
+            'GB': 1024 * 1024 * 1024,
+            'TB': 1024 * 1024 * 1024 * 1024
+        };
+        
+        return parseFloat(value) * (multipliers[unit.toUpperCase()] || 1);
+    }
+
     public async downloadModel(modelName: string, onProgress?: (progress: string) => void): Promise<void> {
-        // Check if Ollama is running by checking the API
         const isResponsive = await this.checkOllamaAPI();
         if (!isResponsive) {
-            // Try to restart Ollama if it's not responsive
             try {
                 console.log('Ollama not responsive, attempting to restart...');
                 await this.start();
                 
-                // Check again after restart
                 const isNowResponsive = await this.checkOllamaAPI();
                 if (!isNowResponsive) {
                     throw new Error('Ollama service failed to start');
@@ -411,6 +461,16 @@ export class OllamaService {
                 }
             );
 
+            const progress: DownloadProgress = {
+                totalParts: 0,
+                currentPart: 0,
+                totalSize: 0,
+                downloadedSize: 0,
+                startTime: Date.now(),
+                lastUpdateTime: Date.now(),
+                speed: 0
+            };
+
             response.data.on('data', (chunk: Buffer) => {
                 const text = chunk.toString();
                 const lines = text.split('\n').filter(line => line.trim());
@@ -418,9 +478,37 @@ export class OllamaService {
                 for (const line of lines) {
                     try {
                         const data = JSON.parse(line);
+                        
                         if (data.status) {
-                            onProgress?.(data.status);
+                            // Check for download initialization message
+                            const downloadMatch = data.status.match(/downloading \w+ in (\d+) ([\d.]+ [KMGT]?B) part/);
+                            if (downloadMatch) {
+                                const [, parts, size] = downloadMatch;
+                                progress.totalParts = parseInt(parts, 10);
+                                progress.totalSize = this.parseSize(size) * progress.totalParts;
+                                progress.currentPart++;
+                                
+                                // Calculate progress percentage
+                                const percent = ((progress.currentPart / progress.totalParts) * 100).toFixed(1);
+                                
+                                // Calculate speed and ETA
+                                const currentTime = Date.now();
+                                const elapsedTime = (currentTime - progress.startTime) / 1000; // in seconds
+                                progress.downloadedSize = (progress.currentPart / progress.totalParts) * progress.totalSize;
+                                progress.speed = progress.downloadedSize / elapsedTime;
+                                
+                                const remainingSize = progress.totalSize - progress.downloadedSize;
+                                const eta = remainingSize / progress.speed;
+                                
+                                const speedFormatted = `${this.formatSize(progress.speed)}/s`;
+                                const progressMsg = `Downloading ${modelName}: ${percent}% complete (${this.formatSize(progress.downloadedSize)}/${this.formatSize(progress.totalSize)}) - ${speedFormatted} - ETA: ${this.formatTime(eta)}`;
+                                
+                                onProgress?.(progressMsg);
+                            } else {
+                                onProgress?.(data.status);
+                            }
                         }
+                        
                         if (data.error) {
                             throw new Error(data.error);
                         }
@@ -450,5 +538,54 @@ export class OllamaService {
             this.ollamaProcess = null;
             await this.killExistingOllama();
         }
+    }
+
+    private async saveConfig(config: { selectedModel: string }): Promise<void> {
+        try {
+            await fs.promises.writeFile(this.configPath, JSON.stringify(config, null, 2));
+        } catch (error) {
+            console.error('Failed to save config:', error);
+        }
+    }
+
+    private async loadConfig(): Promise<{ selectedModel: string }> {
+        try {
+            if (await fs.promises.access(this.configPath).then(() => true).catch(() => false)) {
+                const data = await fs.promises.readFile(this.configPath, 'utf8');
+                return JSON.parse(data);
+            }
+        } catch (error) {
+            console.error('Failed to load config:', error);
+        }
+        return { selectedModel: 'llama2' }; // Default model
+    }
+
+    public async getDownloadedModels(): Promise<string[]> {
+        try {
+            const response = await axios.get('http://localhost:11434/api/tags');
+            if (response.status === 200 && response.data.models) {
+                return response.data.models.map((model: any) => model.name);
+            }
+        } catch (error) {
+            console.error('Failed to get downloaded models:', error);
+        }
+        return [];
+    }
+
+    public async getSelectedModel(): Promise<string> {
+        const config = await this.loadConfig();
+        const downloadedModels = await this.getDownloadedModels();
+        
+        // If the saved model is downloaded, use it
+        if (downloadedModels.includes(config.selectedModel)) {
+            return config.selectedModel;
+        }
+        
+        // Otherwise, use the first downloaded model or default to llama3.2:latest
+        return downloadedModels[0] || 'llama3.2:latest';
+    }
+
+    public async setSelectedModel(modelName: string): Promise<void> {
+        await this.saveConfig({ selectedModel: modelName });
     }
 } 

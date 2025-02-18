@@ -34,6 +34,15 @@ function registerIpcHandlers() {
     }
   });
 
+  ipcMain.handle('get-selected-model', async () => {
+    return ollamaService.getSelectedModel();
+  });
+
+  ipcMain.handle('set-selected-model', async (_event, modelName: string) => {
+    await ollamaService.setSelectedModel(modelName);
+    return { success: true };
+  });
+
   ipcMain.handle('download-ollama-model', async (_event, modelName: string) => {
     try {
       if (!ollamaService) {
