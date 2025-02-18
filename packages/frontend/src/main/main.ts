@@ -12,6 +12,79 @@ const fs = require('fs').promises;
 let mainWindow: BrowserWindow | null;
 let ollamaService: OllamaService;
 
+// Register all IPC handlers before creating the window
+function registerIpcHandlers() {
+  ipcMain.handle('get-ollama-status', async () => {
+    try {
+      const response = await fetch('http://localhost:11434/api/version');
+      const data = await response.json();
+      return { status: 'running', version: data.version };
+    } catch {
+      return { status: 'stopped' };
+    }
+  });
+
+  ipcMain.handle('restart-ollama', async () => {
+    try {
+      ollamaService.stop();
+      await ollamaService.start();
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('download-ollama-model', async (_event, modelName: string) => {
+    try {
+      if (!ollamaService) {
+        throw new Error('Ollama service is not initialized');
+      }
+
+      await ollamaService.downloadModel(modelName, (progress) => {
+        if (mainWindow) {
+          mainWindow.webContents.send('ollama-model-progress', { 
+            modelName, 
+            progress 
+          });
+        }
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error downloading model:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to download model' 
+      };
+    }
+  });
+
+  ipcMain.on('fetch-data', async (event) => {
+    try {
+      const response = await axios.get('https://catfact.ninja/fact');
+      event.reply('fetch-data-response', response.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  });
+}
+
+// Initialize Ollama service
+async function initializeOllama() {
+  ollamaService = new OllamaService();
+  try {
+    await ollamaService.start();
+    if (mainWindow) {
+      mainWindow.webContents.send('ollama-ready');
+    }
+  } catch (error: any) {
+    console.error('Failed to start Ollama:', error);
+    if (mainWindow) {
+      mainWindow.webContents.send('ollama-error', error.message);
+    }
+  }
+}
+
 async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow({
     width: 1366,
@@ -71,128 +144,13 @@ async function waitForWebpackReady(url: string): Promise<void> {
   }
 }
 
-// Initialize Ollama service
-async function initializeOllama() {
-  ollamaService = new OllamaService();
-  try {
-    await ollamaService.start();
-    if (mainWindow) {
-      mainWindow.webContents.send('ollama-ready');
-    }
-  } catch (error: any) {
-    console.error('Failed to start Ollama:', error);
-    if (mainWindow) {
-      mainWindow.webContents.send('ollama-error', error.message);
-    }
-  }
-}
-
-// Add IPC handlers for Ollama status
-ipcMain.handle('get-ollama-status', async () => {
-  try {
-    const response = await fetch('http://localhost:11434/api/version');
-    const data = await response.json();
-    return { status: 'running', version: data.version };
-  } catch {
-    return { status: 'stopped' };
-  }
-});
-
-ipcMain.handle('restart-ollama', async () => {
-  try {
-    ollamaService.stop();
-    await ollamaService.start();
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('download-ollama-model', async (event, modelName: string) => {
-  try {
-    await ollamaService.downloadModel(modelName, (progress) => {
-      // Send progress updates to the renderer
-      if (mainWindow) {
-        mainWindow.webContents.send('ollama-model-progress', { modelName, progress });
-      }
-    });
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.on('fetch-data', async (event) => {
-  try {
-    const response = await axios.get('https://catfact.ninja/fact');
-    event.reply('fetch-data-response', response.data);
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  }
-});
-
-autoUpdater.checkForUpdatesAndNotify();
-
-autoUpdater.on('update-available', () => {
-  // Start downloading the update
-  autoUpdater.downloadUpdate();
-
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update available',
-    message: 'A new update is available. It will be downloaded in the background.',
-  });
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-  if (mainWindow) {
-    mainWindow.webContents.send('update-progress', progressObj.percent);
-  }
-});
-
-autoUpdater.on('error', (err) => {
-  dialog.showErrorBox('Error', 'Error during update: ' + err);
-});
-
-autoUpdater.on('update-downloaded', () => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update ready',
-    message: 'A new update has been downloaded. Would you like to install it now?',
-    buttons: ['Yes', 'Later']
-  }).then(result => {
-    if (result.response === 0) {
-      autoUpdater.quitAndInstall(true, true);
-    }
-  });
-});
-
-ipcMain.on('update-username', (_event, username) => {
-  let GlobalUsername: string | null = null;
-  GlobalUsername = username;
-  console.log('Updated username:', GlobalUsername);
-});
-
-// Handle 'open-file' event from Renderer process
-ipcMain.on('open-file', async (_event, filePath) => {
-  try {
-    // Example: Check if file exists and open it
-    const fileExists = await fs.access(filePath);
-    if (fileExists) {
-      // Perform actions with the file here, e.g., open it
-      // Example: Open file dialog
-      shell.openPath(filePath);
-    } else {
-      dialog.showErrorBox('Error', `File '${filePath}' not found.`);
-    }
-  } catch (error) {
-    dialog.showErrorBox('Error', `Error accessing file '${filePath}. Error: ${error}`);
-  }
-});
-
 app.whenReady().then(async () => {
-  await createWindow();
+  // Register IPC handlers first
+  registerIpcHandlers();
+  
+  // Then initialize services and create window
   await initializeOllama();
+  await createWindow();
 });
 
 ipcMain.on('close-window', () => {

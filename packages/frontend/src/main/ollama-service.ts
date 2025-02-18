@@ -6,6 +6,7 @@ import { spawn, ChildProcess, exec } from 'child_process';
 import * as os from 'os';
 import * as crypto from 'crypto';
 import * as net from 'net';
+import axios from 'axios';
 
 export class OllamaService {
     private ollamaProcess: ChildProcess | null = null;
@@ -13,6 +14,7 @@ export class OllamaService {
     private isStarting: boolean = false;
     private isSnap: boolean;
     private readonly port: number = 11434;
+    private isSystemOllama: boolean = false;
 
     constructor() {
         this.ollamaPath = path.join(app.getPath('userData'), 'ollama');
@@ -159,10 +161,30 @@ export class OllamaService {
 
     private async killExistingOllama(): Promise<void> {
         return new Promise((resolve) => {
-            if (process.platform === 'win32') {
-                exec('taskkill /F /IM ollama.exe', () => resolve());
-            } else {
-                exec('pkill ollama', () => resolve());
+            switch (process.platform) {
+                case 'win32':
+                    exec('taskkill /F /IM ollama.exe', () => resolve());
+                    break;
+                case 'darwin': // macOS
+                    // First try normal kill
+                    exec('pkill ollama', () => {
+                        // If that doesn't work, try force kill
+                        exec('pkill -9 ollama', () => {
+                            // Cleanup any leftover files
+                            exec('rm -f /tmp/ollama.sock', () => resolve());
+                        });
+                    });
+                    break;
+                case 'linux':
+                    exec('pkill ollama', () => {
+                        exec('pkill -9 ollama', () => {
+                            exec('rm -f /tmp/ollama.sock /tmp/.ollama.lock', () => resolve());
+                        });
+                    });
+                    break;
+                default:
+                    console.warn(`Unsupported platform: ${process.platform}`);
+                    resolve();
             }
         });
     }
@@ -178,6 +200,80 @@ export class OllamaService {
         throw new Error(`Port ${this.port} is still in use after ${maxAttempts} seconds`);
     }
 
+    private async checkOllamaAPI(): Promise<boolean> {
+        try {
+            const response = await axios.get('http://localhost:11434/api/version', {
+                timeout: 5000
+            });
+            
+            if (response.status === 200) {
+                console.log('Ollama API responded with version:', response.data.version);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            if (error instanceof Error) {
+                console.log('API check failed:', error.message);
+            }
+            return false;
+        }
+    }
+
+    private async waitForOllamaStart(): Promise<void> {
+        const maxAttempts = 30;
+        const delayMs = 1000;
+
+        for (let i = 0; i < maxAttempts; i++) {
+            try {
+                // Check if process is still running first
+                if (this.ollamaProcess && this.ollamaProcess.exitCode !== null) {
+                    const error = new Error(`Ollama process exited with code ${this.ollamaProcess.exitCode}`);
+                    console.error(error);
+                    throw error;
+                }
+
+                const isResponsive = await this.checkOllamaAPI();
+                if (isResponsive) {
+                    this.isStarting = false;
+                    return;
+                }
+
+                if (i === 0) {
+                    console.log('Waiting for Ollama to become responsive...');
+                } else {
+                    console.log(`Still waiting for Ollama to become responsive... (attempt ${i + 1}/${maxAttempts})`);
+                }
+
+                // Check process logs for specific errors
+                if (this.ollamaProcess?.stderr) {
+                    const logs = await new Promise<string>((resolve) => {
+                        let buffer = '';
+                        this.ollamaProcess?.stderr?.on('data', (data) => {
+                            buffer += data.toString();
+                        });
+                        setTimeout(() => resolve(buffer), 100);
+                    });
+
+                    if (logs.includes('error')) {
+                        console.error('Found error in Ollama logs:', logs);
+                    }
+                }
+
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            } catch (error) {
+                if (error instanceof Error && error.message.includes('process exited')) {
+                    this.isStarting = false;
+                    throw error;
+                }
+                console.error('Error during API check:', error);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+        }
+
+        this.isStarting = false;
+        throw new Error('Ollama failed to become responsive within the timeout period');
+    }
+
     public async start(): Promise<void> {
         if (this.ollamaProcess || this.isStarting) {
             return;
@@ -186,20 +282,27 @@ export class OllamaService {
         this.isStarting = true;
 
         try {
-            // Check if port is in use
-            const portInUse = await this.isPortInUse(this.port);
-            if (portInUse) {
-                console.log(`Port ${this.port} is in use, attempting to kill existing Ollama instance`);
-                await this.killExistingOllama();
-                await this.waitForPortToBeAvailable();
+            // First check if Ollama is already running and responding
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const response = await axios.get('http://localhost:11434/api/version');
+                    console.log('Existing Ollama instance found, version:', response.data.version);
+                    this.isSystemOllama = true;
+                    this.isStarting = false;
+                    return;
+                } catch (error) {
+                    // Wait a bit before retrying
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
 
-            // First check if Ollama is already installed on the system
-            const systemOllama = await this.isOllamaInstalled();
+            console.log('No responsive Ollama instance found, checking system installation...');
 
+            // Check if Ollama is installed on the system
+            const systemOllama = await this.isOllamaInstalled();
+            
             let ollamaBinaryPath: string;
             if (systemOllama) {
-                // Use system-installed Ollama
                 const result = await new Promise<string>((resolve, reject) => {
                     exec('which ollama', (error, stdout) => {
                         if (error) reject(error);
@@ -209,15 +312,20 @@ export class OllamaService {
                 ollamaBinaryPath = result;
                 console.log('Using system-installed Ollama:', ollamaBinaryPath);
             } else {
-                // Use our downloaded binary
                 ollamaBinaryPath = this.getBinaryPath();
                 if (!fs.existsSync(ollamaBinaryPath) || !this.validateBinary(ollamaBinaryPath)) {
                     await this.downloadOllama();
                 }
-                ollamaBinaryPath = this.getBinaryPath(); // Get the path again after potential download
+                ollamaBinaryPath = this.getBinaryPath();
             }
 
-            // Start Ollama process with explicit environment
+            // Always try to clean up any existing processes and ports
+            console.log('Cleaning up any existing Ollama processes...');
+            await this.killExistingOllama();
+            await this.waitForPortToBeAvailable();
+
+            // Start Ollama process
+            console.log('Starting Ollama process...');
             this.ollamaProcess = spawn(ollamaBinaryPath, ['serve'], {
                 stdio: ['ignore', 'pipe', 'pipe'],
                 env: {
@@ -228,22 +336,22 @@ export class OllamaService {
                     OLLAMA_HOST: 'localhost',
                     OLLAMA_ORIGINS: '*'
                 },
-                detached: false // Ensure the process is attached to parent
+                detached: false
             });
 
-            // Log output for debugging
+            // Log process ID for debugging
+            console.log(`Started Ollama process with PID: ${this.ollamaProcess.pid}`);
+
             this.ollamaProcess.stdout?.on('data', (data) => {
-                const output = data.toString();
-                console.log(`Ollama stdout: ${output}`);
+                console.log(`Ollama stdout: ${data.toString().trim()}`);
             });
 
             this.ollamaProcess.stderr?.on('data', (data) => {
-                const error = data.toString();
-                console.error(`Ollama stderr: ${error}`);
-                // Check for specific error messages
-                if (error.includes('bind: address already in use')) {
-                    this.ollamaProcess?.kill();
-                    this.ollamaProcess = null;
+                const errorMsg = data.toString().trim();
+                console.error(`Ollama stderr: ${errorMsg}`);
+                if (errorMsg.includes('bind: address already in use')) {
+                    console.log('Port already in use, will try to use existing instance');
+                    this.isSystemOllama = true;
                 }
             });
 
@@ -259,83 +367,52 @@ export class OllamaService {
                 this.isStarting = false;
             });
 
-            // Wait for Ollama to start
+            // Give the process a moment to start
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Wait for Ollama to be responsive
             await this.waitForOllamaStart();
         } catch (error) {
+            console.error('Error during Ollama startup:', error);
             this.isStarting = false;
+            if (this.ollamaProcess) {
+                this.ollamaProcess.kill();
+                this.ollamaProcess = null;
+            }
             throw error;
         }
     }
 
-    private async waitForOllamaStart(): Promise<void> {
-        const maxAttempts = 30;
-        const delayMs = 1000;
-
-        for (let i = 0; i < maxAttempts; i++) {
-            if (!this.ollamaProcess) {
-                throw new Error('Ollama process died during startup');
-            }
-
-            try {
-                const response = await fetch('http://localhost:11434/api/version');
-                const data = await response.json();
-                console.log('Ollama version:', data.version);
-                this.isStarting = false;
-                return;
-            } catch (error) {
-                if (i === 0) {
-                    console.log('Waiting for Ollama to start...');
-                }
-                await new Promise(resolve => setTimeout(resolve, delayMs));
-            }
-        }
-
-        this.stop();
-        throw new Error('Ollama failed to start within the timeout period');
-    }
-
-    public async stop(): Promise<void> {
-        if (this.ollamaProcess) {
-            this.ollamaProcess.kill();
-            this.ollamaProcess = null;
-        }
-        // Ensure any remaining Ollama processes are killed
-        await this.killExistingOllama();
-    }
-
     public async downloadModel(modelName: string, onProgress?: (progress: string) => void): Promise<void> {
-        if (!this.ollamaProcess) {
-            throw new Error('Ollama service is not running');
+        // Check if Ollama is running by checking the API
+        const isResponsive = await this.checkOllamaAPI();
+        if (!isResponsive) {
+            // Try to restart Ollama if it's not responsive
+            try {
+                console.log('Ollama not responsive, attempting to restart...');
+                await this.start();
+                
+                // Check again after restart
+                const isNowResponsive = await this.checkOllamaAPI();
+                if (!isNowResponsive) {
+                    throw new Error('Ollama service failed to start');
+                }
+            } catch (error) {
+                throw new Error('Ollama service is not running and could not be started');
+            }
         }
-
-        const url = 'http://localhost:11434/api/pull';
-        const controller = new AbortController();
-        const signal = controller.signal;
 
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name: modelName }),
-                signal,
-            });
+            const response = await axios.post('http://localhost:11434/api/pull', 
+                { name: modelName },
+                { 
+                    responseType: 'stream',
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
 
-            if (!response.ok) {
-                throw new Error(`Failed to start model download: ${response.statusText}`);
-            }
-
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error('Failed to get response reader');
-            }
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const text = new TextDecoder().decode(value);
+            response.data.on('data', (chunk: Buffer) => {
+                const text = chunk.toString();
                 const lines = text.split('\n').filter(line => line.trim());
 
                 for (const line of lines) {
@@ -351,12 +428,27 @@ export class OllamaService {
                         console.error('Failed to parse progress data:', e);
                     }
                 }
-            }
+            });
+
+            await new Promise((resolve, reject) => {
+                response.data.on('end', resolve);
+                response.data.on('error', reject);
+            });
+
         } catch (error) {
             if (error instanceof Error) {
                 throw new Error(`Model download failed: ${error.message}`);
             }
             throw error;
+        }
+    }
+
+    public async stop(): Promise<void> {
+        // Don't kill the process if it's a system Ollama
+        if (this.ollamaProcess && !this.isSystemOllama) {
+            this.ollamaProcess.kill();
+            this.ollamaProcess = null;
+            await this.killExistingOllama();
         }
     }
 } 
