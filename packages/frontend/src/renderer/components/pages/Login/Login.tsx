@@ -29,6 +29,7 @@ import http from 'http';
 import path from 'path';
 import banbury from '@banbury/core';
 import ServerSelectButton from './components/ServerSelectButton';
+import Onboarding from './components/Onboarding';
 
 interface Message {
   type: string;
@@ -92,6 +93,7 @@ export default function SignIn() {
   const [server_offline, setserver_offline] = useState(false);
   const [showMain, setShowMain] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Messages can be defined after hooks
   const incorrect_login_message: Message = {
@@ -126,10 +128,18 @@ export default function SignIn() {
       if (email && password) {
         const result = await send_login_request(email, password);
         if (result === 'login success') {
-          setUsername(email);
-          localStorage.setItem('authToken', email);
-          setIsAuthenticated(true);
-          setShowMain(true);
+          // Check if this is the user's first login
+          const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
+          
+          if (!hasCompletedOnboarding) {
+            localStorage.setItem('pendingAuthEmail', email); // Store email temporarily
+            setShowOnboarding(true);
+          } else {
+            setUsername(email);
+            localStorage.setItem('authToken', email);
+            setIsAuthenticated(true);
+            setShowMain(true);
+          }
         } else {
           setincorrect_login(true);
         }
@@ -186,40 +196,18 @@ export default function SignIn() {
               const response = await axios.get(`${banbury.config.url}/authentication/auth/callback?code=${code}`);
               if (response.data.success) {
                 console.log(response)
-                setUsername(response.data.user.email);
-                const username = response.data.user.email;
-                const first_name = response.data.user.first_name;
-                const last_name = response.data.user.last_name;
-                const phone_number = response.data.user.phone_number;
                 const email = response.data.user.email;
-                const picture = response.data.user.picture;
-
-                try {
-
-                  // User exists, set authenticated
+                const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
+                
+                if (!hasCompletedOnboarding) {
+                  localStorage.setItem('pendingAuthEmail', email);
+                  setShowOnboarding(true);
+                } else {
+                  setUsername(email);
+                  localStorage.setItem('authToken', email);
                   setIsAuthenticated(true);
-                } catch (error) {
-                  console.error('Error fetching user data:', error);
-
-                  // User doesn't exist, register them
-                  const registerResponse = await handlers.users.registerUser(username, username, first_name, last_name, phone_number, email, picture);
-
-                  if (registerResponse === 'success') {
-                    setIsAuthenticated(true);
-                  } else {
-                    console.error('Failed to register Google user');
-                  }
+                  setShowMain(true);
                 }
-
-                // TODO: implement login error handling
-
-                localStorage.setItem('authToken', response.data.user.email);
-                setIsAuthenticated(true);
-                setShowMain(true);
-
-                // Send success response to browser
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end('<html><body><h1>Login successful! You can close this window.</h1><script>window.close();</script></body></html>');
               }
             } catch (error) {
               console.error('Callback Error:', error);
@@ -248,7 +236,32 @@ export default function SignIn() {
     }
   };
 
+  // Add this function to handle onboarding completion
+  const handleOnboardingComplete = () => {
+    console.log('Onboarding complete called');
+    // Get the email from localStorage if it was stored during login
+    const email = localStorage.getItem('pendingAuthEmail');
+    console.log('Retrieved email:', email);
+    
+    if (email) {
+      setUsername(email);
+      localStorage.setItem('authToken', email);
+      localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
+      localStorage.removeItem('pendingAuthEmail'); // Clean up the temporary storage
+    }
+    
+    setShowOnboarding(false); // Explicitly hide onboarding
+    setIsAuthenticated(true);
+    setShowMain(true);
+    
+    console.log('State updated, should redirect to main');
+  };
+
   // Render content based on state
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
+
   if (isAuthenticated || showMain) {
     return <Main />;
   }
