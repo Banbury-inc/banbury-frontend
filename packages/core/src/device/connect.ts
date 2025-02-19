@@ -284,8 +284,6 @@ export async function createWebSocketConnection(
   const url_ws = banbury.config.url_ws;
         
   const device_id = await get_device_id(username);
-  console.log("Device ID:", device_id);
-  console.log("Using WebSocket URL:", url_ws);
   // Ensure device_id is properly encoded and add slash after base URL
   const entire_url_ws = `${url_ws}${device_id}/`;
   // Replace the URL with your WebSocket endpoint

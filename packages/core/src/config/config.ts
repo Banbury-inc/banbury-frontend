@@ -33,7 +33,7 @@ export const config: Config = {
   run_device_info_loop: true,
   run_device_predictions_loop: true,
   prod: false,
-  dev: true,
+  dev: false,
   semi_local: false,
   get local_api_url() {
     return 'http://localhost:8080/';
@@ -55,11 +55,11 @@ export const config: Config = {
   },
   get url() {
     if (this.prod) {
-      return 'http://54.224.116.254:8080/';
-    } else if (this.dev) {
-      return this.production_api_url;
+      return 'http://54.224.116.254:8080';
     } else if (this.semi_local) {
       return this.semi_local_api_url;
+    } else if (this.dev) {
+      return this.production_api_url;
     } else {
       return this.local_api_url;
     }
@@ -67,10 +67,10 @@ export const config: Config = {
   get url_ws() {
     if (this.prod) {
       return 'ws://54.224.116.254:8082';
-    } else if (this.dev) {
-      return this.production_ws_url;
     } else if (this.semi_local) {
       return this.semi_local_ws_url;
+    } else if (this.dev) {
+      return this.production_ws_url;
     } else {
       return this.local_ws_url;
     }
