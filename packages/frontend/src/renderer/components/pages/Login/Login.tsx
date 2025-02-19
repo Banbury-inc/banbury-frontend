@@ -14,20 +14,21 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
-import theme from "../../theme";
-import Main from "../main";
-import Register from "./Register";
-import { useAuth } from '../../context/AuthContext';
+import theme from "../../../theme";
+import Main from "../../main";
+import Register from "../Register";
+import { useAuth } from '../../../context/AuthContext';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import os from 'os';
 import ConfigParser from 'configparser';
-import { handlers } from '../../handlers';
+import { handlers } from '../../../handlers';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { shell } from 'electron';
 import http from 'http';
 import path from 'path';
 import banbury from '@banbury/core';
+import ServerSelectButton from './components/ServerSelectButton';
 
 interface Message {
   type: string;
@@ -259,133 +260,163 @@ export default function SignIn() {
   // Main render
   return (
     <ThemeProvider theme={theme}>
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          {/* <Avatar sx={{ mt: 10, bgcolor: 'primary.main' }}> */}
+      <Box sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.default',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Container component="main" maxWidth="xs" sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          pt: 8,
+          pb: 4,
+          position: 'relative',
+          zIndex: 1
+        }}>
+          <CssBaseline />
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: '100%'
+            }}
+          >
+            {/* <Avatar sx={{ mt: 10, bgcolor: 'primary.main' }}> */}
 
-          {/* <LockOutlinedIcon /> */}
-          {/* </Avatar> */}
-          {/* <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 157.2, height: 137.2 }} /> */}
-          <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 50, height: 50 }} />
-          <Typography component="h1" variant="h5">
-            Sign in
-          </Typography>
-          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Username"
-              name="email"
-              autoComplete="email"
-              size='medium'
-              autoFocus
-              InputProps={{
-                // style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
-
-              }}
-              InputLabelProps={{
-                required: false, // Remove the asterisk
-                // style: { fontSize: '1.7rem' }, // Adjusts the label font size
-              }}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              size='medium'
-              id="password"
-              autoComplete="current-password"
-              InputProps={{
-                // style: { fontSize: '1.3rem' }, // Adjusts text font size inside the input box
-              }}
-              InputLabelProps={{
-                required: false, // Remove the asterisk
-                // style: { fontSize: '1.3rem' }, // Adjusts the label font size
-              }}
-
-            />
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              // label="Remember me"
-              label={<Typography style={{ fontSize: '15px' }}>Remember me</Typography>}
-            />
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 2, mb: 1 }}
-              // onClick={handleClick}
-              disabled={loading} // Disable the button while loading
-            >
-              {loading ? <CircularProgress size={24} /> : 'Sign In'}
-            </Button>
-
-            <Typography variant="body2" align="center" sx={{ my: 1 }}>
-              - OR -
+            {/* <LockOutlinedIcon /> */}
+            {/* </Avatar> */}
+            {/* <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 157.2, height: 137.2 }} /> */}
+            <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 50, height: 50 }} />
+            <Typography component="h1" variant="h5">
+              Sign in
             </Typography>
+            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Username"
+                name="email"
+                autoComplete="email"
+                size='medium'
+                autoFocus
+                InputProps={{
+                  // style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
+
+                }}
+                InputLabelProps={{
+                  required: false, // Remove the asterisk
+                  // style: { fontSize: '1.7rem' }, // Adjusts the label font size
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type="password"
+                size='medium'
+                id="password"
+                autoComplete="current-password"
+                InputProps={{
+                  // style: { fontSize: '1.3rem' }, // Adjusts text font size inside the input box
+                }}
+                InputLabelProps={{
+                  required: false, // Remove the asterisk
+                  // style: { fontSize: '1.3rem' }, // Adjusts the label font size
+                }}
+
+              />
+              <FormControlLabel
+                control={<Checkbox value="remember" color="primary" />}
+                // label="Remember me"
+                label={<Typography style={{ fontSize: '15px' }}>Remember me</Typography>}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 2, mb: 1 }}
+                // onClick={handleClick}
+                disabled={loading} // Disable the button while loading
+              >
+                {loading ? <CircularProgress size={24} /> : 'Sign In'}
+              </Button>
+
+              <Typography variant="body2" align="center" sx={{ my: 1 }}>
+                - OR -
+              </Typography>
 
 
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<GoogleIcon />}
-              onClick={handleGoogleLogin}
-              sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
-            >
-              Sign in with Google
-            </Button>
-            <Grid container>
-              <Grid item xs>
-                {/* <Link href="/register" variant="body2"> */}
-                <Link variant="body2" onClick={() => {
-                  setredirect_to_register(true);
-                }}>
-                  Forgot password?
-                </Link>
-              </Grid>
-              <Grid item>
-                {/* <Link href="/register" variant="body2"> */}
-                <Link variant="body2" onClick={() => {
-                  setredirect_to_register(true);
-                }}>
-
-                  {"Don't have an account? Sign Up"}
-                </Link>
-              </Grid>
-              <Grid container justifyContent="center">
-                <Grid item>
-                  <div style={{ color: "#E22134", opacity: incorrect_login ? 1 : 0, transition: 'opacity 0.5s' }}>
-                    <p>{incorrect_login_message.content}</p>
-                  </div>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<GoogleIcon />}
+                onClick={handleGoogleLogin}
+                sx={{ mt: 3, mb: 2 }}
+                disabled={loading}
+              >
+                Sign in with Google
+              </Button>
+              <Grid container>
+                <Grid item xs>
+                  {/* <Link href="/register" variant="body2"> */}
+                  <Link variant="body2" onClick={() => {
+                    setredirect_to_register(true);
+                  }}>
+                    Forgot password?
+                  </Link>
                 </Grid>
-              </Grid>
-              <Grid container justifyContent="center">
                 <Grid item>
-                  <div style={{ color: "#E22134", opacity: server_offline ? 1 : 0, transition: 'opacity 0.5s' }}>
-                    <p>{server_offline_message.content}</p>
-                  </div>
-                </Grid>
-              </Grid>
+                  {/* <Link href="/register" variant="body2"> */}
+                  <Link variant="body2" onClick={() => {
+                    setredirect_to_register(true);
+                  }}>
 
-            </Grid>
+                    {"Don't have an account? Sign Up"}
+                  </Link>
+                </Grid>
+                <Grid container justifyContent="center">
+                  <Grid item>
+                    <div style={{ color: "#E22134", opacity: incorrect_login ? 1 : 0, transition: 'opacity 0.5s' }}>
+                      <p>{incorrect_login_message.content}</p>
+                    </div>
+                  </Grid>
+                </Grid>
+                <Grid container justifyContent="center">
+                  <Grid item>
+                    <div style={{ color: "#E22134", opacity: server_offline ? 1 : 0, transition: 'opacity 0.5s' }}>
+                      <p>{server_offline_message.content}</p>
+                    </div>
+                  </Grid>
+                </Grid>
+
+              </Grid>
+            </Box>
           </Box>
+          <Copyright sx={{ mt: 2 }} />
+        </Container>
+        <Box sx={{ 
+          position: 'fixed', 
+          bottom: 16, 
+          right: 16, 
+          zIndex: 2
+        }}>
+          <ServerSelectButton 
+            selectedFileNames={[]} 
+            selectedFileInfo={[]} 
+            onShare={() => {}}
+          />
         </Box>
-        <Copyright sx={{ mt: 2 }} />
-      </Container>
+      </Box>
     </ThemeProvider>
   );
 }

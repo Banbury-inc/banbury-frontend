@@ -20,7 +20,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import Sync from './pages/Sync/Sync';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
-import Login from './pages/Login';
+import Login from './pages/Login/Login';
 import Tooltip from '@mui/material/Tooltip';
 import os from 'os';
 import path from 'path';

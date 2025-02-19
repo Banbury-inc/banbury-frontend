@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from "../../theme";
-import SignIn from './Login';
+import SignIn from './Login/Login';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
 import { handlers } from '../../handlers';
 
