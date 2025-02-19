@@ -480,7 +480,7 @@ export default function AI() {
             display: 'flex',
             flexDirection: 'column',
             gap: 1,
-            p: 0,
+            pl: 8,
             '&:last-child': {
               pb: 0
             }
@@ -507,6 +507,8 @@ export default function AI() {
           <Box sx={{
             p: 2,
             borderTop: 1,
+            pl: 8,
+            pr: 3,
             borderColor: 'divider',
             backgroundColor: (theme) => theme.palette.background.paper,
             flexShrink: 0
