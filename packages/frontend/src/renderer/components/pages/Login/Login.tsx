@@ -411,9 +411,6 @@ export default function SignIn() {
           zIndex: 2
         }}>
           <ServerSelectButton 
-            selectedFileNames={[]} 
-            selectedFileInfo={[]} 
-            onShare={() => {}}
           />
         </Box>
       </Box>

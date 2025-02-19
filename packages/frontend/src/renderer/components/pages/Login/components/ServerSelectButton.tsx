@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Popover, Box, Typography, Stack, Tooltip } from '@mui/material';
 import { styled } from '@mui/material/styles';
-
+import { banbury } from '@banbury/core';
 
 const ServerButton = styled(Button)(() => ({
   width: '100%',
@@ -14,11 +14,11 @@ const ServerButton = styled(Button)(() => ({
 }));
 
 export default function ServerSelectButton() {
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const [isLocal, setIsLocal] = useState(!banbury.config.dev && !banbury.config.semi_local);
+
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation();
     setAnchorEl(event.currentTarget);
   };
 
@@ -26,10 +26,25 @@ export default function ServerSelectButton() {
     setAnchorEl(null);
   };
 
+  const handleLocalSelect = () => {
+    banbury.config.dev = false;
+    banbury.config.semi_local = false;
+    banbury.config.prod = false;
+    setIsLocal(true);
+    handleClose();
+  };
+
+  const handleProductionSelect = () => {
+    banbury.config.dev = true;
+    banbury.config.semi_local = false;
+    banbury.config.prod = false;
+    setIsLocal(false);
+    handleClose();
+  };
 
   return (
     <>
-      <Tooltip title="Server">
+      <Tooltip title="Server Settings">
         <Button
           onClick={handleClick}
           sx={{ 
@@ -67,33 +82,46 @@ export default function ServerSelectButton() {
         }}
         PaperProps={{
           sx: {
-            width: '300px',
+            width: '200px',
             backgroundColor: '#000000',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '12px',
             mt: 1,
             boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.3)',
-            '& .MuiTypography-root': {
-              color: '#ffffff',
-            },
           },
         }}
       >
         <Box sx={{ p: 1 }}>
           <Stack spacing={1}>
-                <ServerButton>
-                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: '20px', marginRight: '8px' }}>
-                    <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="white"/>
-                  </svg>
-                  <Typography fontSize="inherit">Local</Typography>
-                </ServerButton>
+            <ServerButton 
+              onClick={handleLocalSelect}
+              sx={{ 
+                backgroundColor: isLocal ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                '&:hover': {
+                  backgroundColor: isLocal ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.08)',
+                }
+              }}
+            >
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: '20px', marginRight: '8px' }}>
+                <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="white"/>
+              </svg>
+              <Typography fontSize="inherit" sx={{ color: 'white' }}>Local</Typography>
+            </ServerButton>
 
-                <ServerButton>
-                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: '20px', marginRight: '8px' }}>
-                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="white"/>
-                  </svg>
-                  <Typography fontSize="inherit">Production</Typography>
-                </ServerButton>
+            <ServerButton 
+              onClick={handleProductionSelect}
+              sx={{ 
+                backgroundColor: !isLocal ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                '&:hover': {
+                  backgroundColor: !isLocal ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.08)',
+                }
+              }}
+            >
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '20px', height: '20px', marginRight: '8px' }}>
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="white"/>
+              </svg>
+              <Typography fontSize="inherit" sx={{ color: 'white' }}>Production</Typography>
+            </ServerButton>
           </Stack>
         </Box>
       </Popover>
