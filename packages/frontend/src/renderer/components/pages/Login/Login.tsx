@@ -88,7 +88,7 @@ export default function SignIn() {
   // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [redirect_to_register, setredirect_to_register] = useState(false);
-  const { setUsername } = useAuth(); // Only destructure what you need
+  const { setUsername, username } = useAuth(); // Only destructure what you need
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
   const [showMain, setShowMain] = useState<boolean>(false);
@@ -133,6 +133,7 @@ export default function SignIn() {
           
           if (!hasCompletedOnboarding) {
             localStorage.setItem('pendingAuthEmail', email); // Store email temporarily
+            setUsername(email); // Set username in auth context
             setShowOnboarding(true);
           } else {
             setUsername(email);
@@ -201,6 +202,7 @@ export default function SignIn() {
                 
                 if (!hasCompletedOnboarding) {
                   localStorage.setItem('pendingAuthEmail', email);
+                  setUsername(email);
                   setShowOnboarding(true);
                 } else {
                   setUsername(email);
@@ -259,7 +261,10 @@ export default function SignIn() {
 
   // Render content based on state
   if (showOnboarding) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+    console.log("Showing onboarding with username from context:", username); // Debug log
+    return <Onboarding 
+      onComplete={handleOnboardingComplete} 
+    />;
   }
 
   if (isAuthenticated || showMain) {

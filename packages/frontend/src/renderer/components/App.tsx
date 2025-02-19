@@ -9,6 +9,7 @@ import './index.css';
 import { AlertProvider } from '../context/AlertContext';
 import { Alert } from '../../components/alert';
 import { useAlert } from '../context/AlertContext';
+import Onboarding from "./pages/Login/components/Onboarding";
 
 function AlertWrapper() {
   const { alert } = useAlert();
@@ -184,7 +185,7 @@ export default function App(): JSX.Element {
               }}
             >
               <main>
-                <Login />
+                 <Login /> 
               </main>
             </Box>
           </AuthProvider>
