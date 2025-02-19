@@ -79,7 +79,7 @@ const config = {
       meta: {
         'Content-Security-Policy': {
           'http-equiv': 'Content-Security-Policy',
-          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:*; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';"
+          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:* http://*.banbury.io https://*.banbury.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:* http://*.banbury.io https://*.banbury.io ws://*.banbury.io wss://*.banbury.io;"
         }
       }
     }),

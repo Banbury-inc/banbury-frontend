@@ -106,7 +106,6 @@ async function createWindow(): Promise<void> {
     width: 1366,
     height: 768,
     frame: false,
-    // backgroundColor: "#23272a",
     backgroundColor: "rgb(33, 33, 33)",
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 12 },
@@ -114,8 +113,25 @@ async function createWindow(): Promise<void> {
       nodeIntegration: true,
       contextIsolation: false,
       devTools: process.env.NODE_ENV !== "production",
-      // preload: path.join(__dirname, 'preload.ts')
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
+  });
+
+  // Set CSP headers
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self' http://localhost:* https://localhost:* http://0.0.0.0:* http://*.banbury.io https://*.banbury.io;",
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline';",
+          "style-src 'self' 'unsafe-inline';",
+          "img-src 'self' data: https: http:;",
+          "connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* http://0.0.0.0:* ws://0.0.0.0:* http://*.banbury.io https://*.banbury.io ws://*.banbury.io wss://*.banbury.io;"
+        ].join(' ')
+      }
+    });
   });
 
   if (process.env.NODE_ENV === "development") {
