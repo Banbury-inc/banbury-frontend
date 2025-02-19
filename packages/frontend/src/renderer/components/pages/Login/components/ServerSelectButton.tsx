@@ -35,9 +35,9 @@ export default function ServerSelectButton() {
   };
 
   const handleProductionSelect = () => {
-    banbury.config.dev = true;
+    banbury.config.dev = false;
     banbury.config.semi_local = false;
-    banbury.config.prod = false;
+    banbury.config.prod = true;
     setIsLocal(false);
     handleClose();
   };

@@ -1,10 +1,12 @@
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import { banbury } from '..'
 import { CONFIG } from '../config';
 import { addDownloadsInfo } from './add_downloads_info';
 import { addUploadsInfo } from './add_uploads_info';
+import { get_device_id } from './get_device_id';
+import { getDeviceInfo } from './deviceInfo';
+import banbury from '..';
 
 // Add state all file chunks with a reset function
 let accumulatedData: Buffer[] = [];
@@ -279,8 +281,12 @@ export async function createWebSocketConnection(
 
   let socket: WebSocket;
 
-  const url_ws = CONFIG.url_ws;
-  const device_id = await banbury.device.getDeviceId(username);
+  const url_ws = banbury.config.url_ws;
+        
+  const device_id = await get_device_id(username);
+  console.log("Device ID:", device_id);
+  console.log("Using WebSocket URL:", url_ws);
+  // Ensure device_id is properly encoded and add slash after base URL
   const entire_url_ws = `${url_ws}${device_id}/`;
   // Replace the URL with your WebSocket endpoint
   socket = new WebSocketClient(entire_url_ws);
@@ -494,7 +500,7 @@ export async function createWebSocketConnection(
         }
 
         if (data.request_type === 'device_info') {
-          const device_info = await banbury.device.getDeviceInfo();
+          const device_info = await getDeviceInfo();
           const message = {
             message: `device_info_response`,
             username: username,
@@ -557,7 +563,7 @@ export async function download_request(username: string, file_name: string, file
 
   console.log("Updated taskInfo:", taskInfo);
 
-  const requesting_device_id = await banbury.device.getDeviceId(username);
+  const requesting_device_id = await get_device_id(username);
   const sending_device_id = fileInfo[0]?.device_id;
 
   // Create unique transfer room name
@@ -677,18 +683,18 @@ const taskInfo: TaskInfo = {
 };
 
 
-export function connect(
+export async function connect(
   username: string,
-  tasks: any[],
+  tasks: any[] | null,
   setTasks: (tasks: any[]) => void,
-  setTaskbox_expanded: (expanded: boolean) => void,
+  setTaskbox_expanded: (expanded: boolean) => void
 ): Promise<WebSocket> {
   return new Promise((resolve) => {
     createWebSocketConnection(
       username,
       device_name,
       taskInfo,
-      tasks,
+      tasks || [],
       setTasks,
       setTaskbox_expanded,
       (socket) => {

@@ -1,4 +1,4 @@
-import { download_request, connect } from './connect';
+
 
 export * from './deviceInfo'
 export * from './connect'
@@ -20,10 +20,10 @@ export * from './update_scan_progress'
 export * from './scanFolder'
 export * from './fetchDeviceData'
 export * from './remove_file_from_sync'
+export * from './get_device_id'
+export * from './deviceInfo'
+export * from './connect'
+export * from './scanFilesystem'
+export * from './declare_online'
+export * from './declare_offline'
 
-
-
-export const device = {
-    connect,
-    download_request,
-};

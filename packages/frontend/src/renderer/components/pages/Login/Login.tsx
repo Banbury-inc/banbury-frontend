@@ -36,6 +36,13 @@ interface Message {
   content: string;
 }
 
+interface LoginResponse {
+  result: string;
+  token: string;
+  username: string;
+  deviceId?: string;
+}
+
 process.on('uncaughtException', (err: Error & { code?: string }) => {
   switch (err.code) {
     case 'ECONNREFUSED':
@@ -127,17 +134,19 @@ export default function SignIn() {
 
       if (email && password) {
         const result = await send_login_request(email, password);
-        if (result === 'login success') {
+        if (result?.success && result.deviceId) {
           // Check if this is the user's first login
           const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
           
           if (!hasCompletedOnboarding) {
-            localStorage.setItem('pendingAuthEmail', email); // Store email temporarily
-            setUsername(email); // Set username in auth context
+            localStorage.setItem('pendingAuthEmail', email);
+            localStorage.setItem('deviceId', result.deviceId);
+            setUsername(email);
             setShowOnboarding(true);
           } else {
             setUsername(email);
             localStorage.setItem('authToken', email);
+            localStorage.setItem('deviceId', result.deviceId);
             setIsAuthenticated(true);
             setShowMain(true);
           }
@@ -155,28 +164,28 @@ export default function SignIn() {
 
   async function send_login_request(username: string, password: string) {
     try {
-      const response = await axios.get<{
-        result: string;
-        token: string;
-        username: string;
-        // }>(CONFIG.url + 'getuserinfo2/' + username + '/');
-      }>(banbury.config.url + '/authentication/getuserinfo4/' + username + '/' + password + '/');
-      // }>(CONFIG.url + 'getuserinfo/');
+      console.log(banbury.config.url);
+      const response = await axios.get<LoginResponse>(
+        banbury.config.url + '/authentication/getuserinfo4/' + username + '/' + password + '/'
+      );
+      
+      console.log("Login response:", response.data);
+      
       const result = response.data.result;
       if (result === 'success') {
         console.log("login success");
-        return 'login success';
+        // Generate a device ID if not provided by server
+        const deviceId = response.data.deviceId || `${username}-${os.hostname()}`;
+        return {
+          success: true,
+          deviceId
+        };
       }
-      if (result === 'fail') {
-        console.log("login failed");
-        return 'login failed';
-      }
-      else {
-        console.log("login failed");
-        return 'login failed';
-      }
+      console.log("Login failed with result:", result);
+      return { success: false };
     } catch (error) {
       console.error('Error fetching data:', error);
+      return { success: false };
     }
   }
 
@@ -196,17 +205,22 @@ export default function SignIn() {
             try {
               const response = await axios.get(`${banbury.config.url}/authentication/auth/callback?code=${code}`);
               if (response.data.success) {
-                console.log(response)
                 const email = response.data.user.email;
+                // Get device ID from the response if available
+                console.log(response.data)
+                const deviceId = response.data.user.deviceId;
+                
                 const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
                 
                 if (!hasCompletedOnboarding) {
                   localStorage.setItem('pendingAuthEmail', email);
+                  localStorage.setItem('deviceId', deviceId);
                   setUsername(email);
                   setShowOnboarding(true);
                 } else {
                   setUsername(email);
                   localStorage.setItem('authToken', email);
+                  localStorage.setItem('deviceId', deviceId);
                   setIsAuthenticated(true);
                   setShowMain(true);
                 }

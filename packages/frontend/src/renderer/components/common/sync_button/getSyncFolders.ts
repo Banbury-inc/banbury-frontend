@@ -1,4 +1,4 @@
-import { banbury } from "@banbury/core";
+import banbury from '@banbury/core';
 
 export const getSyncFolders = async (devices: any[], username: string) => {
     try {
@@ -6,7 +6,7 @@ export const getSyncFolders = async (devices: any[], username: string) => {
             throw new Error('Invalid devices array provided');
         }
 
-        const deviceId = await banbury.device.getDeviceId(username || 'default');
+        const deviceId = await banbury.device.get_device_id(username || 'default');
         if (!deviceId) {
             throw new Error('Failed to retrieve device ID');
         }

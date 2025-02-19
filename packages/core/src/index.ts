@@ -1,4 +1,4 @@
-import * as device from './device/deviceInfo';
+import * as device from './device';
 import * as handlers from './handlers';
 import * as networking from './networking';
 import * as sessions from './sessions';

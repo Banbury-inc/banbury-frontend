@@ -1,9 +1,9 @@
 import axios from "axios";
 import { CONFIG } from "../config";
-import { banbury } from '..'
+import banbury from '..';
 
 // Function to get total requests processed
-export async function getDeviceId(username: string | undefined): Promise<any | null> {
+export async function get_device_id(username: string | undefined): Promise<any | null> {
 
 
   const device_name = banbury.device.name();
