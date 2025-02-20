@@ -33,7 +33,7 @@ export const config: Config = {
   run_device_info_loop: true,
   run_device_predictions_loop: true,
   prod: false,
-  dev: false,
+  dev: true,
   semi_local: false,
   get local_api_url() {
     return 'http://localhost:8080/';

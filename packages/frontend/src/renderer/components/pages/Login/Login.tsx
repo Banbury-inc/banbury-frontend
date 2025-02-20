@@ -28,7 +28,6 @@ import { shell } from 'electron';
 import http from 'http';
 import path from 'path';
 import banbury from '@banbury/core';
-import ServerSelectButton from './components/ServerSelectButton';
 import Onboarding from './components/Onboarding';
 
 interface Message {
@@ -442,11 +441,10 @@ export default function SignIn() {
           right: 16, 
           zIndex: 2
         }}>
-          <ServerSelectButton 
-          />
-        </Box>
+      </Box>
       </Box>
     </ThemeProvider>
+
   );
 }
 
