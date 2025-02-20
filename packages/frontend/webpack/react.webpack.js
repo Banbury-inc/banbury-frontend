@@ -50,7 +50,7 @@ const config = {
       publicPath: "/",
     },
     headers: {
-      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:* http://*.banbury.io https://*.banbury.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:* http://*.banbury.io https://*.banbury.io ws://*.banbury.io wss://*.banbury.io;",
+      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' *; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;",
       'Access-Control-Allow-Origin': '*'
     },
     port: 8081,
@@ -79,7 +79,7 @@ const config = {
       meta: {
         'Content-Security-Policy': {
           'http-equiv': 'Content-Security-Policy',
-          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* ws://localhost:* http://*.banbury.io https://*.banbury.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:* http://*.banbury.io https://*.banbury.io ws://*.banbury.io wss://*.banbury.io;"
+          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' *; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
         }
       }
     }),
