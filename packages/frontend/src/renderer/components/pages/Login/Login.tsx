@@ -18,17 +18,13 @@ import theme from "../../../theme";
 import Main from "../../main";
 import Register from "../Register";
 import { useAuth } from '../../../context/AuthContext';
-import fs from 'fs';
-import dotenv from 'dotenv';
-import os from 'os';
-import ConfigParser from 'configparser';
-import { handlers } from '../../../handlers';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { shell } from 'electron';
-import http from 'http';
 import path from 'path';
 import banbury from '@banbury/core';
 import Onboarding from './components/Onboarding';
+import http from 'http';
+import os from 'os';
 
 interface Message {
   type: string;
@@ -67,26 +63,6 @@ function Copyright(props: any) {
       {'.'}
     </Typography>
   );
-}
-
-
-
-dotenv.config();
-
-
-
-const homeDirectory = os.homedir();
-const BANBURY_FOLDER = path.join(homeDirectory, '.banbury');
-const CONFIG_FILE = path.join(BANBURY_FOLDER, '.banbury_config.ini');
-
-if (!fs.existsSync(BANBURY_FOLDER)) {
-  fs.mkdirSync(BANBURY_FOLDER);
-}
-
-if (!fs.existsSync(CONFIG_FILE)) {
-  const config = new ConfigParser();
-  config.set('banbury_cloud', 'credentials_file', 'credentials.json');
-  fs.writeFileSync(CONFIG_FILE, config.toString());
 }
 
 
@@ -163,17 +139,15 @@ export default function SignIn() {
 
   async function send_login_request(username: string, password: string) {
     try {
-      console.log(banbury.config.url);
-      const response = await axios.get<LoginResponse>(
-        banbury.config.url + '/authentication/getuserinfo4/' + username + '/' + password + '/'
-      );
+      const url = `${banbury.config.url}/authentication/getuserinfo4/${username}/${password}`;
+      console.log('Making login request to:', url);
       
-      console.log("Login response:", response.data);
+      const response = await axios.get<LoginResponse>(url);
+      console.log('Response:', response.data);
       
       const result = response.data.result;
       if (result === 'success') {
-        console.log("login success");
-        // Generate a device ID if not provided by server
+        console.log("Login success");
         const deviceId = response.data.deviceId || `${username}-${os.hostname()}`;
         return {
           success: true,
@@ -183,7 +157,17 @@ export default function SignIn() {
       console.log("Login failed with result:", result);
       return { success: false };
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error during login:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Network error details:', {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data,
+          status: error.response?.status,
+          url: error.config?.url
+        });
+        setserver_offline(true);
+      }
       return { success: false };
     }
   }
@@ -192,7 +176,7 @@ export default function SignIn() {
     setLoading(true);
     try {
       // Create HTTP server before initiating OAuth flow
-      const server = http.createServer(async (req, res) => {
+      const server = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
         // Set CORS headers
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');

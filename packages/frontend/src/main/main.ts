@@ -113,7 +113,7 @@ async function createWindow(): Promise<void> {
       nodeIntegration: true,
       contextIsolation: false,
       devTools: process.env.NODE_ENV !== "production",
-      webSecurity: true,
+      webSecurity: false,
       allowRunningInsecureContent: true,
       webgl: true,
     },
