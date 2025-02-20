@@ -12,6 +12,7 @@ import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import Files from './pages/Files/Files';
 import Friends from './pages/Friends/Friends';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Devices from './pages/Devices';
 import Settings from './pages/Settings/Settings';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
@@ -45,7 +46,6 @@ import MenuItem from '@mui/material/MenuItem';
 import { getDownloadsInfo } from '@banbury/core/src/device/add_downloads_info';
 import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
 import AI from './pages/AI/AI';
-import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 
 const drawerWidth = 240;  // Change the width as needed
 
@@ -407,7 +407,7 @@ export default function PermanentDrawerLeft() {
                         {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
                         {text === 'Sync' && <CloudOutlinedIcon fontSize='inherit' />}
                         {text === 'Shared' && <FolderSharedOutlinedIcon fontSize='inherit' />}
-                        {text === 'AI' && < ChatOutlinedIcon fontSize='inherit' />}
+                        {text === 'AI' && < AutoAwesomeIcon fontSize='inherit' />}
                         {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
                         {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
                       </Button>
