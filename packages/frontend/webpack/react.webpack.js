@@ -50,7 +50,7 @@ const config = {
       publicPath: "/",
     },
     headers: {
-      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' *; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;",
+      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;",
       'Access-Control-Allow-Origin': '*'
     },
     port: 8081,
@@ -79,7 +79,7 @@ const config = {
       meta: {
         'Content-Security-Policy': {
           'http-equiv': 'Content-Security-Policy',
-          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' *; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
+          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
         }
       }
     }),
