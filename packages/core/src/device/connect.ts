@@ -802,7 +802,7 @@ export async function createWebSocketConnection(
           console.log('Received file sync request:', syncRequest);
 
           if (!syncRequest.download_queue || !Array.isArray(syncRequest.download_queue)) {
-            console.log('There are no files to sync right now')
+            console.log('There are no files to sync right now');
             return;
           }
 
@@ -840,6 +840,43 @@ export async function createWebSocketConnection(
             }));
           } catch (error) {
             console.error('Error sending sync completion acknowledgment:', error);
+          }
+        } else if (data.type === "file_sent_successfully" || data.message === "File sent successfully") {
+          console.log("File transfer complete, saving file:", data.file_name);
+          try {
+            const result = saveFile(data.file_name, data.file_path || '');
+            console.log("File saved successfully:", result);
+
+            // Send completion confirmation
+            const final_message = {
+              message_type: 'file_transaction_complete',
+              username: username,
+              requesting_device_name: device_name,
+              sending_device_name: data.sending_device_name,
+              file_name: data.file_name,
+              file_path: data.file_path
+            };
+            socket.send(JSON.stringify(final_message));
+            console.log("Sent completion confirmation:", final_message);
+
+            // Update task status if available
+            if (tasks && setTasks) {
+              const updatedTasks = tasks.map((task: any) =>
+                task.file_name === data.file_name
+                  ? { ...task, status: 'complete' }
+                  : task
+              );
+              setTasks(updatedTasks);
+            }
+          } catch (error) {
+            console.error('Error saving file:', error);
+            handleTransferError(
+              'save_error',
+              data.file_name,
+              tasks,
+              setTasks,
+              setTaskbox_expanded
+            );
           }
         }
 
