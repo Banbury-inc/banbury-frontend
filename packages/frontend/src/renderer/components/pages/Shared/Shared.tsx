@@ -62,11 +62,13 @@ function EnhancedTableHead(props: EnhancedTableProps) {
       <TableRow>
         <TableCell
           padding="checkbox"
+          size='small'
           sx={{
             backgroundColor: 'background.paper',
           }}
         >
           <Checkbox
+            size='small'
             color="primary"
             indeterminate={numSelected > 0 && numSelected < rowCount}
             checked={rowCount > 0 && numSelected === rowCount}
@@ -497,7 +499,7 @@ export default function Shared() {
                     <TableBody>
                       {Array.from(new Array(rowsPerPage)).map((_, index) => (
                         <TableRow key={`skeleton-${index}`}>
-                          <TableCell padding="checkbox">
+                          <TableCell padding="checkbox" size='small'>
                             <Skeleton variant="rectangular" width={24} height={24} />
                           </TableCell>
                           <TableCell>
@@ -573,9 +575,10 @@ export default function Shared() {
                               onMouseEnter={() => setHoveredRowId(row._id as string)}
                               onMouseLeave={() => setHoveredRowId(null)}
                             >
-                              <TableCell sx={{ borderBottomColor: '#424242' }} padding="checkbox">
+                              <TableCell sx={{ borderBottomColor: '#424242' }} padding="checkbox" size='small'>
                                 {hoveredRowId === row._id || isItemSelected ? (
                                   <Checkbox
+                                    size='small'
                                     color="primary"
                                     checked={isItemSelected}
                                     inputProps={{ 'aria-labelledby': labelId }}
