@@ -55,13 +55,13 @@ export class OllamaService {
         const arch = os.arch();
 
         // Define the latest version - you might want to make this configurable
-        const version = '0.1.27';
+        const version = '0.5.13';
 
         switch (platform) {
             case 'darwin':
                 return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-darwin-${arch}`;
             case 'linux':
-                return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-${arch}`;
+                return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-arm64.tgz`;
             case 'win32':
                 return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-windows-${arch}.exe`;
             default:
