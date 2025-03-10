@@ -46,7 +46,17 @@ function registerIpcHandlers() {
   ipcMain.handle('download-ollama-model', async (_event, modelName: string) => {
     try {
       if (!ollamaService) {
-        throw new Error('Ollama service is not initialized');
+        return {
+          success: false,
+          error: 'Ollama service is not initialized. Please restart the application and try again.'
+        };
+      }
+
+      if (!modelName) {
+        return {
+          success: false,
+          error: 'Model name is required'
+        };
       }
 
       await ollamaService.downloadModel(modelName, (progress) => {
