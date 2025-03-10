@@ -49,7 +49,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = ({ onClose, onMinimize, onMaximi
       borderBottom: '1px solid #424242',
       display: 'flex',
       alignItems: 'center',
-      zIndex: 9000,
+      zIndex: 1001,
       justifyContent: isMac ? 'flex-start' : 'space-between',
       '-webkit-app-region': 'drag' as const,
     }}>

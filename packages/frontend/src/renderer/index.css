@@ -11,7 +11,7 @@
     justify-content: center;
     pointer-events: auto;
     position: relative;
-    z-index: 10000;
+    z-index: 1002;
     padding: 0;
     margin: 0;
 }

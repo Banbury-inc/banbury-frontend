@@ -277,7 +277,7 @@ export default function PermanentDrawerLeft() {
     <Box sx={{ display: 'flex', height: '100vh' }}>
       <Stack>
         <Box>
-          <Stack direction="row" paddingLeft={10}>
+          <Stack direction="row" paddingLeft={10} className="no-drag" sx={{ pointerEvents: 'auto' }}>
             <Tooltip title="Navigate back">
               <Button
                 onClick={() =>
@@ -357,12 +357,15 @@ export default function PermanentDrawerLeft() {
               <Stack
                 direction="row"
                 spacing={1}
+                className="no-drag"
                 sx={{
                   pt: 1,
                   pr: isMac ? 2 : 20,
                   position: 'absolute',
                   right: 0,
                   top: 0,
+                  zIndex: 1002,
+                  pointerEvents: 'auto',
                 }}
               >
                 <UploadProgress uploads={uploads} />
