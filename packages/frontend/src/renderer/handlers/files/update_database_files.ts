@@ -17,10 +17,6 @@ export async function update_database_files(username: string) {
     result = await handlers.files.get_snapshot();
     if (result !== 'success') throw new Error('Failed to get snapshot');
 
-    // Compare the snapshots
-    result = await handlers.files.compare_snapshots();
-    if (result !== 'success') throw new Error('Failed to compare snapshots');
-
     const bcloudDirectory = path.join(os.homedir(), 'BCloud');
     const snapshotComparisonPath = path.join(bcloudDirectory, 'comparison_result.json');
 
