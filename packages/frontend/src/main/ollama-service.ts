@@ -61,7 +61,7 @@ export class OllamaService {
             case 'darwin':
                 return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-darwin-${arch}`;
             case 'linux':
-                return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-arm64.tgz`;
+                return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-${arch}`;
             case 'win32':
                 return `https://github.com/ollama/ollama/releases/download/v${version}/ollama-windows-${arch}.exe`;
             default:
@@ -71,6 +71,10 @@ export class OllamaService {
 
     private getBinaryPath(): string {
         const platform = os.platform();
+        if (platform === 'linux') {
+            // Assuming the binary is installed in /usr/local/bin after using the curl command
+            return '/usr/local/bin/ollama';
+        }
         const binaryName = platform === 'win32' ? 'ollama.exe' : 'ollama';
         return path.join(this.ollamaPath, binaryName);
     }
@@ -109,6 +113,14 @@ export class OllamaService {
     }
 
     private async downloadOllama(): Promise<void> {
+        const platform = os.platform();
+        
+        if (platform === 'linux') {
+            console.log('Installing Ollama on Linux using official install script...');
+            await this.installOllamaLinux();
+            return;
+        }
+
         const binaryPath = this.getBinaryPath();
         const downloadUrl = this.getOllamaBinaryUrl();
 
@@ -611,5 +623,23 @@ export class OllamaService {
 
     public async setSelectedModel(modelName: string): Promise<void> {
         await this.saveConfig({ selectedModel: modelName });
+    }
+
+    private async installOllamaLinux(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const installCommand = 'curl -fsSL https://ollama.com/install.sh | sh';
+            exec(installCommand, (error, stdout, stderr) => {
+                if (error) {
+                    this.sendError('Installation Error', `Failed to install Ollama: ${error.message}`);
+                    reject(error);
+                    return;
+                }
+                console.log('Ollama installation output:', stdout);
+                if (stderr) {
+                    console.warn('Installation warnings:', stderr);
+                }
+                resolve();
+            });
+        });
     }
 } 
