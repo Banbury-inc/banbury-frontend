@@ -242,7 +242,35 @@ test('notifications button is clickable and opens popover', async () => {
   }
 });
 
+test('navigate back button navigates back', async () => {
+});
+
+
+test('navigate forward button navigates fordward', async () => {
+});
+
+test('account button is clickable and opens popover', async () => {
+});
+
+test('share button is clickable and opens popover', async () => {
+});
+
+
+
+test('change view button is clickable and opens popover', async () => {
+});
+
 test('download button downloads a file', async () => {
 });
+
+
+test('upload button uploads a file', async () => {
+});
+
+
+test('delete button deletes a file', async () => {
+});
+
+
 
 
