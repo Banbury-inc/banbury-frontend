@@ -249,6 +249,11 @@ test('navigate back button navigates back', async () => {
 test('navigate forward button navigates fordward', async () => {
 });
 
+
+test('can add and delete tabs', async () => {
+});
+
+
 test('account button is clickable and opens popover', async () => {
 });
 
