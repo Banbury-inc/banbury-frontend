@@ -233,13 +233,6 @@ test('notifications button is clickable and opens popover', async () => {
     const subMessage = popover.getByText("No new notifications");
     await expect(subMessage).toBeVisible({ timeout: 10000 });
 
-    // Note: We could add more test cases here for:
-    // 1. Testing with notifications present
-    // 2. Testing mark all as read functionality
-    // 3. Testing delete all functionality
-    // 4. Testing individual notification actions
-    // But those would require setting up test data first
-
   } finally {
     if (electronApp) {
       const windows = await electronApp.windows();
@@ -249,5 +242,7 @@ test('notifications button is clickable and opens popover', async () => {
   }
 });
 
+test('download button downloads a file', async () => {
+});
 
 
