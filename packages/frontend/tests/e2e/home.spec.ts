@@ -192,3 +192,62 @@ test(' upload progress button is clickable and opens popover', async () => {
 });
 
 
+test('notifications button is clickable and opens popover', async () => {
+  let electronApp;
+  try {
+    const electronPath = path.resolve(__dirname, '../../');
+    
+    electronApp = await electron.launch({ 
+      args: [electronPath],
+      timeout: 180000,
+      env: {
+        ...process.env,
+        NODE_ENV: 'development',
+        DEBUG: 'electron*,playwright*'
+      }
+    });
+
+    const window = await electronApp.firstWindow();
+    await window.waitForLoadState('domcontentloaded');
+    await window.waitForLoadState('networkidle');
+
+    // Find and click the notifications button
+    const notificationsButton = window.locator('[data-testid="notifications-button"]');
+    await expect(notificationsButton).toBeVisible({ timeout: 10000 });
+    await expect(notificationsButton).toBeEnabled({ timeout: 10000 });
+    
+    // Click the button
+    await notificationsButton.click();
+
+    // Verify the popover appears
+    const popover = window.locator('div[role="presentation"].MuiPopover-root');
+    await expect(popover).toBeVisible({ timeout: 10000 });
+    
+    // Verify popover title
+    const popoverTitle = popover.getByRole('heading', { name: 'Notifications' });
+    await expect(popoverTitle).toBeVisible({ timeout: 10000 });
+
+    // Verify empty state message when no notifications
+    const emptyMessage = popover.getByText("You're all caught up!");
+    await expect(emptyMessage).toBeVisible({ timeout: 10000 });
+    const subMessage = popover.getByText("No new notifications");
+    await expect(subMessage).toBeVisible({ timeout: 10000 });
+
+    // Note: We could add more test cases here for:
+    // 1. Testing with notifications present
+    // 2. Testing mark all as read functionality
+    // 3. Testing delete all functionality
+    // 4. Testing individual notification actions
+    // But those would require setting up test data first
+
+  } finally {
+    if (electronApp) {
+      const windows = await electronApp.windows();
+      await Promise.all(windows.map(win => win.close()));
+      await electronApp.close();
+    }
+  }
+});
+
+
+
