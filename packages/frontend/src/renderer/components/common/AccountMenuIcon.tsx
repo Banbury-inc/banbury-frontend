@@ -45,6 +45,8 @@ export default function AccountMenuIcon() {
     handleClose();
   }, [navigate]);
 
+
+
   return (
     <React.Fragment>
       <Box sx={{ zIndex: 9999, mr: '20px', pr: '10px', pb: '2px', display: 'flex', alignItems: 'center', textAlign: 'center' }}>

@@ -8,6 +8,82 @@ import { get_device_id } from './get_device_id';
 import { getDeviceInfo } from './deviceInfo';
 import banbury from '..';
 
+// Connection stabilization configuration
+const CONNECTION_CONFIG = {
+  RECONNECT_DELAY: 5000,         // 5 seconds between reconnection attempts
+  MAX_RECONNECT_ATTEMPTS: 3,     // Maximum number of rapid reconnection attempts
+  BACKOFF_MULTIPLIER: 1.5,       // Exponential backoff multiplier
+  MAX_BACKOFF_DELAY: 60000,      // Maximum backoff delay (1 minute)
+  STABILIZATION_PERIOD: 30000,   // Time window to track connection attempts (30 seconds)
+};
+
+// Connection manager to handle connection stability
+class ConnectionManager {
+  private static instance: ConnectionManager;
+  private connectionAttempts: { timestamp: number; success: boolean }[] = [];
+  private lastConnectionTime: number = 0;
+  private currentBackoffDelay: number = CONNECTION_CONFIG.RECONNECT_DELAY;
+
+  private constructor() {}
+
+  static getInstance(): ConnectionManager {
+    if (!ConnectionManager.instance) {
+      ConnectionManager.instance = new ConnectionManager();
+    }
+    return ConnectionManager.instance;
+  }
+
+  async shouldAttemptConnection(): Promise<boolean> {
+    const now = Date.now();
+    
+    // Clean up old connection attempts outside the stabilization period
+    this.connectionAttempts = this.connectionAttempts.filter(
+      attempt => now - attempt.timestamp < CONNECTION_CONFIG.STABILIZATION_PERIOD
+    );
+
+    // Count recent connection attempts
+    const recentAttempts = this.connectionAttempts.length;
+    
+    if (recentAttempts >= CONNECTION_CONFIG.MAX_RECONNECT_ATTEMPTS) {
+      console.log(`Too many connection attempts (${recentAttempts}) in the last ${CONNECTION_CONFIG.STABILIZATION_PERIOD}ms`);
+      
+      // Calculate and apply exponential backoff
+      this.currentBackoffDelay = Math.min(
+        this.currentBackoffDelay * CONNECTION_CONFIG.BACKOFF_MULTIPLIER,
+        CONNECTION_CONFIG.MAX_BACKOFF_DELAY
+      );
+      
+      console.log(`Applying backoff delay: ${this.currentBackoffDelay}ms`);
+      await new Promise(resolve => setTimeout(resolve, this.currentBackoffDelay));
+      
+      // Reset connection attempts after backoff
+      this.connectionAttempts = [];
+      return true;
+    }
+
+    // Check if we're attempting to reconnect too quickly
+    const timeSinceLastConnection = now - this.lastConnectionTime;
+    if (timeSinceLastConnection < CONNECTION_CONFIG.RECONNECT_DELAY) {
+      console.log('Reconnecting too quickly, adding delay...');
+      await new Promise(resolve => setTimeout(resolve, CONNECTION_CONFIG.RECONNECT_DELAY - timeSinceLastConnection));
+    }
+
+    return true;
+  }
+
+  recordConnectionAttempt(success: boolean) {
+    const now = Date.now();
+    this.connectionAttempts.push({ timestamp: now, success });
+    this.lastConnectionTime = now;
+
+    // Reset backoff delay on successful connection
+    if (success) {
+      this.currentBackoffDelay = CONNECTION_CONFIG.RECONNECT_DELAY;
+      this.connectionAttempts = [];
+    }
+  }
+}
+
 // Add state all file chunks with a reset function
 let accumulatedData: Buffer[] = [];
 
@@ -654,6 +730,10 @@ export async function createWebSocketConnection(
     const cleanDeviceId = encodeURIComponent(String(device_id).replace(/\s+/g, ''));
     const entire_url_ws = `${url_ws}${cleanDeviceId}/`.replace(/([^:]\/)\/+/g, "$1");
 
+    // Check if we should attempt connection using ConnectionManager
+    const connectionManager = ConnectionManager.getInstance();
+    await connectionManager.shouldAttemptConnection();
+
     console.log(`Attempting to connect to WebSocket at ${entire_url_ws}`, {
       timestamp: new Date().toISOString(),
       attempt: reconnectAttempt
@@ -676,6 +756,7 @@ export async function createWebSocketConnection(
         socket.close(1006, 'Connection timeout');
         clearTimeout(lockTimeout);
         releaseConnectionLock();
+        connectionManager.recordConnectionAttempt(false);
       }
     }, RECONNECT_CONFIG.connectionTimeout);
 
@@ -686,6 +767,7 @@ export async function createWebSocketConnection(
         clearTimeout(lockTimeout);
         connectionLock = false;
         updateConnectionState(CONNECTION_STATES.CONNECTED);
+        connectionManager.recordConnectionAttempt(true);
         
         console.log('WebSocket connection established', {
           timestamp: new Date().toISOString(),
@@ -710,6 +792,7 @@ export async function createWebSocketConnection(
         callback(socket);
       } catch (error) {
         console.error('Error in onopen handler:', error);
+        connectionManager.recordConnectionAttempt(false);
         recordFailure(error);
       }
     };
@@ -738,6 +821,9 @@ export async function createWebSocketConnection(
         
         console.log('WebSocket connection closed:', closeInfo);
 
+        // Record connection attempt result
+        connectionManager.recordConnectionAttempt(event.wasClean);
+
         // Handle different close scenarios
         if (!shutdownInProgress) {
           if (event.code === 1000 || event.code === 1001) {
@@ -747,7 +833,9 @@ export async function createWebSocketConnection(
             // Abnormal closure - attempt reconnect with backoff
             updateConnectionState(CONNECTION_STATES.RECONNECTING);
             if (canAttemptConnection()) {
-              reconnectTimer = setTimeout(() => {
+              reconnectTimer = setTimeout(async () => {
+                // Check if we should attempt reconnection
+                await connectionManager.shouldAttemptConnection();
                 attemptReconnect(
                   username,
                   device_name,
