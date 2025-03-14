@@ -155,6 +155,6 @@ export async function scanFilesystem(username: string): Promise<string> {
     await update_scan_progress(username, 100);
     return 'success';
   } catch (error) {
-    return 'failed, error: ' + error;
+    return 'failed, ' + error;
   }
 }

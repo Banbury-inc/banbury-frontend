@@ -203,7 +203,7 @@ describe('scanFilesystem', () => {
     
     const result = await scanFilesystem(mockUsername);
     
-    expect(result).toBe('failed');
+    expect(result).toBe('failed, Error: Permission denied');
   });
 
   it('should send files in batches of 1000', async () => {
