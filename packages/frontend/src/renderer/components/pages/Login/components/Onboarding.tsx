@@ -209,57 +209,59 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <StyledContainer maxWidth={false}>
-      <ContentWrapper>
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ width: '100%' }}>
-          {steps.map((step) => (
-            <Step key={step.label}>
-              <StepLabel>{step.label}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+    <div data-testid="onboarding-component">
+      <StyledContainer maxWidth={false}>
+        <ContentWrapper>
+          <Stepper activeStep={activeStep} alternativeLabel sx={{ width: '100%' }}>
+            {steps.map((step) => (
+              <Step key={step.label}>
+                <StepLabel>{step.label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
 
-        <Box sx={{ textAlign: 'center', width: '100%', maxWidth: 500 }}>
-          <Typography variant="h4" gutterBottom>
-            {steps[activeStep].label}
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {steps[activeStep].description}
-          </Typography>
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-        </Box>
+          <Box sx={{ textAlign: 'center', width: '100%', maxWidth: 500 }}>
+            <Typography variant="h4" gutterBottom>
+              {steps[activeStep].label}
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {steps[activeStep].description}
+            </Typography>
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
+            )}
+          </Box>
 
-        <ButtonGroup>
-          <Button
-            disabled={activeStep === 0 || loading}
-            size="small"
-            onClick={handleBack}
-            sx={{ minWidth: 100 }}
-          >
-            Back
-          </Button>
-          
-          {renderActionButton()}
-          
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleNext}
-            disabled={loading}
-            sx={{ minWidth: 100 }}
-          >
-            {activeStep === steps.length - 1 
-              ? 'Finish' 
-              : activeStep === 0 
-                ? 'Next'
-                : 'Skip & Continue'}
-          </Button>
-        </ButtonGroup>
-      </ContentWrapper>
-    </StyledContainer>
+          <ButtonGroup>
+            <Button
+              disabled={activeStep === 0 || loading}
+              size="small"
+              onClick={handleBack}
+              sx={{ minWidth: 100 }}
+            >
+              Back
+            </Button>
+            
+            {renderActionButton()}
+            
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleNext}
+              disabled={loading}
+              sx={{ minWidth: 100 }}
+            >
+              {activeStep === steps.length - 1 
+                ? 'Finish' 
+                : activeStep === 0 
+                  ? 'Next'
+                  : 'Skip & Continue'}
+            </Button>
+          </ButtonGroup>
+        </ContentWrapper>
+      </StyledContainer>
+    </div>
   );
 } 
