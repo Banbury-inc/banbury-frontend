@@ -50,7 +50,7 @@ test.describe('Files tests', () => {
 
       if (needsOnboarding) {
         // Handle onboarding
-        const welcomeHeading = await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
+        await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
           timeout: 30000,
         });
 
