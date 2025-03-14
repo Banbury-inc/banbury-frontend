@@ -80,6 +80,12 @@ jobs:
       - name: Build the app
         run: npm run build
 
+      - name: Setup Chrome sandbox for Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo chown root:root /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
+
       - name: Run E2E Tests
         run: |
           cd packages/frontend
