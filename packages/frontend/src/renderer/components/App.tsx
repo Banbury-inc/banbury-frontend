@@ -40,7 +40,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = ({ onClose, onMinimize, onMaximi
       top: 0,
       left: 400,
       width: '100%',
-      height: '40px',
+      height: '38px',
       backgroundColor: '#212121',
       borderBottom: '1px solid #424242',
       display: 'flex',

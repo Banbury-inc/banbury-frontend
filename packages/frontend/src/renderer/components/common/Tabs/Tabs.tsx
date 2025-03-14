@@ -83,7 +83,7 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, 
       justify-between
       gap-2
       ${isActive 
-        ? 'text-white bg-[rgba(23,23,23)] border-t border-l border-r border-[rgba(23,23,23)] before:absolute before:top-0 before:left-0 before:right-0 before:h-[0px] before:bg-white' 
+        ? 'text-white bg-[#171717] border-t border-l border-r border-[#2a2a2a] before:absolute before:top-0 before:left-0 before:right-0 before:h-[0px] before:bg-white' 
         : 'text-white/70 hover:bg-[#2a2a2a] hover:h-7 hover:rounded-[5px_5px_5px_5px]'
       }
       hover:text-white 

@@ -312,7 +312,7 @@ export default function PermanentDrawerLeft() {
                 <NavigateNextOutlinedIcon fontSize="inherit" />
               </Button>
             </Tooltip>
-            <div className="flex justify-between items-center h-8 bg-[#2a2a2a] border-b border-black">
+            <div className="flex justify-between items-center h-8 bg-[#1e1e1e] border-b border-[#2a2a2a]">
               <style>
                 {`
                   .no-drag {
