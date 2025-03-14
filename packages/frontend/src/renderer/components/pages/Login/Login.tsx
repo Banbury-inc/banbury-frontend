@@ -20,7 +20,6 @@ import Register from "../Register";
 import { useAuth } from '../../../context/AuthContext';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { shell } from 'electron';
-import path from 'path';
 import banbury from '@banbury/core';
 import Onboarding from './components/Onboarding';
 import http from 'http';

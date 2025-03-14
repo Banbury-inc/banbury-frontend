@@ -9,10 +9,9 @@ jest.mock('../../config', () => ({
 }));
 
 import { jest } from '@jest/globals';
-import fs, { Stats, Dirent } from 'fs';
+import fs, { Stats } from 'fs';
 import os from 'os';
 import path from 'path';
-import { DateTime } from 'luxon';
 import { scanFilesystem } from '../scanFilesystem';
 import { banbury } from '../..';
 import { CONFIG } from '../../config';
@@ -50,7 +49,6 @@ interface GetScannedFoldersSuccess {
   scanned_folders: string[];
 }
 
-type GetScannedFoldersResponse = GetScannedFoldersSuccess | 'failed' | 'exists' | 'task_add failed';
 
 // Create a mock Stats object that matches fs.Stats
 const createMockStats = () => ({

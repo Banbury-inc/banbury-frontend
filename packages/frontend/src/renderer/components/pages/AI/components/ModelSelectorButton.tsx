@@ -124,7 +124,6 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   const [downloadedModels, setDownloadedModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<{ [key: string]: string }>({});
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const open = Boolean(anchorEl);
@@ -171,10 +170,8 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
       setLoading(true);
       const response = await ollamaClient.listModels();
       setDownloadedModels(response.models.map(model => ({ ...model, isDownloaded: true })));
-      setError(null);
     } catch (error) {
       console.error('Failed to load models:', error);
-      setError('Failed to load models');
     } finally {
       setLoading(false);
     }
@@ -203,7 +200,6 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
 
   const handleDownloadModel = async (modelName: string) => {
     try {
-      setError(null);
       setDownloadProgress(prev => ({
         ...prev,
         [modelName]: 'Starting download...'
@@ -219,7 +215,6 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
           return newProgress;
         });
       } else {
-        setError(result.error || 'Download failed');
         setDownloadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[modelName];
@@ -228,7 +223,6 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
       }
     } catch (error) {
       console.error('Failed to download model:', error);
-      setError(error instanceof Error ? error.message : 'Download failed');
       setDownloadProgress(prev => {
         const newProgress = { ...prev };
         delete newProgress[modelName];

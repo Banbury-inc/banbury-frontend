@@ -16,7 +16,6 @@ import { banbury } from '@banbury/core';
 import { handlers } from '../../../../handlers';
 import path from 'path';
 import os from 'os';
-import axios from 'axios';
 
 interface OnboardingProps {
   onComplete: () => void;

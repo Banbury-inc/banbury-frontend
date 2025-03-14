@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import * as https from 'https';
 import { spawn, ChildProcess, exec } from 'child_process';
 import * as os from 'os';
-import * as crypto from 'crypto';
 import * as net from 'net';
 import axios from 'axios';
 
@@ -336,6 +335,7 @@ export class OllamaService {
                     return;
                 } catch (error) {
                     // Wait a bit before retrying
+                    console.error('Ollama API check failed:', error);
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
@@ -484,6 +484,7 @@ export class OllamaService {
                     throw new Error('Ollama service failed to start');
                 }
             } catch (error) {
+                console.error('Failed to restart Ollama:', error);
                 this.sendError('Service Error', 'Ollama service is not running and could not be started');
                 throw new Error('Ollama service is not running and could not be started');
             }

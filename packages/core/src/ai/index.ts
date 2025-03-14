@@ -27,8 +27,6 @@ export class OllamaClient {
      */
     async chat(messages: ChatMessage[], options: ChatOptions = {}) {
         const { model = this.defaultModel, temperature = 0.7, stream = false } = options;
-
-        try {
             if (stream) {
                 return await this.client.chat({
                     model,
@@ -54,21 +52,14 @@ export class OllamaClient {
                 });
                 return response;
             }
-        } catch (error) {
-            throw error;
-        }
     }
 
     /**
      * List available models
      */
     async listModels() {
-        try {
             const models = await this.client.list();
             return models;
-        } catch (error) {
-            throw error;
-        }
     }
 
     /**
@@ -77,7 +68,6 @@ export class OllamaClient {
     async generate(prompt: string, options: ChatOptions = {}) {
         const { model = this.defaultModel, temperature = 0.7, stream = false } = options;
 
-        try {
             if (stream) {
                 return await this.client.generate({
                     model,
@@ -97,8 +87,5 @@ export class OllamaClient {
                 });
                 return response;
             }
-        } catch (error) {
-            throw error;
-        }
     }
 }

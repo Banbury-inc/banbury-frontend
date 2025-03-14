@@ -5,7 +5,6 @@ import { CONFIG } from '../config';
 import { addDownloadsInfo } from './add_downloads_info';
 import { addUploadsInfo } from './add_uploads_info';
 import { get_device_id } from './get_device_id';
-import { getDeviceInfo } from './deviceInfo';
 import banbury from '..';
 
 // Connection stabilization configuration
@@ -389,25 +388,12 @@ function recordFailure(error?: any) {
 // Add state for reconnection
 let reconnectAttempt = 0;
 let reconnectTimeout: NodeJS.Timeout | null = null;
-let lastConnectTime = 0;
 let heartbeatInterval: NodeJS.Timeout | null = null;
 
 // Add connection stability tracking
-let lastStableConnection = 0;
 let connectionAttemptTimestamp = 0;
 
-// Add heartbeat tracking
-let lastHeartbeatResponse = Date.now();
-let missedHeartbeats = 0;
-const MAX_MISSED_HEARTBEATS = 2;
-
-// Add heartbeat tracking
-let lastPongTimestamp = Date.now();
-
 // Function to check if connection is stable
-function isConnectionStable(): boolean {
-  return Date.now() - lastStableConnection >= RECONNECT_CONFIG.stabilityThreshold;
-}
 
 // Function to check if circuit breaker allows connection
 function canAttemptConnection(): boolean {
@@ -429,18 +415,6 @@ function canAttemptConnection(): boolean {
   return true;
 }
 
-// Update recordSuccess to track stable connections
-function recordSuccess() {
-  // Only record success if the connection has been stable
-  if (isConnectionStable()) {
-    circuitState.failures = 0;
-    circuitState.isOpen = false;
-    circuitState.halfOpenAttempts = 0;
-    lastConnectTime = Date.now();
-    reconnectAttempt = 0; // Reset attempt counter for stable connections
-    lastStableConnection = Date.now();
-  }
-}
 
 // Update attemptReconnect function
 function attemptReconnect(
@@ -529,98 +503,8 @@ interface FileSyncRequest {
   }[];
 }
 
-// Add a queue for pending messages
-const messageQueue: Array<{
-  type: string;
-  data: any;
-  socket: WebSocket;
-  retries?: number;
-}> = [];
-
-const MAX_RETRIES = 3;
-let processingMessage = false;
-
 // Process messages from the queue
-async function processMessageQueue() {
-  if (processingMessage || messageQueue.length === 0) return;
-  
-  processingMessage = true;
-  const { type, data, socket, retries = 0 } = messageQueue[0];
-  
-  try {
-    if (type === 'device_info') {
-      const device_info = await getDeviceInfo();
-      const message = {
-        message: 'device_info_response',
-        username: data.username,
-        sending_device_name: data.device_name,
-        requesting_device_name: data.requesting_device_name,
-        device_info: device_info,
-      };
-      
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify(message));
-        messageQueue.shift(); // Remove processed message
-      } else if (retries < MAX_RETRIES) {
-        // Put it back in queue with increased retry count
-        messageQueue[0].retries = retries + 1;
-        console.log(`Retrying device info request (attempt ${retries + 1}/${MAX_RETRIES})`);
-      } else {
-        console.error('Failed to send device info after max retries');
-        messageQueue.shift();
-      }
-    }
-  } catch (error) {
-    console.error('Error processing message:', error);
-    if (retries < MAX_RETRIES) {
-      messageQueue[0].retries = retries + 1;
-    } else {
-      messageQueue.shift();
-    }
-  } finally {
-    processingMessage = false;
-    // Process next message if any
-    if (messageQueue.length > 0) {
-      setTimeout(processMessageQueue, 100); // Small delay between processing
-    }
-  }
-}
 
-// Function to handle heartbeat
-function startHeartbeat(socket: WebSocket) {
-  if (heartbeatInterval) {
-    clearInterval(heartbeatInterval);
-  }
-
-  lastHeartbeatResponse = Date.now();
-  missedHeartbeats = 0;
-
-  heartbeatInterval = setInterval(() => {
-    if (socket.readyState === WebSocket.OPEN) {
-      // Check if we've missed too many heartbeats
-      if (missedHeartbeats >= MAX_MISSED_HEARTBEATS) {
-        console.log('Missed too many heartbeats, closing connection');
-        socket.close(1000, 'Heartbeat timeout');
-        return;
-      }
-
-      try {
-        socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
-        missedHeartbeats++;
-
-        // Check last heartbeat response
-        const timeSinceLastResponse = Date.now() - lastHeartbeatResponse;
-        if (timeSinceLastResponse > RECONNECT_CONFIG.heartbeatTimeout) {
-          console.log('Heartbeat timeout, closing connection');
-          socket.close(1000, 'Heartbeat timeout');
-        }
-      } catch (error) {
-        console.error('Error sending heartbeat:', error);
-        socket.close(1000, 'Heartbeat error');
-      }
-    }
-  }, RECONNECT_CONFIG.heartbeatInterval);
-}
 
 // Function to cleanup existing connection with graceful shutdown
 async function cleanupExistingConnection(): Promise<void> {
@@ -868,7 +752,6 @@ export async function createWebSocketConnection(
 
         // Handle pong messages for heartbeat
         if (data.type === 'pong') {
-          lastPongTimestamp = Date.now();
           return;
         }
 
@@ -1001,7 +884,6 @@ export function cleanupWebSocket() {
     activeConnection = null;
   }
   reconnectAttempt = 0;
-  lastPongTimestamp = Date.now();
   resetAccumulatedData();
 }
 

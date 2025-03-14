@@ -1,5 +1,5 @@
 import { Box, CssBaseline, ThemeProvider } from "@mui/material";
-import React, { useState } from "react";
+import React  from "react";
 import theme from "../theme";
 import { BrowserRouter } from "react-router-dom";
 import Login from "./pages/Login/Login";
@@ -31,7 +31,7 @@ interface TitleBarProps {
   onMaximize: () => void;
 }
 
-const CustomTitleBar: React.FC<TitleBarProps> = ({ onClose, onMinimize, onMaximize }) => {
+const CustomTitleBar: React.FC<TitleBarProps> = () => {
   const isMac = process.platform === 'darwin';
 
   return (

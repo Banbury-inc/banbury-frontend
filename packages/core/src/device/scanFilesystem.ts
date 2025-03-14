@@ -105,6 +105,7 @@ export async function scanFilesystem(username: string): Promise<string> {
           await traverseDirectory(filePath);
         }
       } catch (error) {
+        console.error(`Error processing file: ${filePath}`, error);
         continue;
       }
     }
@@ -154,6 +155,6 @@ export async function scanFilesystem(username: string): Promise<string> {
     await update_scan_progress(username, 100);
     return 'success';
   } catch (error) {
-    return 'failed';
+    return 'failed, error: ' + error;
   }
 }

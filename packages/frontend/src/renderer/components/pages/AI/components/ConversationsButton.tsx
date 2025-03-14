@@ -167,6 +167,7 @@ export default function ConversationsButton({ onSelectConversation, currentConve
           localStorage.setItem('ai_conversations', JSON.stringify(validatedData));
           showAlert('Success', ['Conversations imported successfully'], 'success');
         } catch (error) {
+          console.error('Error importing conversations:', error);
           showAlert('Error', ['Failed to import conversations', 'Invalid file format'], 'error');
         }
       };

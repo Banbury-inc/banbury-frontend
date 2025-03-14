@@ -1,13 +1,10 @@
 import * as path from "path";
 import * as url from "url";
 import axios from 'axios'; // Adjusted import for axios
-import { BrowserWindow, app, dialog, ipcMain } from "electron";
-import { autoUpdater } from "electron-updater";
-import { shell } from "electron";
+import { BrowserWindow, app, ipcMain } from "electron";
 import { UpdateService } from './update-service';
 import { OllamaService } from './ollama-service';
 
-const fs = require('fs').promises;
 
 let mainWindow: BrowserWindow | null;
 let ollamaService: OllamaService;
@@ -166,6 +163,7 @@ async function waitForWebpackReady(url: string): Promise<void> {
       await axios.get(url);
       break;
     } catch (error) {
+      console.error(error);
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
