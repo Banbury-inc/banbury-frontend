@@ -278,41 +278,69 @@ export default function PermanentDrawerLeft() {
     <Box sx={{ display: 'flex', height: '100vh' }}>
       <Stack>
         <Box>
-          <Stack direction="row" paddingLeft={10} sx={{ pointerEvents: 'auto', zIndex: 1000 }}>
-            <Tooltip title="Navigate back">
-              <Button
-                onClick={() =>
-                  handlers.buttons.backButton(
-                    '',
-                    () => { },
-                    [],
-                    () => { },
-                    () => { },
-                  )
-                }
-                sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }}
-              >
-                <NavigateBeforeOutlinedIcon fontSize="inherit" />
-              </Button>
-            </Tooltip>
-            <Tooltip title="Navigate forward">
-              <Button
-                onClick={() =>
-                  handlers.buttons.forwardButton(
-                    '',
-                    () => { },
-                    [],
-                    () => { },
-                    [],
-                    () => { },
-                  )
-                }
-                sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }}
-              >
-                <NavigateNextOutlinedIcon fontSize="inherit" />
-              </Button>
-            </Tooltip>
-            <div className="flex justify-between items-center h-8 bg-[#212121] border-[#2a2a2a]">
+          <Stack direction="row" paddingLeft={10} sx={{ 
+            pointerEvents: 'auto', 
+            zIndex: 1000,
+            '& > *': {
+              '-webkit-app-region': 'no-drag'
+            }
+          }}>
+            <div className="no-drag" style={{ zIndex: 9999 }}>
+              <Tooltip title="Navigate back">
+                <Button
+                  onClick={() =>
+                    handlers.buttons.backButton(
+                      '',
+                      () => { },
+                      [],
+                      () => { },
+                      () => { },
+                    )
+                  }
+                  sx={{ 
+                    paddingLeft: '4px', 
+                    paddingRight: '4px', 
+                    marginTop: '8px', 
+                    minWidth: '30px',
+                    height: '30px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
+                >
+                  <NavigateBeforeOutlinedIcon fontSize="inherit" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div className="no-drag" style={{ zIndex: 9999 }}>
+              <Tooltip title="Navigate forward">
+                <Button
+                  onClick={() =>
+                    handlers.buttons.forwardButton(
+                      '',
+                      () => { },
+                      [],
+                      () => { },
+                      [],
+                      () => { },
+                    )
+                  }
+                  sx={{ 
+                    paddingLeft: '4px', 
+                    paddingRight: '4px', 
+                    marginTop: '8px', 
+                    minWidth: '30px',
+                    height: '30px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
+                >
+                  <NavigateNextOutlinedIcon fontSize="inherit" />
+                </Button>
+              </Tooltip>
+            </div>
+            <div className="flex justify-between items-center h-8 bg-[#212121]">
               <style>
                 {`
                   .no-drag {
@@ -322,6 +350,7 @@ export default function PermanentDrawerLeft() {
                     display: flex;
                     flex-grow: 1;
                     position: relative;
+                    bg-color: #212121;
                     -webkit-app-region: no-drag;
                   }
                 `}
