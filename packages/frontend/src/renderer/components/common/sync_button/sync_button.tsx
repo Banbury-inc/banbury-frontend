@@ -183,6 +183,7 @@ export default function SyncButton() {
       <Tooltip title="Sync">
         <Button
           onClick={handleClick}
+          data-testid="sync-button"
           sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
         >
           <SyncIcon fontSize="inherit" />

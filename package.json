@@ -2,11 +2,15 @@
     "name": "banbury",
     "private": true,
     "workspaces": [
-        "packages/*"
+        "packages/frontend",
+        "packages/core",
+        "packages/cli",
+        "packages/api"
     ],
     "scripts": {
         "dev": "npm run dev --workspace=packages/frontend",
-        "build": "npm run build --workspaces",
+        "dev:all": "concurrently \"npm run dev --workspace=packages/core\" \"npm run dev --workspace=packages/api\" \"npm run dev --workspace=packages/frontend\"",
+        "build": "npm run build --workspace=packages/core && npm run build --workspace=packages/api && npm run build --workspace=packages/frontend",
         "test": "npm run test --workspaces",
         "lint": "npm run lint --workspaces",
         "clean": "npm run clean --workspaces"
@@ -16,6 +20,12 @@
         "node": ">=20.0.0"
     },
     "devDependencies": {
-        "@eslint/js": "^9.20.0"
+        "@eslint/js": "^9.20.0",
+        "concurrently": "^8.2.2"
+    },
+    "dependencies": {
+        "@types/react-syntax-highlighter": "^15.5.13",
+        "ollama": "^0.5.13",
+        "react-syntax-highlighter": "^15.6.1"
     }
 }

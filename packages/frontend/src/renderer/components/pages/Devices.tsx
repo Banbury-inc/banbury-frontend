@@ -122,6 +122,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
       <TableRow>
         <TableCell padding="checkbox">
           <Checkbox
+            size='small'
             color="primary"
             indeterminate={numSelected > 0 && numSelected < rowCount}
             checked={rowCount > 0 && numSelected === rowCount}
@@ -792,6 +793,7 @@ export default function Devices() {
                             >
                               <TableCell padding="checkbox">
                                 <Checkbox
+                                  size='small'
                                   color="primary"
                                   inputProps={{
                                     'aria-labelledby': labelId,

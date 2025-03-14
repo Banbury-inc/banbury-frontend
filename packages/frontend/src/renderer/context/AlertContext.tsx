@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { ipcRenderer } from 'electron';
 
 type AlertVariant = 'error' | 'warning' | 'success' | 'info';
 
@@ -26,6 +27,19 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
     isVisible: false,
     variant: 'info',
   });
+
+  useEffect(() => {
+    // Listen for alert events from the main process
+    const handleAlert = (_event: any, data: { title: string; messages: string[]; variant: AlertVariant }) => {
+      showAlert(data.title, data.messages, data.variant);
+    };
+
+    ipcRenderer.on('show-alert', handleAlert);
+
+    return () => {
+      ipcRenderer.removeListener('show-alert', handleAlert);
+    };
+  }, []);
 
   const showAlert = (title: string, messages: string[], variant: AlertVariant = 'info') => {
     // First mount the component with opacity 0

@@ -12,6 +12,7 @@ import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import Files from './pages/Files/Files';
 import Friends from './pages/Friends/Friends';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Devices from './pages/Devices';
 import Settings from './pages/Settings/Settings';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
@@ -20,7 +21,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import Sync from './pages/Sync/Sync';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
-import Login from './pages/Login';
+import Login from './pages/Login/Login';
 import Tooltip from '@mui/material/Tooltip';
 import os from 'os';
 import path from 'path';
@@ -44,6 +45,8 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { getDownloadsInfo } from '@banbury/core/src/device/add_downloads_info';
 import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
+import AI from './pages/AI/AI';
+import { ipcRenderer } from 'electron';
 
 const drawerWidth = 240;  // Change the width as needed
 
@@ -272,197 +275,297 @@ export default function PermanentDrawerLeft() {
   const isMac = process.platform === 'darwin';
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
-      <Stack>
-        <Box>
-          <Stack direction="row" paddingLeft={10}>
-            <Tooltip title="Navigate back">
-              <Button
-                onClick={() =>
-                  handlers.buttons.backButton(
-                    '',
-                    () => { },
-                    [],
-                    () => { },
-                    () => { },
-                  )
-                }
-                sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }}
-              >
-                <NavigateBeforeOutlinedIcon fontSize="inherit" />
-              </Button>
-            </Tooltip>
-            <Tooltip title="Navigate forward">
-              <Button
-                onClick={() =>
-                  handlers.buttons.forwardButton(
-                    '',
-                    () => { },
-                    [],
-                    () => { },
-                    [],
-                    () => { },
-                  )
-                }
-                sx={{ paddingLeft: '4px', paddingRight: '4px', marginTop: '8px', minWidth: '30px', zIndex: 9999 }}
-              >
-                <NavigateNextOutlinedIcon fontSize="inherit" />
-              </Button>
-            </Tooltip>
-            <div className="flex justify-between items-center h-8 bg-[#2a2a2a] border-b border-black">
-              <style>
-                {`
-                  .no-drag {
-                    -webkit-app-region: no-drag !important;
-                  }
-                  .tab-container {
-                    display: flex;
-                    flex-grow: 1;
-                    position: relative;
-                    -webkit-app-region: no-drag;
-                  }
-                `}
-              </style>
-              <div className="flex flex-grow no-drag">
-                <CustomTabs
-                  tabs={tabs}
-                  activeTab={currentTabId}
-                  onTabChange={handleTabChange}
-                  onTabClose={handleCloseTab}
-                  onTabAdd={handleAddTab}
-                  onReorder={(sourceIndex, destinationIndex) => {
-                    const newTabs = [...tabs];
-                    const [draggedItem] = newTabs.splice(sourceIndex, 1);
-                    newTabs.splice(destinationIndex, 0, draggedItem);
-                    setTabs(newTabs);
-                  }}
-                />
+    <div data-testid="main-component">
+      <Box sx={{ display: 'flex', height: '100vh' }}>
+        <Stack>
+          <Box>
+            <Stack direction="row" paddingLeft={10} sx={{ 
+              pointerEvents: 'auto', 
+              zIndex: 1000,
+              '& > *': {
+                '-webkit-app-region': 'no-drag'
+              }
+            }}>
+              <div className="no-drag" style={{ zIndex: 9999 }}>
+                <Tooltip title="Navigate back">
+                  <Button
+                    onClick={() =>
+                      handlers.buttons.backButton(
+                        '',
+                        () => { },
+                        [],
+                        () => { },
+                        () => { },
+                      )
+                    }
+                    sx={{ 
+                      paddingLeft: '4px', 
+                      paddingRight: '4px', 
+                      marginTop: '8px', 
+                      minWidth: '30px',
+                      height: '30px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      }
+                    }}
+                  >
+                    <NavigateBeforeOutlinedIcon fontSize="inherit" />
+                  </Button>
+                </Tooltip>
               </div>
+              <div className="no-drag" style={{ zIndex: 9999 }}>
+                <Tooltip title="Navigate forward">
+                  <Button
+                    onClick={() =>
+                      handlers.buttons.forwardButton(
+                        '',
+                        () => { },
+                        [],
+                        () => { },
+                        [],
+                        () => { },
+                      )
+                    }
+                    sx={{ 
+                      paddingLeft: '4px', 
+                      paddingRight: '4px', 
+                      marginTop: '8px', 
+                      minWidth: '30px',
+                      height: '30px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      }
+                    }}
+                  >
+                    <NavigateNextOutlinedIcon fontSize="inherit" />
+                  </Button>
+                </Tooltip>
+              </div>
+              <div className="flex justify-between items-center h-8 bg-[#212121]">
+                <style>
+                  {`
+                    .no-drag {
+                      -webkit-app-region: no-drag !important;
+                    }
+                    .tab-container {
+                      display: flex;
+                      flex-grow: 1;
+                      position: relative;
+                      bg-color: #212121;
+                      -webkit-app-region: no-drag;
+                    }
+                  `}
+                </style>
+                <div className="flex flex-grow no-drag">
+                  <CustomTabs
+                    tabs={tabs}
+                    activeTab={currentTabId}
+                    onTabChange={handleTabChange}
+                    onTabClose={handleCloseTab}
+                    onTabAdd={handleAddTab}
+                    onReorder={(sourceIndex, destinationIndex) => {
+                      const newTabs = [...tabs];
+                      const [draggedItem] = newTabs.splice(sourceIndex, 1);
+                      newTabs.splice(destinationIndex, 0, draggedItem);
+                      setTabs(newTabs);
+                    }}
+                  />
+                </div>
 
-              <Menu
-                open={contextMenu !== null}
-                onClose={handleContextMenuClose}
-                anchorReference="anchorPosition"
-                anchorPosition={
-                  contextMenu !== null
-                    ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-                    : undefined
-                }
-              >
-                <MenuItem onClick={handleRenameTab}>Rename Tab</MenuItem>
-              </Menu>
+                <Menu
+                  open={contextMenu !== null}
+                  onClose={handleContextMenuClose}
+                  anchorReference="anchorPosition"
+                  anchorPosition={
+                    contextMenu !== null
+                      ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+                      : undefined
+                  }
+                >
+                  <MenuItem onClick={handleRenameTab}>Rename Tab</MenuItem>
+                </Menu>
 
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                  pt: 1,
-                  pr: isMac ? 2 : 20,
-                  position: 'absolute',
-                  right: 0,
-                  top: 0,
-                }}
-              >
-                <UploadProgress uploads={uploads} />
-                <DownloadProgress downloads={downloads} />
-                <NotificationsButton />
-                <AccountMenuIcon />
-              </Stack>
-            </div>
-          </Stack>
-        </Box>
-        <Box sx={{ display: 'flex', width: '100vw', height: '100%', overflow: 'hidden' }}>
-          <CssBaseline />
-          <Drawer
-            sx={{
-              '& .MuiDrawer-paper': {
-                marginTop: '40px',
-                paddingLeft: '4px',
-                backgroundColor: theme.palette.background.default,
-              },
-            }}
-            variant="permanent"
-            open={open}
-            anchor="left"
-          >
-            <List>
-              {['Files',
-                'Sync',
-                'Shared',
-                'Devices',
-                'Friends'].map((text) => (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  className="no-drag"
+                  sx={{
+                    pt: 0,
+                    pb: 0,
+                    pr: isMac ? 2 : 0,
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    zIndex: 9999,
+                    pointerEvents: 'auto',
+                    height: '40px',
+                    alignItems: 'center',
+                    backgroundColor: 'transparent',
+                    '-webkit-app-region': 'no-drag',
+                  }}
+                >
+                  <AccountMenuIcon />
+                  <UploadProgress uploads={uploads} />
+                  <DownloadProgress downloads={downloads} />
+                  <NotificationsButton />
+                  <Button
+                    onClick={() => ipcRenderer.send('minimize-window')}
+                    className="titlebar-button"
+                    sx={{
+                      width: '46px',
+                      height: '100%',
+                      minWidth: '46px',
+                      border: 'none',
+                      bgcolor: 'transparent',
+                      color: '#fff',
+                      fontSize: '18px',
+                      p: 0,
+                      ':hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    &#8211;
+                  </Button>
+                  <Button
+                    onClick={() => ipcRenderer.send('maximize-window')}
+                    className="titlebar-button"
+                    sx={{
+                      width: '46px',
+                      height: '100%',
+                      minWidth: '46px',
+                      border: 'none',
+                      bgcolor: 'transparent',
+                      color: '#fff',
+                      fontSize: '18px',
+                      p: 0,
+                      ':hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    &#9633;
+                  </Button>
+                  <Button
+                    onClick={() => ipcRenderer.send('close-window')}
+                    className="titlebar-button"
+                    sx={{
+                      width: '46px',
+                      height: '100%',
+                      minWidth: '46px',
+                      border: 'none',
+                      bgcolor: 'transparent',
+                      color: '#fff',
+                      fontSize: '18px',
+                      p: 0,
+                      ':hover': {
+                        bgcolor: '#ff0000',
+                      },
+                    }}
+                  >
+                    &#10005;
+                  </Button>
+                </Stack>
+              </div>
+            </Stack>
+          </Box>
+          <Box sx={{ display: 'flex', width: '100vw', height: '100%', overflow: 'hidden' }}>
+            <CssBaseline />
+            <Drawer
+              sx={{
+                '& .MuiDrawer-paper': {
+                  marginTop: '40px',
+                  paddingLeft: '4px',
+                  backgroundColor: theme.palette.background.default,
+                },
+              }}
+              variant="permanent"
+              open={open}
+              anchor="left"
+            >
+              <List>
+                {['Files',
+                  'Sync',
+                  'Shared',
+                  'AI',
+                  'Devices',
+                  'Friends'].map((text) => (
+                    <Tooltip title={text} key={text} placement="right">
+                      <ListItem key={text} sx={{ padding: '2px', paddingTop: '0px' }}>
+                        <Button
+                          onClick={() => handleSidebarChange(text)}
+                          sx={{
+                            paddingLeft: '4px',
+                            paddingRight: '4px',
+                            minWidth: '30px',
+                          }}
+                        >
+                          {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
+                          {text === 'Sync' && <CloudOutlinedIcon fontSize='inherit' />}
+                          {text === 'Shared' && <FolderSharedOutlinedIcon fontSize='inherit' />}
+                          {text === 'AI' && < AutoAwesomeIcon fontSize='inherit' />}
+                          {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
+                          {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
+                        </Button>
+                      </ListItem>
+                    </Tooltip>
+                  ))}
+              </List>
+              <Divider />
+              <List>
+                {['Logs', 'Settings'].map((text) => (
                   <Tooltip title={text} key={text} placement="right">
-                    <ListItem key={text} sx={{ padding: '2px', paddingTop: '0px' }}>
+                    <ListItem key={text} sx={{ padding: '2px' }}>
                       <Button
-                        onClick={() => handleSidebarChange(text)}
                         sx={{
                           paddingLeft: '4px',
                           paddingRight: '4px',
                           minWidth: '30px',
                         }}
+                        onClick={() => handleSidebarChange(text)}
                       >
-                        {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
-                        {text === 'Sync' && <CloudOutlinedIcon fontSize='inherit' />}
-                        {text === 'Shared' && <FolderSharedOutlinedIcon fontSize='inherit' />}
-                        {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
-                        {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
+                        {text === 'Logs' && <FactCheckOutlinedIcon fontSize='inherit' />}
+                        {text === 'Settings' && <SettingsIcon fontSize='inherit' />}
                       </Button>
                     </ListItem>
                   </Tooltip>
                 ))}
-            </List>
-            <Divider />
-            <List>
-              {['Logs', 'Settings'].map((text) => (
-                <Tooltip title={text} key={text} placement="right">
-                  <ListItem key={text} sx={{ padding: '2px' }}>
-                    <Button
-                      sx={{
-                        paddingLeft: '4px',
-                        paddingRight: '4px',
-                        minWidth: '30px',
-                      }}
-                      onClick={() => handleSidebarChange(text)}
-                    >
-                      {text === 'Logs' && <FactCheckOutlinedIcon fontSize='inherit' />}
-                      {text === 'Settings' && <SettingsIcon fontSize='inherit' />}
-                    </Button>
-                  </ListItem>
-                </Tooltip>
-              ))}
-            </List>
-          </Drawer>
-          <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', p: 0, width: 'calc(100vw - 240px)' }}>
-            {(() => {
-              return tabs.map(tab => (
-                <Box key={tab.id} sx={{ display: currentTabId === tab.id ? 'block' : 'none' }}>
-                  {(() => {
-                    switch (tab.view) {
-                      case 'Files':
-                        return <Files />;
-                      case 'Sync':
-                        return <Sync />;
-                      case 'Shared':
-                        return <Shared />;
-                      case 'Devices':
-                        return <Devices />;
-                      case 'Logs':
-                        return <Logs />;
-                      case 'Friends':
-                        return <Friends />;
-                      case 'Settings':
-                        return <Settings />;
-                      default:
-                        return <Typography paragraph>Select a tab to display its content.</Typography>;
-                    }
-                  })()}
-                </Box>
-              ));
-            })()}
+              </List>
+            </Drawer>
+            <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', p: 0, width: 'calc(100vw - 240px)' }}>
+              {(() => {
+                return tabs.map(tab => (
+                  <Box key={tab.id} sx={{ display: currentTabId === tab.id ? 'block' : 'none' }}>
+                    {(() => {
+                      switch (tab.view) {
+                        case 'Files':
+                          return <Files />;
+                        case 'Sync':
+                          return <Sync />;
+                        case 'Shared':
+                          return <Shared />;
+                        case 'AI':
+                          return <AI />;
+                        case 'Devices':
+                          return <Devices />;
+                        case 'Logs':
+                          return <Logs />;
+                        case 'Friends':
+                          return <Friends />;
+                        case 'Settings':
+                          return <Settings />;
+                        default:
+                          return <Typography paragraph>Select a tab to display its content.</Typography>;
+                      }
+                    })()}
+                  </Box>
+                ));
+              })()}
+            </Box>
           </Box>
-        </Box>
-      </Stack>
-    </Box>
+        </Stack>
+      </Box>
+    </div>
   );
 }
 

@@ -21,7 +21,7 @@ export async function getNotifications(username: string) {
                 throw new Error('Unknown error occurred');
         }
     } catch (error) {
-        console.error('Error fetching notifications:', error);
+        throw new Error('Failed to fetch notifications' + error);
     }
 }
 

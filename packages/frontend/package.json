@@ -8,14 +8,14 @@
   "homepage": "./dist/renderer/index.html",
   "scripts": {
     "dev": "npm-run-all -p dev:react electron:serve",
-    "dev:electron": "cross-env NODE_ENV=development webpack --config webpack/electron.webpack.js --mode=development && npm run start:electron",
+    "dev:electron": "cross-env NODE_ENV=development webpack --config webpack/electron.webpack.mjs --mode=development && electron .",
     "dev:react": "cross-env NODE_ENV=development webpack serve --config webpack/react.webpack.js --mode=development",
-    "electron:serve": "wait-on http-get://localhost:8081/ && npm run dev:electron",
-    "start:electron": "electron .",
+    "electron:serve": "wait-on tcp:localhost:8081 && npm run dev:electron",
+    "start": "electron .",
     "build": "npm-run-all build:electron build:react",
     "build:run": "npm-run-all build start:electron",
-    "build:electron": "webpack --config webpack/electron.webpack.js --mode=production",
-    "build:react": "webpack --config webpack/react.webpack.js --mode=production",
+    "build:electron": "cross-env NODE_ENV=production webpack --config webpack/electron.webpack.mjs --mode=production",
+    "build:react": "cross-env NODE_ENV=production webpack --config webpack/react.webpack.js --mode=production",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "lint:watch": "eslint --watch .",
@@ -24,17 +24,21 @@
     "package:dist": "electron-builder --mac",
     "package:app": "electron-builder --dir",
     "docs": "typedoc --out docs --entryPointStrategy expand src/renderer/neuranet",
-    "test": "jest --verbose --passWithNoTests --coverage",
-    "coverage": "jest --coverage",
-    "clean": "rimraf dist"
+    "test": "jest --verbose --passWithNoTests --coverage --testPathIgnorePatterns=tests/e2e",
+    "coverage": "jest --coverage --testPathIgnorePatterns=tests/e2e",
+    "clean": "rimraf dist",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report"
   },
   "keywords": [],
   "author": "Banbury <mmills6060@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@banbury/core": "3.4.22",
     "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
+    "@banbury/core": "3.4.22",
     "@electron/notarize": "^2.5.0",
     "@electron/remote": "^2.1.2",
     "@emotion/react": "^11.11.4",
@@ -75,8 +79,8 @@
     "p-queue": "^8.0.1",
     "postcss-loader": "^8.1.1",
     "punycode": "^2.3.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.2",
     "style-loader": "^4.0.0",
     "styled-components": "^6.1.9"
@@ -84,6 +88,7 @@
   "devDependencies": {
     "@electron/notarize": "^2.5.0",
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.51.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
@@ -91,9 +96,9 @@
     "@types/jest": "^29.5.12",
     "@types/lodash": "^4.17.6",
     "@types/node": "^16.11.45",
-    "@types/react": "^18.0.15",
+    "@types/react": "^18.2.0",
     "@types/react-beautiful-dnd": "^13.1.8",
-    "@types/react-dom": "^18.0.6",
+    "@types/react-dom": "^18.2.0",
     "@types/speedtest-net": "^2.1.5",
     "@types/ws": "^8.5.14",
     "autoprefixer": "^10.4.20",
@@ -140,9 +145,9 @@
       "style": "renke"
     }
   },
-  "peerDependenciies": {
-    "react": "^17.0.0 || ^18.3.1 || ^19.0.0",
-    "react-dom": "^17.0.0 || ^18.3.1"
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "build": {
     "productName": "Banbury",

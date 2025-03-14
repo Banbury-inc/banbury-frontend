@@ -59,7 +59,6 @@ export async function scanFilesystem(username: string): Promise<string> {
   // Modified traverseDirectory function to update progress
   async function traverseDirectory(currentPath: string): Promise<void> {
     if (!fs.existsSync(currentPath)) {
-      console.log(`Directory does not exist: ${currentPath}`);
       return;
     }
 
@@ -106,7 +105,7 @@ export async function scanFilesystem(username: string): Promise<string> {
           await traverseDirectory(filePath);
         }
       } catch (error) {
-        console.error(`Error reading file ${filePath}:`, error);
+        console.error(`Error processing file: ${filePath}`, error);
         continue;
       }
     }
@@ -126,16 +125,13 @@ export async function scanFilesystem(username: string): Promise<string> {
       if ('scanned_folders' in response && Array.isArray(response.scanned_folders)) {
         directoriesToScan = response.scanned_folders;
       } else {
-        console.log('No valid folders returned from get_scanned_folders.');
         return 'No valid folders to scan';
       }
     } else {
-      console.log('Failed to get scanned folders.');
       return 'Failed to get scanned folders';
     }
 
     if (directoriesToScan.length === 0) {
-      console.log('No folders selected for scanning.');
       return 'No folders to scan';
     }
   } else {
@@ -150,8 +146,6 @@ export async function scanFilesystem(username: string): Promise<string> {
       totalFiles += await countFiles(directory);
     }
 
-    console.log(`Total files to process: ${totalFiles}`);
-
     // Start scanning with progress updates
     for (const directory of directoriesToScan) {
       await traverseDirectory(directory);
@@ -161,7 +155,6 @@ export async function scanFilesystem(username: string): Promise<string> {
     await update_scan_progress(username, 100);
     return 'success';
   } catch (error) {
-    console.error('Error during filesystem scan:', error);
-    return 'failed';
+    return 'failed, ' + error;
   }
 }

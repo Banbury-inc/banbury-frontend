@@ -17,6 +17,8 @@ export default function AccountMenuIcon() {
   const { username, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [mainImageError, setMainImageError] = React.useState(false);
+  const [menuImageError, setMenuImageError] = React.useState(false);
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -49,6 +51,7 @@ export default function AccountMenuIcon() {
         <Tooltip title="Account">
           <Avatar
             onClick={handleClick}
+            data-testid="account-menu-button"
             aria-controls={open ? 'account-menu' : undefined}
             aria-haspopup="true"
             aria-expanded={open ? 'true' : undefined}
@@ -56,18 +59,19 @@ export default function AccountMenuIcon() {
               cursor: 'pointer',
               width: 24,
               height: 24,
-              fontSize: '0.875rem'
+              fontSize: '0.875rem',
+              bgcolor: 'primary.main'
             }}
           >
-            {username ? (
+            {username && !mainImageError ? (
               <img
                 src={`${banbury.config.url}/users/get_profile_picture/${username}/`}
-                alt="User"
+                alt={username || 'User'}
                 style={{ width: 'inherit', height: 'inherit', objectFit: 'cover' }}
-                onError={(e) => console.error('Image failed to load:', e)}
+                onError={() => setMainImageError(true)}
               />
             ) : (
-              username?.charAt(0) || ''
+              username?.charAt(0).toUpperCase() || ''
             )}
           </Avatar>
         </Tooltip>
@@ -109,7 +113,18 @@ export default function AccountMenuIcon() {
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
         <MenuItem onClick={handleClose}>
-          <Avatar src={`${banbury.config.url}/users/get_profile_picture/${username}/`} /> Profile
+          <Avatar sx={{ bgcolor: 'primary.main' }}>
+            {username && !menuImageError ? (
+              <img
+                src={`${banbury.config.url}/users/get_profile_picture/${username}/`}
+                alt={username || 'User'}
+                style={{ width: 'inherit', height: 'inherit', objectFit: 'cover' }}
+                onError={() => setMenuImageError(true)}
+              />
+            ) : (
+              username?.charAt(0).toUpperCase() || ''
+            )}
+          </Avatar> Profile
         </MenuItem>
         <Divider />
         <MenuItem onClick={handleClose}>

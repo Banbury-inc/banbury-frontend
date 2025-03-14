@@ -25,6 +25,7 @@ import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import AccountBoxOutlinedIcon from '@mui/icons-material/AccountBoxOutlined';
 import Devices from "./pages/Devices"
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
+import AI from './pages/AI/AI';
 
 
 const drawerWidth = 240;
@@ -213,6 +214,7 @@ export default function MiniDrawer() {
         {activeTab === 'Files' && <Files />}
         {activeTab === 'Sync' && <Sync />}
         {activeTab === 'Devices' && <Devices />}
+        {activeTab === 'AI' && <AI />}
         {activeTab === 'Settings' && <Typography>Settings Content</Typography>}
       </Box>
 

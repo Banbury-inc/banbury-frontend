@@ -11,7 +11,7 @@
     justify-content: center;
     pointer-events: auto;
     position: relative;
-    z-index: 10000;
+    z-index: 1002;
     padding: 0;
     margin: 0;
 }
@@ -23,4 +23,30 @@
 
 .titlebar-button.close:hover {
     background-color: #ff0000;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #171717;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #424242 #171717;
 }

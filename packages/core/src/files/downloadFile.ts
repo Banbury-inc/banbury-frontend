@@ -1,5 +1,4 @@
-import { banbury } from "..";
-import { device } from "../device";
+import banbury from "..";
 
 export function downloadFile(username: string, files: string[], devices: string[], fileInfo: any, taskInfo: any, tasks: any[], setTasks: any, setTaskbox_expanded: any, websocket: WebSocket): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -49,7 +48,7 @@ export function downloadFile(username: string, files: string[], devices: string[
     // Add the message handler
     websocket.addEventListener('message', messageHandler);
 
-    device.download_request(username, files[0], files[0], fileInfo, websocket, taskInfo);
+    banbury.device.download_request(username, files[0], files[0], fileInfo, websocket, taskInfo);
 
     // Store the timeout ID so we can clear it
     timeoutId = setTimeout(() => {

@@ -122,6 +122,7 @@ export default function NotificationsButton() {
     <>
       <Button
         onClick={handleClick}
+        data-testid="notifications-button"
         sx={{
           paddingLeft: '4px',
           paddingRight: '4px',

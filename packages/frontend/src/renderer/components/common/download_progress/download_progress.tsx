@@ -54,9 +54,11 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
     <>
       <Button
         onClick={handleClick}
+        aria-label="Download"
+        data-testid="download-progress-button"
         sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }}
       >
-        <DownloadIcon sx={{ fontSize: 'inherit' }} />
+        <DownloadIcon data-testid="DownloadIcon" sx={{ fontSize: 'inherit' }} />
         {activeDownloads > 0 && (
           <Box
             sx={{
