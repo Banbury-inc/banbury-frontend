@@ -2,7 +2,13 @@ module.exports = {
   preset: 'ts-jest',
   verbose: true,
   testEnvironment: 'jsdom',
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    'e2e',
+    '.e2e.',
+    'packages/frontend/tests/e2e'
+  ],
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@banbury/core$': '<rootDir>/packages/core/src'
@@ -23,8 +29,9 @@ module.exports = {
     '<rootDir>/packages/core/src'
   ],
   testMatch: [
-    '**/__tests__/**/*.[jt]s?(x)',
-    '**/?(*.)+(spec|test).[jt]s?(x)'
+    '<rootDir>/packages/**/src/**/__tests__/**/*.[jt]s?(x)',
+    '<rootDir>/packages/**/src/**/*.(spec|test).[jt]s?(x)',
+    '!<rootDir>/**/e2e/**/*'
   ],
   transformIgnorePatterns: [
     '/node_modules/(?!axios)/'
