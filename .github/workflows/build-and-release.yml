@@ -50,9 +50,47 @@ jobs:
       - name: Run Tests
         run: npm test
 
+  e2e:
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.11.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Build the app
+        run: npm run build
+
+      - name: Run E2E Tests
+        run: cd packages/frontend && npm run test:e2e
+        env:
+          CI: true
+          
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-${{ matrix.os }}
+          path: packages/frontend/playwright-report
+          retention-days: 30
+
   build:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [lint, test]
+    needs: [lint, test, e2e]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
