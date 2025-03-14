@@ -30,8 +30,10 @@ jobs:
         run: npm run lint
 
   test:
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -51,7 +53,7 @@ jobs:
         run: npm test
 
   e2e:
-    needs: test
+    needs: lint
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     strategy:
