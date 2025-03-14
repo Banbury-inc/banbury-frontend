@@ -265,6 +265,14 @@ test('share button is clickable and opens popover', async () => {
 test('change view button is clickable and opens popover', async () => {
 });
 
+
+test('change view button can change to grid view', async () => {
+});
+
+
+test('change view button can change to large grid view', async () => {
+});
+
 test('download button downloads a file', async () => {
 });
 

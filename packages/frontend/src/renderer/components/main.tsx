@@ -46,6 +46,7 @@ import MenuItem from '@mui/material/MenuItem';
 import { getDownloadsInfo } from '@banbury/core/src/device/add_downloads_info';
 import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
 import AI from './pages/AI/AI';
+import { ipcRenderer } from 'electron';
 
 const drawerWidth = 240;  // Change the width as needed
 
@@ -277,7 +278,7 @@ export default function PermanentDrawerLeft() {
     <Box sx={{ display: 'flex', height: '100vh' }}>
       <Stack>
         <Box>
-          <Stack direction="row" paddingLeft={10} className="no-drag" sx={{ pointerEvents: 'auto' }}>
+          <Stack direction="row" paddingLeft={10} sx={{ pointerEvents: 'auto', zIndex: 1000 }}>
             <Tooltip title="Navigate back">
               <Button
                 onClick={() =>
@@ -360,18 +361,79 @@ export default function PermanentDrawerLeft() {
                 className="no-drag"
                 sx={{
                   pt: 1,
-                  pr: isMac ? 2 : 20,
+                  pr: isMac ? 2 : 0,
                   position: 'absolute',
                   right: 0,
                   top: 0,
-                  zIndex: 1002,
+                  zIndex: 9999,
                   pointerEvents: 'auto',
+                  height: '40px',
+                  alignItems: 'center',
+                  backgroundColor: 'transparent',
+                  '-webkit-app-region': 'no-drag',
                 }}
               >
+                <AccountMenuIcon />
                 <UploadProgress uploads={uploads} />
                 <DownloadProgress downloads={downloads} />
                 <NotificationsButton />
-                <AccountMenuIcon />
+                <Button
+                  onClick={() => ipcRenderer.send('minimize-window')}
+                  className="titlebar-button"
+                  sx={{
+                    width: '46px',
+                    height: '100%',
+                    minWidth: '46px',
+                    border: 'none',
+                    bgcolor: 'transparent',
+                    color: '#fff',
+                    fontSize: '18px',
+                    p: 0,
+                    ':hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  &#8211;
+                </Button>
+                <Button
+                  onClick={() => ipcRenderer.send('maximize-window')}
+                  className="titlebar-button"
+                  sx={{
+                    width: '46px',
+                    height: '100%',
+                    minWidth: '46px',
+                    border: 'none',
+                    bgcolor: 'transparent',
+                    color: '#fff',
+                    fontSize: '18px',
+                    p: 0,
+                    ':hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  &#9633;
+                </Button>
+                <Button
+                  onClick={() => ipcRenderer.send('close-window')}
+                  className="titlebar-button"
+                  sx={{
+                    width: '46px',
+                    height: '100%',
+                    minWidth: '46px',
+                    border: 'none',
+                    bgcolor: 'transparent',
+                    color: '#fff',
+                    fontSize: '18px',
+                    p: 0,
+                    ':hover': {
+                      bgcolor: '#ff0000',
+                    },
+                  }}
+                >
+                  &#10005;
+                </Button>
               </Stack>
             </div>
           </Stack>

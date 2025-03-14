@@ -13,7 +13,6 @@ body {
   background: rgb(33, 33, 33);
   padding: 4px;
   -webkit-app-region: drag;
-  z-index: 1001;
   /* Make entire titlebar draggable by default */
 }
 
@@ -27,7 +26,6 @@ body {
   -webkit-app-region: no-drag;
   pointer-events: auto !important;
   position: relative;
-  z-index: 1002;
 }
 
 #main {
