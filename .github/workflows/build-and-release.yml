@@ -3,14 +3,115 @@ name: Build and Release
 on:
   push:
     branches:
-      - main  # Triggers the workflow on every push to the main branch
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint
+        run: npm run lint
+
+  unit-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Tests
+        run: npm test
+
+  e2e-tests:
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright
+        run: |
+          cd packages/frontend
+          npx playwright install
+          npx playwright install-deps
+
+      - name: Build the app
+        run: npm run build
+
+      - name: Setup Chrome sandbox for Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo chown root:root /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
+
+      - name: Run E2E Tests
+        run: |
+          cd packages/frontend
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e
+        if: runner.os == 'Linux'
+
+      - name: Run E2E Tests (Windows & macOS)
+        run: |
+          cd packages/frontend
+          npm run test:e2e
+        if: runner.os != 'Linux'
+        
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.os }}
+          path: packages/frontend/playwright-report/
+          retention-days: 30
+
   build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [lint, unit-tests, e2e-tests]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]  # Add Windows support
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
@@ -57,19 +158,19 @@ jobs:
         env:
           CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
-          KEYCHAIN_PASSWORD: keychainpassword # This is just a temporary password for the build
+          KEYCHAIN_PASSWORD: keychainpassword
 
       - name: Install dependencies
-        run: npm install --force
+        run: npm install
 
-      - name: Build the app
+      - name: Build all packages
         run: npm run build
 
       # For macOS: Build, Sign, and Notarize in the correct order
       - name: Build and Sign macOS App
         if: runner.os == 'macOS'
         run: |
-          # First, build the .app bundle
+          cd packages/frontend
           npm run package:app
         env:
           CSC_KEYCHAIN: build.keychain
@@ -79,7 +180,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           APP_NAME="Banbury"
-          export APP_PATH="./packages/mac-arm64/${APP_NAME}.app"
+          export APP_PATH="./packages/frontend/dist/mac-arm64/${APP_NAME}.app"
           echo "Notarizing app bundle: $APP_PATH"
           node ./scripts/notarize.ts
         env:
@@ -90,7 +191,7 @@ jobs:
       - name: Create DMG and ZIP for macOS
         if: runner.os == 'macOS'
         run: |
-          # Create DMG and ZIP from the notarized .app
+          cd packages/frontend
           npm run package:dist
         env:
           CSC_KEYCHAIN: build.keychain
@@ -100,14 +201,13 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           APP_NAME="Banbury"
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(node -p "require('./packages/frontend/package.json').version")
           WORKSPACE_PATH="$GITHUB_WORKSPACE"
           
           # Notarize DMG
-          export APP_PATH="$WORKSPACE_PATH/packages/${APP_NAME}-${VERSION}-arm64.dmg"
+          export APP_PATH="$WORKSPACE_PATH/packages/frontend/dist/${APP_NAME}-${VERSION}-arm64.dmg"
           echo "Notarizing DMG: $APP_PATH"
           [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
-
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
@@ -117,6 +217,7 @@ jobs:
       - name: Package for Linux
         if: runner.os == 'Linux'
         run: |
+          cd packages/frontend
           # Install required dependencies
           sudo snap install snapcraft --classic
           sudo apt-get update
@@ -128,11 +229,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           EP_PRE_RELEASE: true
           EP_DRAFT: false
-          SNAP_STORE_SKIP_UPLOAD: true  # Skip Snapcraft store upload
+          SNAP_STORE_SKIP_UPLOAD: true
 
       - name: Package for Windows
         if: runner.os == 'Windows'
-        run: npm run deploy
+        run: |
+          cd packages/frontend
+          npm run deploy
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           EP_PRE_RELEASE: true
@@ -143,9 +246,16 @@ jobs:
         with:
           name: ${{ matrix.os }}-artifacts
           path: |
-            packages/**/*
-            dist/**/*.yml
-            dist/**/*.yaml
+            packages/frontend/dist/**/*
+            packages/frontend/dist/**/*.yml
+            packages/frontend/dist/**/*.yaml
+
+      - name: Upload Core Package Artifact
+        if: runner.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-package
+          path: packages/core/dist
           
   release:
     needs: build
@@ -154,31 +264,38 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Ensure full history for tagging
+          fetch-depth: 0
 
       - name: Download Linux Artifacts
         uses: actions/download-artifact@v3
         with:
           name: ubuntu-latest-artifacts
-          path: ./packages
+          path: ./dist
 
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v3
         with:
           name: windows-latest-artifacts
-          path: ./packages
+          path: ./dist
 
       - name: Download macOS Artifacts
         uses: actions/download-artifact@v3
         with:
           name: macos-latest-artifacts
-          path: ./packages
+          path: ./dist
+
+      - name: Download Core Package
+        uses: actions/download-artifact@v3
+        with:
+          name: core-package
+          path: ./packages/core/dist
 
       - name: Get version from package.json
         id: get_version
         run: |
-          VERSION=$(jq -r .version package.json)
+          VERSION=$(jq -r .version ./packages/frontend/package.json)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Create and push a new tag
         env:
           VERSION: ${{ env.VERSION }}
@@ -195,6 +312,7 @@ jobs:
           else
             echo "Tag v$VERSION already exists, skipping tag creation"
           fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -203,12 +321,41 @@ jobs:
           prerelease: false
           make_latest: "true"
           files: |
-            packages/**/*.AppImage
-            packages/**/*.exe
-            packages/**/*.dmg
-            packages/**/*.zip
-            packages/**/latest*.yml
-            packages/**/latest*.yaml
-            packages/**/*blockmap
+            dist/**/*.AppImage
+            dist/**/*.exe
+            dist/**/*.dmg
+            dist/**/*.zip
+            dist/**/latest*.yml
+            dist/**/latest*.yaml
+            dist/**/*blockmap
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  publish-npm:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.11.0'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download Core Package
+        uses: actions/download-artifact@v3
+        with:
+          name: core-package
+          path: ./packages/core/dist
+
+      - name: Install dependencies
+        run: cd packages/core && npm install
+
+      - name: Publish to NPM
+        run: |
+          cd packages/core
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

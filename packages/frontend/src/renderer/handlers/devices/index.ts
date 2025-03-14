@@ -1,0 +1,7 @@
+export * from './addDevice'
+export * from './deleteDevice'
+export * from './updateDevice'
+export * from './connect'
+export * from './updateSyncStorage'
+export * from './addScannedFolder'
+export * from './updateScorePreferences'
