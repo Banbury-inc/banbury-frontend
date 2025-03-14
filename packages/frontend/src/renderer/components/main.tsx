@@ -389,7 +389,8 @@ export default function PermanentDrawerLeft() {
                 spacing={1}
                 className="no-drag"
                 sx={{
-                  pt: 1,
+                  pt: 0,
+                  pb: 0,
                   pr: isMac ? 2 : 0,
                   position: 'absolute',
                   right: 0,
