@@ -114,10 +114,10 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20.11.0'
           cache: 'npm'
@@ -242,7 +242,7 @@ jobs:
           EP_DRAFT: false
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-artifacts
           path: |
@@ -252,7 +252,7 @@ jobs:
 
       - name: Upload Core Package Artifact
         if: runner.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: core-package
           path: packages/core/dist
@@ -262,30 +262,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Download Linux Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ubuntu-latest-artifacts
           path: ./dist
 
       - name: Download Windows Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-latest-artifacts
           path: ./dist
 
       - name: Download macOS Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-latest-artifacts
           path: ./dist
 
       - name: Download Core Package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: core-package
           path: ./packages/core/dist
@@ -336,16 +336,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20.11.0'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Download Core Package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: core-package
           path: ./packages/core/dist
