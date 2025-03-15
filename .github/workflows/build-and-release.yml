@@ -77,6 +77,12 @@ jobs:
           npx playwright install
           npx playwright install-deps
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
       - name: Build the app
         run: npm run build
 
@@ -90,8 +96,14 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cd packages/frontend
-          npx playwright test
+          # Start Xvfb
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 3
+          
+          # Run tests with display
+          DISPLAY=:99 npx playwright test
         env:
+          DISPLAY: ':99'
           ELECTRON_ENABLE_LOGGING: true
           DEBUG: electron*,playwright*
           NODE_ENV: development

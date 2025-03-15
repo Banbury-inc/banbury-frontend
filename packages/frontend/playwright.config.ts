@@ -1,9 +1,6 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { devices } from '@playwright/test';
 
-
-
-
 const config: PlaywrightTestConfig = {
   testDir: './tests/e2e',
   timeout: 180000, // 3 minutes
@@ -14,6 +11,12 @@ const config: PlaywrightTestConfig = {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    launchOptions: {
+      env: {
+        ...process.env,
+        DISPLAY: process.env.DISPLAY || ':99'
+      }
+    }
   },
   // projects: [
   //   {
@@ -49,7 +52,9 @@ const config: PlaywrightTestConfig = {
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: process.platform === 'linux' ? 
+      'xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" npm run dev' : 
+      'npm run dev',
     url: 'http://localhost:8081',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
