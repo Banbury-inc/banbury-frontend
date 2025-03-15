@@ -77,6 +77,28 @@ jobs:
           npx playwright install
           npx playwright install-deps
 
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgbm-dev \
+            libxkbcommon-x11-0 \
+            libgtk-3-0 \
+            libnss3 \
+            libxss1 \
+            libasound2 \
+            libva-dev \
+            libvdpau-dev \
+            xvfb \
+            dbus-x11
+
+      - name: Start DBus
+        if: runner.os == 'Linux'
+        run: |
+          sudo /etc/init.d/dbus start || true
+          sleep 2
+
       - name: Install Ollama
         if: runner.os == 'Linux'
         run: |

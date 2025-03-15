@@ -7,24 +7,26 @@ test.describe('Files tests', () => {
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
-    const electronPath = path.resolve(__dirname, '../../');
+    const electronPath = path.join(__dirname, '../../');
     
     // Launch Electron app with increased timeout and debug logging
     electronApp = await electron.launch({ 
-      args: [electronPath],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', electronPath],
       timeout: 180000, // 3 minutes timeout
       env: {
         ...process.env,
-        NODE_ENV: 'development',
-        DEBUG: 'electron*,playwright*' // Enable debug logging
+        NODE_ENV: 'test',
+        ELECTRON_ENABLE_LOGGING: 'true',
+        DEBUG: 'electron*,playwright*',
+        DISPLAY: process.env.DISPLAY || ':99.0'
       }
     });
 
-    // Wait for the first BrowserWindow to open
-    window = await electronApp.firstWindow();
+    // Wait for the first BrowserWindow to open with increased timeout
+    window = await electronApp.firstWindow({ timeout: 60000 });
     
     // Wait for the app to be fully loaded
-    await window.waitForLoadState('domcontentloaded');
+    await window.waitForLoadState('domcontentloaded', { timeout: 60000 });
 
     // Check if we're already logged in
     const isLoggedIn = await window.evaluate(() => {
