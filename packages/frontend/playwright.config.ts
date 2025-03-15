@@ -1,5 +1,6 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { platform } from 'os';
+import * as path from 'path';
 
 // Platform-specific configurations
 const platformConfig = {
@@ -23,7 +24,6 @@ const platformConfig = {
     args: [
       '--no-sandbox',
       '--disable-gpu',
-      '--disable-software-rasterizer',
       '--disable-dev-shm-usage'
     ],
     env: {
@@ -31,13 +31,16 @@ const platformConfig = {
       DISPLAY: process.env.DISPLAY || ':99.0',
       ELECTRON_ENABLE_LOGGING: '1',
       DEBUG: 'electron*,playwright*',
-      ELECTRON_DISABLE_SANDBOX: '1',
-      DISABLE_GPU: '1'
+      ELECTRON_DISABLE_SANDBOX: '1'
     }
   }
 };
 
 const currentPlatform = platform() as 'win32' | 'darwin' | 'linux';
+
+// Get the correct path to the Electron app
+const electronPath = path.join(__dirname, 'node_modules', '.bin', 'electron');
+
 const config: PlaywrightTestConfig = {
   testDir: './tests/e2e',
   timeout: 180000, // 3 minutes
@@ -57,9 +60,12 @@ const config: PlaywrightTestConfig = {
         // @ts-ignore - Electron types are not properly exposed in Playwright's type definitions
         _electron: {
           ...platformConfig[currentPlatform],
+          executablePath: electronPath,
           env: {
             ...process.env,
-            ...platformConfig[currentPlatform].env
+            ...platformConfig[currentPlatform].env,
+            ELECTRON_ENABLE_SECURITY_WARNINGS: 'false',
+            ELECTRON_DISABLE_SECURITY_WARNINGS: 'true'
           }
         }
       }

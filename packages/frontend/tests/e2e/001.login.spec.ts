@@ -7,8 +7,17 @@ test('can login and shows onboarding for first-time user', async () => {
     // Get the correct path to the Electron app
     const electronPath = path.resolve(__dirname, '../../');
     
-    // Launch Electron app
-    electronApp = await electron.launch({ args: [electronPath] });
+    // Launch Electron app with more explicit configuration
+    electronApp = await electron.launch({
+      args: [electronPath],
+      timeout: 30000
+    }).catch(async (error) => {
+      console.error('Failed to launch electron:', error);
+      throw error;
+    });
+
+    // Wait for app to be ready
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const isPackaged = await electronApp.evaluate(async ({ app }) => {
       return app.isPackaged;
