@@ -77,39 +77,6 @@ jobs:
           npx playwright install
           npx playwright install-deps
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            xvfb \
-            libgtk-3-0 \
-            libx11-xcb1 \
-            libxcb-dri3-0 \
-            libdrm2 \
-            libgbm1 \
-            libasound2 \
-            libxss1 \
-            libxshmfence1 \
-            libgles2 \
-            libegl1 \
-            libgtk-4-1 \
-            libgraphene-1.0-0 \
-            libvpx7 \
-            libevent-2.1-7 \
-            libopus0 \
-            libwoff1 \
-            libharfbuzz-icu0 \
-            libsecret-1-0 \
-            libhyphen0 \
-            libmanette-0.2-0 \
-            libgstreamer1.0-0 \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
-            gstreamer1.0-plugins-bad \
-            libgstreamer-plugins-base1.0-0 \
-            libgstreamer-plugins-bad1.0-0
-
       - name: Build the app
         run: npm run build
 
