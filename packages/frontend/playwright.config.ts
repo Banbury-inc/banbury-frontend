@@ -1,22 +1,8 @@
-import { defineConfig } from '@playwright/test';
-import { platform } from 'os';
-
-// Platform-specific configuration
-const platformConfig = {
-  // Slower execution on CI or Windows to improve stability
-  slowMo: process.env.CI || platform() === 'win32' ? 200 : 100,
-  // Additional args for different platforms
-  args: [
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    // Add Windows-specific args if needed
-    ...(platform() === 'win32' ? ['--disable-gpu'] : []),
-  ]
-};
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: false,
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
@@ -29,18 +15,28 @@ export default defineConfig({
     navigationTimeout: 60000,
     actionTimeout: 30000,
     video: 'retain-on-failure',
-    launchOptions: platformConfig,
+    launchOptions: {
+      slowMo: 100,
+    },
   },
   projects: [
     {
-      name: 'electron',
-      testMatch: /.*\.spec\.ts/,
-    }
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
   ],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:8081',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 180000,
   },
 }); 
