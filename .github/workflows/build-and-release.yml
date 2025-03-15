@@ -83,8 +83,8 @@ jobs:
       - name: Setup Chrome sandbox for Linux
         if: runner.os == 'Linux'
         run: |
-          sudo chown root:root /home/runner/work/banbury-frontend/banbury-frontend/packages/frontend/node_modules/electron/dist/chrome-sandbox
-          sudo chmod 4755 /home/runner/work/banbury-frontend/banbury-frontend/packages/frontend/node_modules/electron/dist/chrome-sandbox
+          sudo chown root:root /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
 
       - name: Run E2E Tests
         if: runner.os == 'Linux'
