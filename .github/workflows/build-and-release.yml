@@ -214,6 +214,13 @@ jobs:
       - name: Build all packages
         run: npm run build
 
+      # Get version for macOS builds
+      - name: Get version from package.json
+        if: runner.os == 'macOS'
+        run: |
+          VERSION=$(node -p "require('./packages/frontend/package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       # For macOS: Build, Sign, and Notarize in the correct order
       - name: Build and Sign macOS App
         if: runner.os == 'macOS'
@@ -275,7 +282,6 @@ jobs:
         run: |
           APP_NAME="Banbury"
           cd packages/frontend
-          VERSION=$(node -p "require('./package.json').version")
           
           # Notarize DMG
           DMG_PATH="dist/${APP_NAME}-${VERSION}-arm64.dmg"
@@ -285,8 +291,10 @@ jobs:
             /usr/bin/codesign --force --sign "Developer ID Application: Michael Mills (${{ secrets.APPLE_TEAM_ID }})" --options runtime "$DMG_PATH"
             # Verify signing
             /usr/bin/codesign --verify --verbose=2 "$DMG_PATH"
+            # Export full path for the notarization script
+            export APP_PATH="$(pwd)/$DMG_PATH"
             # Notarize
-            APP_PATH="$DMG_PATH" node ../scripts/notarize.ts
+            npx ts-node scripts/notarize.ts
           else
             echo "Warning: $DMG_PATH not found"
           fi
@@ -295,6 +303,7 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_KEYCHAIN: build.keychain
+          VERSION: ${{ env.VERSION }}
 
       # For non-macOS: Build and package
       - name: Package for Linux
