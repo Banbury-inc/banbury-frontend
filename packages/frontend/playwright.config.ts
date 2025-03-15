@@ -24,7 +24,6 @@ const platformConfig = {
     args: ['--no-sandbox'],
     env: {
       NODE_ENV: 'development',
-      DISPLAY: process.env.DISPLAY || ':99.0',
       ELECTRON_ENABLE_LOGGING: '1',
       DEBUG: 'electron*,playwright*'
     }
