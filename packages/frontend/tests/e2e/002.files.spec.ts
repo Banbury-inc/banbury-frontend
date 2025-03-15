@@ -1,6 +1,5 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
-import { platform } from 'os'
 import { getElectronConfig } from './utils/electron-config'
 
 test.describe('Files tests', () => {
