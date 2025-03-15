@@ -8,39 +8,36 @@ test.describe('Files tests', () => {
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
-    const electronPath = path.join(__dirname, '../../');
+    const electronPath = path.resolve(__dirname, '../../');
     
-    // Platform-specific launch configuration
-    const launchConfig: Parameters<typeof electron.launch>[0] = {
-      args: ['--no-sandbox', '--disable-setuid-sandbox', electronPath],
+    // Launch Electron app with increased timeout and debug logging
+    electronApp = await electron.launch({ 
+      args: [electronPath],
       timeout: 180000, // 3 minutes timeout
       env: {
         ...process.env,
-        NODE_ENV: 'test',
-        ELECTRON_ENABLE_LOGGING: 'true',
-        DEBUG: 'electron*,playwright*'
+        NODE_ENV: 'development',
+        DEBUG: 'electron*,playwright*' // Enable debug logging
       }
-    };
+    });
 
-    // Only add DISPLAY env var for Linux
-    if (platform() === 'linux') {
-      launchConfig.env = {
-        ...launchConfig.env,
-        DISPLAY: process.env.DISPLAY || ':99.0'
-      };
-    }
-    
-    // Launch Electron app with platform-specific config
-    electronApp = await electron.launch(launchConfig);
+    const isPackaged = await electronApp.evaluate(async ({ app }) => {
+      // This runs in Electron's main process, parameter here is always
+      // the result of the require('electron') in the main app script.
+      return app.isPackaged;
+    });
 
-    // Wait for the first BrowserWindow to open with increased timeout
-    window = await electronApp.firstWindow({ timeout: 60000 });
+    expect(isPackaged).toBe(false);
+
+    // Wait for the first BrowserWindow to open
+    window = await electronApp.firstWindow();
     
-    // Wait for the app to be fully loaded
-    await window.waitForLoadState('domcontentloaded', { timeout: 60000 });
+    // Ensure the window is loaded
+    await window.waitForLoadState('domcontentloaded');
 
     // Check if we're already logged in
     const isLoggedIn = await window.evaluate(() => {
+      console.log('Checking login status - localStorage:', localStorage);
       return !!localStorage.getItem('authToken');
     });
 
@@ -50,11 +47,23 @@ test.describe('Files tests', () => {
       await window.fill('input[name="email"]', 'mmills');
       await window.fill('input[name="password"]', 'dirtballer');
       
+      // Add debug logging before login
+      await window.evaluate(() => {
+        console.log('Before login - localStorage:', localStorage);
+        console.log('Before login - Document body:', document.body.innerHTML);
+      });
+
       // Click login and wait for response
       await Promise.all([
         window.click('button[type="submit"]'),
         window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
       ]);
+
+      // Add debug logging after login
+      await window.evaluate(() => {
+        console.log('After login - localStorage:', localStorage);
+        console.log('After login - Document body:', document.body.innerHTML);
+      });
 
       // Check if onboarding is needed
       const needsOnboarding = await window.evaluate(() => {
