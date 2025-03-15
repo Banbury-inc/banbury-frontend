@@ -1,5 +1,38 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { devices } from '@playwright/test';
+import { platform } from 'os';
+import * as path from 'path';
+
+// Platform-specific configurations
+const platformConfig = {
+  win32: {
+    args: ['--no-sandbox'],
+    env: {
+      NODE_ENV: 'development',
+      ELECTRON_ENABLE_LOGGING: '1',
+      DEBUG: 'electron*,playwright*'
+    }
+  },
+  darwin: {
+    args: [],
+    env: {
+      NODE_ENV: 'development',
+      ELECTRON_ENABLE_LOGGING: '1',
+      DEBUG: 'electron*,playwright*'
+    }
+  },
+  linux: {
+    args: ['--no-sandbox'],
+    env: {
+      NODE_ENV: 'development',
+      DISPLAY: process.env.DISPLAY || ':99',
+      ELECTRON_ENABLE_LOGGING: '1',
+      DEBUG: 'electron*,playwright*'
+    }
+  }
+};
+
+const currentPlatform = platform() as 'win32' | 'darwin' | 'linux';
 
 const config: PlaywrightTestConfig = {
   testDir: './tests/e2e',
@@ -18,26 +51,21 @@ const config: PlaywrightTestConfig = {
       }
     }
   },
-  // projects: [
-  //   {
-  //     name: 'Electron',
-  //     testMatch: /.*\.spec\.ts/,
-  //     use: {
-  //       // @ts-ignore - Electron types are not properly exposed in Playwright's type definitions
-  //       _electron: {
-  //         ...platformConfig[currentPlatform],
-  //         executablePath: electronPath,
-  //         env: {
-  //           ...process.env,
-  //           ...platformConfig[currentPlatform].env,
-  //           ELECTRON_ENABLE_SECURITY_WARNINGS: 'false',
-  //           ELECTRON_DISABLE_SECURITY_WARNINGS: 'true'
-  //         }
-  //       }
-  //     }
-  //   }
-  // ],
   projects: [
+    {
+      name: 'electron',
+      testMatch: /.*\.spec\.ts/,
+      use: {
+        // @ts-ignore - Electron types are not properly exposed in Playwright's type definitions
+        _electron: {
+          ...platformConfig[currentPlatform],
+          env: {
+            ...process.env,
+            ...platformConfig[currentPlatform].env
+          }
+        }
+      }
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },

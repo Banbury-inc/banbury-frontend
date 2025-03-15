@@ -101,12 +101,13 @@ jobs:
           sleep 3
           
           # Run tests with display
-          DISPLAY=:99 npx playwright test
+          DISPLAY=:99 npx playwright test --project=electron
         env:
           DISPLAY: ':99'
           ELECTRON_ENABLE_LOGGING: true
           DEBUG: electron*,playwright*
           NODE_ENV: development
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1  # Skip browser download since we only need Electron
 
       - name: Run E2E Tests (Windows)
         if: runner.os == 'Windows'
