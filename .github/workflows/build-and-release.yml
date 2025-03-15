@@ -219,22 +219,42 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cd packages/frontend
+          # Ensure the build directory exists
+          mkdir -p build
+          # Build the app
           npm run package:app
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Notarize macOS App Bundle
         if: runner.os == 'macOS'
         run: |
           APP_NAME="Banbury"
-          export APP_PATH="./packages/frontend/dist/mac-arm64/${APP_NAME}.app"
-          echo "Notarizing app bundle: $APP_PATH"
-          node ./scripts/notarize.ts
+          cd packages/frontend
+          APP_PATH="dist/mac-arm64/${APP_NAME}.app"
+          
+          # Verify app exists
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Error: $APP_PATH does not exist"
+            exit 1
+          fi
+          
+          # Sign with codesign explicitly
+          /usr/bin/codesign --force --deep --sign "Developer ID Application: Michael Mills (${{ secrets.APPLE_TEAM_ID }})" --options runtime --entitlements "build/entitlements.mac.plist" "$APP_PATH"
+          
+          # Verify signing
+          /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          
+          # Now run the notarization script
+          node ../scripts/notarize.ts
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_KEYCHAIN: build.keychain
 
       - name: Create DMG and ZIP for macOS
         if: runner.os == 'macOS'
@@ -244,22 +264,34 @@ jobs:
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Notarize macOS Distribution Files
         if: runner.os == 'macOS'
         run: |
           APP_NAME="Banbury"
-          VERSION=$(node -p "require('./packages/frontend/package.json').version")
-          WORKSPACE_PATH="$GITHUB_WORKSPACE"
+          cd packages/frontend
+          VERSION=$(node -p "require('./package.json').version")
           
           # Notarize DMG
-          export APP_PATH="$WORKSPACE_PATH/packages/frontend/dist/${APP_NAME}-${VERSION}-arm64.dmg"
-          echo "Notarizing DMG: $APP_PATH"
-          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
+          DMG_PATH="dist/${APP_NAME}-${VERSION}-arm64.dmg"
+          if [ -f "$DMG_PATH" ]; then
+            echo "Notarizing DMG: $DMG_PATH"
+            # Sign DMG explicitly
+            /usr/bin/codesign --force --sign "Developer ID Application: Michael Mills (${{ secrets.APPLE_TEAM_ID }})" --options runtime "$DMG_PATH"
+            # Verify signing
+            /usr/bin/codesign --verify --verbose=2 "$DMG_PATH"
+            # Notarize
+            APP_PATH="$DMG_PATH" node ../scripts/notarize.ts
+          else
+            echo "Warning: $DMG_PATH not found"
+          fi
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_KEYCHAIN: build.keychain
 
       # For non-macOS: Build and package
       - name: Package for Linux
