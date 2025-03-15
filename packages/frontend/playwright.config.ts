@@ -21,17 +21,10 @@ const platformConfig = {
     }
   },
   linux: {
-    args: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage'
-    ],
     env: {
       NODE_ENV: 'development',
-      DISPLAY: process.env.DISPLAY || ':99.0',
       ELECTRON_ENABLE_LOGGING: '1',
       DEBUG: 'electron*,playwright*',
-      ELECTRON_DISABLE_SANDBOX: '1'
     }
   }
 };

@@ -34,7 +34,6 @@ test('can login and shows onboarding for first-time user', async () => {
     // Clear localStorage to ensure we're testing first-time login
     await window.evaluate(() => {
       localStorage.clear();
-      console.log('Cleared localStorage');
     });
 
     // Wait for the login form to appear
@@ -50,8 +49,6 @@ test('can login and shows onboarding for first-time user', async () => {
 
     // Add debug logging before login
     await window.evaluate(() => {
-      console.log('Before login - localStorage:', localStorage);
-      console.log('Before login - Document body:', document.body.innerHTML);
     });
 
     // Click on the login button and wait for navigation
@@ -62,8 +59,6 @@ test('can login and shows onboarding for first-time user', async () => {
 
     // Add debug logging after login
     await window.evaluate(() => {
-      console.log('After login - localStorage:', localStorage);
-      console.log('After login - Document body:', document.body.innerHTML);
     });
 
     // Wait for the welcome text to appear in any heading

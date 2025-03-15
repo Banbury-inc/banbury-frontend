@@ -26,7 +26,6 @@ test.describe('Files tests', () => {
 
     // Check if we're already logged in
     const isLoggedIn = await window.evaluate(() => {
-      console.log('Checking login status - localStorage:', localStorage);
       return !!localStorage.getItem('authToken');
     });
 
@@ -38,8 +37,6 @@ test.describe('Files tests', () => {
       
       // Add debug logging before login
       await window.evaluate(() => {
-        console.log('Before login - localStorage:', localStorage);
-        console.log('Before login - Document body:', document.body.innerHTML);
       });
 
       // Click login and wait for response
@@ -50,8 +47,6 @@ test.describe('Files tests', () => {
 
       // Add debug logging after login
       await window.evaluate(() => {
-        console.log('After login - localStorage:', localStorage);
-        console.log('After login - Document body:', document.body.innerHTML);
       });
 
       // Check if onboarding is needed
@@ -116,11 +111,9 @@ test.describe('Files tests', () => {
 
     // Log the number of matching elements and their HTML for debugging
     const count = await downloadButton.count();
-    console.log(`Found ${count} download buttons`);
     if (count > 0) {
       for (let i = 0; i < count; i++) {
-        const html = await downloadButton.nth(i).evaluate(el => el.outerHTML);
-        console.log(`Button ${i + 1} HTML:`, html);
+        await downloadButton.nth(i).evaluate(el => el.outerHTML);
       }
     }
 
@@ -156,11 +149,9 @@ test.describe('Files tests', () => {
 
     // Log the number of matching elements and their HTML for debugging
     const count = await uploadButton.count();
-    console.log(`Found ${count} upload buttons`);
     if (count > 0) {
       for (let i = 0; i < count; i++) {
-        const html = await uploadButton.nth(i).evaluate(el => el.outerHTML);
-        console.log(`Button ${i + 1} HTML:`, html);
+        await uploadButton.nth(i).evaluate(el => el.outerHTML);
       }
     }
 
@@ -174,10 +165,8 @@ test.describe('Files tests', () => {
     // Log all popovers for debugging
     const allPopovers = window.locator('div[role="presentation"].MuiPopover-root');
     const popoverCount = await allPopovers.count();
-    console.log(`Found ${popoverCount} popovers`);
     for (let i = 0; i < popoverCount; i++) {
-      const html = await allPopovers.nth(i).evaluate(el => el.outerHTML);
-      console.log(`Popover ${i + 1} HTML:`, html);
+      await allPopovers.nth(i).evaluate(el => el.outerHTML);
     }
 
     // Use a more specific selector for the upload popover
@@ -200,7 +189,6 @@ test.describe('Files tests', () => {
     await expect(tabs).toHaveCount(4, { timeout: 10000 });
 
     // Log final state for debugging
-    console.log('Test completed successfully');
   });
 
   test('notifications button is clickable and opens popover', async () => {
@@ -218,10 +206,8 @@ test.describe('Files tests', () => {
     // Log all popovers for debugging
     const allPopovers = window.locator('div[role="presentation"].MuiPopover-root');
     const popoverCount = await allPopovers.count();
-    console.log(`Found ${popoverCount} popovers after clicking notifications button`);
     for (let i = 0; i < popoverCount; i++) {
-      const html = await allPopovers.nth(i).evaluate(el => el.outerHTML);
-      console.log(`Popover ${i + 1} HTML:`, html);
+      await allPopovers.nth(i).evaluate(el => el.outerHTML);
     }
 
     // Use a more specific selector for the notifications popover
@@ -245,8 +231,6 @@ test.describe('Files tests', () => {
     const subMessage = notificationsPopover.getByText("No new notifications");
     await expect(subMessage).toBeVisible({ timeout: 10000 });
 
-    // Log final state for debugging
-    console.log('Notifications test completed successfully');
   });
 
   // Keep your other test definitions here...
