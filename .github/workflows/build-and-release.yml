@@ -234,7 +234,7 @@ jobs:
         run: |
           APP_NAME="Banbury"
           cd packages/frontend
-          APP_PATH="dist/mac-arm64/${APP_NAME}.app"
+          APP_PATH="packages/frontend/dist/mac-arm64/${APP_NAME}.app"
           
           # Verify app exists
           if [ ! -d "$APP_PATH" ]; then
