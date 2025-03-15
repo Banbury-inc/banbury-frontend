@@ -1,8 +1,12 @@
 {
-  "name": "@banbury/frontend",
+  "name": "banbury-frontend",
   "version": "3.4.23",
   "private": true,
   "description": "A decentralized cloud storage system.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Banbury-inc/banbury-frontend.git"
+  },
   "main": "./dist/main.js",
   "icon": "./icon.png",
   "homepage": "./dist/renderer/index.html",
@@ -20,7 +24,7 @@
     "lint:fix": "eslint --fix .",
     "lint:watch": "eslint --watch .",
     "package": "npm-run-all build package:dist",
-    "deploy": "electron-builder --publish always",
+    "deploy": "npm run build && electron-builder --publish always",
     "package:dist": "electron-builder --mac",
     "package:app": "electron-builder --dir",
     "docs": "typedoc --out docs --entryPointStrategy expand src/renderer/neuranet",
@@ -150,10 +154,10 @@
     "react-dom": "^18.2.0"
   },
   "build": {
-    "productName": "Banbury",
+    "productName": "banbury",
     "appId": "com.banbury.cloud",
     "directories": {
-      "output": "packages",
+      "output": "dist",
       "buildResources": "resources"
     },
     "win": {
@@ -185,9 +189,13 @@
     "linux": {
       "target": [
         "deb",
-        "appImage"
+        "AppImage"
       ],
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
+      "category": "Utility",
+      "executableName": "banbury",
+      "synopsis": "A decentralized cloud storage system",
+      "artifactName": "${productName}-${version}.${ext}",
       "publish": [
         "github"
       ]
