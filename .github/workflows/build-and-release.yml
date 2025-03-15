@@ -248,8 +248,11 @@ jobs:
           # Verify signing
           /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
           
+          # Export full path for the notarization script
+          export APP_PATH="$(pwd)/$APP_PATH"
+          
           # Now run the notarization script
-          node ../scripts/notarize.ts
+          npx ts-node scripts/notarize.ts
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
