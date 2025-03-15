@@ -7,20 +7,10 @@ test('can login and shows onboarding for first-time user', async () => {
     // Get the correct path to the Electron app
     const electronPath = path.resolve(__dirname, '../../');
     
-    // Launch Electron app with increased timeout and debug logging
-    electronApp = await electron.launch({ 
-      args: [electronPath],
-      timeout: 180000, // 3 minutes timeout
-      env: {
-        ...process.env,
-        NODE_ENV: 'development',
-        DEBUG: 'electron*,playwright*' // Enable debug logging
-      }
-    });
+    // Launch Electron app
+    electronApp = await electron.launch({ args: [electronPath] });
 
     const isPackaged = await electronApp.evaluate(async ({ app }) => {
-      // This runs in Electron's main process, parameter here is always
-      // the result of the require('electron') in the main app script.
       return app.isPackaged;
     });
 
