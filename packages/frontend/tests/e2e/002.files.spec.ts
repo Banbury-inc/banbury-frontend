@@ -1,5 +1,6 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
+import { getElectronConfig } from './utils/electron-config'
 
 test.describe('Files tests', () => {
   let electronApp;
@@ -9,21 +10,19 @@ test.describe('Files tests', () => {
     // Get the correct path to the Electron app
     const electronPath = path.resolve(__dirname, '../../');
     
-    // Launch Electron app with increased timeout and debug logging
-    electronApp = await electron.launch({ 
-      args: [electronPath],
-      timeout: 180000, // 3 minutes timeout
-      env: {
-        ...process.env,
-        NODE_ENV: 'development',
-        DEBUG: 'electron*,playwright*' // Enable debug logging
-      }
+    // Launch Electron app with shared configuration
+    electronApp = await electron.launch(getElectronConfig(electronPath));
+
+    const isPackaged = await electronApp.evaluate(async ({ app }) => {
+      return app.isPackaged;
     });
+
+    expect(isPackaged).toBe(false);
 
     // Wait for the first BrowserWindow to open
     window = await electronApp.firstWindow();
     
-    // Wait for the app to be fully loaded
+    // Ensure the window is loaded
     await window.waitForLoadState('domcontentloaded');
 
     // Check if we're already logged in
@@ -37,11 +36,19 @@ test.describe('Files tests', () => {
       await window.fill('input[name="email"]', 'mmills');
       await window.fill('input[name="password"]', 'dirtballer');
       
+      // Add debug logging before login
+      await window.evaluate(() => {
+      });
+
       // Click login and wait for response
       await Promise.all([
         window.click('button[type="submit"]'),
         window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
       ]);
+
+      // Add debug logging after login
+      await window.evaluate(() => {
+      });
 
       // Check if onboarding is needed
       const needsOnboarding = await window.evaluate(() => {
@@ -105,11 +112,9 @@ test.describe('Files tests', () => {
 
     // Log the number of matching elements and their HTML for debugging
     const count = await downloadButton.count();
-    console.log(`Found ${count} download buttons`);
     if (count > 0) {
       for (let i = 0; i < count; i++) {
-        const html = await downloadButton.nth(i).evaluate(el => el.outerHTML);
-        console.log(`Button ${i + 1} HTML:`, html);
+        await downloadButton.nth(i).evaluate(el => el.outerHTML);
       }
     }
 
@@ -145,11 +150,9 @@ test.describe('Files tests', () => {
 
     // Log the number of matching elements and their HTML for debugging
     const count = await uploadButton.count();
-    console.log(`Found ${count} upload buttons`);
     if (count > 0) {
       for (let i = 0; i < count; i++) {
-        const html = await uploadButton.nth(i).evaluate(el => el.outerHTML);
-        console.log(`Button ${i + 1} HTML:`, html);
+        await uploadButton.nth(i).evaluate(el => el.outerHTML);
       }
     }
 
@@ -163,10 +166,8 @@ test.describe('Files tests', () => {
     // Log all popovers for debugging
     const allPopovers = window.locator('div[role="presentation"].MuiPopover-root');
     const popoverCount = await allPopovers.count();
-    console.log(`Found ${popoverCount} popovers`);
     for (let i = 0; i < popoverCount; i++) {
-      const html = await allPopovers.nth(i).evaluate(el => el.outerHTML);
-      console.log(`Popover ${i + 1} HTML:`, html);
+      await allPopovers.nth(i).evaluate(el => el.outerHTML);
     }
 
     // Use a more specific selector for the upload popover
@@ -189,7 +190,6 @@ test.describe('Files tests', () => {
     await expect(tabs).toHaveCount(4, { timeout: 10000 });
 
     // Log final state for debugging
-    console.log('Test completed successfully');
   });
 
   test('notifications button is clickable and opens popover', async () => {
@@ -207,10 +207,8 @@ test.describe('Files tests', () => {
     // Log all popovers for debugging
     const allPopovers = window.locator('div[role="presentation"].MuiPopover-root');
     const popoverCount = await allPopovers.count();
-    console.log(`Found ${popoverCount} popovers after clicking notifications button`);
     for (let i = 0; i < popoverCount; i++) {
-      const html = await allPopovers.nth(i).evaluate(el => el.outerHTML);
-      console.log(`Popover ${i + 1} HTML:`, html);
+      await allPopovers.nth(i).evaluate(el => el.outerHTML);
     }
 
     // Use a more specific selector for the notifications popover
@@ -234,8 +232,6 @@ test.describe('Files tests', () => {
     const subMessage = notificationsPopover.getByText("No new notifications");
     await expect(subMessage).toBeVisible({ timeout: 10000 });
 
-    // Log final state for debugging
-    console.log('Notifications test completed successfully');
   });
 
   // Keep your other test definitions here...

@@ -1,5 +1,6 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
+import { getElectronConfig } from './utils/electron-config'
 
 test('can login and shows onboarding for first-time user', async () => {
   let electronApp;
@@ -7,26 +8,23 @@ test('can login and shows onboarding for first-time user', async () => {
     // Get the correct path to the Electron app
     const electronPath = path.resolve(__dirname, '../../');
     
-    // Launch Electron app with increased timeout and debug logging
-    electronApp = await electron.launch({ 
-      args: [electronPath],
-      timeout: 180000, // 3 minutes timeout
-      env: {
-        ...process.env,
-        NODE_ENV: 'development',
-        DEBUG: 'electron*,playwright*' // Enable debug logging
-      }
-    });
+    // Launch Electron app with shared configuration
+    electronApp = await electron.launch(getElectronConfig(electronPath))
+      .catch(async (error) => {
+        console.error('Failed to launch electron:', error);
+        throw error;
+      });
+
+    // Wait for app to be ready
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const isPackaged = await electronApp.evaluate(async ({ app }) => {
-      // This runs in Electron's main process, parameter here is always
-      // the result of the require('electron') in the main app script.
       return app.isPackaged;
     });
 
     expect(isPackaged).toBe(false);
 
-    // Wait for the first BrowserWindow to open with increased timeout
+    // Wait for the first BrowserWindow to open
     const window = await electronApp.firstWindow();
     
     // Ensure the window is loaded
@@ -38,31 +36,28 @@ test('can login and shows onboarding for first-time user', async () => {
     });
 
     // Wait for the login form to appear
-    await window.waitForSelector('input[name="email"]');
+    const emailInput = await window.waitForSelector('input[name="email"]', { timeout: 30000 });
+    expect(emailInput).toBeTruthy();
 
     // Type in the username
-    await window.fill('input[name="email"]', 'mmills');
+    await emailInput.fill('mmills');
 
     // Type in the password
-    await window.fill('input[name="password"]', 'dirtballer');
+    const passwordInput = await window.waitForSelector('input[name="password"]');
+    await passwordInput.fill('dirtballer');
 
-    // Add debug logging to see what's happening in the page
+    // Add debug logging before login
     await window.evaluate(() => {
-      console.log('Current localStorage:', localStorage);
-      console.log('Document body:', document.body.innerHTML);
     });
 
     // Click on the login button and wait for navigation
     await Promise.all([
       window.click('button[type="submit"]'),
-      // Wait for the network request to complete
       window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
     ]);
 
-    // Add more debug logging after login attempt
+    // Add debug logging after login
     await window.evaluate(() => {
-      console.log('After login - localStorage:', localStorage);
-      console.log('After login - Document body:', document.body.innerHTML);
     });
 
     // Wait for the welcome text to appear in any heading
@@ -78,13 +73,16 @@ test('can login and shows onboarding for first-time user', async () => {
     const description = await window.textContent('p.MuiTypography-body1');
     expect(description).toContain("We're excited to have you here!");
     
+  } catch (error) {
+    console.error('Test failed:', error);
+    throw error;
   } finally {
     if (electronApp) {
       // Close all windows first
       const windows = await electronApp.windows();
       await Promise.all(windows.map(win => win.close()));
       // Then close the app
-      await electronApp.close();
+      await electronApp.close().catch(console.error);
     }
   }
 });

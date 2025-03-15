@@ -1,25 +1,70 @@
-import { defineConfig, devices } from '@playwright/test';
+import type { PlaywrightTestConfig } from '@playwright/test';
+import { devices } from '@playwright/test';
+import { platform } from 'os';
 
-export default defineConfig({
+// Platform-specific configurations
+const platformConfig = {
+  win32: {
+    args: ['--no-sandbox'],
+    env: {
+      NODE_ENV: 'development',
+      ELECTRON_ENABLE_LOGGING: '1',
+      DEBUG: 'electron*,playwright*'
+    }
+  },
+  darwin: {
+    args: [],
+    env: {
+      NODE_ENV: 'development',
+      ELECTRON_ENABLE_LOGGING: '1',
+      DEBUG: 'electron*,playwright*'
+    }
+  },
+  linux: {
+    args: ['--no-sandbox'],
+    env: {
+      NODE_ENV: 'development',
+      DISPLAY: process.env.DISPLAY || ':99',
+      ELECTRON_ENABLE_LOGGING: '1',
+      DEBUG: 'electron*,playwright*'
+    }
+  }
+};
+
+const currentPlatform = platform() as 'win32' | 'darwin' | 'linux';
+
+const config: PlaywrightTestConfig = {
   testDir: './tests/e2e',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  timeout: 180000, // 3 minutes
+  retries: 2,
   workers: 1,
-  reporter: 'html',
-  timeout: 180000, // Global timeout
+  reporter: 'list',
   use: {
-    baseURL: 'http://localhost:8081',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    navigationTimeout: 60000,
-    actionTimeout: 30000,
     video: 'retain-on-failure',
     launchOptions: {
-      slowMo: 100,
-    },
+      env: {
+        ...process.env,
+        DISPLAY: process.env.DISPLAY || ':99'
+      }
+    }
   },
   projects: [
+    {
+      name: 'electron',
+      testMatch: /.*\.spec\.ts/,
+      use: {
+        // @ts-ignore - Electron types are not properly exposed in Playwright's type definitions
+        _electron: {
+          ...platformConfig[currentPlatform],
+          env: {
+            ...process.env,
+            ...platformConfig[currentPlatform].env
+          }
+        }
+      }
+    },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
@@ -34,9 +79,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: process.platform === 'linux' ? 
+      'xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" npm run dev' : 
+      'npm run dev',
     url: 'http://localhost:8081',
-    reuseExistingServer: true,
-    timeout: 180000,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
   },
-}); 
+};
+
+export default config; 

@@ -77,26 +77,74 @@ jobs:
           npx playwright install
           npx playwright install-deps
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb \
+            libgtk-3-0 \
+            libx11-xcb1 \
+            libxcb1 \
+            libxss1 \
+            libnss3 \
+            libasound2t64 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libgbm1 \
+            libnotify4 \
+            libxtst6 \
+            xauth
+
       - name: Build the app
         run: npm run build
 
       - name: Setup Chrome sandbox for Linux
         if: runner.os == 'Linux'
         run: |
-          sudo chown root:root /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
-          sudo chmod 4755 /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox
+          sudo chown root:root /home/runner/work/banbury-frontend/banbury-frontend/packages/frontend/node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 /home/runner/work/banbury-frontend/banbury-frontend/packages/frontend/node_modules/electron/dist/chrome-sandbox
 
       - name: Run E2E Tests
+        if: runner.os == 'Linux'
         run: |
           cd packages/frontend
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e
-        if: runner.os == 'Linux'
+          # Start Xvfb
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 3
+          
+          # Run tests with display
+          DISPLAY=:99 npx playwright test --project=electron
+        env:
+          DISPLAY: ':99'
+          ELECTRON_ENABLE_LOGGING: true
+          DEBUG: electron*,playwright*
+          NODE_ENV: development
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          ELECTRON_NO_ATTACH_CONSOLE: 1
+          ELECTRON_DISABLE_SANDBOX: 1
 
-      - name: Run E2E Tests (Windows & macOS)
+      - name: Run E2E Tests (Windows)
+        if: runner.os == 'Windows'
         run: |
           cd packages/frontend
           npm run test:e2e
-        if: runner.os != 'Linux'
+        env:
+          ELECTRON_ENABLE_LOGGING: true
+          DEBUG: electron*,playwright*
+          NODE_ENV: test
+
+
+      - name: Run E2E Tests (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd packages/frontend
+          npm run test:e2e
+        env:
+          ELECTRON_ENABLE_LOGGING: true
+          DEBUG: electron*,playwright*
+          NODE_ENV: test
         
       - uses: actions/upload-artifact@v4
         if: always()
