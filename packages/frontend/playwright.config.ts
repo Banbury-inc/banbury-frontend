@@ -1,39 +1,8 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { devices } from '@playwright/test';
-import { platform } from 'os';
-import * as path from 'path';
 
-// Platform-specific configurations
-const platformConfig = {
-  win32: {
-    args: ['--no-sandbox'],
-    env: {
-      NODE_ENV: 'development',
-      ELECTRON_ENABLE_LOGGING: '1',
-      DEBUG: 'electron*,playwright*'
-    }
-  },
-  darwin: {
-    args: [],
-    env: {
-      NODE_ENV: 'development',
-      ELECTRON_ENABLE_LOGGING: '1',
-      DEBUG: 'electron*,playwright*'
-    }
-  },
-  linux: {
-    env: {
-      NODE_ENV: 'development',
-      ELECTRON_ENABLE_LOGGING: '1',
-      DEBUG: 'electron*,playwright*'
-    }
-  }
-};
 
-const currentPlatform = platform() as 'win32' | 'darwin' | 'linux';
 
-// Get the correct path to the Electron app
-const electronPath = path.join(__dirname, 'node_modules', '.bin', 'electron');
 
 const config: PlaywrightTestConfig = {
   testDir: './tests/e2e',
