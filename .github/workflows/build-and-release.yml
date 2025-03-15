@@ -77,6 +77,13 @@ jobs:
           npx playwright install
           npx playwright install-deps
 
+      - name: Install Ollama
+        if: runner.os == 'Linux'
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 10  # Give Ollama time to start
+
       - name: Build the app
         run: npm run build
 
@@ -87,16 +94,25 @@ jobs:
           sudo chmod 4755 /home/runner/work/banbury-frontend/banbury-frontend/packages/frontend/node_modules/electron/dist/chrome-sandbox
 
       - name: Run E2E Tests
+        if: runner.os == 'Linux'
         run: |
           cd packages/frontend
           xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e
-        if: runner.os == 'Linux'
+        env:
+          DISPLAY: ':99.0'
+          ELECTRON_ENABLE_LOGGING: true
+          DEBUG: electron*,playwright*
+          NODE_ENV: test
 
       - name: Run E2E Tests (Windows & macOS)
+        if: runner.os != 'Linux'
         run: |
           cd packages/frontend
           npm run test:e2e
-        if: runner.os != 'Linux'
+        env:
+          ELECTRON_ENABLE_LOGGING: true
+          DEBUG: electron*,playwright*
+          NODE_ENV: test
         
       - uses: actions/upload-artifact@v4
         if: always()

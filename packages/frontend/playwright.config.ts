@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
@@ -16,27 +16,20 @@ export default defineConfig({
     actionTimeout: 30000,
     video: 'retain-on-failure',
     launchOptions: {
-      slowMo: 100,
+      slowMo: process.env.CI ? 200 : 100,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     },
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+      name: 'electron',
+      testMatch: /.*\.spec\.ts/,
+    }
   ],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:8081',
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
     timeout: 180000,
   },
 }); 
