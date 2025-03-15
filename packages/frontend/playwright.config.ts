@@ -1,4 +1,5 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
+import { devices } from '@playwright/test';
 import { platform } from 'os';
 import * as path from 'path';
 
@@ -21,7 +22,6 @@ const platformConfig = {
     }
   },
   linux: {
-    args: ['--no-sandbox'],
     env: {
       NODE_ENV: 'development',
       ELECTRON_ENABLE_LOGGING: '1',
@@ -46,24 +46,38 @@ const config: PlaywrightTestConfig = {
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
+  // projects: [
+  //   {
+  //     name: 'Electron',
+  //     testMatch: /.*\.spec\.ts/,
+  //     use: {
+  //       // @ts-ignore - Electron types are not properly exposed in Playwright's type definitions
+  //       _electron: {
+  //         ...platformConfig[currentPlatform],
+  //         executablePath: electronPath,
+  //         env: {
+  //           ...process.env,
+  //           ...platformConfig[currentPlatform].env,
+  //           ELECTRON_ENABLE_SECURITY_WARNINGS: 'false',
+  //           ELECTRON_DISABLE_SECURITY_WARNINGS: 'true'
+  //         }
+  //       }
+  //     }
+  //   }
+  // ],
   projects: [
     {
-      name: 'Electron',
-      testMatch: /.*\.spec\.ts/,
-      use: {
-        // @ts-ignore - Electron types are not properly exposed in Playwright's type definitions
-        _electron: {
-          ...platformConfig[currentPlatform],
-          executablePath: electronPath,
-          env: {
-            ...process.env,
-            ...platformConfig[currentPlatform].env,
-            ELECTRON_ENABLE_SECURITY_WARNINGS: 'false',
-            ELECTRON_DISABLE_SECURITY_WARNINGS: 'true'
-          }
-        }
-      }
-    }
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
   ],
   webServer: {
     command: 'npm run dev',
