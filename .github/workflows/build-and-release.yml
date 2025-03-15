@@ -214,27 +214,57 @@ jobs:
       - name: Build all packages
         run: npm run build
 
+      # Get version for macOS builds
+      - name: Get version from package.json
+        if: runner.os == 'macOS'
+        run: |
+          VERSION=$(node -p "require('./packages/frontend/package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       # For macOS: Build, Sign, and Notarize in the correct order
       - name: Build and Sign macOS App
         if: runner.os == 'macOS'
         run: |
           cd packages/frontend
+          # Ensure the build directory exists
+          mkdir -p build
+          # Build the app
           npm run package:app
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Notarize macOS App Bundle
         if: runner.os == 'macOS'
         run: |
           APP_NAME="Banbury"
-          export APP_PATH="./packages/frontend/dist/mac-arm64/${APP_NAME}.app"
-          echo "Notarizing app bundle: $APP_PATH"
-          node ./scripts/notarize.ts
+          cd packages/frontend
+          APP_PATH="dist/mac-arm64/${APP_NAME}.app"
+          
+          # Verify app exists
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Error: $APP_PATH does not exist"
+            exit 1
+          fi
+          
+          # Sign with codesign explicitly
+          /usr/bin/codesign --force --deep --sign "Developer ID Application: Michael Mills (${{ secrets.APPLE_TEAM_ID }})" --options runtime --entitlements "build/entitlements.mac.plist" "$APP_PATH"
+          
+          # Verify signing
+          /usr/bin/codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          
+          # Export full path for the notarization script
+          export APP_PATH="$(pwd)/$APP_PATH"
+          
+          # Now run the notarization script
+          npx ts-node scripts/notarize.ts
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_KEYCHAIN: build.keychain
 
       - name: Create DMG and ZIP for macOS
         if: runner.os == 'macOS'
@@ -244,22 +274,36 @@ jobs:
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Notarize macOS Distribution Files
         if: runner.os == 'macOS'
         run: |
           APP_NAME="Banbury"
-          VERSION=$(node -p "require('./packages/frontend/package.json').version")
-          WORKSPACE_PATH="$GITHUB_WORKSPACE"
+          cd packages/frontend
           
           # Notarize DMG
-          export APP_PATH="$WORKSPACE_PATH/packages/frontend/dist/${APP_NAME}-${VERSION}-arm64.dmg"
-          echo "Notarizing DMG: $APP_PATH"
-          [ -e "$APP_PATH" ] && node ./scripts/notarize.ts
+          DMG_PATH="dist/${APP_NAME}-${VERSION}-arm64.dmg"
+          if [ -f "$DMG_PATH" ]; then
+            echo "Notarizing DMG: $DMG_PATH"
+            # Sign DMG explicitly
+            /usr/bin/codesign --force --sign "Developer ID Application: Michael Mills (${{ secrets.APPLE_TEAM_ID }})" --options runtime "$DMG_PATH"
+            # Verify signing
+            /usr/bin/codesign --verify --verbose=2 "$DMG_PATH"
+            # Export full path for the notarization script
+            export APP_PATH="$(pwd)/$DMG_PATH"
+            # Notarize
+            npx ts-node scripts/notarize.ts
+          else
+            echo "Warning: $DMG_PATH not found"
+          fi
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_KEYCHAIN: build.keychain
+          VERSION: ${{ env.VERSION }}
 
       # For non-macOS: Build and package
       - name: Package for Linux
@@ -299,12 +343,27 @@ jobs:
             packages/frontend/dist/**/*.yaml
 
       - name: Upload Core Package Artifact
-        if: runner.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
+        run: |
+          # Ensure core package is built
+          cd packages/core
+          npm install
+          npm run build
+          
+          # Verify dist directory exists and contains files
+          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+            echo "Error: Core package dist directory is empty or does not exist"
+            exit 1
+          fi
+        
+      - name: Upload Core Package Files
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: core-package
           path: packages/core/dist
-          
+          if-no-files-found: error
+
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -313,6 +372,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Download Core Package
+        uses: actions/download-artifact@v4
+        with:
+          name: core-package
+          path: ./packages/core/dist
+        continue-on-error: false
+
+      - name: Verify Core Package
+        run: |
+          if [ ! -d "./packages/core/dist" ] || [ -z "$(ls -A ./packages/core/dist)" ]; then
+            echo "Error: Core package files are missing"
+            exit 1
+          fi
+          echo "Core package files found successfully"
 
       - name: Download Linux Artifacts
         uses: actions/download-artifact@v4
@@ -331,12 +405,6 @@ jobs:
         with:
           name: macos-latest-artifacts
           path: ./dist
-
-      - name: Download Core Package
-        uses: actions/download-artifact@v4
-        with:
-          name: core-package
-          path: ./packages/core/dist
 
       - name: Get version from package.json
         id: get_version

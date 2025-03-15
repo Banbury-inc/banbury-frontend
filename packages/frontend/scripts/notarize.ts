@@ -1,9 +1,18 @@
-const { notarize } = require('@electron/notarize');
+import { notarize } from '@electron/notarize';
 
 async function notarizing() {
   const appPath = process.env.APP_PATH;
+  const teamId = process.env.APPLE_TEAM_ID;
+  const appleId = process.env.APPLE_ID;
+  const appleIdPassword = process.env.APPLE_APP_SPECIFIC_PASSWORD;
+
   if (!appPath) {
     console.error('APP_PATH environment variable is not set');
+    process.exit(1);
+  }
+
+  if (!teamId || !appleId || !appleIdPassword) {
+    console.error('Required environment variables are not set');
     process.exit(1);
   }
 
@@ -11,14 +20,13 @@ async function notarizing() {
 
   try {
     await notarize({
-      tool: 'notarytool',
-      teamId: process.env.APPLE_TEAM_ID,
       appPath,
-      appleId: process.env.APPLE_ID,
-      appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD
+      appleId,
+      appleIdPassword,
+      teamId
     });
     console.log('Notarization complete!');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Notarization failed:', error.message);
     throw error;
   }
