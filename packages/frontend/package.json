@@ -25,8 +25,9 @@
     "lint:watch": "eslint --watch .",
     "package": "npm-run-all build package:dist",
     "deploy": "npm run build && electron-builder --publish always",
-    "package:dist": "electron-builder --mac",
-    "package:app": "electron-builder --dir",
+    "package:dist": "electron-builder",
+    "package:mac": "electron-builder --mac --arm64",
+    "package:app": "electron-builder --dir --mac --arm64",
     "docs": "typedoc --out docs --entryPointStrategy expand src/renderer/neuranet",
     "test": "jest --verbose --passWithNoTests --coverage --testPathIgnorePatterns=tests/e2e",
     "coverage": "jest --coverage --testPathIgnorePatterns=tests/e2e",
@@ -154,7 +155,7 @@
     "react-dom": "^18.2.0"
   },
   "build": {
-    "productName": "banbury",
+    "productName": "Banbury",
     "appId": "com.banbury.cloud",
     "directories": {
       "output": "dist",
@@ -182,6 +183,7 @@
         "zip"
       ],
       "icon": "static/NeuraNet_Icons/macos/AppIcon.icns",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "publish": [
         "github"
       ]
