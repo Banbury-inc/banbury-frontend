@@ -1,5 +1,7 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
+import { platform } from 'os'
+import { getElectronConfig } from './utils/electron-config'
 
 test('can login and shows onboarding for first-time user', async () => {
   let electronApp;
@@ -7,14 +9,12 @@ test('can login and shows onboarding for first-time user', async () => {
     // Get the correct path to the Electron app
     const electronPath = path.resolve(__dirname, '../../');
     
-    // Launch Electron app with more explicit configuration
-    electronApp = await electron.launch({
-      args: [electronPath],
-      timeout: 30000
-    }).catch(async (error) => {
-      console.error('Failed to launch electron:', error);
-      throw error;
-    });
+    // Launch Electron app with shared configuration
+    electronApp = await electron.launch(getElectronConfig(electronPath))
+      .catch(async (error) => {
+        console.error('Failed to launch electron:', error);
+        throw error;
+      });
 
     // Wait for app to be ready
     await new Promise(resolve => setTimeout(resolve, 2000));

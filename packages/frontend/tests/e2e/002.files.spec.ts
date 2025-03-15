@@ -1,5 +1,7 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
+import { platform } from 'os'
+import { getElectronConfig } from './utils/electron-config'
 
 test.describe('Files tests', () => {
   let electronApp;
@@ -9,8 +11,8 @@ test.describe('Files tests', () => {
     // Get the correct path to the Electron app
     const electronPath = path.resolve(__dirname, '../../');
     
-    // Launch Electron app
-    electronApp = await electron.launch({ args: [electronPath] });
+    // Launch Electron app with shared configuration
+    electronApp = await electron.launch(getElectronConfig(electronPath));
 
     const isPackaged = await electronApp.evaluate(async ({ app }) => {
       return app.isPackaged;

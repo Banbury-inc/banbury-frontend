@@ -81,7 +81,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb
+          sudo apt-get install -y xvfb libgtk-3-0 libx11-xcb1 libxcb1 libxss1 libnss3 libasound2 libatk1.0-0 libatk-bridge2.0-0 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm1 libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb
 
       - name: Build the app
         run: npm run build
@@ -107,7 +107,9 @@ jobs:
           ELECTRON_ENABLE_LOGGING: true
           DEBUG: electron*,playwright*
           NODE_ENV: development
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1  # Skip browser download since we only need Electron
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+          ELECTRON_NO_ATTACH_CONSOLE: 1
+          ELECTRON_DISABLE_SANDBOX: 1
 
       - name: Run E2E Tests (Windows)
         if: runner.os == 'Windows'
