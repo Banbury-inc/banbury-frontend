@@ -1,7 +1,6 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { devices } from '@playwright/test';
 import { platform } from 'os';
-import * as path from 'path';
 
 // Platform-specific configurations
 const platformConfig = {
