@@ -343,12 +343,27 @@ jobs:
             packages/frontend/dist/**/*.yaml
 
       - name: Upload Core Package Artifact
-        if: runner.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
+        run: |
+          # Ensure core package is built
+          cd packages/core
+          npm install
+          npm run build
+          
+          # Verify dist directory exists and contains files
+          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+            echo "Error: Core package dist directory is empty or does not exist"
+            exit 1
+          fi
+        
+      - name: Upload Core Package Files
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: core-package
           path: packages/core/dist
-          
+          if-no-files-found: error
+
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -357,6 +372,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Download Core Package
+        uses: actions/download-artifact@v4
+        with:
+          name: core-package
+          path: ./packages/core/dist
+        continue-on-error: false
+
+      - name: Verify Core Package
+        run: |
+          if [ ! -d "./packages/core/dist" ] || [ -z "$(ls -A ./packages/core/dist)" ]; then
+            echo "Error: Core package files are missing"
+            exit 1
+          fi
+          echo "Core package files found successfully"
 
       - name: Download Linux Artifacts
         uses: actions/download-artifact@v4
@@ -375,12 +405,6 @@ jobs:
         with:
           name: macos-latest-artifacts
           path: ./dist
-
-      - name: Download Core Package
-        uses: actions/download-artifact@v4
-        with:
-          name: core-package
-          path: ./packages/core/dist
 
       - name: Get version from package.json
         id: get_version
