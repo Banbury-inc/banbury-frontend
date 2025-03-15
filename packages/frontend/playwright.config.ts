@@ -1,4 +1,3 @@
-import { defineConfig, devices } from '@playwright/test';
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { platform } from 'os';
 
