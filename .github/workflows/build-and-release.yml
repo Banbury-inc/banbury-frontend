@@ -103,8 +103,19 @@ jobs:
           DEBUG: electron*,playwright*
           NODE_ENV: test
 
-      - name: Run E2E Tests (Ubuntu)
-        if: runner.os != 'Linux'
+      - name: Run E2E Tests (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd packages/frontend
+          npm run test:e2e
+        env:
+          ELECTRON_ENABLE_LOGGING: true
+          DEBUG: electron*,playwright*
+          NODE_ENV: test
+
+
+      - name: Run E2E Tests (macOS)
+        if: runner.os == 'macOS'
         run: |
           cd packages/frontend
           npm run test:e2e

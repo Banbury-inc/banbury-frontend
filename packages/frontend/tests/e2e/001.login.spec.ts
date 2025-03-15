@@ -1,5 +1,6 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
+import { platform } from 'os'
 
 test('can login and shows onboarding for first-time user', async () => {
   let electronApp;
@@ -7,18 +8,28 @@ test('can login and shows onboarding for first-time user', async () => {
     // Get the correct path to the Electron app
     const electronPath = path.join(__dirname, '../../');
     
-    // Launch Electron app with increased timeout and debug logging
-    electronApp = await electron.launch({ 
+    // Platform-specific launch configuration
+    const launchConfig: Parameters<typeof electron.launch>[0] = {
       args: ['--no-sandbox', '--disable-setuid-sandbox', electronPath],
       timeout: 180000, // 3 minutes timeout
       env: {
         ...process.env,
         NODE_ENV: 'test',
         ELECTRON_ENABLE_LOGGING: 'true',
-        DEBUG: 'electron*,playwright*',
-        DISPLAY: process.env.DISPLAY || ':99.0'
+        DEBUG: 'electron*,playwright*'
       }
-    });
+    };
+
+    // Only add DISPLAY env var for Linux
+    if (platform() === 'linux') {
+      launchConfig.env = {
+        ...launchConfig.env,
+        DISPLAY: process.env.DISPLAY || ':99.0'
+      };
+    }
+    
+    // Launch Electron app with platform-specific config
+    electronApp = await electron.launch(launchConfig);
 
     // Wait for the first BrowserWindow to open with increased timeout
     const window = await electronApp.firstWindow({ timeout: 60000 });

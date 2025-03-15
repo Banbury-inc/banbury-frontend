@@ -1,4 +1,18 @@
 import { defineConfig } from '@playwright/test';
+import { platform } from 'os';
+
+// Platform-specific configuration
+const platformConfig = {
+  // Slower execution on CI or Windows to improve stability
+  slowMo: process.env.CI || platform() === 'win32' ? 200 : 100,
+  // Additional args for different platforms
+  args: [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    // Add Windows-specific args if needed
+    ...(platform() === 'win32' ? ['--disable-gpu'] : []),
+  ]
+};
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -15,10 +29,7 @@ export default defineConfig({
     navigationTimeout: 60000,
     actionTimeout: 30000,
     video: 'retain-on-failure',
-    launchOptions: {
-      slowMo: process.env.CI ? 200 : 100,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    },
+    launchOptions: platformConfig,
   },
   projects: [
     {
