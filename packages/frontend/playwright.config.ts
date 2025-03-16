@@ -38,7 +38,8 @@ const config: PlaywrightTestConfig = {
   timeout: 180000, // 3 minutes
   retries: 2,
   workers: 1,
-  reporter: 'list',
+  reporter: [['html', { outputFolder: './tests/playwright-report' }], ['list']],
+  outputDir: './tests/test-results',
   use: {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
