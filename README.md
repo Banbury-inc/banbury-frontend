@@ -23,7 +23,7 @@
 <p align="center">
     <a href="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/mockup.png" target="_blank">
       <img
-        src="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/mockup.png"
+        src="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/Mockup.png"
         alt="Banbury Cloud Interface"
         width="50%"
       />
