@@ -7,6 +7,8 @@ import { Grid, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
+import ImageIcon from '@mui/icons-material/Image';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
@@ -137,6 +139,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
 
 interface ExtendedChatMessage extends CoreChatMessage {
   thinking?: string;
+  images?: string[];
 }
 
 const ThinkingBlock = styled(Paper)(({ theme }) => ({
@@ -156,7 +159,26 @@ const ThinkingBlock = styled(Paper)(({ theme }) => ({
   }
 }));
 
-const MessageContent: React.FC<{ content: string; thinking?: string }> = ({ content, thinking }) => {
+const ImagePreview = styled('img')({
+  maxWidth: '200px',
+  maxHeight: '200px',
+  objectFit: 'contain',
+  margin: '4px',
+  borderRadius: '4px',
+});
+
+const ImagePreviewContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: theme.spacing(1),
+  marginTop: theme.spacing(1),
+}));
+
+const HiddenInput = styled('input')({
+  display: 'none',
+});
+
+const MessageContent: React.FC<{ content: string; thinking?: string; images?: string[] }> = ({ content, thinking, images }) => {
   const parts = content.split(/(```[\s\S]*?```)/);
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
 
@@ -199,6 +221,17 @@ const MessageContent: React.FC<{ content: string; thinking?: string }> = ({ cont
             </Box>
           </Stack>
         </ThinkingBlock>
+      )}
+      {images && images.length > 0 && (
+        <ImagePreviewContainer>
+          {images.map((image, index) => (
+            <ImagePreview 
+              key={index} 
+              src={`data:image/jpeg;base64,${image}`} 
+              alt={`Uploaded image ${index + 1}`} 
+            />
+          ))}
+        </ImagePreviewContainer>
       )}
       {parts.map((part, index) => {
         if (part.startsWith('```') && part.endsWith('```')) {
@@ -255,9 +288,11 @@ export default function AI() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [streamingThinking, setStreamingThinking] = useState<string>('');
-  const [currentModel, setCurrentModel] = useState<string>('llama2');
+  const [currentModel, setCurrentModel] = useState<string>('llava');
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
 
@@ -331,16 +366,47 @@ export default function AI() {
     inputRef.current?.focus();
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        showAlert('Error', ['Only image files are allowed'], 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (typeof e.target?.result === 'string') {
+          // Extract the base64 data from the data URL
+          const base64Data = e.target.result.split(',')[1];
+          setSelectedImages(prev => [...prev, base64Data]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Clear the input
+    event.target.value = '';
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !ollamaClient || isLoading) return;
+    if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
 
     const userMessage: ExtendedChatMessage = {
       role: 'user',
-      content: inputMessage.trim()
+      content: inputMessage.trim(),
+      images: selectedImages
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
+    setSelectedImages([]);
     setIsLoading(true);
     setStreamingMessage('');
     setStreamingThinking('');
@@ -490,7 +556,7 @@ export default function AI() {
                 isUser={message.role === 'user'}
                 elevation={1}
               >
-                <MessageContent content={message.content} thinking={message.thinking} />
+                <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
               </MessageBubble>
             ))}
             {streamingMessage && (
@@ -512,6 +578,31 @@ export default function AI() {
             backgroundColor: (theme) => theme.palette.background.paper,
             flexShrink: 0
           }}>
+            {selectedImages.length > 0 && (
+              <ImagePreviewContainer>
+                {selectedImages.map((image, index) => (
+                  <Box key={index} sx={{ position: 'relative' }}>
+                    <ImagePreview 
+                      src={`data:image/jpeg;base64,${image}`} 
+                      alt={`Selected image ${index + 1}`} 
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveImage(index)}
+                      sx={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        backgroundColor: 'background.paper',
+                        '&:hover': { backgroundColor: 'action.hover' }
+                      }}
+                    >
+                      <CancelIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+              </ImagePreviewContainer>
+            )}
             <Box sx={{ position: 'relative' }}>
               <TextField
                 fullWidth
@@ -565,52 +656,48 @@ export default function AI() {
                   },
                 }}
               />
-              <IconButton
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || isLoading}
-                color="primary"
-                size="small"
-                sx={{
-                  position: 'absolute',
-                  right: '8px',
-                  bottom: '8px',
-                  width: '28px',
-                  height: '28px',
-                  minWidth: '28px',
-                  minHeight: '18px',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: (theme) => theme.palette.primary.main,
-                  color: (theme) => theme.palette.primary.contrastText,
-                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.2)',
-                  '&:hover': {
-                    backgroundColor: (theme) => theme.palette.primary.dark,
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
-                  },
-                  '&:active': {
-                    transform: 'scale(0.98)',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-                  },
-                  '&:disabled': {
-                    backgroundColor: (theme) => theme.palette.action.disabledBackground,
-                    color: (theme) => theme.palette.action.disabled,
-                    boxShadow: 'none',
-                  },
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '& .MuiSvgIcon-root': {
-                    display: 'flex',
-                    margin: 'auto',
-                  }
-                }}
-              >
-                <SendIcon sx={{
-                  fontSize: '1.1rem',
-                  display: 'block',
-                }} />
-              </IconButton>
+              <Stack direction="row" spacing={1} sx={{ position: 'absolute', right: '8px', bottom: '8px' }}>
+                <HiddenInput
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                />
+                <IconButton
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  size="small"
+                  sx={{
+                    width: '28px',
+                    height: '28px',
+                    backgroundColor: (theme) => theme.palette.grey[800],
+                    color: (theme) => theme.palette.grey[100],
+                    '&:hover': {
+                      backgroundColor: (theme) => theme.palette.grey[700],
+                    },
+                  }}
+                >
+                  <ImageIcon sx={{ fontSize: '1.1rem' }} />
+                </IconButton>
+                <IconButton
+                  onClick={handleSendMessage}
+                  disabled={(!inputMessage.trim() && selectedImages.length === 0) || isLoading}
+                  color="primary"
+                  size="small"
+                  sx={{
+                    width: '28px',
+                    height: '28px',
+                    backgroundColor: (theme) => theme.palette.primary.main,
+                    color: (theme) => theme.palette.primary.contrastText,
+                    '&:hover': {
+                      backgroundColor: (theme) => theme.palette.primary.dark,
+                    },
+                  }}
+                >
+                  <SendIcon sx={{ fontSize: '1.1rem' }} />
+                </IconButton>
+              </Stack>
             </Box>
           </Box>
         </Card>
