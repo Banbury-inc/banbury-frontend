@@ -104,8 +104,6 @@ test.describe('Files tests', () => {
   });
 
   test('download progress button is clickable and opens popover', async () => {
-    // Take a screenshot before trying to find the button (for debugging)
-    await window.screenshot({ path: 'before-button-click.png' });
 
     // Find and click the download progress button using the test ID
     const downloadButton = window.locator('[data-testid="download-progress-button"]');
@@ -129,9 +127,6 @@ test.describe('Files tests', () => {
     const popover = window.locator('div[role="presentation"].MuiPopover-root');
     await expect(popover).toBeVisible({ timeout: 10000 });
     
-    // Take a screenshot after clicking (for debugging)
-    await window.screenshot({ path: 'after-button-click.png' });
-    
     // Verify popover content
     const popoverTitle = popover.getByRole('heading', { name: 'Downloads' });
     await expect(popoverTitle).toBeVisible({ timeout: 10000 });
@@ -142,8 +137,6 @@ test.describe('Files tests', () => {
   });
 
   test('upload progress button is clickable and opens popover', async () => {
-    // Take a screenshot before trying to find the button (for debugging)
-    await window.screenshot({ path: 'before-upload-click.png' });
 
     // Find and click the upload progress button using the test ID
     const uploadButton = window.locator('[data-testid="upload-progress-button"]');
@@ -178,9 +171,6 @@ test.describe('Files tests', () => {
     // Wait for the specific upload popover to be visible
     await expect(uploadPopover).toBeVisible({ timeout: 10000 });
     
-    // Take a screenshot after clicking (for debugging)
-    await window.screenshot({ path: 'after-upload-click.png' });
-    
     // Verify popover content within the specific upload popover
     const popoverTitle = uploadPopover.getByRole('heading', { name: 'Uploads' });
     await expect(popoverTitle).toBeVisible({ timeout: 10000 });
@@ -193,8 +183,6 @@ test.describe('Files tests', () => {
   });
 
   test('notifications button is clickable and opens popover', async () => {
-    // Take a screenshot before clicking
-    await window.screenshot({ path: 'before-notifications-click.png' });
 
     // Find and click the notifications button
     const notificationsButton = window.locator('[data-testid="notifications-button"]');
@@ -218,9 +206,6 @@ test.describe('Files tests', () => {
 
     // Wait for the specific notifications popover to be visible
     await expect(notificationsPopover).toBeVisible({ timeout: 10000 });
-    
-    // Take a screenshot after clicking
-    await window.screenshot({ path: 'after-notifications-click.png' });
     
     // Verify popover content within the specific notifications popover
     const popoverTitle = notificationsPopover.getByRole('heading', { name: 'Notifications' });
