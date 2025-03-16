@@ -101,6 +101,8 @@ export default function PermanentDrawerLeft() {
   const theme = useTheme();
   const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, setSocket } = useAuth();
   const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'Files');
+  const [backHistory, setBackHistory] = useState<string[]>([]);
+  const [forwardHistory, setForwardHistory] = useState<string[]>([]);
   const open = false;
   const [tabs, setTabs] = useState<TabState[]>([
     {
@@ -289,15 +291,17 @@ export default function PermanentDrawerLeft() {
               <div className="no-drag" style={{ zIndex: 9999 }}>
                 <Tooltip title="Navigate back">
                   <Button
+                    data-testid="navigate-back-button"
                     onClick={() =>
                       handlers.buttons.backButton(
                         '',
                         () => { },
-                        [],
-                        () => { },
+                        backHistory,
+                        setBackHistory,
                         () => { },
                       )
                     }
+                    disabled={backHistory.length === 0}
                     sx={{ 
                       paddingLeft: '4px', 
                       paddingRight: '4px', 
@@ -316,16 +320,18 @@ export default function PermanentDrawerLeft() {
               <div className="no-drag" style={{ zIndex: 9999 }}>
                 <Tooltip title="Navigate forward">
                   <Button
+                    data-testid="navigate-forward-button"
                     onClick={() =>
                       handlers.buttons.forwardButton(
                         '',
                         () => { },
-                        [],
-                        () => { },
-                        [],
-                        () => { },
+                        backHistory,
+                        setBackHistory,
+                        forwardHistory,
+                        setForwardHistory
                       )
                     }
+                    disabled={forwardHistory.length === 0}
                     sx={{ 
                       paddingLeft: '4px', 
                       paddingRight: '4px', 

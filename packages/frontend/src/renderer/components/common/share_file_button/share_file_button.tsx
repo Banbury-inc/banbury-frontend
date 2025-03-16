@@ -240,14 +240,15 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
     <>
       <Tooltip title="Share">
         <Button
-          onClick={handleClick}
           data-testid="share-file-button"
+          onClick={handleClick}
           sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
         >
           <ShareOutlinedIcon fontSize="inherit" />
         </Button>
       </Tooltip>
       <Popover
+        data-testid="share-file-popover"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}

@@ -22,7 +22,11 @@ export default function AccountMenuIcon() {
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+    if (anchorEl) {
+      setAnchorEl(null);
+    } else {
+      setAnchorEl(event.currentTarget);
+    }
   };
 
   const handleClose = () => {
@@ -50,8 +54,8 @@ export default function AccountMenuIcon() {
       <Box sx={{ zIndex: 9999, mr: '20px', pr: '10px', pb: '2px', display: 'flex', alignItems: 'center', textAlign: 'center' }}>
         <Tooltip title="Account">
           <Avatar
-            onClick={handleClick}
             data-testid="account-menu-button"
+            onClick={handleClick}
             aria-controls={open ? 'account-menu' : undefined}
             aria-haspopup="true"
             aria-expanded={open ? 'true' : undefined}
@@ -78,6 +82,7 @@ export default function AccountMenuIcon() {
       </Box>
       <Menu
         anchorEl={anchorEl}
+        data-testid="account-menu"
         id="account-menu"
         open={open}
         onClose={handleClose}

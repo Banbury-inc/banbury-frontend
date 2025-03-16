@@ -39,7 +39,21 @@ function getIconForKind(kind: string) {
 
 
 
-export default function FileTreeView({ filePath, setFilePath, filePathDevice, setFilePathDevice }: { filePath: string, setFilePath: (filePath: string) => void, filePathDevice: string, setFilePathDevice: (filePathDevice: string) => void }) {
+export default function FileTreeView({ 
+  filePath, 
+  setFilePath, 
+  filePathDevice, 
+  setFilePathDevice,
+  setBackHistory,
+  setForwardHistory 
+}: { 
+  filePath: string, 
+  setFilePath: (filePath: string) => void, 
+  filePathDevice: string, 
+  setFilePathDevice: (filePathDevice: string) => void,
+  setBackHistory: React.Dispatch<React.SetStateAction<string[]>>,
+  setForwardHistory: React.Dispatch<React.SetStateAction<string[]>>
+}) {
   const { updates, set_Files, username, setFirstname, setLastname } = useAuth();
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
@@ -178,8 +192,17 @@ export default function FileTreeView({ filePath, setFilePath, filePathDevice, se
     return nodes.map((node) => (
       <TreeItem
         key={node.id}
+        data-testid={`file-tree-item-${node.id}`}
         itemId={node.id.toString()}
-        onClick={() => handleNodeSelect(setFilePath, fileRows, setFilePathDevice, node.id)}
+        onClick={() => handleNodeSelect(
+          setFilePath, 
+          fileRows, 
+          setFilePathDevice, 
+          node.id,
+          filePath,
+          setBackHistory,
+          setForwardHistory
+        )}
         label={
           <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             {getIconForKind(node.kind)}
@@ -202,7 +225,7 @@ export default function FileTreeView({ filePath, setFilePath, filePathDevice, se
         {node.children && renderTreeItems(node.children)}
       </TreeItem>
     ));
-  }, [fileRows, setFilePath, setFilePathDevice]);
+  }, [fileRows, setFilePath, setFilePathDevice, filePath, setBackHistory, setForwardHistory]);
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
