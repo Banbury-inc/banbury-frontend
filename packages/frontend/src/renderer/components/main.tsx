@@ -494,6 +494,7 @@ export default function PermanentDrawerLeft() {
                       <ListItem key={text} sx={{ padding: '2px', paddingTop: '0px' }}>
                         <Button
                           onClick={() => handleSidebarChange(text)}
+                          data-testid={`sidebar-button-${text}`}
                           sx={{
                             paddingLeft: '4px',
                             paddingRight: '4px',
