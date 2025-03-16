@@ -95,6 +95,7 @@ export default function DownloadFileButton({
   return (
     <Tooltip title="Download">
       <Button
+        data-testid="download-button"
         onClick={handleDownloadClick}
         //   disabled={selectedFileNames.length === 0}
         sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
