@@ -1,7 +1,6 @@
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { CardContent, Skeleton, LinearProgress } from '@mui/material';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
@@ -42,14 +41,9 @@ import SyncButton from '../../common/sync_button/sync_button';
 import DownloadFileButton from '../../common/DownloadFileButton/DownloadFileButton';
 import DeleteFileButton from '../../common/DeleteFileBtton/DeleteFileButton';
 import { styled } from '@mui/material/styles';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import GridViewIcon from '@mui/icons-material/GridView';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
-// Rename the interface to avoid collision with DOM Notification
 
 const getHeadCells = (): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -147,39 +141,6 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   );
 }
 
-// Add view type enum and interface
-type ViewType = 'list' | 'grid' | 'large_grid' | 'large_list';
-
-interface ViewOption {
-  value: ViewType;
-  label: string;
-  icon: React.ReactNode;
-}
-
-const StyledMenu = styled(Menu)(() => ({
-  '& .MuiPaper-root': {
-    backgroundColor: '#000000',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    marginTop: 8,
-    minWidth: 180,
-    boxShadow: '0px 5px 15px rgba(0, 0, 0, 0.3)',
-    padding: '8px',
-    '& .MuiMenuItem-root': {
-      borderRadius: '8px',
-      padding: '8px 12px',
-      margin: '2px 0',
-      '&:hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.08)'
-      },
-      '& .MuiSvgIcon-root': {
-        marginRight: 12,
-        fontSize: 20
-      }
-    }
-  }
-}));
-
 export default function Files() {
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DatabaseData>('file_name');
@@ -214,11 +175,10 @@ export default function Files() {
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
   const [viewType, setViewType] = useState<FileViewType>('list');
-  const [viewMenuAnchor, setViewMenuAnchor] = useState<null | HTMLElement>(null);
   const [filePathDevice, setFilePathDevice] = useState('');
   const [filePath, setFilePath] = useState<string>('');
-  const [backHistory, setBackHistory] = useState<string[]>([]);
-  const [forwardHistory, setForwardHistory] = useState<string[]>([]);
+  const [_backHistory, setBackHistory] = useState<string[]>([]);
+  const [_forwardHistory, setForwardHistory] = useState<string[]>([]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -494,26 +454,6 @@ export default function Files() {
     setIsShareModalOpen(false);
   };
 
-
-
-
-  // Add view options
-  const viewOptions: ViewOption[] = [
-    { value: 'list', label: 'List', icon: <ViewListIcon fontSize="small" /> },
-    { value: 'grid', label: 'Grid', icon: <GridViewIcon fontSize="small" /> },
-    { value: 'large_grid', label: 'Large grid', icon: <GridViewIcon /> },
-  ];
-
-  // Add handlers
-  const handleViewMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setViewMenuAnchor(event.currentTarget);
-  };
-
-  const handleViewMenuClose = () => {
-    setViewMenuAnchor(null);
-  };
-
-
   return (
     <Box sx={{
       width: '100%',
@@ -717,6 +657,7 @@ export default function Files() {
                             return (
                               <Grid item xs={viewType === 'grid' ? 2.4 : 4} key={row.id}>
                                 <Card
+                                  data-testid="file-item"
                                   sx={{
                                     cursor: 'pointer',
                                     '&:hover': {
@@ -867,6 +808,7 @@ export default function Files() {
                                   return (
                                     <TableRow
                                       hover
+                                      data-testid="file-item"
                                       onClick={(event) => handleClick(event, row.id as number)}
                                       role="checkbox"
                                       aria-checked={isItemSelected}

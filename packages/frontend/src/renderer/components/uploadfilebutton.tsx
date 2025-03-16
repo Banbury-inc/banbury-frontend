@@ -43,6 +43,7 @@ const InputFileUploadButton: React.FC = () => {
 
   return (
     <LoadingButton component="label"
+      data-testid="upload-file-button"
       variant="outlined"
       size="small"
       loading={loading}

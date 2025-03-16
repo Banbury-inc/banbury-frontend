@@ -19,7 +19,7 @@ const VisuallyHiddenInput = styled('input')({
 });
 
 const NewInputFileUploadButton: React.FC = () => {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) {
       console.log("No file selected.");
@@ -30,40 +30,39 @@ const NewInputFileUploadButton: React.FC = () => {
     // Log the file name for debugging purposes
     console.log("Selected file:", file.name);
 
-    // Run the Python script with the selected file
-    runPythonScript(file);
+    try {
+      setLoading(true);
+      await handlers.files.uploadFile(file.path);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const [loading, setLoading] = useState<boolean>(false);
-  const runPythonScript = async (file: File) => {
-
-    setLoading(true);
-    handlers.files.uploadFile(file.path);
-    setLoading(false);
-  }
-
 
   return (
     <Tooltip title="Upload file">
-      <LoadingButton component="label"
+      <LoadingButton 
+        component="label"
+        data-testid="upload-file-button"
         loading={loading}
         loadingPosition="end"
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }} // Adjust the left and right padding as needed
-      // endIcon={<FileUploadIcon />}
+        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
       >
         <FileUploadIcon
           fontSize="inherit"
         />
         <VisuallyHiddenInput
+          data-testid="file-input"
           type="file"
           onChange={handleFileChange}
-        // If you want to handle multiple files, you might consider adding the "multiple" attribute
+          accept="*/*"
+          disabled={loading}
         />
       </LoadingButton>
-
-
     </Tooltip>
-
   );
 };
 

@@ -23,7 +23,8 @@ export default function ChangeViewButton({ currentView, onViewChange }: ChangeVi
   const viewOptions: ViewOption[] = [
     { value: 'list', label: 'List', icon: <ViewListIcon fontSize="small" /> },
     { value: 'grid', label: 'Grid', icon: <GridViewIcon fontSize="small" /> },
-    { value: 'large_grid', label: 'Large Grid', icon: <GridViewIcon fontSize="small" /> }
+    { value: 'large_grid', label: 'Large Grid', icon: <GridViewIcon fontSize="small" /> },
+    { value: 'large_list', label: 'Large List', icon: <ViewListIcon fontSize="small" /> }
   ];
 
   const handleViewMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
