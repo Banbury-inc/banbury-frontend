@@ -1,8 +1,8 @@
 # Banbury Cloud
 
 <p align="center">
-<a href="https://github.com/Banbury-inc/Banbury-Cloud/blob/main/static/NeuraNet_Icons/ios/AppIcon-83.5%402x~ipad.png">
-  <img src="https://github.com/Banbury-inc/Banbury-Cloud/blob/main/static/NeuraNet_Icons/ios/AppIcon-83.5%402x~ipad.png" alt="Banbury Logo" width="70">
+<a href="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/NeuraNet_Icons/ios/AppIcon-83.5@2x~ipad.png">
+  <img src="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/NeuraNet_Icons/ios/AppIcon-83.5@2x~ipad.png" alt="Banbury Logo" width="70">
 </a>
 </p>
 
@@ -21,9 +21,9 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/Banbury-inc/Banbury-Cloud/blob/main/static/Mockup.png" target="_blank">
+    <a href="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/mockup.png" target="_blank">
       <img
-        src="https://github.com/Banbury-inc/Banbury-Cloud/blob/main/static/Mockup.png"
+        src="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/mockup.png"
         alt="Banbury Cloud Interface"
         width="50%"
       />
