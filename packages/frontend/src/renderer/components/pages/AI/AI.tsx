@@ -301,6 +301,7 @@ export default function AI() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     // Initialize Ollama client
@@ -401,6 +402,56 @@ export default function AI() {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to true if we're entering the main container
+    if (e.currentTarget === e.target) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the main container
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Keep dragging state true while over any part of the container
+    if (!isDragging) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    files.forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        showAlert('Error', ['Only image files are allowed'], 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (typeof e.target?.result === 'string') {
+          const base64Data = e.target.result.split(',')[1];
+          setSelectedImages(prev => [...prev, base64Data]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
 
@@ -485,7 +536,46 @@ export default function AI() {
       bottom: 0,
       display: 'flex',
       flexDirection: 'column'
-    }}>
+    }}
+    onDragEnter={handleDragEnter}
+    onDragLeave={handleDragLeave}
+    onDragOver={handleDragOver}
+    onDrop={handleDrop}
+    >
+      {isDragging && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <Box
+            sx={{
+              padding: 4,
+              borderRadius: 2,
+              border: '2px dashed',
+              borderColor: 'primary.main',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            <Typography variant="h6" sx={{ color: 'primary.main', textAlign: 'center', mb: 1 }}>
+              Drop images here
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+              Release to upload images
+            </Typography>
+          </Box>
+        </Box>
+      )}
       <Card variant="outlined" sx={{
         borderTop: 0,
         borderLeft: 0,
