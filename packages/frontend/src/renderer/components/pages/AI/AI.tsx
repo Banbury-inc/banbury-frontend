@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import { CardContent, TextField, Typography, Paper, Tooltip, Button } from "@mui/material";
+import { CardContent, TextField, Typography, Paper, Tooltip } from "@mui/material";
 import Card from '@mui/material/Card';
 import { Grid, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
@@ -10,7 +10,6 @@ import CheckIcon from '@mui/icons-material/Check';
 import ImageIcon from '@mui/icons-material/Image';
 import CancelIcon from '@mui/icons-material/Cancel';
 import LanguageIcon from '@mui/icons-material/Language';
-import PsychologyIcon from '@mui/icons-material/Psychology';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
@@ -20,7 +19,6 @@ import ConversationsButton from './components/ConversationsButton';
 import ModelSelectorButton from './components/ModelSelectorButton';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import SearchIcon from '@mui/icons-material/Search';
 
 interface MessageBubbleProps {
   isUser: boolean;
