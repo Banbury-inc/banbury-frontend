@@ -479,7 +479,7 @@ export default function AI() {
     <Box sx={{
       width: '100%',
       position: 'fixed',
-      top: '0px',
+      top: '5px',
       left: 0,
       right: 0,
       bottom: 0,
@@ -509,7 +509,8 @@ export default function AI() {
               justifyContent: 'flex-start',
               alignItems: 'center',
               gap: 1,
-              height: '100%'
+              height: '100%',
+              pb: 4
             }}>
               <Grid item>
                 <ConversationsButton
