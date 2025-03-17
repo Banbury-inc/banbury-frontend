@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import { CardContent, TextField, Typography, Paper, Tooltip } from "@mui/material";
+import { CardContent, TextField, Typography, Paper, Tooltip, Button } from "@mui/material";
 import Card from '@mui/material/Card';
 import { Grid, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
@@ -527,17 +527,24 @@ export default function AI() {
               </Grid>
               <Grid item>
                 <Tooltip title={useWebSearch ? "Web search enabled" : "Web search disabled"}>
-                  <IconButton
+                  <Button
                     onClick={() => setUseWebSearch(!useWebSearch)}
-                    sx={{
-                      color: useWebSearch ? 'primary.main' : 'grey.500',
-                      '&:hover': {
-                        color: useWebSearch ? 'primary.dark' : 'grey.400',
+                    sx={{ 
+                      paddingLeft: '4px',
+                      paddingRight: '4px',
+                      minWidth: '30px',
+                      height: '32px',
+                      '& .MuiSvgIcon-root': {
+                        fontSize: '1.2rem'
                       }
                     }}
                   >
-                    <SearchIcon />
-                  </IconButton>
+                    <SearchIcon 
+                      sx={{ 
+                        color: useWebSearch ? 'primary.main' : 'grey.500'
+                      }} 
+                    />
+                  </Button>
                 </Tooltip>
               </Grid>
             </Grid>
