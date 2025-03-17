@@ -9,6 +9,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import ImageIcon from '@mui/icons-material/Image';
 import CancelIcon from '@mui/icons-material/Cancel';
+import LanguageIcon from '@mui/icons-material/Language';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
@@ -525,28 +527,6 @@ export default function AI() {
                   onModelChange={setCurrentModel}
                 />
               </Grid>
-              <Grid item>
-                <Tooltip title={useWebSearch ? "Web search enabled" : "Web search disabled"}>
-                  <Button
-                    onClick={() => setUseWebSearch(!useWebSearch)}
-                    sx={{ 
-                      paddingLeft: '4px',
-                      paddingRight: '4px',
-                      minWidth: '30px',
-                      height: '32px',
-                      '& .MuiSvgIcon-root': {
-                        fontSize: '1.2rem'
-                      }
-                    }}
-                  >
-                    <SearchIcon 
-                      sx={{ 
-                        color: useWebSearch ? 'primary.main' : 'grey.500'
-                      }} 
-                    />
-                  </Button>
-                </Tooltip>
-              </Grid>
             </Grid>
           </Stack>
         </CardContent>
@@ -708,10 +688,32 @@ export default function AI() {
                     ref={fileInputRef}
                     onChange={handleImageUpload}
                   />
-                  <IconButton
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading}
-                    size="small"
+                  <Tooltip title="Web Search">
+                    <IconButton
+                      onClick={() => setUseWebSearch(!useWebSearch)}
+                      size="small"
+                      sx={{
+                        width: '28px',
+                        height: '28px',
+                        backgroundColor: useWebSearch ? 'rgba(66, 133, 244, 0.1)' : (theme) => theme.palette.grey[800],
+                        color: useWebSearch ? 'rgb(66, 133, 244)' : (theme) => theme.palette.grey[100],
+                        border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.3)' : 'none',
+                        '&:hover': {
+                          backgroundColor: useWebSearch 
+                            ? 'rgba(66, 133, 244, 0.15)' 
+                            : (theme) => theme.palette.grey[700],
+                          border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.4)' : 'none',
+                        },
+                      }}
+                    >
+                      <LanguageIcon sx={{ fontSize: '1.1rem' }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Upload Image">
+                    <IconButton
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading}
+                      size="small"
                     sx={{
                       width: '28px',
                       height: '28px',
@@ -719,11 +721,12 @@ export default function AI() {
                       color: (theme) => theme.palette.grey[100],
                       '&:hover': {
                         backgroundColor: (theme) => theme.palette.grey[700],
-                      },
-                    }}
-                  >
-                    <ImageIcon sx={{ fontSize: '1.1rem' }} />
-                  </IconButton>
+                        },
+                      }}
+                    >
+                      <ImageIcon sx={{ fontSize: '1.1rem' }} />
+                    </IconButton>
+                  </Tooltip>
                   <IconButton
                     onClick={handleSendMessage}
                     disabled={(!inputMessage.trim() && selectedImages.length === 0) || isLoading}
