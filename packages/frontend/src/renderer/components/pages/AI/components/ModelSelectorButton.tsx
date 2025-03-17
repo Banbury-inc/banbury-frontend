@@ -300,15 +300,24 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
       <Tooltip title="Select AI Model">
         <Button
           onClick={handleClick}
-          startIcon={<SmartToyOutlinedIcon sx={{ fontSize: '1.1rem' }} />}
-          endIcon={<KeyboardArrowDownIcon sx={{ fontSize: '1.1rem' }} />}
+          startIcon={<SmartToyOutlinedIcon fontSize="small" />}
+          endIcon={<KeyboardArrowDownIcon fontSize="small" />}
           sx={{ 
-            paddingLeft: '8px',
-            paddingRight: '8px',
+            height: '28px',
+            padding: '3px 8px',
             minWidth: 'auto',
-            textTransform: 'none',
+            fontSize: '13px',
+            lineHeight: 1,
             color: 'white',
-            fontSize: '0.875rem',
+            textTransform: 'none',
+            '& .MuiButton-startIcon': {
+              marginRight: '6px',
+              marginLeft: '-2px',
+            },
+            '& .MuiButton-endIcon': {
+              marginLeft: '2px',
+              marginRight: '-4px',
+            },
             '&:hover': {
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
             }
