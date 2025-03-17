@@ -19,6 +19,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import SearchIcon from '@mui/icons-material/Search';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { ipcRenderer } from 'electron';
 
@@ -296,12 +297,33 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
 
   return (
     <>
-      <Tooltip title="Models">
+      <Tooltip title="Select AI Model">
         <Button
           onClick={handleClick}
-          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+          startIcon={<SmartToyOutlinedIcon fontSize="small" />}
+          endIcon={<KeyboardArrowDownIcon fontSize="small" />}
+          sx={{ 
+            height: '28px',
+            padding: '3px 8px',
+            minWidth: 'auto',
+            fontSize: '13px',
+            lineHeight: 1,
+            color: 'white',
+            textTransform: 'none',
+            '& .MuiButton-startIcon': {
+              marginRight: '6px',
+              marginLeft: '-2px',
+            },
+            '& .MuiButton-endIcon': {
+              marginLeft: '2px',
+              marginRight: '-4px',
+            },
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            }
+          }}
         >
-          <SmartToyOutlinedIcon fontSize="inherit" />
+          {currentModel}
         </Button>
       </Tooltip>
 

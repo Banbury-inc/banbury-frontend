@@ -9,6 +9,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import ImageIcon from '@mui/icons-material/Image';
 import CancelIcon from '@mui/icons-material/Cancel';
+import LanguageIcon from '@mui/icons-material/Language';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
@@ -50,18 +51,22 @@ const customizedTheme = {
 const MessageBubble = styled(Paper, {
   shouldForwardProp: (prop) => prop !== 'isUser'
 })<MessageBubbleProps>(({ theme, isUser }) => ({
-  padding: theme.spacing(1),
-  marginBottom: theme.spacing(1),
-  maxWidth: '80%',
+  padding: theme.spacing(2, 3),
+  marginBottom: theme.spacing(1.5),
+  maxWidth: 'min(80%, 800px)',
   alignSelf: isUser ? 'flex-end' : 'flex-start',
-  backgroundColor: isUser ? theme.palette.primary.main : theme.palette.background.paper,
+  backgroundColor: isUser ? theme.palette.primary.main : theme.palette.grey[900],
   color: isUser ? theme.palette.primary.contrastText : theme.palette.text.primary,
-  borderRadius: theme.spacing(2),
+  borderRadius: theme.spacing(2.5),
   '& pre': {
-    margin: 0,
-    padding: theme.spacing(1),
-    borderRadius: theme.spacing(1),
+    margin: theme.spacing(1, 0),
+    padding: theme.spacing(2),
+    borderRadius: theme.spacing(1.5),
     backgroundColor: '#000000',
+  },
+  '& p, & span': {
+    lineHeight: 1.5,
+    margin: 0
   }
 }));
 
@@ -290,6 +295,7 @@ export default function AI() {
   const [streamingThinking, setStreamingThinking] = useState<string>('');
   const [currentModel, setCurrentModel] = useState<string>('llava');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [useWebSearch, setUseWebSearch] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -414,7 +420,8 @@ export default function AI() {
     try {
       const response = await ollamaClient.chat([...messages, userMessage], {
         stream: true,
-        model: currentModel
+        model: currentModel,
+        useWebSearch
       });
 
       if (Symbol.asyncIterator in response) {
@@ -472,7 +479,7 @@ export default function AI() {
     <Box sx={{
       width: '100%',
       position: 'fixed',
-      top: '0px',
+      top: '5px',
       left: 0,
       right: 0,
       bottom: 0,
@@ -502,7 +509,8 @@ export default function AI() {
               justifyContent: 'flex-start',
               alignItems: 'center',
               gap: 1,
-              height: '100%'
+              height: '100%',
+              pb: 4
             }}>
               <Grid item>
                 <ConversationsButton
@@ -550,24 +558,33 @@ export default function AI() {
               pb: 0
             }
           }}>
-            {messages.map((message, index) => (
-              <MessageBubble
-                key={index}
-                isUser={message.role === 'user'}
-                elevation={1}
-              >
-                <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
-              </MessageBubble>
-            ))}
-            {streamingMessage && (
-              <MessageBubble
-                isUser={false}
-                elevation={1}
-              >
-                <MessageContent content={streamingMessage} thinking={streamingThinking} />
-              </MessageBubble>
-            )}
-            <div ref={messagesEndRef} />
+            <Box sx={{
+              maxWidth: '1000px',
+              width: '100%',
+              margin: '0 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1
+            }}>
+              {messages.map((message, index) => (
+                <MessageBubble
+                  key={index}
+                  isUser={message.role === 'user'}
+                  elevation={1}
+                >
+                  <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
+                </MessageBubble>
+              ))}
+              {streamingMessage && (
+                <MessageBubble
+                  isUser={false}
+                  elevation={1}
+                >
+                  <MessageContent content={streamingMessage} thinking={streamingThinking} />
+                </MessageBubble>
+              )}
+              <div ref={messagesEndRef} />
+            </Box>
           </CardContent>
           <Box sx={{
             p: 2,
@@ -578,126 +595,155 @@ export default function AI() {
             backgroundColor: (theme) => theme.palette.background.paper,
             flexShrink: 0
           }}>
-            {selectedImages.length > 0 && (
-              <ImagePreviewContainer>
-                {selectedImages.map((image, index) => (
-                  <Box key={index} sx={{ position: 'relative' }}>
-                    <ImagePreview 
-                      src={`data:image/jpeg;base64,${image}`} 
-                      alt={`Selected image ${index + 1}`} 
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => handleRemoveImage(index)}
-                      sx={{
-                        position: 'absolute',
-                        top: -8,
-                        right: -8,
-                        backgroundColor: 'background.paper',
-                        '&:hover': { backgroundColor: 'action.hover' }
-                      }}
-                    >
-                      <CancelIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-              </ImagePreviewContainer>
-            )}
-            <Box sx={{ position: 'relative' }}>
-              <TextField
-                fullWidth
-                multiline
-                maxRows={20}
-                size="small"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
-                disabled={isLoading}
-                inputRef={inputRef}
-                autoFocus
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    minHeight: '32px',
-                    backgroundColor: (theme) => theme.palette.background.default,
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: (theme) => theme.palette.action.hover,
-                    },
-                    '&.Mui-focused': {
+            <Box sx={{
+              maxWidth: '1000px',
+              margin: '0 auto',
+              width: '100%'
+            }}>
+              {selectedImages.length > 0 && (
+                <ImagePreviewContainer>
+                  {selectedImages.map((image, index) => (
+                    <Box key={index} sx={{ position: 'relative' }}>
+                      <ImagePreview 
+                        src={`data:image/jpeg;base64,${image}`} 
+                        alt={`Selected image ${index + 1}`} 
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveImage(index)}
+                        sx={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          backgroundColor: 'background.paper',
+                          '&:hover': { backgroundColor: 'action.hover' }
+                        }}
+                      >
+                        <CancelIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </ImagePreviewContainer>
+              )}
+              <Box sx={{ position: 'relative' }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  maxRows={20}
+                  size="small"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type a message..."
+                  disabled={isLoading}
+                  inputRef={inputRef}
+                  autoFocus
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1,
+                      minHeight: '32px',
                       backgroundColor: (theme) => theme.palette.background.default,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        backgroundColor: (theme) => theme.palette.action.hover,
+                      },
+                      '&.Mui-focused': {
+                        backgroundColor: (theme) => theme.palette.background.default,
+                        '& fieldset': {
+                          borderColor: (theme) => theme.palette.primary.main,
+                          borderWidth: '1px',
+                        },
+                      },
                       '& fieldset': {
-                        borderColor: (theme) => theme.palette.primary.main,
-                        borderWidth: '1px',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
                       },
                     },
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                  },
-                  '& .MuiOutlinedInput-input': {
-                    padding: '4px 14px',
-                    paddingRight: '44px',
-                    fontSize: '0.875rem',
-                    lineHeight: 1.3,
-                    minHeight: '10px',
-                    maxHeight: '600px',
-                    overflow: 'auto !important',
-                    '&::placeholder': {
+                    '& .MuiOutlinedInput-input': {
+                      padding: '4px 14px',
+                      paddingRight: '84px',
                       fontSize: '0.875rem',
-                      opacity: 0.7,
+                      lineHeight: 1.3,
+                      minHeight: '10px',
+                      maxHeight: '600px',
+                      overflow: 'auto !important',
+                      '&::placeholder': {
+                        fontSize: '0.875rem',
+                        opacity: 0.7,
+                      },
                     },
-                  },
-                  '& textarea': {
-                    resize: 'none',
-                    marginTop: '0 !important',
-                    marginBottom: '0 !important',
-                  },
-                }}
-              />
-              <Stack direction="row" spacing={1} sx={{ position: 'absolute', right: '8px', bottom: '8px' }}>
-                <HiddenInput
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
+                    '& textarea': {
+                      resize: 'none',
+                      marginTop: '0 !important',
+                      marginBottom: '0 !important',
+                    },
+                  }}
                 />
-                <IconButton
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  size="small"
-                  sx={{
-                    width: '28px',
-                    height: '28px',
-                    backgroundColor: (theme) => theme.palette.grey[800],
-                    color: (theme) => theme.palette.grey[100],
-                    '&:hover': {
-                      backgroundColor: (theme) => theme.palette.grey[700],
-                    },
-                  }}
-                >
-                  <ImageIcon sx={{ fontSize: '1.1rem' }} />
-                </IconButton>
-                <IconButton
-                  onClick={handleSendMessage}
-                  disabled={(!inputMessage.trim() && selectedImages.length === 0) || isLoading}
-                  color="primary"
-                  size="small"
-                  sx={{
-                    width: '28px',
-                    height: '28px',
-                    backgroundColor: (theme) => theme.palette.primary.main,
-                    color: (theme) => theme.palette.primary.contrastText,
-                    '&:hover': {
-                      backgroundColor: (theme) => theme.palette.primary.dark,
-                    },
-                  }}
-                >
-                  <SendIcon sx={{ fontSize: '1.1rem' }} />
-                </IconButton>
-              </Stack>
+                <Stack direction="row" spacing={1} sx={{ position: 'absolute', right: '8px', bottom: '8px' }}>
+                  <HiddenInput
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                  />
+                  <Tooltip title="Web Search">
+                    <IconButton
+                      onClick={() => setUseWebSearch(!useWebSearch)}
+                      size="small"
+                      sx={{
+                        width: '28px',
+                        height: '28px',
+                        backgroundColor: useWebSearch ? 'rgba(66, 133, 244, 0.1)' : (theme) => theme.palette.grey[800],
+                        color: useWebSearch ? 'rgb(66, 133, 244)' : (theme) => theme.palette.grey[100],
+                        border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.3)' : 'none',
+                        '&:hover': {
+                          backgroundColor: useWebSearch 
+                            ? 'rgba(66, 133, 244, 0.15)' 
+                            : (theme) => theme.palette.grey[700],
+                          border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.4)' : 'none',
+                        },
+                      }}
+                    >
+                      <LanguageIcon sx={{ fontSize: '1.1rem' }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Upload Image">
+                    <IconButton
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isLoading}
+                      size="small"
+                    sx={{
+                      width: '28px',
+                      height: '28px',
+                      backgroundColor: (theme) => theme.palette.grey[800],
+                      color: (theme) => theme.palette.grey[100],
+                      '&:hover': {
+                        backgroundColor: (theme) => theme.palette.grey[700],
+                        },
+                      }}
+                    >
+                      <ImageIcon sx={{ fontSize: '1.1rem' }} />
+                    </IconButton>
+                  </Tooltip>
+                  <IconButton
+                    onClick={handleSendMessage}
+                    disabled={(!inputMessage.trim() && selectedImages.length === 0) || isLoading}
+                    color="primary"
+                    size="small"
+                    sx={{
+                      width: '28px',
+                      height: '28px',
+                      backgroundColor: (theme) => theme.palette.primary.main,
+                      color: (theme) => theme.palette.primary.contrastText,
+                      '&:hover': {
+                        backgroundColor: (theme) => theme.palette.primary.dark,
+                      },
+                    }}
+                  >
+                    <SendIcon sx={{ fontSize: '1.1rem' }} />
+                  </IconButton>
+                </Stack>
+              </Box>
             </Box>
           </Box>
         </Card>
