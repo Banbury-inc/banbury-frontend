@@ -41,7 +41,7 @@
   "author": "Banbury <mmills6060@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
+    "@atlaskit/pragmatic-drag-and-drop": "^1.5.1",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
     "@banbury/core": "3.4.22",
     "@electron/notarize": "^2.5.0",
