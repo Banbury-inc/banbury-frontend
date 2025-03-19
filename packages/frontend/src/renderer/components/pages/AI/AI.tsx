@@ -323,8 +323,6 @@ export default function AI() {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchStartTime, setSearchStartTime] = useState<number | null>(null);
-  const [searchDuration, setSearchDuration] = useState<number | null>(null);
 
   useEffect(() => {
     // Initialize Ollama client
@@ -495,12 +493,10 @@ export default function AI() {
       if (useWebSearch) {
         setIsSearching(true);
         const startTime = Date.now();
-        setSearchStartTime(startTime);
         // Modify the user's message to include web search results
         const webSearchService = new WebSearchService();
         const searchResults = await webSearchService.search(inputMessage.trim());
         const duration = ((Date.now() - startTime) / 1000);
-        setSearchDuration(parseFloat(duration.toFixed(1)));
         setIsSearching(false);
         
         // Format search results into a context string
