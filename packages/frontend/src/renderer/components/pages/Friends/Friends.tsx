@@ -308,7 +308,12 @@ export default function Friends() {
   };
 
   return (
-    <Box sx={{ width: '100%', pt: 0 }}>
+    <Box sx={{
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
         <Stack
           sx={{
