@@ -10,6 +10,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import ImageIcon from '@mui/icons-material/Image';
 import CancelIcon from '@mui/icons-material/Cancel';
 import LanguageIcon from '@mui/icons-material/Language';
+import StopIcon from '@mui/icons-material/Stop';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
@@ -306,6 +307,52 @@ const SearchingIndicator = styled(Typography)`
   }
 `;
 
+const ThinkingIndicator = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  padding: theme.spacing(1, 2),
+  backgroundColor: theme.palette.grey[900],
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(1),
+  width: 'fit-content',
+  animation: 'fadeIn 0.3s ease-in-out',
+  '@keyframes fadeIn': {
+    '0%': {
+      opacity: 0,
+      transform: 'translateY(5px)'
+    },
+    '100%': {
+      opacity: 1,
+      transform: 'translateY(0)'
+    }
+  }
+}));
+
+const ThinkingDot = styled(Box)(({ theme }) => ({
+  width: 8,
+  height: 8,
+  borderRadius: '50%',
+  backgroundColor: theme.palette.primary.main,
+  animation: 'bounce 1.4s infinite ease-in-out',
+  '&:nth-of-type(1)': {
+    animationDelay: '-0.32s'
+  },
+  '&:nth-of-type(2)': {
+    animationDelay: '-0.16s'
+  },
+  '@keyframes bounce': {
+    '0%, 80%, 100%': {
+      transform: 'scale(0)',
+      opacity: 0.3
+    },
+    '40%': {
+      transform: 'scale(1)',
+      opacity: 1
+    }
+  }
+}));
+
 export default function AI() {
   const { showAlert } = useAlert();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
@@ -323,6 +370,8 @@ export default function AI() {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     // Initialize Ollama client
@@ -473,8 +522,46 @@ export default function AI() {
     });
   };
 
+  const handleStopGeneration = async () => {
+    if (abortControllerRef.current) {
+      // Abort the current request
+      abortControllerRef.current.abort();
+      
+      // Reset all states immediately
+      setIsStreaming(false);
+      setIsLoading(false);
+      setIsSearching(false);
+      
+      // Save the partial message if it exists
+      if (streamingMessage) {
+        const { thinking, cleanContent } = extractThinkingContent(streamingMessage);
+        const assistantMessage: ExtendedChatMessage = {
+          role: 'assistant',
+          content: cleanContent,
+          thinking
+        };
+        const updatedMessages = [...messages, assistantMessage];
+        setMessages(updatedMessages);
+        saveConversation(updatedMessages);
+      }
+      
+      // Clear streaming states
+      setStreamingMessage('');
+      setStreamingThinking('');
+      
+      // Clean up the abort controller
+      abortControllerRef.current = null;
+    }
+  };
+
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
+
+    // Clean up any existing abort controller before starting a new request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
 
     const userMessage: ExtendedChatMessage = {
       role: 'user',
@@ -482,10 +569,15 @@ export default function AI() {
       images: selectedImages
     };
 
+    // Create a new AbortController for this request
+    abortControllerRef.current = new AbortController();
+
+    // Update UI state
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setSelectedImages([]);
     setIsLoading(true);
+    setIsStreaming(true);
     setStreamingMessage('');
     setStreamingThinking('');
 
@@ -512,32 +604,46 @@ export default function AI() {
       const response = await ollamaClient.chat([...messages, userMessage], {
         stream: true,
         model: currentModel,
-        useWebSearch
+        useWebSearch,
+        signal: abortControllerRef.current.signal
       });
 
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
         let completeMessage = '';
-        for await (const chunk of response as AsyncIterable<ChatResponse>) {
-          completeMessage += chunk.message.content;
-          const { thinking, cleanContent } = extractThinkingContent(completeMessage);
-          setStreamingMessage(cleanContent);
-          if (thinking) {
-            setStreamingThinking(thinking);
+        try {
+          for await (const chunk of response as AsyncIterable<ChatResponse>) {
+            // Check if the request was aborted
+            if (abortControllerRef.current?.signal.aborted) {
+              break;
+            }
+            completeMessage += chunk.message.content;
+            const { thinking, cleanContent } = extractThinkingContent(completeMessage);
+            setStreamingMessage(cleanContent);
+            if (thinking) {
+              setStreamingThinking(thinking);
+            }
           }
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.log('Generation stopped by user');
+            return;
+          }
+          throw error;
         }
-        // After streaming is complete, add the message to the list
-        const { thinking, cleanContent } = extractThinkingContent(completeMessage);
-        const assistantMessage: ExtendedChatMessage = {
-          role: 'assistant',
-          content: cleanContent,
-          thinking
-        };
-        const updatedMessages = [...messages, userMessage, assistantMessage];
-        setMessages(updatedMessages);
-        setStreamingMessage('');
-        setStreamingThinking('');
-        saveConversation(updatedMessages);
+
+        // Only add the message if we weren't aborted
+        if (!abortControllerRef.current?.signal.aborted) {
+          const { thinking, cleanContent } = extractThinkingContent(completeMessage);
+          const assistantMessage: ExtendedChatMessage = {
+            role: 'assistant',
+            content: cleanContent,
+            thinking
+          };
+          const updatedMessages = [...messages, userMessage, assistantMessage];
+          setMessages(updatedMessages);
+          saveConversation(updatedMessages);
+        }
       } else {
         // Handle non-streaming response (fallback)
         const chatResponse = response as unknown as ChatResponse;
@@ -552,10 +658,19 @@ export default function AI() {
         saveConversation(updatedMessages);
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Generation stopped by user');
+        return;
+      }
       console.error('Error sending message:', error);
       showAlert('Error', ['Failed to send message', error instanceof Error ? error.message : 'Unknown error'], 'error');
     } finally {
+      // Always clean up states
       setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingMessage('');
+      setStreamingThinking('');
+      abortControllerRef.current = null;
     }
   };
 
@@ -718,8 +833,18 @@ export default function AI() {
                   )}
                 </React.Fragment>
               ))}
-              {(isSearching || streamingMessage) && (
+              {(isLoading || streamingMessage) && (
                 <>
+                  {isLoading && !streamingMessage && (
+                    <ThinkingIndicator>
+                      <ThinkingDot />
+                      <ThinkingDot />
+                      <ThinkingDot />
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Thinking...
+                      </Typography>
+                    </ThinkingIndicator>
+                  )}
                   {streamingMessage && (
                     <>
                       {isSearching && (
@@ -911,24 +1036,24 @@ export default function AI() {
                     </IconButton>
                   </Tooltip>
                   <IconButton
-                    onClick={handleSendMessage}
-                    disabled={(!inputMessage.trim() && selectedImages.length === 0) || isLoading}
+                    onClick={isStreaming ? handleStopGeneration : handleSendMessage}
+                    disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
                     color="primary"
                     size="small"
                     sx={{
                       width: '28px',
                       height: '28px',
                       backgroundColor: (theme) => 
-                        (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                        (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
                           ? theme.palette.grey[800]
                           : theme.palette.primary.main,
                       color: (theme) =>
-                        (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                        (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
                           ? theme.palette.grey[100]
                           : theme.palette.primary.contrastText,
                       '&:hover': {
                         backgroundColor: (theme) =>
-                          (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                          (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
                             ? theme.palette.grey[700]
                             : theme.palette.primary.dark,
                       },
@@ -938,7 +1063,7 @@ export default function AI() {
                       }
                     }}
                   >
-                    <SendIcon sx={{ fontSize: '1.1rem' }} />
+                    {isStreaming ? <StopIcon sx={{ fontSize: '1.1rem' }} /> : <SendIcon sx={{ fontSize: '1.1rem' }} />}
                   </IconButton>
                 </Stack>
               </Box>
