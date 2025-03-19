@@ -185,7 +185,9 @@ const HiddenInput = styled('input')({
 });
 
 const MessageContent: React.FC<{ content: string; thinking?: string; images?: string[] }> = ({ content, thinking, images }) => {
-  const parts = content.split(/(```[\s\S]*?```)/);
+  // Filter out the context section from display
+  const displayContent = content.replace(/<context>[\s\S]*?<\/context>\n?/g, '');
+  const parts = displayContent.split(/(```[\s\S]*?```)/);
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
 
   return (
@@ -287,6 +289,20 @@ const extractThinkingContent = (content: string): { thinking?: string; cleanCont
   return { cleanContent: content };
 };
 
+// Add this near the other styled components
+const SearchingIndicator = styled(Typography)`
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
 export default function AI() {
   const { showAlert } = useAlert();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
@@ -303,6 +319,7 @@ export default function AI() {
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     // Initialize Ollama client
@@ -471,17 +488,19 @@ export default function AI() {
 
     try {
       if (useWebSearch) {
+        setIsSearching(true);
         // Modify the user's message to include web search results
         const webSearchService = new WebSearchService();
         const searchResults = await webSearchService.search(inputMessage.trim());
+        setIsSearching(false);
         
         // Format search results into a context string
         const searchContext = searchResults.map((result: WebSearchResult) => 
           `[${result.title}]\n${result.snippet}\nSource: ${result.link}`
         ).join('\n\n');
 
-        // Add search results as context to the user message
-        userMessage.content = `Web Search Results:\n${searchContext}\n\nUser Query: ${inputMessage.trim()}`;
+        // Add search results as context to the user message but hide from display
+        userMessage.content = `<context>${searchContext}</context>\n${inputMessage.trim()}`;
       }
 
       const response = await ollamaClient.chat([...messages, userMessage], {
@@ -675,13 +694,35 @@ export default function AI() {
                   <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
                 </MessageBubble>
               ))}
-              {streamingMessage && (
-                <MessageBubble
-                  isUser={false}
-                  elevation={1}
-                >
-                  <MessageContent content={streamingMessage} thinking={streamingThinking} />
-                </MessageBubble>
+              {(isSearching || streamingMessage) && (
+                <>
+                  {isSearching && (
+                    <SearchingIndicator
+                      variant="caption"
+                      sx={{
+                        alignSelf: 'flex-start',
+                        ml: 1,
+                        mb: 1,
+                        color: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        animation: 'fadeIn 0.3s ease-in-out'
+                      }}
+                    >
+                      <span role="img" aria-label="searching">🔍</span>
+                      Searching the web...
+                    </SearchingIndicator>
+                  )}
+                  {streamingMessage && (
+                    <MessageBubble
+                      isUser={false}
+                      elevation={1}
+                    >
+                      <MessageContent content={streamingMessage} thinking={streamingThinking} />
+                    </MessageBubble>
+                  )}
+                </>
               )}
               <div ref={messagesEndRef} />
             </Box>
