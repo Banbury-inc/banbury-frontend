@@ -13,6 +13,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
+import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConversationsButton from './components/ConversationsButton';
@@ -145,6 +146,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
 interface ExtendedChatMessage extends CoreChatMessage {
   thinking?: string;
   images?: string[];
+  searchInfo?: {
+    duration: number;
+  };
 }
 
 const ThinkingBlock = styled(Paper)(({ theme }) => ({
@@ -184,7 +188,9 @@ const HiddenInput = styled('input')({
 });
 
 const MessageContent: React.FC<{ content: string; thinking?: string; images?: string[] }> = ({ content, thinking, images }) => {
-  const parts = content.split(/(```[\s\S]*?```)/);
+  // Filter out the context section from display
+  const displayContent = content.replace(/<context>[\s\S]*?<\/context>\n?/g, '');
+  const parts = displayContent.split(/(```[\s\S]*?```)/);
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
 
   return (
@@ -286,6 +292,20 @@ const extractThinkingContent = (content: string): { thinking?: string; cleanCont
   return { cleanContent: content };
 };
 
+// Add this near the other styled components
+const SearchingIndicator = styled(Typography)`
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
 export default function AI() {
   const { showAlert } = useAlert();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
@@ -302,6 +322,7 @@ export default function AI() {
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     // Initialize Ollama client
@@ -469,12 +490,30 @@ export default function AI() {
     setStreamingThinking('');
 
     try {
+      if (useWebSearch) {
+        setIsSearching(true);
+        const startTime = Date.now();
+        // Modify the user's message to include web search results
+        const webSearchService = new WebSearchService();
+        const searchResults = await webSearchService.search(inputMessage.trim());
+        const duration = ((Date.now() - startTime) / 1000);
+        setIsSearching(false);
+        
+        // Format search results into a context string
+        const searchContext = searchResults.map((result: WebSearchResult) => 
+          `[${result.title}]\n${result.snippet}\nSource: ${result.link}`
+        ).join('\n\n');
+
+        // Add search results and duration as context to the user message
+        userMessage.content = `<context>${searchContext}</context>\n${inputMessage.trim()}`;
+        userMessage.searchInfo = { duration: parseFloat(duration.toFixed(1)) };
+      }
+
       const response = await ollamaClient.chat([...messages, userMessage], {
         stream: true,
         model: currentModel,
         useWebSearch
       });
-
 
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
@@ -653,21 +692,81 @@ export default function AI() {
               flexGrow: 1
             }}>
               {messages.map((message, index) => (
-                <MessageBubble
-                  key={index}
-                  isUser={message.role === 'user'}
-                  elevation={1}
-                >
-                  <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
-                </MessageBubble>
+                <React.Fragment key={index}>
+                  <MessageBubble
+                    isUser={message.role === 'user'}
+                    elevation={1}
+                  >
+                    <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
+                  </MessageBubble>
+                  {message.searchInfo && message.role === 'user' && (
+                    <SearchingIndicator
+                      variant="caption"
+                      sx={{
+                        alignSelf: 'flex-start',
+                        ml: 1,
+                        mb: 1,
+                        color: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                      }}
+                    >
+                      <span role="img" aria-label="searched">✓</span>
+                      {`Searched the web (${message.searchInfo.duration.toFixed(1)}s)`}
+                    </SearchingIndicator>
+                  )}
+                </React.Fragment>
               ))}
-              {streamingMessage && (
-                <MessageBubble
-                  isUser={false}
-                  elevation={1}
-                >
-                  <MessageContent content={streamingMessage} thinking={streamingThinking} />
-                </MessageBubble>
+              {(isSearching || streamingMessage) && (
+                <>
+                  {streamingMessage && (
+                    <>
+                      {isSearching && (
+                        <SearchingIndicator
+                          variant="caption"
+                          sx={{
+                            alignSelf: 'flex-start',
+                            ml: 1,
+                            mb: 1,
+                            color: 'primary.main',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            animation: 'fadeIn 0.3s ease-in-out'
+                          }}
+                        >
+                          <span role="img" aria-label="searching">🔍</span>
+                          Searching the web...
+                        </SearchingIndicator>
+                      )}
+                      <MessageBubble
+                        isUser={false}
+                        elevation={1}
+                      >
+                        <MessageContent content={streamingMessage} thinking={streamingThinking} />
+                      </MessageBubble>
+                    </>
+                  )}
+                  {!streamingMessage && isSearching && (
+                    <SearchingIndicator
+                      variant="caption"
+                      sx={{
+                        alignSelf: 'flex-start',
+                        ml: 1,
+                        mb: 1,
+                        color: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        animation: 'fadeIn 0.3s ease-in-out'
+                      }}
+                    >
+                      <span role="img" aria-label="searching"></span>
+                      Searching the web...
+                    </SearchingIndicator>
+                  )}
+                </>
               )}
               <div ref={messagesEndRef} />
             </Box>

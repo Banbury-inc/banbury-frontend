@@ -1,8 +1,21 @@
 import { OllamaClient, ChatMessage } from '../index';
 import { Ollama } from 'ollama';
 
-// Mock the entire ollama module
+// Mock the ollama module
 jest.mock('ollama');
+
+// Mock the web-search module
+jest.mock('../web-search', () => ({
+  WebSearchService: jest.fn().mockImplementation(() => ({
+    search: jest.fn().mockResolvedValue([
+      {
+        title: 'Test Result',
+        link: 'https://test.com',
+        snippet: 'Test snippet'
+      }
+    ])
+  }))
+}));
 
 describe('OllamaClient', () => {
     let client: OllamaClient;
@@ -57,6 +70,16 @@ describe('OllamaClient', () => {
             mockOllama.prototype.chat.mockRejectedValueOnce(mockError);
 
             await expect(client.chat(mockMessages)).rejects.toThrow('Chat error');
+        });
+
+        it('should handle web search when enabled', async () => {
+            const mockResponse = { response: 'Response with web search' };
+            mockOllama.prototype.chat.mockResolvedValueOnce(mockResponse as any);
+
+            const response = await client.chat(mockMessages, { stream: false, useWebSearch: true });
+
+            expect(mockOllama.prototype.chat).toHaveBeenCalled();
+            expect(response).toEqual(mockResponse);
         });
     });
 
