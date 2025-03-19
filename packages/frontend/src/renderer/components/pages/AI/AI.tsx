@@ -475,6 +475,7 @@ export default function AI() {
         useWebSearch
       });
 
+
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
         let completeMessage = '';
