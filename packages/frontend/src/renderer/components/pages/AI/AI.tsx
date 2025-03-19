@@ -818,11 +818,24 @@ export default function AI() {
                     sx={{
                       width: '28px',
                       height: '28px',
-                      backgroundColor: (theme) => theme.palette.primary.main,
-                      color: (theme) => theme.palette.primary.contrastText,
+                      backgroundColor: (theme) => 
+                        (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                          ? theme.palette.grey[800]
+                          : theme.palette.primary.main,
+                      color: (theme) =>
+                        (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                          ? theme.palette.grey[100]
+                          : theme.palette.primary.contrastText,
                       '&:hover': {
-                        backgroundColor: (theme) => theme.palette.primary.dark,
+                        backgroundColor: (theme) =>
+                          (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                            ? theme.palette.grey[700]
+                            : theme.palette.primary.dark,
                       },
+                      '&.Mui-disabled': {
+                        backgroundColor: (theme) => theme.palette.grey[800],
+                        color: (theme) => theme.palette.grey[600],
+                      }
                     }}
                   >
                     <SendIcon sx={{ fontSize: '1.1rem' }} />
