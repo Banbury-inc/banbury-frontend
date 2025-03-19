@@ -314,7 +314,7 @@ export default function Friends() {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
+      <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 40px)', overflow: 'hidden' }}>
         <Stack
           sx={{
             position: 'relative',
