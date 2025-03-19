@@ -693,7 +693,12 @@ export default function Devices() {
   }, [selectedDevice]);
 
   return (
-    <Box sx={{ width: '100%', pt: 0 }}>
+    <Box sx={{
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Card variant='outlined' sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
         <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
