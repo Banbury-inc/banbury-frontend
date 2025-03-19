@@ -766,7 +766,7 @@ export default function AI() {
                         animation: 'fadeIn 0.3s ease-in-out'
                       }}
                     >
-                      <span role="img" aria-label="searching">🔍</span>
+                      <span role="img" aria-label="searching"></span>
                       Searching the web...
                     </SearchingIndicator>
                   )}
