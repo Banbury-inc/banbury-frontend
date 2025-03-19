@@ -475,6 +475,7 @@ export default function AI() {
         useWebSearch
       });
 
+
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
         let completeMessage = '';
@@ -530,7 +531,7 @@ export default function AI() {
     <Box sx={{
       width: '100%',
       position: 'fixed',
-      top: '5px',
+      top: '38px',
       left: 0,
       right: 0,
       bottom: 0,
@@ -584,23 +585,18 @@ export default function AI() {
         borderRadius: 0,
         backgroundColor: (theme) => theme.palette.background.paper
       }}>
-        <CardContent sx={{ py: 0, px: 0 }}>
+        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
           <Stack spacing={2} direction="row" sx={{
             paddingLeft: 8,
-            paddingTop: 3,
-            paddingBottom: 0,
-            marginTop: '20px',
             flexWrap: 'nowrap',
             justifyContent: 'flex-start',
             alignItems: 'center',
-            height: 30
           }}>
             <Grid container sx={{
               justifyContent: 'flex-start',
               alignItems: 'center',
               gap: 1,
               height: '100%',
-              pb: 4
             }}>
               <Grid item>
                 <ConversationsButton
@@ -823,11 +819,24 @@ export default function AI() {
                     sx={{
                       width: '28px',
                       height: '28px',
-                      backgroundColor: (theme) => theme.palette.primary.main,
-                      color: (theme) => theme.palette.primary.contrastText,
+                      backgroundColor: (theme) => 
+                        (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                          ? theme.palette.grey[800]
+                          : theme.palette.primary.main,
+                      color: (theme) =>
+                        (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                          ? theme.palette.grey[100]
+                          : theme.palette.primary.contrastText,
                       '&:hover': {
-                        backgroundColor: (theme) => theme.palette.primary.dark,
+                        backgroundColor: (theme) =>
+                          (!inputMessage.trim() && selectedImages.length === 0) || isLoading
+                            ? theme.palette.grey[700]
+                            : theme.palette.primary.dark,
                       },
+                      '&.Mui-disabled': {
+                        backgroundColor: (theme) => theme.palette.grey[800],
+                        color: (theme) => theme.palette.grey[600],
+                      }
                     }}
                   >
                     <SendIcon sx={{ fontSize: '1.1rem' }} />

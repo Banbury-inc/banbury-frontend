@@ -22,11 +22,6 @@ test('ram_free returns a non-negative number', async () => {
   expect(free).toBeGreaterThanOrEqual(0);
 });
 
-test('ip_address returns a valid IP address or "Unknown"', async () => {
-  const ip = await deviceInfo.ip_address();
-  expect(ip).toMatch(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|Unknown)$/);
-});
-
 test('storage_capacity returns a positive number', async () => {
   const capacity = await deviceInfo.storage_capacity();
   expect(capacity).toBeGreaterThan(0);

@@ -157,9 +157,13 @@ export default function Logs() {
   }
 
   return (
-    // <Box sx={{ width: '100%', pl: 4, pr: 4, mt: 0, pt: 5 }}>
-    <Box sx={{ width: '100%', pt: 0 }}>
-      <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 76px)', overflow: 'hidden' }}>
+    <Box sx={{
+      width: '100%',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 40px)', overflow: 'hidden' }}>
         <Stack>
           <Box display="flex" flexDirection="column" height="100%">
 
