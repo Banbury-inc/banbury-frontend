@@ -491,12 +491,13 @@ export default function AI() {
     try {
       if (useWebSearch) {
         setIsSearching(true);
-        setSearchStartTime(Date.now());
+        const startTime = Date.now();
+        setSearchStartTime(startTime);
         // Modify the user's message to include web search results
         const webSearchService = new WebSearchService();
         const searchResults = await webSearchService.search(inputMessage.trim());
-        const duration = (Date.now() - searchStartTime!) / 1000;
-        setSearchDuration(duration);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+        setSearchDuration(parseFloat(duration));
         setIsSearching(false);
         
         // Format search results into a context string
