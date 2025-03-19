@@ -1,6 +1,7 @@
 body {
   border: 1px solid #48545c;
   overflow-y: hidden;
+  overflow-x: hidden;
 }
 
 #titlebar {
@@ -33,6 +34,7 @@ body {
   margin-top: 32px;
   padding: 20px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 
