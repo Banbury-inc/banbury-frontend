@@ -13,6 +13,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import { useAlert } from '../../../context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
+import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConversationsButton from './components/ConversationsButton';
@@ -469,12 +470,25 @@ export default function AI() {
     setStreamingThinking('');
 
     try {
+      if (useWebSearch) {
+        // Modify the user's message to include web search results
+        const webSearchService = new WebSearchService();
+        const searchResults = await webSearchService.search(inputMessage.trim());
+        
+        // Format search results into a context string
+        const searchContext = searchResults.map((result: WebSearchResult) => 
+          `[${result.title}]\n${result.snippet}\nSource: ${result.link}`
+        ).join('\n\n');
+
+        // Add search results as context to the user message
+        userMessage.content = `Web Search Results:\n${searchContext}\n\nUser Query: ${inputMessage.trim()}`;
+      }
+
       const response = await ollamaClient.chat([...messages, userMessage], {
         stream: true,
         model: currentModel,
         useWebSearch
       });
-
 
       if (Symbol.asyncIterator in response) {
         // Handle streaming response
