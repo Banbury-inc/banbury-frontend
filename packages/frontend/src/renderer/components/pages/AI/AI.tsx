@@ -146,6 +146,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
 interface ExtendedChatMessage extends CoreChatMessage {
   thinking?: string;
   images?: string[];
+  searchInfo?: {
+    duration: number;
+  };
 }
 
 const ThinkingBlock = styled(Paper)(({ theme }) => ({
@@ -496,8 +499,8 @@ export default function AI() {
         // Modify the user's message to include web search results
         const webSearchService = new WebSearchService();
         const searchResults = await webSearchService.search(inputMessage.trim());
-        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-        setSearchDuration(parseFloat(duration));
+        const duration = ((Date.now() - startTime) / 1000);
+        setSearchDuration(parseFloat(duration.toFixed(1)));
         setIsSearching(false);
         
         // Format search results into a context string
@@ -505,8 +508,9 @@ export default function AI() {
           `[${result.title}]\n${result.snippet}\nSource: ${result.link}`
         ).join('\n\n');
 
-        // Add search results as context to the user message but hide from display
+        // Add search results and duration as context to the user message
         userMessage.content = `<context>${searchContext}</context>\n${inputMessage.trim()}`;
+        userMessage.searchInfo = { duration: parseFloat(duration.toFixed(1)) };
       }
 
       const response = await ollamaClient.chat([...messages, userMessage], {
@@ -556,10 +560,6 @@ export default function AI() {
       showAlert('Error', ['Failed to send message', error instanceof Error ? error.message : 'Unknown error'], 'error');
     } finally {
       setIsLoading(false);
-      if (!streamingMessage) {
-        setSearchDuration(null);
-        setSearchStartTime(null);
-      }
     }
   };
 
@@ -696,17 +696,63 @@ export default function AI() {
               flexGrow: 1
             }}>
               {messages.map((message, index) => (
-                <MessageBubble
-                  key={index}
-                  isUser={message.role === 'user'}
-                  elevation={1}
-                >
-                  <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
-                </MessageBubble>
+                <React.Fragment key={index}>
+                  <MessageBubble
+                    isUser={message.role === 'user'}
+                    elevation={1}
+                  >
+                    <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
+                  </MessageBubble>
+                  {message.searchInfo && message.role === 'user' && (
+                    <SearchingIndicator
+                      variant="caption"
+                      sx={{
+                        alignSelf: 'flex-start',
+                        ml: 1,
+                        mb: 1,
+                        color: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                      }}
+                    >
+                      <span role="img" aria-label="searched">✓</span>
+                      {`Searched the web (${message.searchInfo.duration.toFixed(1)}s)`}
+                    </SearchingIndicator>
+                  )}
+                </React.Fragment>
               ))}
-              {(isSearching || streamingMessage || searchDuration) && (
+              {(isSearching || streamingMessage) && (
                 <>
-                  {(isSearching || searchDuration) && (
+                  {streamingMessage && (
+                    <>
+                      {isSearching && (
+                        <SearchingIndicator
+                          variant="caption"
+                          sx={{
+                            alignSelf: 'flex-start',
+                            ml: 1,
+                            mb: 1,
+                            color: 'primary.main',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            animation: 'fadeIn 0.3s ease-in-out'
+                          }}
+                        >
+                          <span role="img" aria-label="searching">🔍</span>
+                          Searching the web...
+                        </SearchingIndicator>
+                      )}
+                      <MessageBubble
+                        isUser={false}
+                        elevation={1}
+                      >
+                        <MessageContent content={streamingMessage} thinking={streamingThinking} />
+                      </MessageBubble>
+                    </>
+                  )}
+                  {!streamingMessage && isSearching && (
                     <SearchingIndicator
                       variant="caption"
                       sx={{
@@ -720,22 +766,9 @@ export default function AI() {
                         animation: 'fadeIn 0.3s ease-in-out'
                       }}
                     >
-                      <span role="img" aria-label="searching">{isSearching ? '🔍' : '✓'}</span>
-                      {isSearching 
-                        ? 'Searching the web...'
-                        : searchDuration 
-                          ? `Searched the web (${searchDuration.toFixed(1)}s)`
-                          : 'Search complete'
-                      }
+                      <span role="img" aria-label="searching">🔍</span>
+                      Searching the web...
                     </SearchingIndicator>
-                  )}
-                  {streamingMessage && (
-                    <MessageBubble
-                      isUser={false}
-                      elevation={1}
-                    >
-                      <MessageContent content={streamingMessage} thinking={streamingThinking} />
-                    </MessageBubble>
                   )}
                 </>
               )}
