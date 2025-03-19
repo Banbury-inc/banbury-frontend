@@ -320,6 +320,8 @@ export default function AI() {
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchStartTime, setSearchStartTime] = useState<number | null>(null);
+  const [searchDuration, setSearchDuration] = useState<number | null>(null);
 
   useEffect(() => {
     // Initialize Ollama client
@@ -489,9 +491,12 @@ export default function AI() {
     try {
       if (useWebSearch) {
         setIsSearching(true);
+        setSearchStartTime(Date.now());
         // Modify the user's message to include web search results
         const webSearchService = new WebSearchService();
         const searchResults = await webSearchService.search(inputMessage.trim());
+        const duration = (Date.now() - searchStartTime!) / 1000;
+        setSearchDuration(duration);
         setIsSearching(false);
         
         // Format search results into a context string
@@ -550,6 +555,10 @@ export default function AI() {
       showAlert('Error', ['Failed to send message', error instanceof Error ? error.message : 'Unknown error'], 'error');
     } finally {
       setIsLoading(false);
+      if (!streamingMessage) {
+        setSearchDuration(null);
+        setSearchStartTime(null);
+      }
     }
   };
 
@@ -694,9 +703,9 @@ export default function AI() {
                   <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
                 </MessageBubble>
               ))}
-              {(isSearching || streamingMessage) && (
+              {(isSearching || streamingMessage || searchDuration) && (
                 <>
-                  {isSearching && (
+                  {(isSearching || searchDuration) && (
                     <SearchingIndicator
                       variant="caption"
                       sx={{
@@ -710,8 +719,13 @@ export default function AI() {
                         animation: 'fadeIn 0.3s ease-in-out'
                       }}
                     >
-                      <span role="img" aria-label="searching">🔍</span>
-                      Searching the web...
+                      <span role="img" aria-label="searching">{isSearching ? '🔍' : '✓'}</span>
+                      {isSearching 
+                        ? 'Searching the web...'
+                        : searchDuration 
+                          ? `Searched the web (${searchDuration.toFixed(1)}s)`
+                          : 'Search complete'
+                      }
                     </SearchingIndicator>
                   )}
                   {streamingMessage && (
