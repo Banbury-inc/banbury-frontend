@@ -12,6 +12,7 @@ export interface ChatOptions {
     temperature?: number;
     stream?: boolean;
     useWebSearch?: boolean;
+    signal?: AbortSignal;
 }
 
 export class OllamaClient {
@@ -31,7 +32,7 @@ export class OllamaClient {
      * Send a chat message and get a response
      */
     async chat(messages: ChatMessage[], options: ChatOptions = {}) {
-        const { model = this.defaultModel, temperature = 0.7, stream = false, useWebSearch = false } = options;
+        const { model = this.defaultModel, temperature = 0.7, stream = false, useWebSearch = false, signal } = options;
 
         // If web search is enabled, perform a search and add results to the context
         if (useWebSearch && messages.length > 0) {
@@ -69,7 +70,7 @@ export class OllamaClient {
         });
 
         if (stream) {
-            return await this.client.chat({
+            const response = await this.client.chat({
                 model,
                 messages: formattedMessages,
                 stream: true,
@@ -77,6 +78,25 @@ export class OllamaClient {
                     temperature
                 }
             });
+
+            // Wrap the streaming response to handle cancellation
+            if (signal) {
+                const originalIterator = response[Symbol.asyncIterator]();
+                return {
+                    [Symbol.asyncIterator]() {
+                        return {
+                            async next() {
+                                if (signal.aborted) {
+                                    return { done: true };
+                                }
+                                return originalIterator.next();
+                            }
+                        };
+                    }
+                };
+            }
+
+            return response;
         } else {
             const response = await this.client.chat({
                 model,
