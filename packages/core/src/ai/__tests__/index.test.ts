@@ -1,6 +1,5 @@
 import { OllamaClient, ChatMessage } from '../index';
 import { Ollama } from 'ollama';
-import { WebSearchService } from '../web-search';
 
 // Mock the ollama module
 jest.mock('ollama');
