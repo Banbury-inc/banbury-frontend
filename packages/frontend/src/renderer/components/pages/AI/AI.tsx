@@ -530,7 +530,7 @@ export default function AI() {
     <Box sx={{
       width: '100%',
       position: 'fixed',
-      top: '5px',
+      top: '38px',
       left: 0,
       right: 0,
       bottom: 0,
@@ -584,23 +584,18 @@ export default function AI() {
         borderRadius: 0,
         backgroundColor: (theme) => theme.palette.background.paper
       }}>
-        <CardContent sx={{ py: 0, px: 0 }}>
+        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
           <Stack spacing={2} direction="row" sx={{
             paddingLeft: 8,
-            paddingTop: 3,
-            paddingBottom: 0,
-            marginTop: '20px',
             flexWrap: 'nowrap',
             justifyContent: 'flex-start',
             alignItems: 'center',
-            height: 30
           }}>
             <Grid container sx={{
               justifyContent: 'flex-start',
               alignItems: 'center',
               gap: 1,
               height: '100%',
-              pb: 4
             }}>
               <Grid item>
                 <ConversationsButton
