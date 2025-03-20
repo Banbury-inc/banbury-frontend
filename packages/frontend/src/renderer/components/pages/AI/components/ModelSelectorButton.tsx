@@ -22,6 +22,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { ipcRenderer } from 'electron';
+import { add_downloaded_model } from '@banbury/core/src/ai/add_downloaded_model';
+import { useAuth } from '../../../../context/AuthContext';
+import { banbury } from '@banbury/core';
 
 interface Model {
   name: string;
@@ -121,6 +124,7 @@ const AVAILABLE_MODELS: ModelInfo[] = [
 ];
 
 export default function ModelSelectorButton({ currentModel, onModelChange }: ModelSelectorButtonProps) {
+  const { username, devices} = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [downloadedModels, setDownloadedModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(false);
@@ -215,6 +219,26 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
           delete newProgress[modelName];
           return newProgress;
         });
+
+        // After successful download, call add_downloaded_model
+        try {
+          if (username) {
+            if (devices && devices.length > 0) {
+              console.log(devices);
+              const device = devices.find(d => d.device_name === banbury.device.name());
+              if (device) {
+                const deviceId = device._id;
+                console.log(deviceId);
+                const addModelResult = await add_downloaded_model(modelName, username, deviceId);
+                if (addModelResult === 'failed' || addModelResult === 'task_add failed') {
+                  console.error('Failed to register downloaded model');
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error registering downloaded model:', error);
+        }
       } else {
         setDownloadProgress(prev => {
           const newProgress = { ...prev };
