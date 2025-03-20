@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
-import axios from 'axios';
 import { Switch, useMediaQuery } from '@mui/material';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
