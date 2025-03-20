@@ -68,6 +68,7 @@ interface DeviceData {
   ram_total: string;
   ram_free: string;
   scanned_folders: string[];
+  downloaded_models: string[];
   predicted_cpu_usage: number;
   predicted_ram_usage: number;
   predicted_gpu_usage: number;
@@ -319,9 +320,8 @@ export default function Devices() {
         };
       }>(`${banbury.config.url}/predictions/get_device_prediction_data/${username}/`);
 
-      console.log('devicePredictionsResponse: ', devicePredictionsResponse);
-
       const { devices } = deviceInfoResponse.data;
+      console.log('devices: ', devices);
       const { device_predictions } = devicePredictionsResponse.data.data;
 
       // Transform device data
@@ -387,6 +387,7 @@ export default function Devices() {
           ram_total: device.ram_total,
           ram_free: device.ram_free,
           scanned_folders: Array.isArray(device.scanned_folders) ? device.scanned_folders : [],
+          downloaded_models: Array.isArray(device.downloaded_models) ? device.downloaded_models : [],
           sync_storage_capacity_gb: devicePrediction.sync_storage_capacity_gb,
           predicted_cpu_usage: devicePrediction.predicted_cpu_usage,
           predicted_ram_usage: devicePrediction.predicted_ram_usage,
@@ -913,6 +914,30 @@ export default function Devices() {
                           username={username ?? ''}
                           onFoldersUpdate={handleFoldersUpdate}
                         />
+                      </Box>
+                    </Card>
+
+                    <Card variant='outlined' sx={{ p: 3 }}>
+                      <Typography variant="h6" gutterBottom>Downloaded Models</Typography>
+                      <Box>
+                        {selectedDevice.downloaded_models && selectedDevice.downloaded_models.length > 0 ? (
+                          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 2 }}>
+                            {selectedDevice.downloaded_models.map((model, index) => (
+                              <Chip
+                                key={index}
+                                label={model}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ fontSize: '12px' }}
+                              />
+                            ))}
+                          </Stack>
+                        ) : (
+                          <Typography variant="body2" color="textSecondary">
+                            No models downloaded
+                          </Typography>
+                        )}
                       </Box>
                     </Card>
                   </Stack>
