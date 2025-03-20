@@ -13,7 +13,7 @@ import Files from './pages/Files/Files';
 import Friends from './pages/Friends/Friends';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import Devices from './pages/Devices';
+import Devices from './pages/Devices/Devices';
 import Settings from './pages/Settings/Settings';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import DevicesIcon from '@mui/icons-material/Devices';
