@@ -4,13 +4,13 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import { Typography, Grid, Button } from "@mui/material";
 import { Stack } from '@mui/material';
-import AccountMenuIcon from '../common/AccountMenuIcon';
-import { useAuth } from '../../context/AuthContext';
+import AccountMenuIcon from '../../common/AccountMenuIcon';
+import { useAuth } from '../../../renderer/context/AuthContext';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Divider from '@mui/material/Divider';
 import { Email } from '@mui/icons-material';
-import { handlers } from '../../handlers';
+import { handlers } from '../../../renderer/handlers';
 
 const { ipcRenderer } = window.require('electron');
 

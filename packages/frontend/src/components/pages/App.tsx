@@ -1,14 +1,14 @@
 import { Box, CssBaseline, ThemeProvider } from "@mui/material";
 import React  from "react";
-import theme from "../theme";
+import theme from "../../renderer/theme";
 import { BrowserRouter } from "react-router-dom";
-import Login from "../../components/pages/Login/Login";
-import { AuthProvider } from "../context/AuthContext";
+import Login from "./Login/Login";
+import { AuthProvider } from "../../renderer/context/AuthContext";
 import { ipcRenderer } from 'electron';
-import './index.css';
-import { AlertProvider } from '../context/AlertContext';
+import '../../renderer/index.css';
+import { AlertProvider } from '../../renderer/context/AlertContext';
 import { Alert } from '../../components/template/alert';
-import { useAlert } from '../context/AlertContext';
+import { useAlert } from '../../renderer/context/AlertContext';
 
 function AlertWrapper() {
   const { alert } = useAlert();
