@@ -27,7 +27,7 @@ import { useAuth } from '../../../renderer/context/AuthContext';
 import { handlers } from '../../../renderer/handlers';
 import banbury from '@banbury/core';
 import FileTreeView from './components/NewTreeView/FileTreeView';
-import NewInputFileUploadButton from '../../../components/common/newuploadfilebutton';
+import NewInputFileUploadButton from './components/UploadFileButton';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';

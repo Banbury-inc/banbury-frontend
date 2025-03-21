@@ -4,7 +4,7 @@ import { styled } from '@mui/material/styles';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import LoadingButton from '@mui/lab/LoadingButton';
 import Tooltip from '@mui/material/Tooltip';
-import { handlers } from '../../renderer/handlers'
+import { handlers } from '../../../../renderer/handlers'
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
