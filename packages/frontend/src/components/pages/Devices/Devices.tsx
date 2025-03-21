@@ -23,7 +23,7 @@ import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/mat
 import ScannedFoldersChips from './components/ScannedFoldersChips';
 import AddToQueueIcon from '@mui/icons-material/AddToQueue';
 import { styled } from '@mui/material/styles';
-import NewScannedFolderButton from './components/ScannedFolderButton';
+import AddScannedFolderButton from './components/ScannedFolderButton/AddScannedFolderButton';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import Card from '@mui/material/Card';
 import TextField from '@mui/material/TextField';
@@ -411,7 +411,7 @@ export default function Devices() {
                   </Button>
                 </Tooltip>
               </Grid>
-              <NewScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username)} />
+              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username)} />
             </Grid>
           </Stack>
         </CardContent>

@@ -6,7 +6,7 @@ interface NewScannedFolderButtonProps {
 import { Tooltip } from '@mui/material';
 import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutlined';
 import LoadingButton from '@mui/lab/LoadingButton';
-import { useAuth } from '../../../../renderer/context/AuthContext';
+import { useAuth } from '../../../../../renderer/context/AuthContext';
 import banbury from '@banbury/core';
 import { add_scanned_folder } from '@banbury/core/src/device/add_scanned_folder';
 import path from 'path';
@@ -18,7 +18,7 @@ declare module 'react' {
   }
 }
 
-export default function NewScannedFolderButton({ fetchDevices }: NewScannedFolderButtonProps) {
+export default function AddScannedFolderButton({ fetchDevices }: NewScannedFolderButtonProps) {
   const [loading, setLoading] = useState(false);
   const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
