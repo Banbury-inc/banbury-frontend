@@ -16,7 +16,6 @@ export async function sendFriendRequest(
 
     const result = response.data.result;
     if (result === 'success') {
-      console.log("send friend request success");
       const notification = {
         type: 'friend_request',
         title: 'Friend Request',
@@ -26,11 +25,10 @@ export async function sendFriendRequest(
       };
       const response = await banbury.notifications.addNotification(friend_username, notification);
       if (response === 'success') {
-        console.log("send friend request success");
         return 'success';
       }
       else {
-        console.log("send friend request failed");
+        console.error("send friend request failed");
         return 'failed';
       }
     }
