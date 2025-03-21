@@ -31,13 +31,13 @@ import NewInputFileUploadButton from '../../../components/common/newuploadfilebu
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
-import ShareFileButton from '../../../components/common/share_file_button/share_file_button';
-import AddFileToSyncButton from '../../../components/common/add_file_to_sync_button';
+import ShareFileButton from '../../../components/common/ShareFileButton/ShareFileButton';
+import AddFileToSyncButton from '../../../components/common/AddFileToSyncButton';
 import { EnhancedTableProps, HeadCell } from './types';
 import { newUseFileData } from './hooks/newUseFileData';
 import Rating from '@mui/material/Rating';
 import Dialog from '@mui/material/Dialog';
-import SyncButton from '../../../components/common/sync_button/sync_button';
+import SyncButton from '../../../components/common/SyncButton/SyncButton';
 import DownloadFileButton from '../../../components/common/DownloadFileButton/DownloadFileButton';
 import DeleteFileButton from '../../../components/common/DeleteFileBtton/DeleteFileButton';
 import { styled } from '@mui/material/styles';
