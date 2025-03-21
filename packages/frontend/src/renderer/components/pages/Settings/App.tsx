@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Grid, Stack, Typography, Box } from '@mui/material';
 import { ipcRenderer } from 'electron';
-import { Alert } from '../../../../components/alert';
+import { Alert } from '../../../../components/template/alert';
 
 export default function App() {
     const [updateStatus, setUpdateStatus] = useState<{ title: string; messages: string[] } | null>(null);

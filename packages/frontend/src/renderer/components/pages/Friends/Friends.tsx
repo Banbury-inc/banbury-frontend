@@ -14,7 +14,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, InputAdornment, Badge, Avatar, Tabs, Tab } from '@mui/material';
 import { handlers } from '../../../handlers';
 import { useAuth } from '../../../context/AuthContext';
-import { Heading } from '../../../../components/heading'
+import { Heading } from '../../../../components/template/heading'
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';

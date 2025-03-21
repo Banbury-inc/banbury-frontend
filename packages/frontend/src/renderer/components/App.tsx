@@ -7,7 +7,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { ipcRenderer } from 'electron';
 import './index.css';
 import { AlertProvider } from '../context/AlertContext';
-import { Alert } from '../../components/alert';
+import { Alert } from '../../components/template/alert';
 import { useAlert } from '../context/AlertContext';
 
 function AlertWrapper() {
