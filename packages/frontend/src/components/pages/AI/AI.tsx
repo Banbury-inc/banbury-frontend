@@ -11,7 +11,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import CancelIcon from '@mui/icons-material/Cancel';
 import LanguageIcon from '@mui/icons-material/Language';
 import StopIcon from '@mui/icons-material/Stop';
-import { useAlert } from '../../../context/AlertContext';
+import { useAlert } from '../../../renderer/context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';

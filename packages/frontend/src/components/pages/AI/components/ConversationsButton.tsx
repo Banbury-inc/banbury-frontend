@@ -12,7 +12,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FolderIcon from '@mui/icons-material/Folder';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { useAlert } from '../../../../context/AlertContext';
+import { useAlert } from '../../../../renderer/context/AlertContext';
 import { format } from 'date-fns';
 
 interface Conversation {

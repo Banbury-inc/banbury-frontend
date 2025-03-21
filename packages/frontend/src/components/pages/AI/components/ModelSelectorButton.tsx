@@ -23,7 +23,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { ipcRenderer } from 'electron';
 import { add_downloaded_model } from '@banbury/core/src/ai/add_downloaded_model';
-import { useAuth } from '../../../../context/AuthContext';
+import { useAuth } from '../../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 
 interface Model {

@@ -45,8 +45,8 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { getDownloadsInfo } from '@banbury/core/src/device/add_downloads_info';
 import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
-import AI from './pages/AI/AI';
 import { ipcRenderer } from 'electron';
+import AI from '../../components/pages/AI/AI';
 
 const drawerWidth = 240;  // Change the width as needed
 

@@ -9,11 +9,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
-import theme from "../../theme";
-import SignIn from './Login/Login';
-import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
-import { handlers } from '../../handlers';
-
+import theme from "../../renderer/theme";
+import SignIn from '../../renderer/components/pages/Login/Login';
+import { handlers } from '../../renderer/handlers';
+import NeuraNet_Logo from '../../../static/NeuraNet_Icons/web/icon-512.png';
 function Copyright(props: any) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
