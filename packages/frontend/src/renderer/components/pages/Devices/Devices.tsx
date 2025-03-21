@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import os from 'os';
 import Stack from '@mui/material/Stack';
-import axios from 'axios';
 import { Switch, useMediaQuery } from '@mui/material';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
@@ -22,71 +20,27 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { visuallyHidden } from '@mui/utils';
 import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import ScannedFoldersChips from '../common/ScannedFoldersChips';
+import ScannedFoldersChips from '../../common/ScannedFoldersChips';
 import AddToQueueIcon from '@mui/icons-material/AddToQueue';
 import { styled } from '@mui/material/styles';
-import NewScannedFolderButton from '../new_scanned_folder_button';
-import { useAuth } from '../../context/AuthContext';
+import NewScannedFolderButton from '../../new_scanned_folder_button';
+import { useAuth } from '../../../context/AuthContext';
 import Card from '@mui/material/Card';
 import TextField from '@mui/material/TextField';
-import { handlers } from '../../handlers';
-import path from 'path';
+import { handlers } from '../../../handlers';
 import banbury from '@banbury/core';
-import { formatRAM } from '../../../../../core/src/utils';
+import { formatRAM } from '../../../../../../core/src/utils';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import { useAlert } from '../../context/AlertContext';
+import { useAlert } from '../../../context/AlertContext';
+import { handleAddDeviceClick } from './handleAddDeviceClick';
+import { handleDeleteDeviceClick } from './handleDeleteDeviceClick';
+import { handleFetchDevices } from './handleFetchDevices';
+import { DeviceData } from './types';
 
 
-// Update the interface to match device data
-interface DeviceData {
-  id: number;
-  device_name: string;
-  device_manufacturer: string;
-  device_model: string;
-  storage_capacity_gb: string;
-  total_storage: string;
-  upload_speed: number | string;  // Changed to allow both number and string
-  download_speed: number | string;  // Changed to allow both number and string
-  battery_status: string;
-  battery_time_remaining: string;
-  available: string;
-  cpu_info_manufacturer: string;
-  cpu_info_brand: string;
-  cpu_info_speed: string;
-  cpu_info_cores: string;
-  cpu_info_physical_cores: string;
-  cpu_info_processors: string;
-  cpu_info_socket: string;
-  cpu_info_vendor: string;
-  cpu_info_family: string;
-  cpu_usage: string;
-  gpu_usage: string[];  // Change from string to string[]
-  ram_usage: string;
-  ram_total: string;
-  ram_free: string;
-  scanned_folders: string[];
-  downloaded_models: string[];
-  predicted_cpu_usage: number;
-  predicted_ram_usage: number;
-  predicted_gpu_usage: number;
-  predicted_download_speed: number;
-  predicted_upload_speed: number;
-  files_available_for_download: number;
-  files_needed: number;
-  sync_storage_capacity_gb: number;
-  predicted_performance_score: number;
-  use_device_in_file_sync: boolean;
-  use_predicted_cpu_usage: boolean;
-  use_predicted_download_speed: boolean;
-  use_predicted_gpu_usage: boolean;
-  use_predicted_ram_usage: boolean;
-  use_predicted_upload_speed: boolean;
-  use_files_available_for_download: boolean;
-  use_files_needed: boolean;
-}
 
 const headCells: HeadCell[] = [
   { id: 'device_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true },
@@ -270,280 +224,10 @@ export default function Devices() {
 
 
 
-  const fetchDevices = async () => {
-    try {
-      const previousSelectedDeviceName = selectedDevice?.device_name; // Store the previously selected device name
-      setIsLoading(true);
-      // Fetch user information
-      const userInfoResponse = await axios.get<{
-        first_name: string;
-        last_name: string;
-        phone_number: string;
-        email: string;
-      }>(`${banbury.config.url}/users/getuserinfo/${username}/`);
-
-      const { first_name, last_name } = userInfoResponse.data;
-      setFirstname(first_name);
-      setLastname(last_name);
-
-      // Fetch device information
-      const deviceInfoResponse = await axios.get<{
-        devices: any[];
-      }>(`${banbury.config.url}/devices/getdeviceinfo/${username}/`);
-
-      const devicePredictionsResponse = await axios.get<{
-        data: {
-          device_predictions: Array<{
-            device_id: string;
-            device_name: string;
-            files_available_for_download: number;
-            files_needed: number;
-            predicted_cpu_usage: number;
-            predicted_download_speed: number;
-            predicted_gpu_usage: number;
-            predicted_ram_usage: number;
-            predicted_upload_speed: number;
-            use_predicted_cpu_usage: boolean;
-            use_predicted_download_speed: boolean;
-            use_predicted_gpu_usage: boolean;
-            use_predicted_ram_usage: boolean;
-            use_predicted_upload_speed: boolean;
-            use_files_available_for_download: boolean;
-            use_files_needed: boolean;
-            use_device_in_file_sync: boolean;
-            score: number;
-            score_timestamp: string;
-            sync_storage_capacity_gb: number;
-            timestamp: string;
-          }>;
-          result: string;
-        };
-      }>(`${banbury.config.url}/predictions/get_device_prediction_data/${username}/`);
-
-      const { devices } = deviceInfoResponse.data;
-      console.log('devices: ', devices);
-      const { device_predictions } = devicePredictionsResponse.data.data;
-
-      // Transform device data
-      const transformedDevices: DeviceData[] = devices.map((device, index) => {
-
-        // Find matching predictions for this device with default values
-        const devicePrediction = device_predictions?.find(
-          pred => pred.device_name === device.device_name
-        ) || {
-          predicted_cpu_usage: 0,
-          predicted_ram_usage: 0,
-          predicted_gpu_usage: 0,
-          predicted_download_speed: 0,
-          predicted_upload_speed: 0,
-          use_predicted_cpu_usage: false,
-          use_predicted_download_speed: false,
-          use_predicted_gpu_usage: false,
-          use_predicted_ram_usage: false,
-          use_predicted_upload_speed: false,
-          use_files_available_for_download: false,
-          use_files_needed: false,
-          use_device_in_file_sync: false,
-          sync_storage_capacity_gb: 0,
-          files_available_for_download: 0,
-          files_needed: 0,
-          score: 0
-        };
-
-        console.log('devicePrediction: ', devicePrediction);
-
-        return {
-          id: index + 1,
-          device_name: device.device_name,
-          device_manufacturer: device.device_manufacturer,
-          device_model: device.device_model,
-          storage_capacity_gb: device.storage_capacity_gb,
-          total_storage: device.total_storage,
-          upload_speed: Array.isArray(device.upload_speed)
-            ? device.upload_speed[0] || 'N/A'
-            : device.upload_speed || 'N/A',
-          download_speed: Array.isArray(device.download_speed)
-            ? device.download_speed[0] || 'N/A'
-            : device.download_speed || 'N/A',
-          battery_status: Array.isArray(device.battery_status)
-            ? device.battery_status[0] || 'N/A'
-            : device.battery_status || 'N/A',
-          battery_time_remaining: device.battery_time_remaining,
-          available: device.online ? "Available" : "Unavailable",
-          cpu_info_manufacturer: device.cpu_info_manufacturer,
-          cpu_info_brand: device.cpu_info_brand,
-          cpu_info_speed: device.cpu_info_speed,
-          cpu_info_cores: device.cpu_info_cores,
-          cpu_info_physical_cores: device.cpu_info_physical_cores,
-          cpu_info_processors: device.cpu_info_processors,
-          cpu_info_socket: device.cpu_info_socket,
-          cpu_info_vendor: device.cpu_info_vendor,
-          cpu_info_family: device.cpu_info_family,
-          cpu_usage: device.cpu_usage,
-          gpu_usage: Array.isArray(device.gpu_usage)
-            ? device.gpu_usage
-            : [device.gpu_usage],
-          ram_usage: device.ram_usage,
-          ram_total: device.ram_total,
-          ram_free: device.ram_free,
-          scanned_folders: Array.isArray(device.scanned_folders) ? device.scanned_folders : [],
-          downloaded_models: Array.isArray(device.downloaded_models) ? device.downloaded_models : [],
-          sync_storage_capacity_gb: devicePrediction.sync_storage_capacity_gb,
-          predicted_cpu_usage: devicePrediction.predicted_cpu_usage,
-          predicted_ram_usage: devicePrediction.predicted_ram_usage,
-          predicted_gpu_usage: devicePrediction.predicted_gpu_usage,
-          predicted_download_speed: devicePrediction.predicted_download_speed,
-          predicted_upload_speed: devicePrediction.predicted_upload_speed,
-          predicted_performance_score: devicePrediction.score,
-          files_available_for_download: devicePrediction.files_available_for_download,
-          files_needed: devicePrediction.files_needed,
-          use_predicted_cpu_usage: devicePrediction.use_predicted_cpu_usage,
-          use_predicted_download_speed: devicePrediction.use_predicted_download_speed,
-          use_predicted_gpu_usage: devicePrediction.use_predicted_gpu_usage,
-          use_predicted_ram_usage: devicePrediction.use_predicted_ram_usage,
-          use_predicted_upload_speed: devicePrediction.use_predicted_upload_speed,
-          use_files_available_for_download: devicePrediction.use_files_available_for_download,
-          use_files_needed: devicePrediction.use_files_needed,
-          use_device_in_file_sync: devicePrediction.use_device_in_file_sync,
-        };
-      });
-
-      setAllDevices(transformedDevices);
-
-
-      // Restore the previously selected device if it exists in the new list
-      const restoredDevice = transformedDevices.find(device => device.device_name === previousSelectedDeviceName);
-      if (restoredDevice) {
-        setSelectedDevice(restoredDevice);
-      } else if (transformedDevices.length > 0) {
-        setSelectedDevice(transformedDevices[0]); // Fallback to the first device if the previous one is not found
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchDevices();
+    handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username);
   }, [username, updates]);
-
-
-  const handleAddDeviceClick = async () => {
-    try {
-      console.log("handling add device click");
-      const device_name = banbury.device.name();
-      const task_description = 'Adding device ' + device_name;
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-      setTaskbox_expanded(true);
-
-      const result = await handlers.devices.addDevice(username ?? '');
-
-      if (result === 'success') {
-        // Add default directory and refresh device list
-        try {
-          const defaultDirectory = path.join(os.homedir(), 'BCloud');
-          await handlers.devices.addScannedFolder(defaultDirectory, username ?? '');
-          await fetchDevices();
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-          showAlert('Success', ['Device added successfully'], 'success');
-        } catch (folderError) {
-          console.error('Error setting up default directory:', folderError);
-          await banbury.sessions.failTask(
-            username ?? '',
-            taskInfo,
-            'Failed to set up default directory',
-            tasks,
-            setTasks
-          );
-          showAlert('Error', ['Failed to set up default directory', folderError instanceof Error ? folderError.message : 'Unknown error'], 'error');
-        }
-      } else {
-        await banbury.sessions.failTask(
-          username ?? '',
-          taskInfo,
-          'Failed to add device',
-          tasks,
-          setTasks
-        );
-        showAlert('Error', ['Failed to add device'], 'error');
-      }
-    } catch (error) {
-      console.error('Error adding device:', error);
-      try {
-        const errorTaskInfo = await banbury.sessions.addTask(
-          username ?? '',
-          'Error adding device',
-          tasks,
-          setTasks
-        );
-        await banbury.sessions.failTask(
-          username ?? '',
-          errorTaskInfo,
-          error instanceof Error ? error.message : 'Unknown error occurred',
-          tasks,
-          setTasks
-        );
-        showAlert('Error', ['Failed to add device', error instanceof Error ? error.message : 'Unknown error'], 'error');
-      } catch (taskError) {
-        console.error('Failed to create error task:', taskError);
-        showAlert('Error', ['Failed to create error task', taskError instanceof Error ? taskError.message : 'Unknown error'], 'error');
-      }
-    }
-  };
-
-  const handleDeleteDevice = async () => {
-    if (!selectedDeviceNames.length) {
-      showAlert('Warning', ['Please select one or more devices to delete'], 'warning');
-      return;
-    }
-
-    try {
-      const task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-      setTaskbox_expanded(true);
-
-      const result = handlers.devices.deleteDevice(selectedDeviceNames);
-
-      if (result === 'success') {
-        await fetchDevices();
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-        setSelectedDeviceNames([]);
-        showAlert('Success', ['Device(s) deleted successfully'], 'success');
-      } else {
-        await banbury.sessions.failTask(
-          username ?? '',
-          taskInfo,
-          'Failed to delete device',
-          tasks,
-          setTasks
-        );
-        showAlert('Error', ['Failed to delete device(s)'], 'error');
-      }
-    } catch (error) {
-      console.error('Error deleting device:', error);
-      try {
-        const errorTaskInfo = await banbury.sessions.addTask(
-          username ?? '',
-          'Error deleting device',
-          tasks,
-          setTasks
-        );
-        await banbury.sessions.failTask(
-          username ?? '',
-          errorTaskInfo,
-          error instanceof Error ? error.message : 'Unknown error occurred',
-          tasks,
-          setTasks
-        );
-        showAlert('Error', ['Failed to delete device(s)', error instanceof Error ? error.message : 'Unknown error'], 'error');
-      } catch (taskError) {
-        console.error('Failed to create error task:', taskError);
-        showAlert('Error', ['Failed to create error task', taskError instanceof Error ? taskError.message : 'Unknown error'], 'error');
-      }
-    }
-  };
 
 
   // Avoid a layout jump when reaching the last page with empty rows.
@@ -591,7 +275,7 @@ export default function Devices() {
   };
 
   const handleFoldersUpdate = () => {
-    fetchDevices(); // Refetch devices when folders are updated
+    handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username);
   };
 
   const handleSyncStorageChange = async (value: string) => {
@@ -605,7 +289,7 @@ export default function Devices() {
 
       if (result === 'success') {
         setUpdates(updates + 1);
-        fetchDevices();
+        handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username);
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
         await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
@@ -708,7 +392,7 @@ export default function Devices() {
               <Grid item paddingRight={1}>
                 <Tooltip title="Add Device">
                   <Button
-                    onClick={handleAddDeviceClick}
+                    onClick={handleAddDeviceClick(selectedDevice, setTaskbox_expanded, setTasks, showAlert, tasks, setLastname, setFirstname, setIsLoading, setAllDevices, setSelectedDevice, username)}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >
                     <AddToQueueIcon fontSize="inherit" />
@@ -720,14 +404,14 @@ export default function Devices() {
               <Grid item paddingRight={1}>
                 <Tooltip title="Delete Device">
                   <Button
-                    onClick={handleDeleteDevice}
+                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setAllDevices, setFirstname, setIsLoading, setLastname, username)}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >
                     <DeleteIcon fontSize="inherit" />
                   </Button>
                 </Tooltip>
               </Grid>
-              <NewScannedFolderButton fetchDevices={fetchDevices} />
+              <NewScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username)} />
             </Grid>
           </Stack>
         </CardContent>
