@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from "../../renderer/theme";
-import SignIn from '../../renderer/components/pages/Login/Login';
+import SignIn from '../../components/pages/Login/Login';
 import { handlers } from '../../renderer/handlers';
 import NeuraNet_Logo from '../../../static/NeuraNet_Icons/web/icon-512.png';
 function Copyright(props: any) {

@@ -2,7 +2,7 @@ import { Box, CssBaseline, ThemeProvider } from "@mui/material";
 import React  from "react";
 import theme from "../theme";
 import { BrowserRouter } from "react-router-dom";
-import Login from "./pages/Login/Login";
+import Login from "../../components/pages/Login/Login";
 import { AuthProvider } from "../context/AuthContext";
 import { ipcRenderer } from 'electron';
 import './index.css';
