@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { DateTime } from 'luxon';
 import { CONFIG } from '../config';
-import { update_scan_progress } from './update_scan_progress';
+
 export async function scanFolder(
   username: string,
   folder: string,
@@ -90,7 +90,6 @@ export async function scanFolder(
 
       // Update progress
       const progress = Math.round((processedFiles / totalFiles) * 100);
-      await update_scan_progress(username, progress);
       // Call the progress callback if provided
       if (onProgress) {
         const speed = `${Math.round(processedFiles / (Date.now() - startTime) * 1000)} files/s`;
@@ -123,6 +122,5 @@ export async function scanFolder(
     await traverseDirectory(folder);
 
     // Final progress update
-    await update_scan_progress(username, 100);
     return 'success';
 }

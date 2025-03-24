@@ -30,7 +30,6 @@ export class OllamaService {
   constructor(window?: BrowserWindow) {
     this.ollamaPath = path.join(app.getPath('userData'), 'ollama');
     this.configPath = path.join(app.getPath('userData'), 'ollama-config.json');
-    this.isSnap = process.env.SNAP !== undefined;
     this.mainWindow = window || null;
     this.ensureOllamaDirectory();
   }
@@ -523,7 +522,7 @@ export class OllamaService {
     try {
       await fs.promises.writeFile(this.configPath, JSON.stringify(config, null, 2));
     } catch (error) {
-      useAlert().showAlert('Failed to save config', error);
+      useAlert().showAlert('Failed to save config', [error instanceof Error ? error.message : String(error)]);
     }
   }
 
@@ -534,7 +533,7 @@ export class OllamaService {
         return JSON.parse(data);
       }
     } catch (error) {
-      useAlert().showAlert('Failed to load config', error);
+      useAlert().showAlert('Failed to load config', [error instanceof Error ? error.message : String(error)]);
     }
     return { selectedModel: 'llama3.2:latest' }; // Default model
   }
@@ -546,7 +545,7 @@ export class OllamaService {
         return response.data.models.map((model: any) => model.name);
       }
     } catch (error) {
-      useAlert().showAlert('Failed to get downloaded models', error);
+      useAlert().showAlert('Failed to get downloaded models', [error instanceof Error ? error.message : String(error)]);
     }
     return [];
   }
@@ -578,7 +577,7 @@ export class OllamaService {
           return;
         }
         if (stderr) {
-          useAlert().showAlert('Installation Error', stderr);
+          useAlert().showAlert('Installation Error', [stderr]);
         }
         resolve();
       });

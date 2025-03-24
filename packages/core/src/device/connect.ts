@@ -365,7 +365,6 @@ export async function createWebSocketConnection(
 
 
     connectionAttemptTimestamp = now;
-    updateConnectionState(CONNECTION_STATES.CONNECTING);
 
     const WebSocketClient = typeof window !== 'undefined' ? WebSocket : require('ws');
     
@@ -410,7 +409,6 @@ export async function createWebSocketConnection(
         clearTimeout(connectionTimeout);
         clearTimeout(lockTimeout);
         connectionLock = false;
-        updateConnectionState(CONNECTION_STATES.CONNECTED);
         connectionManager.recordConnectionAttempt(true);
 
         const message = {
@@ -455,10 +453,8 @@ export async function createWebSocketConnection(
         if (!shutdownInProgress) {
           if (event.code === 1000 || event.code === 1001) {
             // Normal closure - no reconnect
-            updateConnectionState(CONNECTION_STATES.INITIAL);
           } else if (event.code === 1006 || event.code === 1015) {
             // Abnormal closure - attempt reconnect with backoff
-            updateConnectionState(CONNECTION_STATES.RECONNECTING);
             if (canAttemptConnection()) {
               reconnectTimer = setTimeout(async () => {
                 // Check if we should attempt reconnection
@@ -814,7 +810,6 @@ function attemptReconnect(
 
   if (reconnectAttempt >= RECONNECT_CONFIG.maxAttempts) {
     circuitState.isOpen = true;
-    updateConnectionState(CONNECTION_STATES.FAILED);
     return;
   }
 
@@ -918,7 +913,6 @@ function recordFailure(error?: any) {
   if (circuitState.failures >= CIRCUIT_BREAKER_CONFIG.failureThreshold || 
       circuitState.halfOpenAttempts >= CIRCUIT_BREAKER_CONFIG.halfOpenMaxAttempts) {
     circuitState.isOpen = true;
-    updateConnectionState(CONNECTION_STATES.FAILED);
   }
 }
 

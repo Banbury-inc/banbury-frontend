@@ -4,7 +4,6 @@ import fs from 'fs';
 import path from 'path';
 import { DateTime } from 'luxon';
 import { CONFIG } from '../config';
-import { update_scan_progress } from './update_scan_progress';
 import { get_scanned_folders } from './get_scanned_folders';
 
 export async function scanFilesystem(username: string): Promise<string> {
@@ -90,10 +89,6 @@ export async function scanFilesystem(username: string): Promise<string> {
         filesInfo.push(fileInfo);
         processedFiles++;
 
-        // Update progress
-        const progress = Math.round((processedFiles / totalFiles) * 100);
-        await update_scan_progress(username, progress);
-
         // Send files to the server in batches of 1000
         if (filesInfo.length >= 1000) {
           await banbury.files.addFiles(username, filesInfo);
@@ -151,8 +146,6 @@ export async function scanFilesystem(username: string): Promise<string> {
       await traverseDirectory(directory);
     }
 
-    // Final progress update
-    await update_scan_progress(username, 100);
     return 'success';
   } catch (error) {
     return 'failed, ' + error;
