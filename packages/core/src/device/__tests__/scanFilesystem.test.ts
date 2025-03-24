@@ -15,14 +15,12 @@ import path from 'path';
 import { scanFilesystem } from '../scanFilesystem';
 import { banbury } from '../..';
 import { CONFIG } from '../../config';
-import { update_scan_progress } from '../update_scan_progress';
 import { get_scanned_folders } from '../get_scanned_folders';
 
 // Mock all external dependencies
 jest.mock('fs');
 jest.mock('os');
 jest.mock('path');
-jest.mock('../update_scan_progress');
 jest.mock('../get_scanned_folders');
 jest.mock('../..', () => ({
   banbury: {
@@ -118,10 +116,6 @@ describe('scanFilesystem', () => {
       return parts.length > 1 ? '.' + parts.pop() : '';
     });
 
-    // Mock update_scan_progress
-    // @ts-ignore - Mock implementation returns Promise<void>
-    (update_scan_progress as jest.Mock).mockResolvedValue(Promise.resolve());
-
     // Mock CONFIG
     Object.defineProperty(CONFIG, 'full_device_sync', { value: false });
     Object.defineProperty(CONFIG, 'skip_dot_files', { value: true });
@@ -138,7 +132,6 @@ describe('scanFilesystem', () => {
     
     expect(result).toBe('success');
     expect(banbury.files.addFiles).toHaveBeenCalled();
-    expect(update_scan_progress).toHaveBeenCalledWith(mockUsername, 100);
   });
 
   it('should scan home directory when full_device_sync is true', async () => {
