@@ -10,8 +10,8 @@ export async function scanFilesystem(username: string): Promise<string> {
   const fullDeviceSync = CONFIG.full_device_sync;
   const skipDotFiles = CONFIG.skip_dot_files;
   const scanSelectedFolders = CONFIG.scan_selected_folders;
-  let totalFiles = 0;
-  let processedFiles = 0;
+  let _totalFiles = 0;
+  let _processedFiles = 0;
 
   // Function to count total files
   async function countFiles(currentPath: string): Promise<number> {
@@ -87,7 +87,7 @@ export async function scanFilesystem(username: string): Promise<string> {
         };
 
         filesInfo.push(fileInfo);
-        processedFiles++;
+        _processedFiles++;
 
         // Send files to the server in batches of 1000
         if (filesInfo.length >= 1000) {
@@ -138,7 +138,7 @@ export async function scanFilesystem(username: string): Promise<string> {
   try {
     // Count total files first
     for (const directory of directoriesToScan) {
-      totalFiles += await countFiles(directory);
+      _totalFiles += await countFiles(directory);
     }
 
     // Start scanning with progress updates

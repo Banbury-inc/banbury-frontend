@@ -260,16 +260,6 @@ const WS_OPTIONS = {
   keepAliveInterval: 10000,  // Send keep-alive every 10 seconds
 };
 
-// Add connection state tracking
-const CONNECTION_STATES = {
-  INITIAL: 'initial',
-  CONNECTING: 'connecting',
-  CONNECTED: 'connected',
-  RECONNECTING: 'reconnecting',
-  FAILED: 'failed'
-} as const;
-
-
 // Circuit breaker state
 interface CircuitState {
   failures: number;
