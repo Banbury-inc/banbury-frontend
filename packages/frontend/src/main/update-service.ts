@@ -6,12 +6,10 @@ export class UpdateService {
     private isSnap: boolean;
 
     constructor(private mainWindow: BrowserWindow) {
-        console.log('Initializing UpdateService');
         this.isSnap = process.env.SNAP !== undefined;
 
         // Handle IPC messages from renderer
         ipcMain.on('check-for-updates', () => {
-            console.log('Received check-for-updates request');
             if (this.isSnap) {
                 this.sendStatusToWindow('Updates are handled by Snap store');
                 return;
@@ -33,7 +31,6 @@ export class UpdateService {
         });
 
         if (this.isSnap) {
-            console.log('Running in Snap environment - updates will be handled by Snap');
             return;
         }
 
@@ -46,18 +43,15 @@ export class UpdateService {
 
         // Listen for update events
         autoUpdater.on('checking-for-update', () => {
-            console.log('Checking for update...');
             this.sendStatusToWindow('Checking for updates...');
         });
 
-        autoUpdater.on('update-available', (info) => {
-            console.log('Update available:', info);
+        autoUpdater.on('update-available', () => {
             this.sendStatusToWindow('Update available.');
             this.mainWindow.webContents.send('update-available');
         });
 
-        autoUpdater.on('update-not-available', (info) => {
-            console.log('Update not available:', info);
+        autoUpdater.on('update-not-available', () => {
             this.sendStatusToWindow('Update not available.');
             this.mainWindow.webContents.send('update-not-available');
         });
@@ -81,7 +75,6 @@ export class UpdateService {
     }
 
     private sendStatusToWindow(text: string) {
-        console.log('Sending status to window:', text);
         this.mainWindow.webContents.send('update-message', text);
     }
 

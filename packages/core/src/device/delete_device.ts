@@ -21,7 +21,6 @@ export async function delete_device(
 
     if (result === 'success') {
 
-      console.log("delete device success");
 
       return result;
     }
@@ -29,22 +28,18 @@ export async function delete_device(
       return result;
     }
     if (result === 'fail cant find device') {
-      console.log("fail cant find device");
       return result;
     }
 
     if (result === 'task_already_exists') {
-      console.log("task already exists");
       return 'exists';
     }
 
     else {
-      console.log("delete device failed");
-      console.log(result);
       return 'task_add failed';
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
+    return error;
   }
 }
 

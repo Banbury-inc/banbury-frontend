@@ -4,15 +4,14 @@ import fs from 'fs';
 import path from 'path';
 import { DateTime } from 'luxon';
 import { CONFIG } from '../config';
-import { update_scan_progress } from './update_scan_progress';
 import { get_scanned_folders } from './get_scanned_folders';
 
 export async function scanFilesystem(username: string): Promise<string> {
   const fullDeviceSync = CONFIG.full_device_sync;
   const skipDotFiles = CONFIG.skip_dot_files;
   const scanSelectedFolders = CONFIG.scan_selected_folders;
-  let totalFiles = 0;
-  let processedFiles = 0;
+  let _totalFiles = 0;
+  let _processedFiles = 0;
 
   // Function to count total files
   async function countFiles(currentPath: string): Promise<number> {
@@ -88,11 +87,7 @@ export async function scanFilesystem(username: string): Promise<string> {
         };
 
         filesInfo.push(fileInfo);
-        processedFiles++;
-
-        // Update progress
-        const progress = Math.round((processedFiles / totalFiles) * 100);
-        await update_scan_progress(username, progress);
+        _processedFiles++;
 
         // Send files to the server in batches of 1000
         if (filesInfo.length >= 1000) {
@@ -143,7 +138,7 @@ export async function scanFilesystem(username: string): Promise<string> {
   try {
     // Count total files first
     for (const directory of directoriesToScan) {
-      totalFiles += await countFiles(directory);
+      _totalFiles += await countFiles(directory);
     }
 
     // Start scanning with progress updates
@@ -151,8 +146,6 @@ export async function scanFilesystem(username: string): Promise<string> {
       await traverseDirectory(directory);
     }
 
-    // Final progress update
-    await update_scan_progress(username, 100);
     return 'success';
   } catch (error) {
     return 'failed, ' + error;

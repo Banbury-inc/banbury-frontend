@@ -14,14 +14,12 @@ export default function RemoveFileFromSyncButton({ selectedFileNames, onFinish }
 
 
   const handleRemoveFileFromSync = async () => {
-    console.log("selectedFileNames in remove_file_from_sync_button", selectedFileNames);
     setLoading(true);
 
     for (const file of selectedFileNames) {
 
       try {
 
-        console.log("file", file);
 
         // Add the selected folder as a scanned folder
         const task_description = `Removing file from sync: ${file}`;

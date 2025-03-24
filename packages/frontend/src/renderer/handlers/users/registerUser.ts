@@ -27,20 +27,15 @@ export async function registerUser(
 
     const result = response.data.result;
     if (result === 'success') {
-      console.log("register success");
       return 'success';
     }
     if (result === 'fail') {
-      console.log("register failed");
       return 'failed';
     }
     if (result === 'user_already_exists') {
-      console.log("user already exists");
       return 'exists';
     }
-
     else {
-      console.log("register failed");
       return 'register failed';
     }
   } catch (error) {

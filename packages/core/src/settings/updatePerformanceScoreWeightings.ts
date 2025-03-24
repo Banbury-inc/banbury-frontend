@@ -30,20 +30,17 @@ export async function updatePerformanceScoreWeightings(
 
 
     if (result === 'success') {
-      console.log("settings update success");
       return response.data.result;
     }
     if (result === 'fail') {
-      console.log("settings update failed");
       return 'failed';
     }
 
     else {
-      console.log("settings update failed");
-      return 'settings update failed';
+      return 'failed';
     }
   } catch (error) {
-    console.error('Error updating settings:', error);
+    return error;
   }
 }
 

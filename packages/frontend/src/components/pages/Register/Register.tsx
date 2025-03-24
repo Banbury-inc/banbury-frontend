@@ -44,13 +44,6 @@ export default function SignUp() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    console.log({
-      firstName: data.get('firstName'),
-      lastName: data.get('lastName'),
-      username: data.get('username'),
-      password: data.get('password'),
-    });
-
     try {
       const result = await handlers.users.registerUser(
         data.get('firstName') as string,
@@ -61,7 +54,6 @@ export default function SignUp() {
         data.get('email') as string,
         data.get('picture') as string
       );
-      console.log(result);
       if (result === 'success') {
         setregistration_success(true)
       }

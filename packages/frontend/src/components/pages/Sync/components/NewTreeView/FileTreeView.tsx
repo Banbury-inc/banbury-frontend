@@ -37,7 +37,7 @@ function getIconForKind(kind: string) {
 
 
 export default function FileTreeView() {
-  const {setSyncFiles, global_file_path, global_file_path_device, username} = useAuth();
+  const {setSyncFiles, global_file_path, username} = useAuth();
   const [syncRows, setSyncRows] = useState<DatabaseData[]>([]);
   const disableFetch = false;
 
@@ -55,19 +55,6 @@ export default function FileTreeView() {
 
     fetchData();
   }, [username, disableFetch, global_file_path]);
-
-  // Monitor changes to global_file_path in useEffect
-  useEffect(() => {
-    if (global_file_path) {
-      console.log('Global file path has been updated:', global_file_path);
-    }
-  }, [global_file_path]);
-
-  useEffect(() => {
-    if (global_file_path_device) {
-      console.log('Global file path device has been updated:', global_file_path_device);
-    }
-  }, [global_file_path_device]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => (

@@ -12,7 +12,6 @@ export async function deleteNotification(
         notification_id: notification_id,
     });
     const result = response.data.result;
-    console.log(result);
 
     if (result === 'success') {
         return result;

@@ -217,21 +217,15 @@ export default function Sync() {
       newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
     const file_name = syncRows.find((file: any) => file.id === id)?.file_name;
-    const newSelectedFileNames = newSelected
-      .map((id) => syncRows.find((file: any) => file.id === id)?.file_name)
-      .filter((name) => name !== undefined) as string[];
-    console.log(newSelectedFileNames);
     const newSelectedFilePaths = newSelected
       .map((id) => syncRows.find((file: any) => file.id === id)?.file_path)
       .filter((name) => name !== undefined) as string[];
-    console.log(newSelectedFilePaths[0]);
     let fileFound = false;
     let folderFound = false;
     try {
       const fileStat = await stat(newSelectedFilePaths[0]);
       if (fileStat.isFile()) {
         fileFound = true;
-        console.log(`File '${file_name}' found in directory.`);
       }
       if (fileStat.isDirectory()) {
         folderFound = true;
@@ -239,12 +233,10 @@ export default function Sync() {
       }
       if (fileFound) {
         // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening file '${file_name}'...`);
         shell.openPath(newSelectedFilePaths[0]);
       }
       if (folderFound) {
         // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening folder '${file_name}'...`);
         // shell.openPath(newSelectedFilePaths[0]);
       }
       if (!fileFound && !folderFound) {
@@ -285,8 +277,6 @@ export default function Sync() {
               fs.unlink(file_save_path, (err) => {
                 if (err) {
                   console.error('Error deleting file:', err);
-                } else {
-                  console.log(`File ${file_save_path} successfully deleted.`);
                 }
               });
             }
@@ -322,8 +312,6 @@ export default function Sync() {
       .filter((name) => name !== undefined) as string[];
     setSelectedFileNames(newSelectedFileNames);
     setSelectedDeviceNames(newSelectedDeviceNames);
-    console.log(newSelectedFileNames);
-    console.log(selectedFileNames);
   };
 
 

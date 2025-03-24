@@ -17,16 +17,13 @@ export async function removeFriend(
 
     const result = response.data.result;
     if (result === 'success') {
-      console.log("remove friend success");
       return 'success';
     }
     if (result === 'fail') {
-      console.log("remove friend failed, ", response);
       return 'failed';
     }
 
     else {
-      console.log("remove friend failed");
       return 'remove friend failed';
     }
   } catch (error) {

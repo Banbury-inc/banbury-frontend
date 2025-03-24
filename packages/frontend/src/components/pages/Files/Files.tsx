@@ -267,21 +267,15 @@ export default function Files() {
       newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
     const file_name = fileRows.find((file) => file.id === id)?.file_name;
-    const newSelectedFileNames = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.file_name)
-      .filter((name) => name !== undefined) as string[];
-    console.log(newSelectedFileNames);
     const newSelectedFilePaths = newSelected
       .map((id) => fileRows.find((file) => file.id === id)?.file_path)
       .filter((name) => name !== undefined) as string[];
-    console.log(newSelectedFilePaths[0]);
     let fileFound = false;
     let folderFound = false;
     try {
       const fileStat = await stat(newSelectedFilePaths[0]);
       if (fileStat.isFile()) {
         fileFound = true;
-        console.log(`File '${file_name}' found in directory.`);
       }
       if (fileStat.isDirectory()) {
         folderFound = true;
@@ -289,12 +283,10 @@ export default function Files() {
       }
       if (fileFound) {
         // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening file '${file_name}'...`);
         shell.openPath(newSelectedFilePaths[0]);
       }
       if (folderFound) {
         // Send an IPC message to the main process to handle opening the file
-        console.log(`Opening folder '${file_name}'...`);
         // shell.openPath(newSelectedFilePaths[0]);
       }
       if (!fileFound && !folderFound) {
@@ -336,8 +328,6 @@ export default function Files() {
               fs.unlink(file_save_path, (err: any) => {
                 if (err) {
                   console.error('Error deleting file:', err);
-                } else {
-                  console.log(`File ${file_save_path} successfully deleted.`);
                 }
               });
             }
@@ -364,7 +354,6 @@ export default function Files() {
     }
     setSelected(newSelected);
 
-    console.log(newSelected)
     const newSelectedFileNames = newSelected
       .map((id) => fileRows.find((file) => file.id === id)?.file_name)
       .filter((name) => name !== undefined) as string[];
@@ -373,14 +362,11 @@ export default function Files() {
       .filter((name) => name !== undefined) as string[];
     setSelectedFileNames(newSelectedFileNames);
     setSelectedDeviceNames(newSelectedDeviceNames);
-    console.log(newSelectedFileNames);
-    console.log(selectedFileNames);
     // Get file info for selected files and update selectedFileInfo state
     const newSelectedFileInfo = newSelected
       .map((id) => fileRows.find((file) => file.id === id))
       .filter((file) => file !== undefined);
     setSelectedFileInfo(newSelectedFileInfo);
-    console.log(newSelectedFileInfo);
   };
 
 

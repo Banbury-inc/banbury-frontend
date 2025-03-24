@@ -16,16 +16,12 @@ export const fetchSharedFilesData = async (
       username: username
     });
 
-    console.log('Shared files response:', response.data);
 
     // Handle the nested shared_files structure
     if (response.data?.shared_files?.shared_files && Array.isArray(response.data.shared_files.shared_files)) {
       const files = response.data.shared_files.shared_files;
-      console.log('Extracted shared files:', files);
       return files;
     }
-
-    console.warn('Unexpected response format:', response.data);
     return [];
 
   } catch (error) {

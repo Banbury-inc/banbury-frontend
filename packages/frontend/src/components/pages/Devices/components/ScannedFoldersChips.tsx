@@ -11,8 +11,6 @@ interface ScannedFoldersChipsProps {
 export default function ScannedFoldersChips({ scanned_folders, username, onFoldersUpdate }: ScannedFoldersChipsProps) {
   // Handler to delete a folder from the list
   const handleDeleteFolder = async (folderToDelete: string) => {
-    console.log("Deleting folder:", folderToDelete);
-
     try {
       await remove_scanned_folder(folderToDelete, username);
       onFoldersUpdate(); // Call the callback to trigger a refresh

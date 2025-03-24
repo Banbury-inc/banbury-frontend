@@ -18,7 +18,6 @@ export const newUseFileData = (
         });
 
         if (Array.isArray(shared_files_data) && shared_files_data.length > 0) {
-          console.log('Received shared files data:', shared_files_data);
           
           const transformedFiles = shared_files_data.map((file: any) => ({
             _id: file._id || `file-${Math.random()}`,
@@ -40,7 +39,6 @@ export const newUseFileData = (
             file_type: 'file',
           }));
           
-          console.log('Transformed files:', transformedFiles);
           setSharedFiles(transformedFiles);
         } else {
           console.warn('No shared files data received or invalid format');

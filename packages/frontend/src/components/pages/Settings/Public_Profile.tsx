@@ -49,7 +49,6 @@ export default function Public_Profile() {
             );
 
             if (response === 'success') {
-                console.log('settings update success');
                 await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
                 setPicture(pictureData || null);
                 showAlert('Success', ['Profile settings updated successfully'], 'success');

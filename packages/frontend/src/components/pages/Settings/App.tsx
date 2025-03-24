@@ -11,17 +11,14 @@ export default function App() {
     useEffect(() => {
         // Listen for update status messages
         ipcRenderer.on('update-message', (_, message) => {
-            console.log('Received update message:', message);
             setUpdateStatus({
                 title: 'Update Status',
                 messages: [message]
             });
-            console.log('message', message);
             setShowAlert(true);
         });
 
         ipcRenderer.on('update-available', () => {
-            console.log('Received update-available event');
             setUpdateStatus({
                 title: 'Update Available',
                 messages: ['A new version of Banbury Cloud is available.']
@@ -30,7 +27,6 @@ export default function App() {
         });
 
         ipcRenderer.on('update-not-available', () => {
-            console.log('Received update-not-available event');
             setUpdateStatus({
                 title: 'Up to Date',
                 messages: ['You are running the latest version.']
@@ -60,7 +56,6 @@ export default function App() {
     }, [showAlert]);
 
     const handleCheckUpdate = () => {
-        console.log('Checking for updates...');
         ipcRenderer.send('check-for-updates');
     };
 

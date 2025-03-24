@@ -280,7 +280,6 @@ export default function Devices() {
 
   const handleSyncStorageChange = async (value: string) => {
     try {
-      console.log(value);
       const task_description = 'Updating Sync Storage Capacity';
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);

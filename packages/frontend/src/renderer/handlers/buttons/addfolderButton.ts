@@ -4,7 +4,6 @@ export async function addfolderButton(
   setNewFolderName: (name: string) => void,
   setFileRows: (callback: (prevFileRows: any[]) => any[]) => void
 ) {
-  console.log("Add folder clicked");
   setDisableFetch(true);
   setIsAddingFolder(true);
   setNewFolderName(""); // Reset folder name input

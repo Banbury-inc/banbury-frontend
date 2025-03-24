@@ -42,7 +42,6 @@ function getIconForKind(kind: string) {
 export default function FileTreeView({ 
   filePath, 
   setFilePath, 
-  filePathDevice, 
   setFilePathDevice,
   setBackHistory,
   setForwardHistory 
@@ -124,9 +123,6 @@ export default function FileTreeView({
         },
       );
 
-
-
-
       if (new_files) {
         let updatedFiles: DatabaseData[] = [];
         updatedFiles = [...fetchedFiles, ...new_files];
@@ -172,21 +168,6 @@ export default function FileTreeView({
       fileWatcherEmitter.off('fileChanged', handleFileChange);
     };
   }, [username, disableFetch]);
-
-
-  // Monitor changes to global_file_path in useEffect
-  useEffect(() => {
-    if (filePath) {
-      console.log('Global file path has been updated:', filePath);
-    }
-  }, [filePath]);
-
-  useEffect(() => {
-    if (filePathDevice) {
-      console.log('Global file path device has been updated:', filePathDevice);
-    }
-  }, [filePathDevice]);
-
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => (

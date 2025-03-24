@@ -17,16 +17,12 @@ export async function acceptFriendRequest(
 
     const result = response.data.result;
     if (result === 'success') {
-      console.log("accept friend request success");
       return 'success';
     }
     if (result === 'fail') {
-      console.log("accept friend request failed");
       return 'failed';
     }
-
     else {
-      console.log("accept friend request failed");
       return 'accept friend request failed';
     }
   } catch (error) {

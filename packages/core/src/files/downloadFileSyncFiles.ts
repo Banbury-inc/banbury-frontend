@@ -19,8 +19,7 @@ export async function downloadFileSyncFiles(
 
   // Add validation for download_queue and its properties
   if (!download_queue || !Array.isArray(download_queue.files)) {
-    console.error('Invalid download queue structure');
-    return [];
+    return 'invalid download queue structure';
   }
 
   // Check if there are no files to download
@@ -69,7 +68,6 @@ export async function downloadFileSyncFiles(
     // Check if file already exists in destination path
     const destination_path = path.join(CONFIG.download_destination, file_name);
     if (fs.existsSync(destination_path)) {
-      console.log(`File ${file_name} already exists in ${destination_path}`);
       downloaded_files.push(file_name);
       continue;
     }
@@ -81,8 +79,6 @@ export async function downloadFileSyncFiles(
 
         if (result === 'success') {
           downloaded_files.push(file_name);
-          const response = await banbury.files.add_device_id_to_file_sync_file(file_name, username);
-          console.log(response);
         }
       } catch (error) {
 

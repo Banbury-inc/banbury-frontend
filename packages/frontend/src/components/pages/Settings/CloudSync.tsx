@@ -36,7 +36,6 @@ export default function CloudSync() {
             );
 
             if (response === 'success') {
-                console.log('settings update success');
                 await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
                 showAlert('Success', ['Performance score weightings updated successfully'], 'success');
             } else {
