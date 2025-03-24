@@ -12,16 +12,15 @@ export function connect(): net.Socket {
   // Create a new socket and connect
   senderSocket = new net.Socket();
   senderSocket.connect(RELAY_PORT, RELAY_HOST, () => {
-    console.log("Connected to the server.");
   });
 
   // Add error handling to log or handle errors
   senderSocket.on('error', (err) => {
     console.error("Error connecting to the relay server:", err);
+    return 'failed';
   });
 
   senderSocket.on('close', () => {
-    console.log("Socket is now closed.");
   });
 
   return senderSocket;

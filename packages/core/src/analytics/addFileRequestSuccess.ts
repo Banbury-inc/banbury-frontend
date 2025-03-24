@@ -17,19 +17,16 @@ export async function addFileRequestSuccess() {
 
 
     if (result === 'success') {
-      console.log("file request value updated successfully");
       return response.data.result;
     }
     if (result === 'fail') {
-      console.log("file request failed");
       return 'failed';
     }
     else {
-      console.log("file request failed");
       return 'file request failed';
     }
   } catch (error) {
-    console.error('Error adding file request:', error);
+    return error; // Ensure an error is returned if the request
   }
 }
 

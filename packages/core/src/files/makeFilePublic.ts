@@ -9,7 +9,6 @@ export async function makeFilePublic(
     device_name: string,
 ) {
 
-    console.log('makeFilePublic called with file_name: ', file_name, 'username: ', username);
     let url = ''
     try {
         url = `${CONFIG.url}/files/make_file_public/`;
@@ -32,8 +31,7 @@ export async function makeFilePublic(
             return 'make_file_public failed';
         }
     } catch (error) {
-        console.error('Error fetching data:', error);
-        return 'error'; // Ensure an error is returned if the request fails
+        return error; // Ensure an error is returned if the request fails
     }
 }
 

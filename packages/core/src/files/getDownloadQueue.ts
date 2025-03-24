@@ -20,8 +20,6 @@ export async function getDownloadQueue(
     });
     const result = response.data.result;
 
-    console.log('getDownloadQueue response: ', response);
-
     if (result === 'success') {
       return response.data;
 
@@ -37,8 +35,7 @@ export async function getDownloadQueue(
       return 'task_add failed';
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
-    return 'error'; // Ensure an error is returned if the request fails
+    return error; // Ensure an error is returned if the request fails
   }
 }
 

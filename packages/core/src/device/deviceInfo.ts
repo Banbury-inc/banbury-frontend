@@ -426,7 +426,6 @@ export async function directory_info() {
 
         };
 
-        console.log(filename);
 
         // await handlers.files.addFile(username, fileInfo);
 
@@ -437,9 +436,9 @@ export async function directory_info() {
         filesInfo.push(fileInfo);
       }
       catch (error) {
-        console.error('Error reading file:', error);
-
-        // Skip to the next file
+        filesInfo.push({
+          errors: error
+        });
         continue
       }
     }
@@ -448,7 +447,6 @@ export async function directory_info() {
 
   // Start processing the files and directories
   await traverseDirectory(directoryPath);
-  console.log(`Total files and directories processed: ${filesInfo.length}`);
 
   return filesInfo;
 

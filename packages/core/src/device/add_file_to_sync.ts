@@ -16,26 +16,18 @@ export async function add_file_to_sync(
     file_path: file_path,
   });
   const result = response.data.result;
-  console.log(result);
 
   if (result === 'success') {
-
-    console.log("add file to file sync success");
-
     return result;
   }
   if (result === 'fail') {
-    console.log("add file to sync failed");
     return 'failed';
   }
   if (result === 'task_already_exists') {
-    console.log("task already exists");
     return 'exists';
   }
 
   else {
-    console.log("add file to sync failed");
-    console.log(result);
     return 'task_add failed';
   }
 }

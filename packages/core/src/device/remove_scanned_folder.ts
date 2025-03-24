@@ -23,17 +23,14 @@ export async function remove_scanned_folder(
       device_name: device_name,
       scanned_folder: scanned_folder,
     });
-    console.log(response)
     const result = response.data.status;
 
     if (result === 'success') {
 
-      console.log("remove scanned folder success");
 
       return result;
     }
     if (result === 'fail') {
-      console.log(response)
       return 'failed';
     }
     if (result === 'task_already_exists') {
@@ -41,12 +38,10 @@ export async function remove_scanned_folder(
     }
 
     else {
-      console.log("remove scanned folder failed");
-      console.log(result);
       return 'task_add failed';
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
+    return error;
   }
 }
 

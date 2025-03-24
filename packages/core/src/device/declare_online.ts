@@ -20,7 +20,6 @@ export async function declare_online(
 
     if (result === 'success') {
 
-      console.log("declare online success");
 
       return result;
     }
@@ -28,22 +27,18 @@ export async function declare_online(
       return result;
     }
     if (result === 'fail cant find device') {
-      console.log("fail cant find device");
       return result;
     }
 
     if (result === 'task_already_exists') {
-      console.log("task already exists");
       return 'exists';
     }
 
     else {
-      console.log("declare online failed");
-      console.log(result);
       return 'task_add failed';
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
+    return error;
   }
 }
 

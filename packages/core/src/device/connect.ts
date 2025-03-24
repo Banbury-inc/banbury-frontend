@@ -1,6 +1,4 @@
-import path from 'path';
 import os from 'os';
-import fs from 'fs';
 import { CONFIG } from '../config';
 import { addDownloadsInfo } from './add_downloads_info';
 import { addUploadsInfo } from './add_uploads_info';
@@ -44,7 +42,6 @@ class ConnectionManager {
     const recentAttempts = this.connectionAttempts.length;
     
     if (recentAttempts >= CONNECTION_CONFIG.MAX_RECONNECT_ATTEMPTS) {
-      console.log(`Too many connection attempts (${recentAttempts}) in the last ${CONNECTION_CONFIG.STABILIZATION_PERIOD}ms`);
       
       // Calculate and apply exponential backoff
       this.currentBackoffDelay = Math.min(
@@ -52,7 +49,6 @@ class ConnectionManager {
         CONNECTION_CONFIG.MAX_BACKOFF_DELAY
       );
       
-      console.log(`Applying backoff delay: ${this.currentBackoffDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, this.currentBackoffDelay));
       
       // Reset connection attempts after backoff
@@ -63,7 +59,6 @@ class ConnectionManager {
     // Check if we're attempting to reconnect too quickly
     const timeSinceLastConnection = now - this.lastConnectionTime;
     if (timeSinceLastConnection < CONNECTION_CONFIG.RECONNECT_DELAY) {
-      console.log('Reconnecting too quickly, adding delay...');
       await new Promise(resolve => setTimeout(resolve, CONNECTION_CONFIG.RECONNECT_DELAY - timeSinceLastConnection));
     }
 
@@ -123,8 +118,7 @@ export function handleReceivedFileChunk(data: ArrayBuffer, downloadDetails: {
       addDownloadsInfo([downloadInfo]);
     }
   } catch (error) {
-    console.error('Error processing file chunk:', error);
-    throw error;
+    return error;
   }
 }
 
@@ -196,59 +190,6 @@ export function cleanupDownloadTracker(filename: string) {
   downloadSpeedTracker.delete(filename);
 }
 
-// Function to save the accumulated file after all chunks are received
-function saveFile(fileName: string, file_path: string) {
-  console.log("Saving file:", fileName, "from path:", file_path);
-  console.log("Total accumulated chunks:", accumulatedData.length);
-
-  try {
-    // Always save to Downloads folder
-    const userHomeDirectory = os.homedir();
-    const downloadsPath = path.join(userHomeDirectory, 'Downloads');
-    console.log("Saving to downloads path:", downloadsPath);
-
-    // Create Downloads directory if it doesn't exist
-    if (!fs.existsSync(downloadsPath)) {
-      fs.mkdirSync(downloadsPath, { recursive: true });
-    }
-
-    // Create final file path in Downloads
-    const filePath = path.join(downloadsPath, fileName);
-    console.log("Final file path:", filePath);
-
-    // Combine all chunks and verify we have data
-    const completeBuffer = Buffer.concat(accumulatedData);
-    console.log("Complete file size:", completeBuffer.length);
-
-    if (completeBuffer.length === 0) {
-      throw new Error('No data accumulated to save');
-    }
-
-    // Write file synchronously to ensure completion
-    fs.writeFileSync(filePath, completeBuffer);
-    console.log("File written successfully");
-
-    addDownloadsInfo([{
-      filename: fileName,
-      fileType: 'Unknown',
-      progress: 100,
-      status: 'completed' as const,
-      totalSize: 0,
-      downloadedSize: completeBuffer.length,
-      timeRemaining: undefined
-    }]);
-
-    // Clear accumulated data only after successful save
-    resetAccumulatedData();
-    return 'success';
-  } catch (error) {
-    console.error('Error saving file:', error);
-    // Reset accumulated data on error to prevent corruption
-    resetAccumulatedData();
-    throw error;
-  }
-}
-
 function handleTransferError(
   errorType: 'save_error' | 'file_not_found' | 'device_offline' | 'permission_denied' | 'transfer_failed',
   fileName: string,
@@ -258,7 +199,6 @@ function handleTransferError(
   deviceName?: string
 ) {
   if (!tasks || !setTasks || !setTaskbox_expanded) {
-    console.error('Missing required parameters for error handling');
     return;
   }
 
@@ -329,7 +269,6 @@ const CONNECTION_STATES = {
   FAILED: 'failed'
 } as const;
 
-type ConnectionState = typeof CONNECTION_STATES[keyof typeof CONNECTION_STATES];
 
 // Circuit breaker state
 interface CircuitState {
@@ -346,205 +285,37 @@ let circuitState: CircuitState = {
   halfOpenAttempts: 0
 };
 
-let connectionState: ConnectionState = CONNECTION_STATES.INITIAL;
-
-// Function to update connection state with logging
-function updateConnectionState(newState: ConnectionState) {
-  const oldState = connectionState;
-  connectionState = newState;
-  console.log(`Connection state changed: ${oldState} -> ${newState}`, {
-    timestamp: new Date().toISOString(),
-    attempt: reconnectAttempt,
-    circuitOpen: circuitState.isOpen
-  });
-}
-
-// Update recordFailure to be more selective
-function recordFailure(error?: any) {
-  const now = Date.now();
-  
-  // Don't count timeouts as harshly
-  if (error?.message?.includes('timeout')) {
-    circuitState.failures += 0.5; // Count timeouts as half a failure
-  } else {
-    circuitState.failures++;
-  }
-  
-  circuitState.lastFailure = now;
-  circuitState.halfOpenAttempts++;
-
-  // Check if we should open the circuit
-  if (circuitState.failures >= CIRCUIT_BREAKER_CONFIG.failureThreshold || 
-      circuitState.halfOpenAttempts >= CIRCUIT_BREAKER_CONFIG.halfOpenMaxAttempts) {
-    circuitState.isOpen = true;
-    updateConnectionState(CONNECTION_STATES.FAILED);
-    console.log('Circuit breaker opened due to multiple failures', {
-      failures: circuitState.failures,
-      halfOpenAttempts: circuitState.halfOpenAttempts
-    });
-  }
-}
-
-// Add state for reconnection
-let reconnectAttempt = 0;
-let reconnectTimeout: NodeJS.Timeout | null = null;
-let heartbeatInterval: NodeJS.Timeout | null = null;
-
-// Add connection stability tracking
-let connectionAttemptTimestamp = 0;
-
-// Function to check if connection is stable
-
-// Function to check if circuit breaker allows connection
-function canAttemptConnection(): boolean {
-  const now = Date.now();
-  
-  // If circuit is open, check if we can move to half-open
-  if (circuitState.isOpen) {
-    if (now - circuitState.lastFailure >= CIRCUIT_BREAKER_CONFIG.resetTimeout) {
-      // Move to half-open state
-      circuitState.isOpen = false;
-      circuitState.halfOpenAttempts = 0;
-      console.log('Circuit breaker moving to half-open state');
-      return true;
-    }
-    console.log('Circuit breaker is open, blocking connection attempt');
-    return false;
-  }
-
-  return true;
-}
-
-
-// Update attemptReconnect function
-function attemptReconnect(
-  username: string,
-  device_name: string,
-  taskInfo: any,
-  tasks: any[],
-  setTasks: (tasks: any[]) => void,
-  setTaskbox_expanded: (expanded: boolean) => void,
-  callback: (socket: WebSocket) => void
-) {
-  const now = Date.now();
-  
-  // Prevent reconnection if we've recently attempted
-  if (now - connectionAttemptTimestamp < RECONNECT_CONFIG.initialDelay) {
-    console.log('Throttling reconnection attempts');
-    return;
-  }
-
-  if (reconnectAttempt >= RECONNECT_CONFIG.maxAttempts) {
-    console.error('Max reconnection attempts reached, circuit breaker opening');
-    circuitState.isOpen = true;
-    updateConnectionState(CONNECTION_STATES.FAILED);
-    return;
-  }
-
-  // Check circuit breaker
-  if (!canAttemptConnection()) {
-    console.log('Circuit breaker preventing reconnection attempt');
-    return;
-  }
-
-  // Calculate delay with reduced jitter
-  const baseDelay = Math.min(
-    RECONNECT_CONFIG.initialDelay * Math.pow(1.5, reconnectAttempt),
-    RECONNECT_CONFIG.maxDelay
-  );
-  
-  const jitter = baseDelay * RECONNECT_CONFIG.jitter * (Math.random() * 2 - 1);
-  const delay = Math.max(baseDelay + jitter, RECONNECT_CONFIG.initialDelay);
-
-  console.log(`Scheduling reconnection in ${delay}ms (attempt ${reconnectAttempt + 1}/${RECONNECT_CONFIG.maxAttempts})`);
-
-  if (reconnectTimeout) {
-    clearTimeout(reconnectTimeout);
-  }
-
-  connectionAttemptTimestamp = now;
-  
-  reconnectTimeout = setTimeout(() => {
-    console.log(`Initiating reconnection attempt ${reconnectAttempt + 1}`);
-    createWebSocketConnection(
-      username,
-      device_name,
-      taskInfo,
-      tasks,
-      setTasks,
-      setTaskbox_expanded,
-      callback
-    );
-  }, delay);
-
-  reconnectAttempt++;
-}
-
-// Add this interface near the top of the file
-interface TaskInfo {
-  task_name: string;
-  task_device: string;
-  task_status: string;
-  fileInfo?: {
-    file_name: string;
-    file_size: number;
-    kind: string;
-  }[];
-}
-
-interface FileSyncRequest {
-  message_type: 'file_sync_request';
-  download_queue: {
-    file_name: string;
-    file_path: string;
-    file_size: number;
-    kind: string;
-    device_id: string;
-  }[];
-}
-
-// Process messages from the queue
-
 
 // Function to cleanup existing connection with graceful shutdown
 async function cleanupExistingConnection(): Promise<void> {
   if (activeConnection) {
-    try {
-      shutdownInProgress = true;
-      console.log('Starting graceful shutdown of existing connection');
-      
-      // Clear any existing timers
-      if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-        heartbeatInterval = null;
-      }
+    shutdownInProgress = true;
+    
+    // Clear any existing timers
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
 
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
 
-      // Try graceful shutdown
-      if (activeConnection.readyState === WebSocket.OPEN) {
-        activeConnection.close(1000, 'New connection requested');
-        // Wait for graceful shutdown
-        await new Promise<void>((resolve) => {
-          const timeout = setTimeout(() => {
-            console.log('Graceful shutdown timed out');
-            resolve();
-          }, RECONNECT_CONFIG.gracefulShutdownTimeout);
+    // Try graceful shutdown
+    if (activeConnection.readyState === WebSocket.OPEN) {
+      activeConnection.close(1000, 'New connection requested');
+      // Wait for graceful shutdown
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve();
+        }, RECONNECT_CONFIG.gracefulShutdownTimeout);
 
-          activeConnection!.onclose = () => {
-            clearTimeout(timeout);
-            resolve();
-          };
-        });
-      }
-    } catch (e) {
-      console.error('Error during connection cleanup:', e);
-    } finally {
-      activeConnection = null;
-      shutdownInProgress = false;
+        activeConnection!.onclose = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+      });
     }
   }
 }
@@ -569,7 +340,6 @@ export async function createWebSocketConnection(
 ): Promise<string> {
   // Prevent multiple simultaneous connection attempts
   if (connectionLock || shutdownInProgress) {
-    console.log('Connection attempt already in progress or shutdown in progress');
     return 'locked';
   }
 
@@ -580,7 +350,6 @@ export async function createWebSocketConnection(
   try {
     // Check circuit breaker and connection stability
     if (!canAttemptConnection()) {
-      console.log('Circuit breaker is open, preventing connection attempt');
       clearTimeout(lockTimeout);
       await releaseConnectionLock();
       return 'circuit_open';
@@ -589,7 +358,6 @@ export async function createWebSocketConnection(
     // Prevent rapid reconnection attempts
     const now = Date.now();
     if (now - connectionAttemptTimestamp < RECONNECT_CONFIG.initialDelay) {
-      console.log('Throttling connection attempt');
       clearTimeout(lockTimeout);
       await releaseConnectionLock();
       return 'throttled';
@@ -605,7 +373,6 @@ export async function createWebSocketConnection(
     const device_id = await get_device_id(username);
     
     if (!device_id || typeof device_id !== 'string') {
-      console.error('Invalid device_id received:', device_id);
       clearTimeout(lockTimeout);
       await releaseConnectionLock();
       throw new Error('Failed to get valid device ID');
@@ -617,12 +384,6 @@ export async function createWebSocketConnection(
     // Check if we should attempt connection using ConnectionManager
     const connectionManager = ConnectionManager.getInstance();
     await connectionManager.shouldAttemptConnection();
-
-    console.log(`Attempting to connect to WebSocket at ${entire_url_ws}`, {
-      timestamp: new Date().toISOString(),
-      attempt: reconnectAttempt
-    });
-
     const socket = typeof window !== 'undefined' 
       ? new WebSocketClient(entire_url_ws)
       : new WebSocketClient(entire_url_ws, {
@@ -636,7 +397,6 @@ export async function createWebSocketConnection(
     // Set connection timeout
     const connectionTimeout = setTimeout(() => {
       if (socket.readyState === WebSocket.CONNECTING) {
-        console.error('WebSocket connection timeout');
         socket.close(1006, 'Connection timeout');
         clearTimeout(lockTimeout);
         releaseConnectionLock();
@@ -652,12 +412,6 @@ export async function createWebSocketConnection(
         connectionLock = false;
         updateConnectionState(CONNECTION_STATES.CONNECTED);
         connectionManager.recordConnectionAttempt(true);
-        
-        console.log('WebSocket connection established', {
-          timestamp: new Date().toISOString(),
-          url: entire_url_ws,
-          deviceName: device_name
-        });
 
         const message = {
           message_type: `initiate_live_data_connection`,
@@ -675,7 +429,6 @@ export async function createWebSocketConnection(
         socket.send(JSON.stringify(message));
         callback(socket);
       } catch (error) {
-        console.error('Error in onopen handler:', error);
         connectionManager.recordConnectionAttempt(false);
         recordFailure(error);
       }
@@ -694,16 +447,6 @@ export async function createWebSocketConnection(
           clearInterval(heartbeatInterval);
           heartbeatInterval = null;
         }
-
-        const closeInfo = {
-          timestamp: new Date().toISOString(),
-          code: event.code,
-          reason: event.reason || 'No reason provided',
-          wasClean: event.wasClean,
-          attempt: reconnectAttempt
-        };
-        
-        console.log('WebSocket connection closed:', closeInfo);
 
         // Record connection attempt result
         connectionManager.recordConnectionAttempt(event.wasClean);
@@ -734,21 +477,19 @@ export async function createWebSocketConnection(
           }
         }
       } catch (error) {
-        console.error('Error in onclose handler:', error);
+        return error;
       } finally {
         connectionLock = false;
       }
     };
 
     socket.onerror = function (error: Event) {
-      console.error('WebSocket error:', error);
       recordFailure(error);
     };
 
     socket.onmessage = async function (event: MessageEvent) {
       try {
         const data = JSON.parse(event.data);
-        console.log('Received message:', data);
 
         // Handle pong messages for heartbeat
         if (data.type === 'pong') {
@@ -770,10 +511,8 @@ export async function createWebSocketConnection(
         // Handle file sync request
         if (data.message === 'File sync request') {
           const syncRequest = data as FileSyncRequest;
-          console.log('Received file sync request:', syncRequest);
 
           if (!syncRequest.download_queue || !Array.isArray(syncRequest.download_queue)) {
-            console.log('There are no files to sync right now');
             return;
           }
 
@@ -810,13 +549,10 @@ export async function createWebSocketConnection(
               timestamp: Date.now()
             }));
           } catch (error) {
-            console.error('Error sending sync completion acknowledgment:', error);
+            return error
           }
         } else if (data.type === "file_sent_successfully" || data.message === "File sent successfully") {
-          console.log("File transfer complete, saving file:", data.file_name);
           try {
-            const result = saveFile(data.file_name, data.file_path || '');
-            console.log("File saved successfully:", result);
 
             // Send completion confirmation
             const final_message = {
@@ -828,7 +564,6 @@ export async function createWebSocketConnection(
               file_path: data.file_path
             };
             socket.send(JSON.stringify(final_message));
-            console.log("Sent completion confirmation:", final_message);
 
             // Update task status if available
             if (tasks && setTasks) {
@@ -840,7 +575,6 @@ export async function createWebSocketConnection(
               setTasks(updatedTasks);
             }
           } catch (error) {
-            console.error('Error saving file:', error);
             handleTransferError(
               'save_error',
               data.file_name,
@@ -848,20 +582,19 @@ export async function createWebSocketConnection(
               setTasks,
               setTaskbox_expanded
             );
+            return error;
           }
         }
 
         // Handle other message types...
         // ... existing message handlers ...
       } catch (error) {
-        console.error('Error processing WebSocket message:', error);
         recordFailure(error);
       }
     };
 
     return 'connecting';
   } catch (error) {
-    console.error('Error creating WebSocket connection:', error);
     clearTimeout(lockTimeout);
     await releaseConnectionLock();
     recordFailure(error);
@@ -896,7 +629,6 @@ export async function download_request(username: string, file_name: string, file
     kind: fileInfo[0]?.kind || 'Unknown'
   }];
 
-  console.log("Updated taskInfo:", taskInfo);
 
   const requesting_device_id = await get_device_id(username);
   const sending_device_id = fileInfo[0]?.device_id;
@@ -1041,7 +773,6 @@ export async function connect(
 
 // Add file sync error handling
 export function handleFileSyncError(error: any, fileInfo: any, tasks: any[], setTasks: (tasks: any[]) => void, setTaskbox_expanded: (expanded: boolean) => void) {
-  console.error('File sync error:', error);
   
   let errorType: 'save_error' | 'file_not_found' | 'device_offline' | 'permission_denied' | 'transfer_failed' = 'transfer_failed';
   
@@ -1063,3 +794,140 @@ export function handleFileSyncError(error: any, fileInfo: any, tasks: any[], set
     setTaskbox_expanded
   );
 }
+
+// Update attemptReconnect function
+function attemptReconnect(
+  username: string,
+  device_name: string,
+  taskInfo: any,
+  tasks: any[],
+  setTasks: (tasks: any[]) => void,
+  setTaskbox_expanded: (expanded: boolean) => void,
+  callback: (socket: WebSocket) => void
+) {
+  const now = Date.now();
+  
+  // Prevent reconnection if we've recently attempted
+  if (now - connectionAttemptTimestamp < RECONNECT_CONFIG.initialDelay) {
+    return;
+  }
+
+  if (reconnectAttempt >= RECONNECT_CONFIG.maxAttempts) {
+    circuitState.isOpen = true;
+    updateConnectionState(CONNECTION_STATES.FAILED);
+    return;
+  }
+
+  // Check circuit breaker
+  if (!canAttemptConnection()) {
+    return;
+  }
+
+  // Calculate delay with reduced jitter
+  const baseDelay = Math.min(
+    RECONNECT_CONFIG.initialDelay * Math.pow(1.5, reconnectAttempt),
+    RECONNECT_CONFIG.maxDelay
+  );
+  
+  const jitter = baseDelay * RECONNECT_CONFIG.jitter * (Math.random() * 2 - 1);
+  const delay = Math.max(baseDelay + jitter, RECONNECT_CONFIG.initialDelay);
+
+
+  if (reconnectTimeout) {
+    clearTimeout(reconnectTimeout);
+  }
+
+  connectionAttemptTimestamp = now;
+  
+  reconnectTimeout = setTimeout(() => {
+    createWebSocketConnection(
+      username,
+      device_name,
+      taskInfo,
+      tasks,
+      setTasks,
+      setTaskbox_expanded,
+      callback
+    );
+  }, delay);
+
+  reconnectAttempt++;
+}
+
+// Add this interface near the top of the file
+interface TaskInfo {
+  task_name: string;
+  task_device: string;
+  task_status: string;
+  fileInfo?: {
+    file_name: string;
+    file_size: number;
+    kind: string;
+  }[];
+}
+
+interface FileSyncRequest {
+  message_type: 'file_sync_request';
+  download_queue: {
+    file_name: string;
+    file_path: string;
+    file_size: number;
+    kind: string;
+    device_id: string;
+  }[];
+}
+
+// Process messages from the queue
+
+
+// Function to check if connection is stable
+
+// Function to check if circuit breaker allows connection
+function canAttemptConnection(): boolean {
+  const now = Date.now();
+  
+  // If circuit is open, check if we can move to half-open
+  if (circuitState.isOpen) {
+    if (now - circuitState.lastFailure >= CIRCUIT_BREAKER_CONFIG.resetTimeout) {
+      // Move to half-open state
+      circuitState.isOpen = false;
+      circuitState.halfOpenAttempts = 0;
+      return true;
+    }
+    return false;
+  }
+
+  return true;
+}
+
+// Update recordFailure to be more selective
+function recordFailure(error?: any) {
+  const now = Date.now();
+  
+  // Don't count timeouts as harshly
+  if (error?.message?.includes('timeout')) {
+    circuitState.failures += 0.5; // Count timeouts as half a failure
+  } else {
+    circuitState.failures++;
+  }
+  
+  circuitState.lastFailure = now;
+  circuitState.halfOpenAttempts++;
+
+  // Check if we should open the circuit
+  if (circuitState.failures >= CIRCUIT_BREAKER_CONFIG.failureThreshold || 
+      circuitState.halfOpenAttempts >= CIRCUIT_BREAKER_CONFIG.halfOpenMaxAttempts) {
+    circuitState.isOpen = true;
+    updateConnectionState(CONNECTION_STATES.FAILED);
+  }
+}
+
+// Add state for reconnection
+let reconnectAttempt = 0;
+let reconnectTimeout: NodeJS.Timeout | null = null;
+let heartbeatInterval: NodeJS.Timeout | null = null;
+
+// Add connection stability tracking
+let connectionAttemptTimestamp = 0;
+
+
