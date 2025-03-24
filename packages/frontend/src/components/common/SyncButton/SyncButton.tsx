@@ -62,7 +62,6 @@ export default function SyncButton() {
       const addResult = await add_scanned_folder(absoluteFolderPath, username ?? '');
 
       if (addResult === 'success') {
-        console.log('addResult', addResult);
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         // Get fresh devices data first
         const updatedDevices = await fetchDeviceData(username ?? '');
@@ -116,7 +115,6 @@ export default function SyncButton() {
           username ?? '',
           file.filename,
           (progress: number, speed: string) => {
-            console.log('Progress update:', progress, speed);
             setSyncData(prev => ({
               ...prev,
               syncingFiles: prev.syncingFiles.map(f =>

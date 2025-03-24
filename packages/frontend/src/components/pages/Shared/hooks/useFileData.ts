@@ -52,8 +52,6 @@ export const useFileData = (
       if (fs.existsSync(snapshot_json)) {
         const snapshot = fs.readFileSync(snapshot_json, 'utf-8');
         files = JSON.parse(snapshot);
-        console.log('Loaded snapshot from file:', snapshot_json);
-        console.log('Snapshot:', files);
       }
 
       // Combine devices with their associated files
@@ -63,7 +61,6 @@ export const useFileData = (
         setAllFiles(allFilesData);
       }
 
-      console.log('Local file data loaded');
       setIsLoading(false);
 
       // Step 3: Fetch files for all devices
@@ -82,7 +79,6 @@ export const useFileData = (
         setAllFiles(allFilesData);
       }
 
-      console.log('API file data loaded');
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -114,8 +110,6 @@ export const useFileData = (
       if (fs.existsSync(snapshot_json)) {
         const snapshot = fs.readFileSync(snapshot_json, 'utf-8');
         files = JSON.parse(snapshot);
-        console.log('Loaded snapshot from file:', snapshot_json);
-        console.log('Snapshot:', files);
       }
 
       const allFilesData = mapDevicesToFiles(devices, files);
@@ -124,7 +118,6 @@ export const useFileData = (
         setAllFiles(allFilesData);
       }
 
-      console.log('Local file data loaded');
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -164,7 +157,6 @@ export const useFileData = (
   // File watcher effect
   useEffect(() => {
     const handleFileChange = () => {
-      console.log('File changed, fetching data...');
       fetchData();
     };
 

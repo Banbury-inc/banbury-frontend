@@ -22,14 +22,8 @@ const NewInputFileUploadButton: React.FC = () => {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files ? event.target.files[0] : null;
     if (!file) {
-      console.log("No file selected.");
       return;
     }
-
-    console.log("File:", file);
-    // Log the file name for debugging purposes
-    console.log("Selected file:", file.name);
-
     try {
       setLoading(true);
       await handlers.files.uploadFile(file.path);

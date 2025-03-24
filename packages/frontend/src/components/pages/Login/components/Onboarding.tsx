@@ -82,14 +82,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     let taskInfo: any = null;
     
     try {
-      console.log("Handling add device click");
-      console.log("Current username:", username); // Debug log for username
-
       if (!username) {
         throw new Error('No username available. Please try logging in again.');
       }
-
-      const device_name = await banbury.device.name();
+      const device_name = banbury.device.name();
       const task_description = 'Adding device ' + device_name;
       taskInfo = await banbury.sessions.addTask(username, task_description, tasks, setTasks);
 

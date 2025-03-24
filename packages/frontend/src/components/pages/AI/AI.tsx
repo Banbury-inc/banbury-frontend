@@ -626,7 +626,6 @@ export default function AI() {
           }
         } catch (error) {
           if (error instanceof Error && error.name === 'AbortError') {
-            console.log('Generation stopped by user');
             return;
           }
           throw error;
@@ -659,7 +658,6 @@ export default function AI() {
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('Generation stopped by user');
         return;
       }
       console.error('Error sending message:', error);

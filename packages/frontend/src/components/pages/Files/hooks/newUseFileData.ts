@@ -50,7 +50,6 @@ export const newUseFileData = (
   useEffect(() => {
     if (!devices) {
       // Fetch devices if they're not available
-      console.log("Fetching devices from newUseFileData");
       fetchDeviceData(username || '')
         .then((new_devices) => {
           if (new_devices && Array.isArray(new_devices)) {
@@ -120,8 +119,6 @@ export const newUseFileData = (
   // Add effect to listen for device status changes
   useEffect(() => {
     const handleDeviceStatusChange = () => {
-      // Refetch device data when status changes
-      console.log("Refetching devices from newUseFileData line 139");
       fetchDeviceData(username || '')
         .then((new_devices) => {
           if (new_devices && Array.isArray(new_devices)) {

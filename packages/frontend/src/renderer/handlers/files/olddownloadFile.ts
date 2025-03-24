@@ -36,7 +36,6 @@ export function downloadFile(files: string[]): Promise<string> {
           const file_size = splitHeader[2];
           if (fileType === 'FILE_REQUEST') {
 
-            console.log(`Device is requesting file: ${file_name}`);
             const directory_name: string = "BCloud";
             const directory_path: string = path.join(os.homedir(), directory_name);
             const file_save_path: string = path.join(directory_path, file_name);
@@ -49,12 +48,10 @@ export function downloadFile(files: string[]): Promise<string> {
               const file_header: string = `FILE_REQUEST_RESPONSE:${request_file_name}:${file_size}:${null_string}:END_OF_HEADER`;
               senderSocket.write(file_header);
               file.on('data', (bytes_read: Buffer) => {
-                console.log("sending file...");
                 senderSocket.write(bytes_read);
               });
 
               file.on('end', () => {
-                console.log(`${file_name} has been sent successfully.`);
                 senderSocket.end();
               });
 
@@ -83,7 +80,6 @@ export function downloadFile(files: string[]): Promise<string> {
     });
 
     senderSocket.on('end', () => {
-      console.log('Disconnected from server');
       reject(new Error('Connection ended without confirmation'));
     });
 

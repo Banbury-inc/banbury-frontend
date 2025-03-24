@@ -40,32 +40,24 @@ export async function updateDevice(username: any) {
           date_added,
         };
 
-        console.log(device_info_json);
 
         const response = await axios.post(`${banbury.config.url}devices/update_devices/${username}/`, device_info_json);
 
         if (response.status === 200) {
           if (response.data.response === 'success') {
-            console.log("Successfully updated devices");
             resolve("success");
           } else {
-            console.log("Failed to update devices");
-            console.log(response.data);
             resolve("fail");
           }
         } else if (response.status === 400) {
-          console.log("Bad request");
           resolve("fail");
         } else if (response.status === 404) {
-          console.log("error");
           resolve("fail");
         } else {
-          console.log("error");
           resolve(response.data);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
-        resolve("fail");
+        resolve(error);
       }
     })();
   });

@@ -69,7 +69,7 @@ export default function SignIn() {
   // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [redirect_to_register, setredirect_to_register] = useState(false);
-  const { setUsername, username } = useAuth(); // Only destructure what you need
+  const { setUsername } = useAuth(); // Only destructure what you need
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
   const [showMain, setShowMain] = useState<boolean>(false);
@@ -139,21 +139,17 @@ export default function SignIn() {
   async function send_login_request(username: string, password: string) {
     try {
       const url = `${banbury.config.url}/authentication/getuserinfo4/${username}/${password}`;
-      console.log('Making login request to:', url);
       
       const response = await axios.get<LoginResponse>(url);
-      console.log('Response:', response.data);
       
       const result = response.data.result;
       if (result === 'success') {
-        console.log("Login success");
         const deviceId = response.data.deviceId || `${username}-${os.hostname()}`;
         return {
           success: true,
           deviceId
         };
       }
-      console.log("Login failed with result:", result);
       return { success: false };
     } catch (error) {
       console.error('Error during login:', error);
@@ -189,7 +185,6 @@ export default function SignIn() {
               if (response.data.success) {
                 const email = response.data.user.email;
                 // Get device ID from the response if available
-                console.log(response.data)
                 const deviceId = response.data.user.deviceId;
                 
                 const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
@@ -236,10 +231,8 @@ export default function SignIn() {
 
   // Add this function to handle onboarding completion
   const handleOnboardingComplete = () => {
-    console.log('Onboarding complete called');
     // Get the email from localStorage if it was stored during login
     const email = localStorage.getItem('pendingAuthEmail');
-    console.log('Retrieved email:', email);
     
     if (email) {
       setUsername(email);
@@ -251,13 +244,10 @@ export default function SignIn() {
     setShowOnboarding(false); // Explicitly hide onboarding
     setIsAuthenticated(true);
     setShowMain(true);
-    
-    console.log('State updated, should redirect to main');
   };
 
   // Render content based on state
   if (showOnboarding) {
-    console.log("Showing onboarding with username from context:", username); // Debug log
     return <Onboarding 
       onComplete={handleOnboardingComplete} 
     />;

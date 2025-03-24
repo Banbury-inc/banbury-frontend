@@ -62,7 +62,6 @@ export function handleFetchDevices(
       }>(`${banbury.config.url}/predictions/get_device_prediction_data/${username}/`);
 
       const { devices } = deviceInfoResponse.data;
-      console.log('devices: ', devices);
       const { device_predictions } = devicePredictionsResponse.data.data;
 
       // Transform device data
@@ -90,8 +89,6 @@ export function handleFetchDevices(
           files_needed: 0,
           score: 0
         };
-
-        console.log('devicePrediction: ', devicePrediction);
 
         return {
           id: index + 1,

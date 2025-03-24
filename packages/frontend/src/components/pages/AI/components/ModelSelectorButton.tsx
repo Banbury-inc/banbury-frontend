@@ -224,11 +224,9 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
         try {
           if (username) {
             if (devices && devices.length > 0) {
-              console.log(devices);
               const device = devices.find(d => d.device_name === banbury.device.name());
               if (device) {
                 const deviceId = device._id;
-                console.log(deviceId);
                 const addModelResult = await add_downloaded_model(modelName, username, deviceId);
                 if (addModelResult === 'failed' || addModelResult === 'task_add failed') {
                   console.error('Failed to register downloaded model');

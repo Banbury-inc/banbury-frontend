@@ -16,8 +16,6 @@ async function notarizing() {
     process.exit(1);
   }
 
-  console.log(`Notarizing ${appPath}...`);
-
   try {
     await notarize({
       appPath,
@@ -25,7 +23,6 @@ async function notarizing() {
       appleIdPassword,
       teamId
     });
-    console.log('Notarization complete!');
   } catch (error: any) {
     console.error('Notarization failed:', error.message);
     throw error;

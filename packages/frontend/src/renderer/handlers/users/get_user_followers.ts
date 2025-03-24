@@ -12,10 +12,8 @@ export async function getUserFriends(username: string) {
     );
 
     if (response.data.result === 'success') {
-      console.log("get user friends success");
       return response;
     }
-    console.log("get user friends failed");
     return null;
   } catch (error) {
     console.error('Error fetching data:', error);

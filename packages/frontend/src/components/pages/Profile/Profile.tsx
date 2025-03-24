@@ -12,11 +12,6 @@ import Divider from '@mui/material/Divider';
 import { Email } from '@mui/icons-material';
 import { handlers } from '../../../renderer/handlers';
 
-const { ipcRenderer } = window.require('electron');
-
-ipcRenderer.on('python-output', (_event: any, data: any) => {
-  console.log('Received Python output:', data);
-});
 
 export default function Profile() {
   const { username } = useAuth();
