@@ -97,8 +97,10 @@ function EnhancedTableHead(props: EnhancedTableProps) {
       <TableRow>
         <TableCell
           padding="checkbox"
+          size="small"
           sx={{
             backgroundColor: 'background.paper',
+            paddingLeft: '0px',
           }}
         >
           <Checkbox

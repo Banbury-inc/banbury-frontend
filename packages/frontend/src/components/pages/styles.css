@@ -1,0 +1,45 @@
+body {
+  border: 1px solid #48545c;
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+
+#titlebar {
+  display: block;
+  position: fixed;
+  height: 32px;
+  width: calc(100% - 2px);
+  /*Compensate for body 1px border*/
+  /* background: #254053; */
+  background: rgb(33, 33, 33);
+  padding: 4px;
+  -webkit-app-region: drag;
+  /* Make entire titlebar draggable by default */
+}
+
+/* Make specific elements in the titlebar non-draggable and clickable */
+#titlebar button,
+#titlebar .button,
+#titlebar input,
+#titlebar select,
+#titlebar a,
+.no-drag {
+  -webkit-app-region: no-drag;
+  pointer-events: auto !important;
+  position: relative;
+}
+
+#main {
+  height: calc(100% - 32px);
+  margin-top: 32px;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+#titlebar #drag-region {
+  width: 100%;
+  height: 100%;
+  -webkit-app-region: drag;
+}
