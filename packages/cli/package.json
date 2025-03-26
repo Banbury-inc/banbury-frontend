@@ -13,7 +13,8 @@
         "dev": "tsc --watch",
         "clean": "rimraf dist",
         "test": "jest --config jest.config.js --passWithNoTests --coverage",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "link": "npm run build && npm link"
     },
     "dependencies": {
         "@banbury/core": "3.4.22",
