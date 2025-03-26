@@ -100,7 +100,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
           size="small"
           sx={{
             backgroundColor: 'background.paper',
-            paddingLeft: '0px',
+            paddingLeft: '10px',
           }}
         >
           <Checkbox
@@ -109,6 +109,7 @@ function EnhancedTableHead(props: EnhancedTableProps) {
             indeterminate={numSelected > 0 && numSelected < rowCount}
             checked={rowCount > 0 && numSelected === rowCount}
             onChange={onSelectAllClick}
+            style={{ width: '4px'}}
             inputProps={{
               'aria-label': 'select all desserts',
             }}
