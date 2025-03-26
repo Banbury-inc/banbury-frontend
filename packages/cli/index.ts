@@ -18,6 +18,7 @@ program
   .argument('[name]', 'name of the user to greet', 'User')
   .action((name: string) => {
     const greeting = greetUser(name);
+    // eslint-disable-next-line no-console
     console.log(chalk.blue(greeting));
   });
 
@@ -31,6 +32,7 @@ deviceCommand
   .argument('[username]', 'username to get scanned folders for', 'User')
   .action(async (username: string) => {
     const response = await getScannedFolders(username);
+    // eslint-disable-next-line no-console
     console.log(response);
     process.exit(0);
   });
