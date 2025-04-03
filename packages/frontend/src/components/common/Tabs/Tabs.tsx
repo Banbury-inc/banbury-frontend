@@ -8,7 +8,6 @@ import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { attachClosestEdge, extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/types';
 import { createRoot } from 'react-dom/client';
-import { Stack } from '@mui/material';
 
 export interface Tab {
   id: string;
@@ -24,7 +23,6 @@ interface TabProps {
   style?: React.CSSProperties;
   isNew?: boolean;
   isClosing?: boolean;
-  index: number;
 }
 
 interface TabsProps {
@@ -62,107 +60,63 @@ const DragPreview = ({ label }: { label: string }) => (
   </div>
 );
 
-export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, isClosing, index }: TabProps) => (
+export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, isClosing }: TabProps) => (
   <div
-    data-testid={`tab-${index}`}
     onClick={onClick}
     style={style}
     className={`
       tab
       ${isNew ? 'animate-tab-enter opacity-0' : ''}
       ${isClosing ? 'animate-tab-exit' : ''}
-      h-9
-      px-3
-      min-w-[160px]
-      max-w-[200px]
-      text-sm
-      font-medium
-      relative
-      mx-1
+      mt-5
+      pl-4  
+      h-8
+      px-4 
+      min-w-[140px]
+      text-sm 
+      font-medium 
+      relative 
+      mx-0.5
+      rounded-[5px_5px_0_0]
       flex
       items-center
       justify-between
-      transition-all
-      duration-200
-      ease-in-out
-      cursor-grab
-      group
+      gap-2
       ${isActive 
-        ? `
-          text-white
-          bg-gradient-to-b
-          from-[#2a2a2a]
-          to-[#1a1a1a]
-          rounded-t-lg
-          shadow-[0_-1px_8px_rgba(0,0,0,0.15)]
-          before:absolute
-          before:bottom-0
-          before:left-0
-          before:right-0
-          before:h-[2px]
-          before:bg-[#FF6F00]
-          before:transition-all
-          before:duration-200
-          after:absolute
-          after:bottom-0
-          after:left-[-8px]
-          after:right-[-8px]
-          after:h-[1px]
-          after:bg-[#333]
-        ` 
-        : `
-          text-white/60
-          hover:text-white/90
-          hover:bg-[#2a2a2a]
-          rounded-lg
-          hover:shadow-[0_2px_8px_rgba(0,0,0,0.15)]
-          transition-all
-          duration-200
-        `
+        ? 'text-white bg-[#171717] before:absolute before:top-0 before:left-0 before:right-0 before:h-[0px] before:bg-white' 
+        : 'text-white/70 hover:bg-[#2a2a2a] hover:h-7 hover:rounded-[5px_5px_5px_5px]'
       }
+      hover:text-white 
       focus:outline-none
       z-[9999]
+      first:ml-2
     `}
   >
-    <Stack direction="row" spacing={1} alignItems="center" width="100%">
-      <Typography
-        variant="body2"
+    <Typography
+      variant="body2"
+      className="truncate pl-2"
+      sx={{ fontWeight: isActive ? 500 : 400 }}
+    >
+      {label}
+    </Typography>
+    {onClose && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         className={`
-          truncate
-          transition-all
-          duration-200
-          ${isActive ? 'font-medium' : 'font-normal'}
+          rounded-sm
+          hover:bg-white/10
+          transition-colors
+          opacity-0
+          group-hover:opacity-100
+          ${isActive ? 'opacity-100' : ''}
         `}
       >
-        {label}
-      </Typography>
-      {onClose && (
-        <button
-          id={`tab-close-button-${index}`}
-          data-testid={`close-tab-button-${label}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          className={`
-            rounded-full
-            p-0.5
-            hover:bg-white/15
-            transition-all
-            duration-200
-            opacity-0
-            group-hover:opacity-100
-            ${isActive ? 'opacity-100' : ''}
-            flex
-            items-center
-            justify-center
-            flex-shrink-0
-          `}
-        >
-          <CloseIcon sx={{ fontSize: '16px' }} />
-        </button>
-      )}
-    </Stack>
+        <CloseIcon sx={{ fontSize: 'inherit' }} />
+      </button>
+    )}
   </div>
 );
 
@@ -361,57 +315,7 @@ export const Tabs: React.FC<TabsProps> = ({
   }, [tabs, onReorder]);
 
   return (
-    <div ref={containerRef} className="flex items-center bg-[#212121] h-12">
-      <div className="flex-1 flex items-center">
-        <Stack direction="row" spacing={0}>
-          {renderedTabs.map((tab, index) => (
-              <TabComponent
-                data-testid={`tab-${tab.id}`}
-                label={tab.label}
-                isActive={activeTab === tab.id}
-                onClick={() => onTabChange(tab.id)}
-                onClose={() => handleTabClose(tab.id)}
-                isNew={tab.id === newTabId}
-                isClosing={tab.id === closingTabId}
-                index={index}
-              />
-          ))}
-          {onTabAdd && (
-            <button
-              data-testid="new-tab-button"
-              onClick={() => {
-                if (onTabAdd) {
-                  onTabAdd();
-                }
-              }}
-              className="
-                h-9
-                px-2
-                ml-1
-                text-white/60
-                hover:text-white
-                hover:bg-[#2a2a2a]
-                rounded-lg
-                transition-all
-                duration-200
-                flex
-                items-center
-                justify-center
-                z-[9999]
-              "
-            >
-              <AddIcon sx={{ fontSize: '20px' }} />
-            </button>
-          )}
-        </Stack>
-      </div>
-      {closestEdge && indicatorPosition !== null && (
-        <DropIndicator 
-          edge={closestEdge} 
-          gap="1px" 
-          left={indicatorPosition} 
-        />
-      )}
+    <div ref={containerRef} className="flex items-center group">
       <style>
         {`
           .tab {
@@ -419,7 +323,6 @@ export const Tabs: React.FC<TabsProps> = ({
             cursor: grab;
             position: relative;
             transform-origin: left center;
-            backdrop-filter: blur(8px);
           }
           .tab.dragging {
             opacity: 0.5;
@@ -427,7 +330,7 @@ export const Tabs: React.FC<TabsProps> = ({
           @keyframes tabEnter {
             0% {
               opacity: 0;
-              transform: scaleX(0.7);
+              transform: scaleX(0);
             }
             100% {
               opacity: 1;
@@ -441,7 +344,7 @@ export const Tabs: React.FC<TabsProps> = ({
             }
             100% {
               opacity: 0;
-              transform: scaleX(0.7);
+              transform: scaleX(0);
             }
           }
           .animate-tab-enter {
@@ -454,6 +357,52 @@ export const Tabs: React.FC<TabsProps> = ({
           }
         `}
       </style>
+      {renderedTabs.map((tab) => (
+        <div
+          ref={el => tabRefs.current[tabs.indexOf(tab)] = el}
+          key={tab.id}
+          className="relative"
+        >
+          <TabComponent
+            label={tab.label}
+            isActive={activeTab === tab.id}
+            onClick={() => onTabChange(tab.id)}
+            onClose={() => handleTabClose(tab.id)}
+            isNew={tab.id === newTabId}
+            isClosing={tab.id === closingTabId}
+          />
+        </div>
+      ))}
+      {onTabAdd && (
+        <button
+          onClick={() => {
+            if (onTabAdd) {
+              onTabAdd();
+            }
+          }}
+          className="
+            h-7
+            mt-4
+            px-3
+            ml-1
+            text-white/70
+            hover:text-white
+            hover:bg-[#2a2a2a]
+            rounded-[5px_5px_0_0]
+            transition-colors
+            z-[9999]
+          "
+        >
+          <AddIcon fontSize="inherit" />
+        </button>
+      )}
+      {closestEdge && indicatorPosition !== null && (
+        <DropIndicator 
+          edge={closestEdge} 
+          gap="1px" 
+          left={indicatorPosition} 
+        />
+      )}
     </div>
   );
 };
