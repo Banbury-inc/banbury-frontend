@@ -1,8 +1,6 @@
-import { fileWatcherEmitter } from '../watchdog';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { jest } from '@jest/globals';
 
 describe('Watchdog Tests', () => {
   const testDir = path.join(os.tmpdir(), 'banbury-test');
