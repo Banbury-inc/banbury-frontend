@@ -177,7 +177,7 @@ async function waitForWebpackReady(url: string): Promise<void> {
     } catch (error) {
       attempts++;
       if (attempts >= maxAttempts) {
-        throw new Error(`Failed to connect to webpack dev server at ${url} after ${maxAttempts} attempts`);
+        throw new Error(`Failed to connect to webpack dev server at ${url} after ${maxAttempts} attempts. Error message: ${error}`);
       }
       await new Promise(resolve => setTimeout(resolve, 200));
     }
