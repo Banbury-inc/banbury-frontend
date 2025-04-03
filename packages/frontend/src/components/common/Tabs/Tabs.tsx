@@ -64,6 +64,7 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, 
   <div
     onClick={onClick}
     style={style}
+    data-testid={`tab-${label}`}
     className={`
       tab
       ${isNew ? 'animate-tab-enter opacity-0' : ''}
@@ -105,6 +106,7 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, 
           e.stopPropagation();
           onClose();
         }}
+        id={`tab-close-button-${label}`}
         className={`
           rounded-sm
           hover:bg-white/10
@@ -380,6 +382,7 @@ export const Tabs: React.FC<TabsProps> = ({
               onTabAdd();
             }
           }}
+          data-testid="new-tab-button"
           className="
             h-7
             mt-4
