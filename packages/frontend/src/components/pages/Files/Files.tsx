@@ -739,9 +739,8 @@ export default function Files() {
                         sx={{ 
                           height: 'calc(100vh - 200px)',
                           overflow: 'auto',
-                          transition: 'all 0.2s ease-in-out', // Smooth transition for view changes
-                          display: 'flex',
-                          flexDirection: 'column'
+                          transition: 'all 0.2s ease-in-out',
+                          display: 'block'
                         }}
                       >
                         <Table 
@@ -749,7 +748,6 @@ export default function Files() {
                           size="small" 
                           stickyHeader
                           sx={{
-                            flex: '1 1 auto',
                             tableLayout: 'fixed'
                           }}
                         >
@@ -764,8 +762,10 @@ export default function Files() {
                           <TableBody>
                             {isLoading
                               ? Array.from(new Array(rowsPerPage)).map((_, index) => (
-                                <TableRow key={`skeleton-${index}`}>
-                                  <TableCell padding="checkbox">
+                                <TableRow 
+                                  key={`skeleton-${index}`}
+                                >
+                                  <TableCell padding="checkbox" size="small">
                                     <Skeleton variant="rectangular" width={24} height={24} />
                                   </TableCell>
                                   <TableCell>
@@ -804,10 +804,10 @@ export default function Files() {
                                       tabIndex={-1}
                                       key={row.id}
                                       selected={isItemSelected}
-                                      onMouseEnter={() => setHoveredRowId(row.id as number)} // Track hover state
-                                      onMouseLeave={() => setHoveredRowId(null)} // Clear hover state
+                                      onMouseEnter={() => setHoveredRowId(row.id as number)}
+                                      onMouseLeave={() => setHoveredRowId(null)}
                                     >
-                                      <TableCell sx={{ borderBottomColor: '#424242' }} padding="checkbox">
+                                      <TableCell sx={{ borderBottomColor: '#424242' }} padding="checkbox" size="small">
                                         {hoveredRowId === row.id || isItemSelected ? ( // Only render Checkbox if row is hovered
                                           <Checkbox
                                             color="primary"
