@@ -36,6 +36,12 @@ export default function DownloadFileButton({
       return;
     }
 
+    // Check if websocket is connected
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+      showAlert('Connection Error', ['Not connected to server. Please try again.'], 'error');
+      return;
+    }
+
     try {
       // Initialize download progress for selected files
       const initialDownloads = selectedFileInfo.map(fileInfo => ({
@@ -92,16 +98,20 @@ export default function DownloadFileButton({
     }
   };
 
+  // Disable button if websocket is not connected
+  const isDisabled = !websocket || websocket.readyState !== WebSocket.OPEN || selectedFileNames.length === 0;
+
   return (
-    <Tooltip title="Download">
-      <Button
-        data-testid="download-button"
-        onClick={handleDownloadClick}
-        //   disabled={selectedFileNames.length === 0}
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-      >
-        <DownloadIcon fontSize="inherit" />
-      </Button>
+    <Tooltip title={isDisabled ? (selectedFileNames.length === 0 ? "Select files to download" : "Not connected") : "Download"}>
+      <span>
+        <Button
+          data-testid="download-button"
+          onClick={handleDownloadClick}
+          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+        >
+          <DownloadIcon fontSize="inherit" />
+        </Button>
+      </span>
     </Tooltip>
   );
 }

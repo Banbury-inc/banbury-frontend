@@ -99,6 +99,8 @@ export function handleReceivedFileChunk(data: ArrayBuffer, downloadDetails: {
       // Calculate total received bytes
       const totalReceived = accumulatedData.reduce((sum, chunk) => sum + chunk.length, 0);
 
+      console.log('download details:', downloadDetails);
+
       // Update download progress
       const downloadInfo = {
         filename: downloadDetails.filename || 'Unknown',
@@ -113,6 +115,8 @@ export function handleReceivedFileChunk(data: ArrayBuffer, downloadDetails: {
           downloadDetails.filename || 'Unknown'
         )
       };
+
+
 
 
       addDownloadsInfo([downloadInfo]);
@@ -608,6 +612,9 @@ export function cleanupWebSocket() {
 
 // Function to send a download request using the provided socket
 export async function download_request(username: string, file_name: string, file_path: string, fileInfo: any, socket: WebSocket, taskInfo: TaskInfo) {
+
+  console.log('download request:', file_name, file_path, fileInfo);
+
   // Update taskInfo with the file information
   taskInfo.fileInfo = [{
     file_name: fileInfo[0]?.file_name || file_name,
@@ -653,6 +660,7 @@ export async function download_request(username: string, file_name: string, file
     downloadedSize: 0,
     timeRemaining: undefined
   };
+
 
   // Add to downloads tracking
   addDownloadsInfo([downloadInfo]);
