@@ -22,6 +22,10 @@ const config = {
     alias: {
       'react': path.resolve('./node_modules/react'),
       'react-dom': path.resolve('./node_modules/react-dom'),
+      'osx-temperature-sensor': false
+    },
+    fallback: {
+      'osx-temperature-sensor': false
     }
   },
   entry: path.resolve(rootPath, "src/renderer", "index.tsx"),
@@ -101,8 +105,7 @@ const config = {
       publicPath: "/",
     },
     headers: {
-      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;",
-      'Access-Control-Allow-Origin': '*'
+      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
     },
     port: 8081,
     historyApiFallback: true,

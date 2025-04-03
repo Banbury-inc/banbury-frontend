@@ -1,10 +1,23 @@
-import si from '../../dependency/systeminformation/lib'
 import axios from 'axios';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { DateTime } from 'luxon';
 import { CONFIG } from '../config';
+import si from 'systeminformation';
+
+// Disable temperature monitoring to avoid the osx-temperature-sensor dependency
+process.env.SYSTEMINFORMATION_DISABLE_TEMPERATURE = 'true';
+
+// Helper function to safely call systeminformation methods
+async function safeSystemInfo<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.warn('System information not available:', error);
+    return fallback;
+  }
+}
 
 interface CPUPerformance {
   manufacturer: string;
@@ -25,21 +38,61 @@ export function current_time(): string {
 }
 
 export async function system_info(): Promise<string> {
-  return JSON.stringify(await si.system());
+  const fallbackSystemData = {
+    manufacturer: 'Unknown',
+    model: 'Unknown',
+    version: 'Unknown',
+    serial: 'Unknown',
+    uuid: 'Unknown',
+    sku: 'Unknown',
+    virtual: false
+  };
+  
+  return JSON.stringify(await safeSystemInfo(() => si.system(), fallbackSystemData));
 }
 
 export async function device_manufacturer(): Promise<string> {
-  const systemData = await si.system();
+  const fallbackSystemData = {
+    manufacturer: 'Unknown',
+    model: 'Unknown',
+    version: 'Unknown',
+    serial: 'Unknown',
+    uuid: 'Unknown',
+    sku: 'Unknown',
+    virtual: false
+  };
+  
+  const systemData = await safeSystemInfo(() => si.system(), fallbackSystemData);
   return systemData.manufacturer || 'Unknown';
 }
 
 export async function device_model(): Promise<string> {
-  const systemData = await si.system();
+  const fallbackSystemData = {
+    manufacturer: 'Unknown',
+    model: 'Unknown',
+    version: 'Unknown',
+    serial: 'Unknown',
+    uuid: 'Unknown',
+    sku: 'Unknown',
+    virtual: false
+  };
+  
+  const systemData = await safeSystemInfo(() => si.system(), fallbackSystemData);
   return systemData.model || 'Unknown';
 }
 
 export async function device_version(): Promise<string> {
-  const systemData = await si.system();
+  const fallbackSystemData = {
+    manufacturer: 'Unknown',
+    model: 'Unknown',
+    version: 'Unknown',
+    serial: 'Unknown',
+    uuid: 'Unknown',
+    sku: 'Unknown',
+    virtual: false
+  };
+  
+  const systemData = await safeSystemInfo(() => si.system(), fallbackSystemData);
   return systemData.version || 'Unknown';
 }
 
@@ -82,21 +135,43 @@ export async function storage_capacity(): Promise<number> {
 }
 
 export async function cpu_info(): Promise<CPUPerformance> {
-  try {
-    const cpuData = await si.cpu();
-    const cpuPerformance: CPUPerformance = {
-      manufacturer: cpuData.manufacturer || 'Unknown',
-      brand: cpuData.brand || 'Unknown',
-      speed: cpuData.speed || 0,
-      cores: cpuData.cores || 0,
-      physicalCores: cpuData.physicalCores || 0,
-      processors: cpuData.processors || 0
-    };
-    return cpuPerformance;
-  } catch (error) {
-    console.error('Error retrieving CPU performance:', error);
-    throw error; // Rethrow error to handle externally
-  }
+  const fallbackCpuData = {
+    manufacturer: 'Unknown',
+    brand: 'Unknown',
+    vendor: 'Unknown',
+    family: 'Unknown',
+    model: 'Unknown',
+    stepping: 'Unknown',
+    revision: 'Unknown',
+    voltage: 'Unknown',
+    speed: 0,
+    speedMin: 0,
+    speedMax: 0,
+    governor: 'Unknown',
+    cores: 0,
+    physicalCores: 0,
+    processors: 0,
+    socket: 'Unknown',
+    flags: '',
+    virtualization: false,
+    cache: {
+      l1d: 0,
+      l1i: 0,
+      l2: 0,
+      l3: 0
+    }
+  };
+  
+  const cpuData = await safeSystemInfo(() => si.cpu(), fallbackCpuData);
+
+  return {
+    manufacturer: cpuData.manufacturer || 'Unknown',
+    brand: cpuData.brand || 'Unknown',
+    speed: cpuData.speed || 0,
+    cores: cpuData.cores || 0,
+    physicalCores: cpuData.physicalCores || 0,
+    processors: cpuData.processors || 0
+  };
 }
 
 export async function cpu_info_manufacturer(): Promise<string> {
@@ -131,41 +206,71 @@ export async function cpu_info_processors(): Promise<number> {
 }
 
 export async function cpu_usage(): Promise<number> {
-  try {
-    const cpuData = await si.currentLoad();
-    const cpuUsage = cpuData.currentLoad || 0;
-    return cpuUsage;
-  } catch (error) {
-    console.error('Error retrieving CPU usage:', error);
-    throw error; // Rethrow error to handle externally
-  }
+  const fallbackLoadData = {
+    avgLoad: 0,
+    currentLoad: 0,
+    currentLoadUser: 0,
+    currentLoadSystem: 0,
+    currentLoadNice: 0,
+    currentLoadIdle: 0,
+    currentLoadIrq: 0,
+    currentLoadSteal: 0,
+    currentLoadGuest: 0,
+    rawCurrentLoad: 0,
+    rawCurrentLoadUser: 0,
+    rawCurrentLoadSystem: 0,
+    rawCurrentLoadNice: 0,
+    rawCurrentLoadIdle: 0,
+    rawCurrentLoadIrq: 0,
+    rawCurrentLoadSteal: 0,
+    rawCurrentLoadGuest: 0,
+    cpus: []
+  };
+  
+  const cpuData = await safeSystemInfo(() => si.currentLoad(), fallbackLoadData);
+  return cpuData.currentLoad || 0;
 }
 
 export async function gpu_usage(): Promise<number> {
-  try {
-    const gpuData = await si.graphics();
-    const totalUtilization = gpuData.controllers.reduce((total, controller) => total + (controller.utilizationGpu || 0), 0);
-    return totalUtilization / gpuData.controllers.length;
-  } catch (error) {
-    console.error('Error retrieving GPU utilization:', error);
-    throw error; // Rethrow error to handle externally
+  const fallbackGraphicsData = {
+    controllers: [] as any[],
+    displays: []
+  };
+  
+  const gpuData = await safeSystemInfo(() => si.graphics(), fallbackGraphicsData);
+  if (!gpuData.controllers || gpuData.controllers.length === 0) {
+    return 0;
   }
+  const totalUtilization = gpuData.controllers.reduce((total, controller) => total + (controller.utilizationGpu || 0), 0);
+  return totalUtilization / gpuData.controllers.length;
 }
 
 export async function ram_usage(): Promise<number> {
-  try {
-    const memData = await si.mem();
-    const totalMemory = memData.total || 0;
-    const usedMemory = memData.used || 0;
-
-    const usagePercentage = (usedMemory / totalMemory) * 100;
-
-
-    return isNaN(usagePercentage) ? 0 : usagePercentage; // Handle NaN case
-  } catch (error) {
-    console.error('Error retrieving RAM usage:', error);
-    throw error; // Rethrow error to handle externally
-  }
+  const fallbackMemData = {
+    total: 0,
+    free: 0,
+    used: 0,
+    active: 0,
+    available: 0,
+    buffcache: 0,
+    buffers: 0,
+    cached: 0,
+    slab: 0,
+    slab_reclaimable: 0,
+    slab_unreclaimable: 0,
+    shared: 0,
+    swaptotal: 0,
+    swapused: 0,
+    swapfree: 0,
+    writeback: 0,
+    dirty: 0
+  };
+  
+  const memData = await safeSystemInfo(() => si.mem(), fallbackMemData);
+  const totalMemory = memData.total || 0;
+  const usedMemory = memData.used || 0;
+  const usagePercentage = totalMemory > 0 ? (usedMemory / totalMemory) * 100 : 0;
+  return isNaN(usagePercentage) ? 0 : usagePercentage;
 }
 export async function ram_total(): Promise<number> {
   try {
