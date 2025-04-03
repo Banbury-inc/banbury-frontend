@@ -23,7 +23,6 @@ interface TabProps {
   style?: React.CSSProperties;
   isNew?: boolean;
   isClosing?: boolean;
-  index: number;
 }
 
 interface TabsProps {
@@ -61,11 +60,11 @@ const DragPreview = ({ label }: { label: string }) => (
   </div>
 );
 
-export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, isClosing, index }: TabProps) => (
+export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, isClosing }: TabProps) => (
   <div
-    data-testid={`tab-${index}`}
     onClick={onClick}
     style={style}
+    data-testid={`tab-${label}`}
     className={`
       tab
       ${isNew ? 'animate-tab-enter opacity-0' : ''}
@@ -103,12 +102,11 @@ export const TabComponent = ({ label, isActive, onClick, onClose, style, isNew, 
     </Typography>
     {onClose && (
       <button
-        id={`tab-close-button-${index}`}
-        data-testid={`close-tab-button-${label}`}
         onClick={(e) => {
           e.stopPropagation();
           onClose();
         }}
+        id={`tab-close-button-${label}`}
         className={`
           rounded-sm
           hover:bg-white/10
@@ -361,32 +359,30 @@ export const Tabs: React.FC<TabsProps> = ({
           }
         `}
       </style>
-      {renderedTabs.map((tab, index) => (
+      {renderedTabs.map((tab) => (
         <div
           ref={el => tabRefs.current[tabs.indexOf(tab)] = el}
           key={tab.id}
           className="relative"
         >
           <TabComponent
-            data-testid={`tab-${tab.id}`}
             label={tab.label}
             isActive={activeTab === tab.id}
             onClick={() => onTabChange(tab.id)}
             onClose={() => handleTabClose(tab.id)}
             isNew={tab.id === newTabId}
             isClosing={tab.id === closingTabId}
-            index={index}
           />
         </div>
       ))}
       {onTabAdd && (
         <button
-          data-testid="new-tab-button"
           onClick={() => {
             if (onTabAdd) {
               onTabAdd();
             }
           }}
+          data-testid="new-tab-button"
           className="
             h-7
             mt-4

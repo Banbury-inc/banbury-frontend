@@ -240,6 +240,10 @@ test.describe('Files tests', () => {
     await expect(closeButton).toBeVisible({ timeout: 10000 });
     await closeButton.click();
     
+    // Wait for animation and verify tab was removed
+    await window.waitForTimeout(300); // Wait for animation to complete
+    const finalTabCount = await window.locator('[data-testid^="tab-"]').count();
+    expect(finalTabCount).toBe(initialTabCount);
   });
 
   test('account button is clickable and opens popover', async () => {
