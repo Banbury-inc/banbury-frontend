@@ -26,7 +26,7 @@ import Tooltip from '@mui/material/Tooltip';
 import os from 'os';
 import path from 'path';
 import banbury from '@banbury/core';
-import { connect } from '@banbury/core/src/device/connect';
+import { connect } from '@banbury/core/src/websocket/connect';
 import { detectFileChanges } from '@banbury/core/src/device/watchdog';
 import Shared from './Shared/Shared';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
@@ -151,6 +151,7 @@ export default function PermanentDrawerLeft() {
             setTasks,
             setTaskbox_expanded
           );
+          console.log("WebSocket connection established:", websocket);
           if (isSubscribed) {
             setSocket(websocket);
             detectFileChanges(username, bcloudDirectoryPath);

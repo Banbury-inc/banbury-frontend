@@ -1,4 +1,4 @@
-import { connect as deviceConnect } from '@banbury/core/dist/device/connect';
+import { connect as deviceConnect } from '@banbury/core/dist/websocket/connect';
 
 export const connect = async (
     username: string,
