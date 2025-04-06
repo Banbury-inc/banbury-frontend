@@ -1,7 +1,7 @@
 // This file is kept for backward compatibility
 // All functionality has been moved to separate files in the websocket directory
 
-export * from './websocket_connection';
+export * from './createWebsocketConnection';
 export * from './file_chunk_handler';
 export * from './time_calculator';
 export * from './error_handler';

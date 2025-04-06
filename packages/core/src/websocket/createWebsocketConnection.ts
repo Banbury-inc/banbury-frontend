@@ -10,11 +10,6 @@ import { download_request, handleFileSyncError, TaskInfo, FileSyncRequest, handl
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
-let connectionLock = false;
-let shutdownInProgress = false;
-let connectionAttemptTimestamp = 0;
-let reconnectTimer: NodeJS.Timeout | null = null;
-let heartbeatInterval: NodeJS.Timeout | null = null;
 
 // Update createWebSocketConnection
 export async function createWebSocketConnection(
@@ -26,45 +21,13 @@ export async function createWebSocketConnection(
   setTaskbox_expanded: (expanded: boolean) => void,
   callback: (socket: WebSocket) => void
 ): Promise<string> {
-  // Prevent multiple simultaneous connection attempts
-  if (connectionLock || shutdownInProgress) {
-    return 'locked';
-  }
-
-  // Set connection lock
-  connectionLock = true;
-  const lockTimeout = setTimeout(() => releaseConnectionLock(connectionLock, activeConnection, heartbeatInterval), RECONNECT_CONFIG.lockTimeout);
 
   try {
-    // Check circuit breaker and connection stability
-    if (!canAttemptConnection()) {
-      clearTimeout(lockTimeout);
-      await releaseConnectionLock(connectionLock, activeConnection, heartbeatInterval);
-      return 'circuit_open';
-    }
-
-    // Prevent rapid reconnection attempts
-    const now = Date.now();
-    if (now - connectionAttemptTimestamp < RECONNECT_CONFIG.initialDelay) {
-      clearTimeout(lockTimeout);
-      await releaseConnectionLock(connectionLock, activeConnection, heartbeatInterval);
-      return 'throttled';
-    }
-
-
-    connectionAttemptTimestamp = now;
 
     const WebSocketClient = typeof window !== 'undefined' ? WebSocket : require('ws');
     
     const url_ws = banbury.config.url_ws;
     const device_id = await get_device_id(username);
-    
-    if (!device_id || typeof device_id !== 'string') {
-      clearTimeout(lockTimeout);
-      await releaseConnectionLock(connectionLock, activeConnection, heartbeatInterval);
-      throw new Error('Failed to get valid device ID');
-    }
-    
     const cleanDeviceId = encodeURIComponent(String(device_id).replace(/\s+/g, ''));
     const entire_url_ws = `${url_ws}${cleanDeviceId}/`.replace(/([^:]\/)\/+/g, "$1");
 
@@ -80,23 +43,9 @@ export async function createWebSocketConnection(
 
     // Store as active connection
     activeConnection = socket;
-    
-    // Set connection timeout
-    const connectionTimeout = setTimeout(() => {
-      if (socket.readyState === WebSocket.CONNECTING) {
-        socket.close(1006, 'Connection timeout');
-        clearTimeout(lockTimeout);
-        releaseConnectionLock(connectionLock, activeConnection, heartbeatInterval);
-        connectionManager.recordConnectionAttempt(false);
-      }
-    }, RECONNECT_CONFIG.connectionTimeout);
 
-    // Update socket event handlers with error handling
     socket.onopen = function () {
       try {
-        clearTimeout(connectionTimeout);
-        clearTimeout(lockTimeout);
-        connectionLock = false;
         connectionManager.recordConnectionAttempt(true);
 
         const message = {
@@ -121,50 +70,18 @@ export async function createWebSocketConnection(
     };
 
     socket.onclose = function (event: CloseEvent) {
+      console.log('closing websocket')
       try {
-        clearTimeout(connectionTimeout);
-        clearTimeout(lockTimeout);
         
         if (activeConnection === socket) {
           activeConnection = null;
         }
 
-        if (heartbeatInterval) {
-          clearInterval(heartbeatInterval);
-          heartbeatInterval = null;
-        }
-
         // Record connection attempt result
         connectionManager.recordConnectionAttempt(event.wasClean);
 
-        // Handle different close scenarios
-        if (!shutdownInProgress) {
-          if (event.code === 1000 || event.code === 1001) {
-            // Normal closure - no reconnect
-          } else if (event.code === 1006 || event.code === 1015) {
-            // Abnormal closure - attempt reconnect with backoff
-            if (canAttemptConnection()) {
-              reconnectTimer = setTimeout(async () => {
-                // Check if we should attempt reconnection
-                await connectionManager.shouldAttemptConnection();
-                attemptReconnect(
-                  username,
-                  device_name,
-                  taskInfo,
-                  tasks,
-                  setTasks,
-                  setTaskbox_expanded,
-                  callback,
-                  createWebSocketConnection
-                );
-              }, RECONNECT_CONFIG.initialDelay * Math.pow(1.5, reconnectAttempt));
-            }
-          }
-        }
       } catch (error) {
         return error;
-      } finally {
-        connectionLock = false;
       }
     };
 
@@ -226,7 +143,6 @@ export async function createWebSocketConnection(
             }
           }
 
-          // Send sync completion acknowledgment
           try {
             socket.send(JSON.stringify({
               message_type: 'file_sync_complete',
@@ -270,9 +186,6 @@ export async function createWebSocketConnection(
             return error;
           }
         }
-
-        // Handle other message types...
-        // ... existing message handlers ...
       } catch (error) {
         recordFailure(error);
       }
@@ -280,23 +193,16 @@ export async function createWebSocketConnection(
 
     return 'connecting';
   } catch (error) {
-    clearTimeout(lockTimeout);
-    await releaseConnectionLock(connectionLock, activeConnection, heartbeatInterval);
     recordFailure(error);
     return 'connection_error';
   }
 }
 
-// Usage of the functions
-const device_name = os.hostname();
-const taskInfo: TaskInfo = {
-  task_name: 'download_file',
-  task_device: device_name,
-  task_status: 'in_progress',
-};
 
 export async function connect(
   username: string,
+  device_name: string,
+  taskInfo: TaskInfo,
   tasks: any[] | null,
   setTasks: (tasks: any[]) => void,
   setTaskbox_expanded: (expanded: boolean) => void

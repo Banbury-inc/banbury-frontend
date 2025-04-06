@@ -22,6 +22,7 @@ import { CircularProgress } from '@mui/material';
 import Skeleton from '@mui/material/Skeleton';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { styled } from '@mui/material/styles';
+import os from 'os';
 
 interface SearchResult {
   id: number;
@@ -179,6 +180,8 @@ export default function Friends() {
     const connectWebSocket = async () => {
       const socket = await handlers.devices.connect(
         username || '',
+        os.hostname(),
+        { task_name: 'connection', task_device: os.hostname(), task_status: 'pending' },
         [],
         () => { },
         () => { }

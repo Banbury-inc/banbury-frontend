@@ -1,10 +1,12 @@
-import { connect as deviceConnect } from '@banbury/core/dist/websocket/connect';
+import { connect as deviceConnect, TaskInfo } from '@banbury/core/dist/websocket/connect';
 
 export const connect = async (
     username: string,
-    devices: string[],
-    onMessage: () => void,
-    onClose: () => void
+    device_name: string,
+    taskInfo: TaskInfo,
+    tasks: any[],
+    setTasks: (tasks: any[]) => void,
+    setTaskbox_expanded: (expanded: boolean) => void
 ) => {
-    return deviceConnect(username, devices, onMessage, onClose);
+    return deviceConnect(username, device_name, taskInfo, tasks, setTasks, setTaskbox_expanded);
 }; 

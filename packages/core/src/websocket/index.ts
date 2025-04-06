@@ -7,7 +7,7 @@ export * from './connection_cleanup';
 export * from './circuit_breaker';
 export * from './reconnection';
 export * from './file_transfer';
-export * from './websocket_connection';
+export * from './createWebsocketConnection';
 
 // Re-export the main connect function for backward compatibility
-export { connect } from './websocket_connection';
+export { connect } from './createWebsocketConnection';

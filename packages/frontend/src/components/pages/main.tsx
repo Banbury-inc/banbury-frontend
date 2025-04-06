@@ -147,6 +147,8 @@ export default function PermanentDrawerLeft() {
         if (username && isSubscribed) { // Only connect if we have a username
           const websocket = await connect(
             username,
+            os.hostname(), // device_name
+            { task_name: 'connection', task_device: os.hostname(), task_status: 'pending' }, // taskInfo
             tasks || [],
             setTasks,
             setTaskbox_expanded
@@ -169,7 +171,7 @@ export default function PermanentDrawerLeft() {
     return () => {
       isSubscribed = false; // Cleanup to prevent setting state after unmount
     };
-  }, [username, setSocket, setTasks, setTaskbox_expanded]); // Add all dependencies
+  }, [username]); // Add all dependencies
 
   useEffect(() => {
     const downloadUpdateInterval = setInterval(() => {
