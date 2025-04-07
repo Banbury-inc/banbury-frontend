@@ -1,4 +1,4 @@
-import { resetAccumulatedData } from './file_chunk_handler';
+import { resetAccumulatedData } from './files/file_chunk_handler';
 
 // Circuit breaker configuration
 export const CIRCUIT_BREAKER_CONFIG = {

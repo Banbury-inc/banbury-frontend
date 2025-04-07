@@ -1,12 +1,12 @@
-import os from 'os';
 import { CONFIG } from '../config';
 import { get_device_id } from '../device/get_device_id';
 import banbury from '..';
 import { ConnectionManager } from './connection_manager';
-import { WS_OPTIONS, RECONNECT_CONFIG, cleanupExistingConnection, releaseConnectionLock } from './connection_cleanup';
-import { canAttemptConnection, recordFailure } from './circuit_breaker';
-import { attemptReconnect, reconnectAttempt, reconnectTimeout } from './reconnection';
-import { download_request, handleFileSyncError, TaskInfo, FileSyncRequest, handleTransferError } from './file_transfer';
+import { WS_OPTIONS, RECONNECT_CONFIG } from './connection_cleanup';
+import { recordFailure } from './circuit_breaker';
+import { download_request, handleFileSyncError, TaskInfo, FileSyncRequest, handleTransferError } from './files/file_transfer';
+import { handleFileRequest } from './files/file_sender';
+import { handleFileTransferMessage } from './files/file_transfer_handler';
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
@@ -91,110 +91,141 @@ export async function createWebSocketConnection(
 
     socket.onmessage = async function (event: MessageEvent) {
       try {
-        const data = JSON.parse(event.data);
-
-        console.log('Received message:', data);
-
-        // Handle pong messages for heartbeat
-        if (data.type === 'pong') {
+        // Handle binary data (file chunks)
+        if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+          console.log('Received binary data, passing to file transfer handler...');
+          await handleFileTransferMessage(event, socket);
           return;
         }
 
-        if (data.request_type === 'file_request') {
-          console.log('File request received:', data);
-          return;
-        }
+        // Handle text messages
+        if (typeof event.data === 'string') {
+          try {
+            const data = JSON.parse(event.data);
+            
+            // Handle file transfer related messages
+            if (data.message_type && (
+              data.message_type.startsWith('file_transfer_') || 
+              data.message_type === 'join_transfer_room' ||
+              data.message_type === 'transfer_room_joined'
+            )) {
+              console.log('Received file transfer message:', data.message_type);
+              await handleFileTransferMessage(event, socket);
+              return;
+            }
 
+            // Handle pong messages for heartbeat
+            if (data.type === 'pong') {
+              return;
+            }
 
-        if (data.request_type === 'device_info') {
-          const device_info = await banbury.device.getDeviceInfo();
-          const message = {
-            message: `device_info_response`,
-            username: username,
-            sending_device_name: device_name,
-            requesting_device_name: data.requesting_device_name,
-            device_info: device_info,
-          };
-          socket.send(JSON.stringify(message));
-        }
+            // Handle file requests
+            if (data.request_type === 'file_request') {
+              console.log('File request received:', data);
+              await handleFileRequest(data, socket, tasks, setTasks, setTaskbox_expanded);
+              return;
+            }
 
-        // Handle file sync request
-        if (data.message === 'File sync request') {
-          const syncRequest = data as FileSyncRequest;
+            // Handle device info requests
+            if (data.request_type === 'device_info') {
+              const device_info = await banbury.device.getDeviceInfo();
+              const message = {
+                message: 'device_info_response',
+                username: username,
+                sending_device_name: device_name,
+                requesting_device_name: data.requesting_device_name,
+                device_info: device_info,
+              };
+              socket.send(JSON.stringify(message));
+              return;
+            }
 
-          if (!syncRequest.download_queue || !Array.isArray(syncRequest.download_queue)) {
-            return;
-          }
+            // Handle file sync requests
+            if (data.message === 'File sync request') {
+              const syncRequest = data as FileSyncRequest;
 
-          // Process each file in the download queue
-          for (const fileInfo of syncRequest.download_queue) {
-            try {
-              await download_request(
-                username,
-                fileInfo.file_name,
-                fileInfo.file_path,
-                [fileInfo],
-                socket,
-                {
-                  task_name: `Sync ${fileInfo.file_name}`,
-                  task_device: device_name,
-                  task_status: 'pending',
-                  fileInfo: [{
-                    file_name: fileInfo.file_name,
-                    file_size: fileInfo.file_size,
-                    kind: fileInfo.kind
-                  }]
+              if (!syncRequest.download_queue || !Array.isArray(syncRequest.download_queue)) {
+                console.error('Invalid download queue in sync request');
+                return;
+              }
+
+              console.log('Processing file sync request with queue:', syncRequest.download_queue);
+
+              // Process each file in the download queue
+              for (const fileInfo of syncRequest.download_queue) {
+                try {
+                  await download_request(
+                    username,
+                    fileInfo.file_name,
+                    fileInfo.file_path,
+                    [fileInfo],
+                    socket,
+                    {
+                      task_name: `Sync ${fileInfo.file_name}`,
+                      task_device: device_name,
+                      task_status: 'pending',
+                      fileInfo: [{
+                        file_name: fileInfo.file_name,
+                        file_size: fileInfo.file_size,
+                        kind: fileInfo.kind
+                      }]
+                    }
+                  );
+                } catch (error) {
+                  handleFileSyncError(error, fileInfo, tasks, setTasks, setTaskbox_expanded);
                 }
-              );
-            } catch (error) {
-              handleFileSyncError(error, fileInfo, tasks, setTasks, setTaskbox_expanded);
+              }
+
+              socket.send(JSON.stringify({
+                message_type: 'file_sync_complete',
+                status: 'success',
+                timestamp: Date.now()
+              }));
             }
-          }
 
-          try {
-            socket.send(JSON.stringify({
-              message_type: 'file_sync_complete',
-              status: 'success',
-              timestamp: Date.now()
-            }));
-          } catch (error) {
-            return error
-          }
-        } else if (data.type === "file_sent_successfully" || data.message === "File sent successfully") {
-          try {
+            // Handle file sent successfully messages
+            if (data.type === "file_sent_successfully" || data.message === "File sent successfully") {
+              try {
+                console.log('File sent successfully:', data.file_name);
+                
+                // Send completion confirmation
+                const final_message = {
+                  message_type: 'file_transaction_complete',
+                  username: username,
+                  requesting_device_name: device_name,
+                  sending_device_name: data.sending_device_name,
+                  file_name: data.file_name,
+                  file_path: data.file_path
+                };
+                socket.send(JSON.stringify(final_message));
 
-            // Send completion confirmation
-            const final_message = {
-              message_type: 'file_transaction_complete',
-              username: username,
-              requesting_device_name: device_name,
-              sending_device_name: data.sending_device_name,
-              file_name: data.file_name,
-              file_path: data.file_path
-            };
-            socket.send(JSON.stringify(final_message));
-
-            // Update task status if available
-            if (tasks && setTasks) {
-              const updatedTasks = tasks.map((task: any) =>
-                task.file_name === data.file_name
-                  ? { ...task, status: 'complete' }
-                  : task
-              );
-              setTasks(updatedTasks);
+                // Update task status if available
+                if (tasks && setTasks) {
+                  const updatedTasks = tasks.map((task: any) =>
+                    task.file_name === data.file_name
+                      ? { ...task, status: 'complete' }
+                      : task
+                  );
+                  setTasks(updatedTasks);
+                }
+              } catch (error) {
+                handleTransferError(
+                  'save_error',
+                  data.file_name,
+                  tasks,
+                  setTasks,
+                  setTaskbox_expanded
+                );
+              }
             }
+
           } catch (error) {
-            handleTransferError(
-              'save_error',
-              data.file_name,
-              tasks,
-              setTasks,
-              setTaskbox_expanded
-            );
-            return error;
+            console.error('Error processing message:', error);
+            recordFailure(error);
           }
         }
       } catch (error) {
+        console.error('Error in message handler:', error);
         recordFailure(error);
       }
     };
