@@ -93,10 +93,18 @@ export async function createWebSocketConnection(
       try {
         const data = JSON.parse(event.data);
 
+        console.log('Received message:', data);
+
         // Handle pong messages for heartbeat
         if (data.type === 'pong') {
           return;
         }
+
+        if (data.request_type === 'file_request') {
+          console.log('File request received:', data);
+          return;
+        }
+
 
         if (data.request_type === 'device_info') {
           const device_info = await banbury.device.getDeviceInfo();

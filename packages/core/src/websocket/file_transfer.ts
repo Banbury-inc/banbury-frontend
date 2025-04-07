@@ -2,7 +2,6 @@ import os from 'os';
 import { get_device_id } from '../device/get_device_id';
 import { addDownloadsInfo } from '../device/add_downloads_info';
 import { addUploadsInfo } from '../device/add_uploads_info';
-import { handleTransferError } from './error_handler';
 
 // Add a map to track total bytes uploaded for each file
 const fileUploadProgress = new Map<string, number>();
@@ -10,7 +9,7 @@ const fileUploadProgress = new Map<string, number>();
 // Function to send a download request using the provided socket
 export async function download_request(username: string, file_name: string, file_path: string, fileInfo: any, socket: WebSocket, taskInfo: TaskInfo) {
 
-  console.log('download request:', file_name, file_path, fileInfo);
+  console.log('sending download request:', file_name, file_path, fileInfo);
 
   // Update taskInfo with the file information
   taskInfo.fileInfo = [{
@@ -33,6 +32,8 @@ export async function download_request(username: string, file_name: string, file
       transfer_room: transfer_room
     };
 
+    console.log('Joining transfer room:', transfer_room);
+
     socket.send(JSON.stringify(joinMessage));
 
     // Wait for confirmation that we've joined the room
@@ -44,8 +45,12 @@ export async function download_request(username: string, file_name: string, file
       }
     };
 
+    console.log('Waiting for transfer room confirmation...');
+
     socket.addEventListener('message', handleJoinConfirmation);
   });
+
+  console.log('Joined transfer room:', transfer_room);
 
   // Create download progress object
   const downloadInfo = {
@@ -62,6 +67,8 @@ export async function download_request(username: string, file_name: string, file
   // Add to downloads tracking
   addDownloadsInfo([downloadInfo]);
 
+  console.log('Download info added:', downloadInfo);
+
   // Now send the actual download request
   const message = {
     message_type: "download_request",
@@ -75,6 +82,9 @@ export async function download_request(username: string, file_name: string, file
     transfer_room: transfer_room
   };
 
+
+  console.log('socket:', socket);
+
   socket.send(JSON.stringify(message));
 }
 
@@ -82,6 +92,8 @@ export async function download_request(username: string, file_name: string, file
 export function updateDownloadProgress(fileInfo: any, bytesReceived: number) {
   const totalSize = fileInfo[0]?.file_size || 0;
   const progress = (bytesReceived / totalSize) * 100;
+
+  console.log('Updating download progress');
 
   // Update the downloads info with new progress
   addDownloadsInfo([{
