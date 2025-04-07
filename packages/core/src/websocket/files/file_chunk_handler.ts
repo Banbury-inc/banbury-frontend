@@ -22,7 +22,16 @@ export function handleReceivedFileChunk(data: ArrayBuffer, downloadDetails: {
       // Calculate total received bytes
       const totalReceived = accumulatedData.reduce((sum, chunk) => sum + chunk.length, 0);
 
-      console.log('download details:', downloadDetails);
+      console.log('========================================');
+      console.log('📊 DOWNLOAD PROGRESS UPDATE:');
+      console.log('----------------------------------------');
+      console.log(`   File: ${downloadDetails.filename || 'Unknown'}`);
+      console.log(`   Type: ${downloadDetails.fileType || 'Unknown'}`);
+      console.log(`   Chunk size: ${chunkBuffer.length} bytes`);
+      console.log(`   Total received: ${totalReceived} / ${downloadDetails.totalSize} bytes`);
+      console.log(`   Progress: ${(totalReceived / downloadDetails.totalSize * 100).toFixed(2)}%`);
+      console.log(`   Timestamp: ${new Date().toISOString()}`);
+      console.log('========================================');
 
       // Update download progress
       const downloadInfo = {
@@ -42,6 +51,7 @@ export function handleReceivedFileChunk(data: ArrayBuffer, downloadDetails: {
       addDownloadsInfo([downloadInfo]);
     }
   } catch (error) {
+    console.error('Error in handleReceivedFileChunk:', error);
     return error;
   }
 } 

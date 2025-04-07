@@ -25,6 +25,16 @@ class FileReceiver {
     }
   }
 
+  public async getFileSize(filePath: string): Promise<number> {
+    try {
+      const stats = await fs.promises.stat(filePath);
+      return stats.size;
+    } catch (error) {
+      console.error('Error getting file size:', error);
+      return 0;
+    }
+  }
+
   public handleFileStart(fileInfo: FileInfo): void {
     this.fileInfo = fileInfo;
     const savePath = path.join(this.downloadPath, fileInfo.file_name);
@@ -60,7 +70,16 @@ class FileReceiver {
     }
 
     try {
-      console.log('Received file chunk:' + chunk.length, 'bytes');
+      console.log('========================================');
+      console.log('📥 FILE CHUNK RECEIVED:');
+      console.log('----------------------------------------');
+      console.log(`   File: ${this.fileInfo.file_name}`);
+      console.log(`   Chunk size: ${chunk.length} bytes`);
+      console.log(`   Total received: ${this.receivedBytes + chunk.length} / ${this.fileInfo.file_size} bytes`);
+      console.log(`   Progress: ${((this.receivedBytes + chunk.length) / this.fileInfo.file_size * 100).toFixed(2)}%`);
+      console.log(`   Timestamp: ${new Date().toISOString()}`);
+      console.log('========================================');
+      
       // Write chunk to file
       this.fileStream.write(chunk);
       this.receivedBytes += chunk.length;
@@ -95,6 +114,7 @@ class FileReceiver {
       this.fileStream.end();
       
       const finalPath = path.join(this.downloadPath, this.fileInfo.file_name);
+
       
       // Verify file size
       const stats = fs.statSync(finalPath);
@@ -105,7 +125,8 @@ class FileReceiver {
       console.log('File download complete:', {
         fileName: this.fileInfo.file_name,
         savedTo: finalPath,
-        size: stats.size
+        size: stats.size,
+        finalPath: finalPath
       });
 
       this.cleanup();

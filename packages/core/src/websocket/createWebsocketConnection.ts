@@ -91,9 +91,16 @@ export async function createWebSocketConnection(
 
     socket.onmessage = async function (event: MessageEvent) {
       try {
+        console.log('event: ', event);
         // Handle binary data (file chunks)
         if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
-          console.log('Received binary data, passing to file transfer handler...');
+          console.log('----------------------------------------');
+          console.log('📦 Received binary chunk:');
+          console.log(`   Size: ${event.data instanceof ArrayBuffer ? event.data.byteLength : event.data.size} bytes`);
+          console.log(`   Type: ${event.data instanceof ArrayBuffer ? 'ArrayBuffer' : 'Blob'}`);
+          console.log('----------------------------------------');
+
+          // Pass to file transfer handler
           await handleFileTransferMessage(event, socket);
           return;
         }
@@ -102,41 +109,35 @@ export async function createWebSocketConnection(
         if (typeof event.data === 'string') {
           try {
             const data = JSON.parse(event.data);
+            console.log('Received message:', data);
             
             // Handle file transfer related messages
             if (data.message_type && (
               data.message_type.startsWith('file_transfer_') || 
-              data.message_type === 'join_transfer_room' ||
-              data.message_type === 'transfer_room_joined'
+              data.type === 'transfer_room_joined' ||
+              data.message_type === 'join_transfer_room'
             )) {
-              console.log('Received file transfer message:', data.message_type);
+              console.log('📨 Received file transfer message:', data.message_type || data.type);
               await handleFileTransferMessage(event, socket);
-              return;
-            }
-
-            // Handle pong messages for heartbeat
-            if (data.type === 'pong') {
               return;
             }
 
             // Handle file requests
             if (data.request_type === 'file_request') {
-              console.log('File request received:', data);
+              console.log('🔄 File request received:', data);
               await handleFileRequest(data, socket, tasks, setTasks, setTaskbox_expanded);
               return;
             }
 
-            // Handle device info requests
-            if (data.request_type === 'device_info') {
-              const device_info = await banbury.device.getDeviceInfo();
-              const message = {
-                message: 'device_info_response',
-                username: username,
-                sending_device_name: device_name,
-                requesting_device_name: data.requesting_device_name,
-                device_info: device_info,
-              };
-              socket.send(JSON.stringify(message));
+            // Handle transfer room joined confirmation
+            if (data.type === 'transfer_room_joined') {
+              console.log('🔗 Joined transfer room:', data.transfer_room);
+              return;
+            }
+
+            // Handle chunk received acknowledgments
+            if (data.message_type === 'chunk_received') {
+              console.log('✓ Chunk received acknowledgment:', data.size, 'bytes');
               return;
             }
 
@@ -145,11 +146,11 @@ export async function createWebSocketConnection(
               const syncRequest = data as FileSyncRequest;
 
               if (!syncRequest.download_queue || !Array.isArray(syncRequest.download_queue)) {
-                console.error('Invalid download queue in sync request');
+                console.error('❌ Invalid download queue in sync request');
                 return;
               }
 
-              console.log('Processing file sync request with queue:', syncRequest.download_queue);
+              console.log('🔄 Processing file sync request with queue:', syncRequest.download_queue);
 
               // Process each file in the download queue
               for (const fileInfo of syncRequest.download_queue) {
@@ -186,7 +187,7 @@ export async function createWebSocketConnection(
             // Handle file sent successfully messages
             if (data.type === "file_sent_successfully" || data.message === "File sent successfully") {
               try {
-                console.log('File sent successfully:', data.file_name);
+                console.log('✅ File sent successfully:', data.file_name);
                 
                 // Send completion confirmation
                 const final_message = {
@@ -209,6 +210,7 @@ export async function createWebSocketConnection(
                   setTasks(updatedTasks);
                 }
               } catch (error) {
+                console.error('❌ Error handling file completion:', error);
                 handleTransferError(
                   'save_error',
                   data.file_name,
@@ -218,14 +220,17 @@ export async function createWebSocketConnection(
                 );
               }
             }
+          if (data.type === "file_transfer_complete") {
+            console.log('✅ File transfer completed:', data.file_name);
+          }
 
           } catch (error) {
-            console.error('Error processing message:', error);
+            console.error('❌ Error processing message:', error);
             recordFailure(error);
           }
         }
       } catch (error) {
-        console.error('Error in message handler:', error);
+        console.error('❌ Error in message handler:', error);
         recordFailure(error);
       }
     };
