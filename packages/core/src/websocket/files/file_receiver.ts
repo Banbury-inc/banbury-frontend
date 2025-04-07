@@ -81,21 +81,23 @@ class FileReceiver {
       console.log('========================================');
       
       // Write chunk to file
+      console.log('📝 Writing chunk to file stream...');
       this.fileStream.write(chunk);
       this.receivedBytes += chunk.length;
+      console.log(`✅ Chunk written successfully. Total bytes received: ${this.receivedBytes}`);
 
-      // Update download progress
-      if (this.fileInfo) {
-        // Update chunk handler for progress tracking
-        handleReceivedFileChunk(chunk, {
-          filename: this.fileInfo.file_name,
-          fileType: this.fileInfo.kind,
-          totalSize: this.fileInfo.file_size
-        });
+      // Create a new ArrayBuffer from the chunk data to ensure it's the right type
+      const arrayBuffer = new Uint8Array(chunk).buffer;
+      handleReceivedFileChunk(arrayBuffer, {
+        filename: this.fileInfo.file_name,
+        fileType: this.fileInfo.kind,
+        totalSize: this.fileInfo.file_size
+      });
+      console.log('✅ Progress tracking updated');
 
-        // Update overall download progress
-        updateDownloadProgress([this.fileInfo], this.receivedBytes);
-      }
+      // Update overall download progress
+      updateDownloadProgress([this.fileInfo], this.receivedBytes);
+      console.log('✅ Download progress updated');
 
     } catch (error) {
       console.error('Error handling file chunk:', error);
@@ -104,26 +106,32 @@ class FileReceiver {
     }
   }
 
-  public handleFileComplete(): string {
+  public async handleFileComplete(): Promise<string> {
     if (!this.fileStream || !this.fileInfo) {
       throw new Error('No active file transfer');
     }
 
-    try {
-      // Close the file stream
-      this.fileStream.end();
-      
-      const finalPath = path.join(this.downloadPath, this.fileInfo.file_name);
+    // Store non-null variables locally
+    const fileStream = this.fileStream;
+    const fileInfo = this.fileInfo;
 
-      
+    try {
+      await new Promise<void>((resolve, reject) => {
+        fileStream.end();
+        fileStream.on('finish', resolve);
+        fileStream.on('error', reject);
+      });
+
+      const finalPath = path.join(this.downloadPath, fileInfo.file_name);
+
       // Verify file size
       const stats = fs.statSync(finalPath);
-      if (stats.size !== this.fileInfo.file_size) {
+      if (stats.size !== fileInfo.file_size) {
         throw new Error('File size mismatch');
       }
 
       console.log('File download complete:', {
-        fileName: this.fileInfo.file_name,
+        fileName: fileInfo.file_name,
         savedTo: finalPath,
         size: stats.size,
         finalPath: finalPath

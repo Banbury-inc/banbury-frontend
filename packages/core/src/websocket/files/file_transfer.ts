@@ -8,7 +8,6 @@ const fileUploadProgress = new Map<string, number>();
 
 // Function to send a download request using the provided socket
 export async function download_request(username: string, file_name: string, file_path: string, fileInfo: any, socket: WebSocket, taskInfo: TaskInfo) {
-
   console.log('sending download request:', file_name, file_path, fileInfo);
 
   // Update taskInfo with the file information
@@ -18,7 +17,6 @@ export async function download_request(username: string, file_name: string, file
     kind: fileInfo[0]?.kind || 'Unknown'
   }];
 
-
   const requesting_device_id = await get_device_id(username);
   const sending_device_id = fileInfo[0]?.device_id;
 
@@ -26,7 +24,7 @@ export async function download_request(username: string, file_name: string, file
   const transfer_room = `transfer_${sending_device_id}_${requesting_device_id}`;
 
   // First join the transfer room
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
     const joinMessage = {
       message_type: "join_transfer_room",
       transfer_room: transfer_room
@@ -34,23 +32,31 @@ export async function download_request(username: string, file_name: string, file
 
     console.log('Joining transfer room:', transfer_room);
 
-    socket.send(JSON.stringify(joinMessage));
-
-    // Wait for confirmation that we've joined the room
+    let joinTimeout: NodeJS.Timeout;
+    
     const handleJoinConfirmation = (event: MessageEvent) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "transfer_room_joined" && data.transfer_room === transfer_room) {
-        socket.removeEventListener('message', handleJoinConfirmation);
-        resolve();
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "transfer_room_joined" && data.transfer_room === transfer_room) {
+          clearTimeout(joinTimeout);
+          socket.removeEventListener('message', handleJoinConfirmation);
+          console.log('Successfully joined transfer room:', transfer_room);
+          resolve();
+        }
+      } catch (error) {
+        console.error('Error handling join confirmation:', error);
       }
     };
 
-    console.log('Waiting for transfer room confirmation...');
+    // Set a timeout for joining the room
+    joinTimeout = setTimeout(() => {
+      socket.removeEventListener('message', handleJoinConfirmation);
+      reject(new Error('Timeout waiting for transfer room join confirmation'));
+    }, 30000); // 30 second timeout for joining
 
     socket.addEventListener('message', handleJoinConfirmation);
+    socket.send(JSON.stringify(joinMessage));
   });
-
-  console.log('Joined transfer room:', transfer_room);
 
   // Create download progress object
   const downloadInfo = {
@@ -63,11 +69,8 @@ export async function download_request(username: string, file_name: string, file
     timeRemaining: undefined
   };
 
-
   // Add to downloads tracking
   addDownloadsInfo([downloadInfo]);
-
-  console.log('Download info added:', downloadInfo);
 
   // Now send the actual download request
   const message = {
@@ -82,10 +85,10 @@ export async function download_request(username: string, file_name: string, file
     transfer_room: transfer_room
   };
 
-
-  console.log('socket:', socket);
-
   socket.send(JSON.stringify(message));
+
+  // Return the transfer room for tracking
+  return transfer_room;
 }
 
 // Add a new function to update download progress
@@ -132,4 +135,50 @@ export interface FileSyncRequest {
 }
 
 // Re-export the error handler functions
-export { handleTransferError, handleFileSyncError } from '../error_handler'; 
+export { handleTransferError, handleFileSyncError } from '../error_handler';
+
+// Add a function to leave a transfer room
+export async function leaveTransferRoom(socket: WebSocket, transfer_room: string): Promise<void> {
+  try {
+    console.log('========================================');
+    console.log('👋 REQUESTING TO LEAVE TRANSFER ROOM:', transfer_room);
+    console.log('----------------------------------------');
+    console.log(`   Time: ${new Date().toISOString()}`);
+    console.log('========================================');
+    
+    // Send leave room request
+    socket.send(JSON.stringify({
+      message_type: 'leave_transfer_room',
+      transfer_room: transfer_room,
+      timestamp: Date.now()
+    }));
+    
+    // Wait for confirmation (optional)
+    return new Promise((resolve) => {
+      const handleResponse = (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'left_transfer_room' && data.transfer_room === transfer_room) {
+            console.log(`✅ Confirmed leaving transfer room: ${transfer_room}`);
+            socket.removeEventListener('message', handleResponse);
+            resolve();
+          }
+        } catch (error) {
+          // Ignore non-JSON messages
+        }
+      };
+      
+      // Add listener for confirmation
+      socket.addEventListener('message', handleResponse);
+      
+      // Set timeout to resolve anyway after 5 seconds
+      setTimeout(() => {
+        socket.removeEventListener('message', handleResponse);
+        console.log(`⚠️ Timeout waiting for transfer room leave confirmation: ${transfer_room}`);
+        resolve();
+      }, 5000);
+    });
+  } catch (error) {
+    console.error('❌ Error leaving transfer room:', error);
+  }
+} 

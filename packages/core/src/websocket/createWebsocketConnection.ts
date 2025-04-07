@@ -41,6 +41,12 @@ export async function createWebSocketConnection(
           handshakeTimeout: RECONNECT_CONFIG.connectionTimeout
         });
 
+    // Configure binary type for browser WebSocket
+    if (typeof window !== 'undefined') {
+      socket.binaryType = 'arraybuffer';
+      console.log('WebSocket binary type set to:', socket.binaryType);
+    }
+
     // Store as active connection
     activeConnection = socket;
 
@@ -94,11 +100,13 @@ export async function createWebSocketConnection(
         console.log('event: ', event);
         // Handle binary data (file chunks)
         if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+          console.log('========================================');
+          console.log('📦 BINARY DATA RECEIVED');
           console.log('----------------------------------------');
-          console.log('📦 Received binary chunk:');
           console.log(`   Size: ${event.data instanceof ArrayBuffer ? event.data.byteLength : event.data.size} bytes`);
           console.log(`   Type: ${event.data instanceof ArrayBuffer ? 'ArrayBuffer' : 'Blob'}`);
-          console.log('----------------------------------------');
+          console.log(`   Timestamp: ${new Date().toISOString()}`);
+          console.log('========================================');
 
           // Pass to file transfer handler
           await handleFileTransferMessage(event, socket);
@@ -132,6 +140,15 @@ export async function createWebSocketConnection(
             // Handle transfer room joined confirmation
             if (data.type === 'transfer_room_joined') {
               console.log('🔗 Joined transfer room:', data.transfer_room);
+              return;
+            }
+
+            // Handle left transfer room confirmation
+            if (data.type === 'left_transfer_room') {
+              console.log('👋 LEFT TRANSFER ROOM:', data.transfer_room);
+              console.log('----------------------------------------');
+              console.log(`   Time: ${new Date().toISOString()}`);
+              console.log('----------------------------------------');
               return;
             }
 

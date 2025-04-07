@@ -56,8 +56,21 @@ export async function handleFileRequest(
       // Wait for a small delay to prevent overwhelming the connection
       await new Promise(resolve => setTimeout(resolve, 10));
       
-      console.log(`📦 Sending chunk: ${chunk.length} bytes`);
-      socket.send(chunk);
+      // Convert Node Buffer to ArrayBuffer
+      const arrayBuffer = chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
+      console.log(`📦 Sending chunk: ${arrayBuffer.byteLength} bytes as binary data`);
+      
+      try {
+        // Send binary data
+        socket.send(arrayBuffer);
+        console.log(`✅ Chunk sent successfully: ${arrayBuffer.byteLength} bytes`);
+        
+        // Wait for acknowledgment (optional)
+        await new Promise(resolve => setTimeout(resolve, 10));
+      } catch (error) {
+        console.error('❌ Error sending chunk:', error);
+        throw error;
+      }
     }
 
     // Send completion message
@@ -76,6 +89,24 @@ export async function handleFileRequest(
         task.file_name === file_name ? { ...task, status: 'complete' } : task
       );
       setTasks(updatedTasks);
+    }
+
+    // Leave transfer room after successful completion
+    if (transfer_room) {
+      console.log('Scheduling to leave transfer room after sending completion:', transfer_room);
+      setTimeout(() => {
+        console.log('========================================');
+        console.log('👋 LEAVING TRANSFER ROOM AFTER SENDING:', transfer_room);
+        console.log('----------------------------------------');
+        console.log(`   Time: ${new Date().toISOString()}`);
+        console.log('========================================');
+        
+        socket.send(JSON.stringify({
+          message_type: 'leave_transfer_room',
+          transfer_room: transfer_room,
+          timestamp: Date.now()
+        }));
+      }, 2000); // Give enough time for completion acknowledgment
     }
 
   } catch (error) {
