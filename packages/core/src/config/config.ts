@@ -38,9 +38,9 @@ export const config: Config = {
       //return 'http://3.84.158.138:8080';
       return 'http://www.api.dev.banbury.io';
     } else if (this.semi_local) {
-      return 'http://10.123.1.90:8080/';
+      return 'http://10.123.1.90:8080';
     } else {
-      return 'http://localhost:8080/';
+      return 'http://0.0.0.0:8080';
     }
   },
   get url_ws() {
@@ -50,12 +50,12 @@ export const config: Config = {
     } else if (this.dev) {
       // return 'http://54.197.4.251:8080';
       // return 'ws://3.84.158.138:8082/ws/live_data/';
-      return `ws://www.api.dev.banbury.io/ws/consumer/`;
+      return 'ws://www.api.dev.banbury.io/ws/consumer';
     }
     else if (this.semi_local) {
-      return `ws://10.123.1.90:8082/ws/consumer/`;
+      return 'ws://10.123.1.90:8082/ws/consumer';
     } else {
-      return `ws://0.0.0.0:8082/ws/consumer/`;
+      return 'ws://0.0.0.0:8082/ws/consumer/';
     }
   }
 }
