@@ -62,6 +62,7 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
           break;
 
         case 'file_transfer_start':
+        case 'start_file_transfer':
           fileReceiver.handleFileStart(data.file_info);
           break;
 

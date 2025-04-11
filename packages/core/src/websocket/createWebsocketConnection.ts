@@ -194,7 +194,8 @@ export async function createWebSocketConnection(
               if (data.message_type && (
                 data.message_type.startsWith('file_transfer_') || 
                 data.type === 'transfer_room_joined' ||
-                data.message_type === 'join_transfer_room'
+                data.message_type === 'join_transfer_room' ||
+                data.message_type === 'file_transfer_start'
               )) {
                 await handleFileTransferMessage(event, socket);
                 return;
@@ -203,11 +204,6 @@ export async function createWebSocketConnection(
               // Handle file requests
               if (data.request_type === 'file_request') {
                 await handleFileRequest(data, socket, tasks, setTasks);
-                return;
-              }
-
-              // Handle transfer room joined confirmation
-              if (data.type === 'transfer_room_joined') {
                 return;
               }
 
