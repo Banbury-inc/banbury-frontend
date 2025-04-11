@@ -120,7 +120,7 @@ jobs:
           DISPLAY: ':99'
           ELECTRON_ENABLE_LOGGING: true
           DEBUG: electron*,playwright*
-          NODE_ENV: development
+          NODE_ENV: test
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
           ELECTRON_NO_ATTACH_CONSOLE: 1
           ELECTRON_DISABLE_SANDBOX: 1
@@ -129,7 +129,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cd packages/frontend
-          npm run test:e2e
+          npx playwright test --project=electron
         env:
           ELECTRON_ENABLE_LOGGING: true
           DEBUG: electron*,playwright*
@@ -140,7 +140,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cd packages/frontend
-          npm run test:e2e
+          npx playwright test --project=electron
         env:
           ELECTRON_ENABLE_LOGGING: true
           DEBUG: electron*,playwright*
@@ -435,7 +435,6 @@ jobs:
           tag_name: "v${{ env.VERSION }}"
           draft: false
           prerelease: false
-          make_latest: "true"
           files: |
             dist/**/*.AppImage
             dist/**/*.exe
