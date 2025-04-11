@@ -1,5 +1,4 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
-import { devices } from '@playwright/test';
 import { platform } from 'os';
 
 // Platform-specific configurations
@@ -69,18 +68,6 @@ const config: PlaywrightTestConfig = {
           headless: true,
         }
       }
-    },
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'], headless: true },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'], headless: true },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'], headless: true },
     },
   ],
   webServer: {

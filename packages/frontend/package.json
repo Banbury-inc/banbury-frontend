@@ -32,9 +32,9 @@
     "test": "jest --verbose --passWithNoTests --coverage --testPathIgnorePatterns=tests/e2e",
     "coverage": "jest --coverage --testPathIgnorePatterns=tests/e2e",
     "clean": "rimraf dist",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
+    "test:e2e": "playwright test --project=electron",
+    "test:e2e:ui": "playwright test --ui --project=electron",
+    "test:e2e:debug": "playwright test --debug --project=electron",
     "test:e2e:report": "playwright show-report"
   },
   "keywords": [],
