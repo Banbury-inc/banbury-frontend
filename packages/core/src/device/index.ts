@@ -1,7 +1,7 @@
 
 
 export * from './deviceInfo'
-export * from './connect'
+export * from '../websocket/connect'
 export * from './scanFilesystem'
 export * from './declare_online'
 export * from './declare_offline'
@@ -21,7 +21,7 @@ export * from './fetchDeviceData'
 export * from './remove_file_from_sync'
 export * from './get_device_id'
 export * from './deviceInfo'
-export * from './connect'
+export * from '../websocket/connect'
 export * from './scanFilesystem'
 export * from './declare_online'
 export * from './declare_offline'

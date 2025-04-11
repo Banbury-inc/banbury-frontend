@@ -37,4 +37,5 @@ deviceCommand
     process.exit(0);
   });
 
+
 program.parse(); 

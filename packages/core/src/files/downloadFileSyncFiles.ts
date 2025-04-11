@@ -13,7 +13,6 @@ export async function downloadFileSyncFiles(
   },
   tasks: any[] | null,
   setTasks: any,
-  setTaskbox_expanded: any,
   websocket: WebSocket,
 ) {
 
@@ -58,8 +57,6 @@ export async function downloadFileSyncFiles(
       }
     }
 
-    setTaskbox_expanded(true);
-
     const file = download_queue.files[i];
 
     const file_name = file.file_name;
@@ -75,7 +72,7 @@ export async function downloadFileSyncFiles(
 
       // Attempt to download file from source device
       try {
-        const result = await downloadFile(username, [file_name], [source_device], file, download_task, tasks || [], setTasks, setTaskbox_expanded, websocket as unknown as WebSocket);
+        const result = await downloadFile(username, [file_name], [source_device], file, download_task, websocket as unknown as WebSocket);
 
         if (result === 'success') {
           downloaded_files.push(file_name);

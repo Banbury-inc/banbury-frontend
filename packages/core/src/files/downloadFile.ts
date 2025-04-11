@@ -1,43 +1,87 @@
 import banbury from "..";
 
-export function downloadFile(username: string, files: string[], devices: string[], fileInfo: any, taskInfo: any, tasks: any[], setTasks: any, setTaskbox_expanded: any, websocket: WebSocket): Promise<string> {
+export function downloadFile(username: string, files: string[], devices: string[], fileInfo: any, taskInfo: any, websocket: WebSocket): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (files.length === 0 || devices.length === 0) {
+    let currentTransferRoom: string | null = null;
+
+    // Validate inputs
+    if (!username || !files || files.length === 0) {
       reject('No file selected');
       return;
     }
 
-    try {
-      banbury.analytics.addFileRequest();
-    } catch (error) {
-      return error;
+    if (!devices || devices.length === 0) {
+      reject('No device selected');
+      return;
     }
 
-    // Create timeout ID that we can clear later
-    let timeoutId: NodeJS.Timeout;
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+      reject('WebSocket connection is not open');
+      return;
+    }
+
+    // Set up a flag to track if we've received any binary data
+    let receivedBinaryData = false;
+    let lastActivityTime = Date.now();
+    let heartbeatInterval: NodeJS.Timeout | null = null;
+
+    const cleanup = () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+      }
+      websocket.removeEventListener('message', messageHandler);
+      
+      // Leave the transfer room if we joined one
+      if (currentTransferRoom) {
+        websocket.send(JSON.stringify({
+          message_type: 'leave_transfer_room',
+          transfer_room: currentTransferRoom
+        }));
+        currentTransferRoom = null;
+      }
+    };
+    
+    // Set up a heartbeat to check for activity
+    heartbeatInterval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastActivity = now - lastActivityTime;
+      
+      // If we've received binary data and there's been no activity for 30 seconds, consider it stalled
+      if (receivedBinaryData && timeSinceLastActivity > 30000) {
+        console.warn('Download appears stalled - no activity for 30 seconds');
+      }
+    }, 10000); // Check every 10 seconds
 
     const messageHandler = (event: MessageEvent) => {
+      lastActivityTime = Date.now();
+      
+      if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+        receivedBinaryData = true;
+      }
+      
       if (typeof event.data === 'string') {
         try {
           const data = JSON.parse(event.data);
 
-          // Check for success conditions
+          if (data.message_type === 'file_transfer_complete_ack' && data.file_name === files[0]) {
+            // Don't resolve yet, wait for full transaction completion
+          }
+
           if (data.message === 'File transaction complete' && data.file_name === files[0]) {
-            clearTimeout(timeoutId); // Clear the timeout
             try {
               banbury.analytics.addFileRequestSuccess();
             } catch (error) {
               console.error('Error adding file request success:', error);
             }
-            websocket.removeEventListener('message', messageHandler);
+            cleanup();
             resolve('success');
           }
 
-          // Check for error conditions
-          if (['File not found', 'Device offline', 'Permission denied', 'Transfer failed'].includes(data.message)) {
-            clearTimeout(timeoutId); // Clear the timeout
-            websocket.removeEventListener('message', messageHandler);
-            reject(data.message);
+          if (['File not found', 'Device offline', 'Permission denied', 'Transfer failed', 'file_transfer_error'].includes(data.message_type || data.message)) {
+            console.error('Download error message received:', data);
+            cleanup();
+            reject(data.message || data.error || 'File transfer failed');
           }
         } catch (error) {
           console.error('Error parsing message:', error);
@@ -45,16 +89,17 @@ export function downloadFile(username: string, files: string[], devices: string[
       }
     };
 
-    // Add the message handler
     websocket.addEventListener('message', messageHandler);
 
-    banbury.device.download_request(username, files[0], files[0], fileInfo, websocket, taskInfo);
-
-    // Store the timeout ID so we can clear it
-    timeoutId = setTimeout(() => {
-      websocket.removeEventListener('message', messageHandler);
-      reject('Download request timed out');
-    }, 30000);
+    banbury.device.download_request(username, files[0], files[0], fileInfo, websocket, taskInfo)
+      .then(room => {
+        currentTransferRoom = room;
+      })
+      .catch(error => {
+        console.error('Error sending download request:', error);
+        cleanup();
+        reject('Failed to send download request');
+      });
   });
 }
 

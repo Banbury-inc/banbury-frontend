@@ -26,7 +26,7 @@ import Tooltip from '@mui/material/Tooltip';
 import os from 'os';
 import path from 'path';
 import banbury from '@banbury/core';
-import { connect } from '@banbury/core/src/device/connect';
+import { connect } from '@banbury/core/src/websocket/connect';
 import { detectFileChanges } from '@banbury/core/src/device/watchdog';
 import Shared from './Shared/Shared';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
@@ -99,7 +99,7 @@ interface TabState {
 export default function PermanentDrawerLeft() {
   const location = useLocation();
   const theme = useTheme();
-  const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, setSocket } = useAuth();
+  const { username, redirect_to_login, tasks, setTasks, setSocket } = useAuth();
   const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'Files');
   const [backHistory, setBackHistory] = useState<string[]>([]);
   const [forwardHistory, setForwardHistory] = useState<string[]>([]);
@@ -147,9 +147,9 @@ export default function PermanentDrawerLeft() {
         if (username && isSubscribed) { // Only connect if we have a username
           const websocket = await connect(
             username,
+            os.hostname(), // device_name
             tasks || [],
             setTasks,
-            setTaskbox_expanded
           );
           if (isSubscribed) {
             setSocket(websocket);
@@ -168,7 +168,7 @@ export default function PermanentDrawerLeft() {
     return () => {
       isSubscribed = false; // Cleanup to prevent setting state after unmount
     };
-  }, [username, setSocket, setTasks, setTaskbox_expanded]); // Add all dependencies
+  }, [username]); // Add all dependencies
 
   useEffect(() => {
     const downloadUpdateInterval = setInterval(() => {

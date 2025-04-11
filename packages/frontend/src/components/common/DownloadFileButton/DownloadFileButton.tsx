@@ -36,6 +36,12 @@ export default function DownloadFileButton({
       return;
     }
 
+    // Check if websocket is connected
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+      showAlert('Connection Error', ['Not connected to server. Please try again.'], 'error');
+      return;
+    }
+
     try {
       // Initialize download progress for selected files
       const initialDownloads = selectedFileInfo.map(fileInfo => ({
@@ -55,9 +61,9 @@ export default function DownloadFileButton({
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      // Add timeout promise
+      // Add timeout promise with a much longer timeout (5 minutes instead of 30 seconds)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Download request timed out')), 30000); // 30 second timeout
+        setTimeout(() => reject(new Error('Download request timed out after 5 minutes')), 300000); // 5 minute timeout
       });
 
       // Race between the download and timeout
@@ -68,9 +74,6 @@ export default function DownloadFileButton({
           selectedDeviceNames,
           selectedFileInfo,
           taskInfo,
-          tasks,
-          setTasks,
-          setTaskbox_expanded,
           websocket
         ),
         timeoutPromise
@@ -87,21 +90,36 @@ export default function DownloadFileButton({
       setSelected([]);
     } catch (error) {
       console.error('Download error:', error);
-      showAlert('Download failed. Please try again.', ['error']);
+      
+      // More specific error handling
+      if (error instanceof Error) {
+        if (error.message.includes('timed out')) {
+          showAlert('Download timed out', ['The download request timed out. Please try again.'], 'error');
+        } else {
+          showAlert('Download failed', [`Error: ${error.message}`], 'error');
+        }
+      } else {
+        showAlert('Download failed', ['An unknown error occurred. Please try again.'], 'error');
+      }
+      
       setSelected([]);
     }
   };
 
+  // Disable button if websocket is not connected
+  const isDisabled = !websocket || websocket.readyState !== WebSocket.OPEN || selectedFileNames.length === 0;
+
   return (
-    <Tooltip title="Download">
-      <Button
-        data-testid="download-button"
-        onClick={handleDownloadClick}
-        //   disabled={selectedFileNames.length === 0}
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-      >
-        <DownloadIcon fontSize="inherit" />
-      </Button>
+    <Tooltip title={isDisabled ? (selectedFileNames.length === 0 ? "Select files to download" : "Not connected") : "Download"}>
+      <span>
+        <Button
+          data-testid="download-button"
+          onClick={handleDownloadClick}
+          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+        >
+          <DownloadIcon fontSize="inherit" />
+        </Button>
+      </span>
     </Tooltip>
   );
 }

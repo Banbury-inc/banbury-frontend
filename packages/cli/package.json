@@ -20,7 +20,7 @@
         "@banbury/core": "3.4.22",
         "commander": "^13.1.0",
         "inquirer": "^9.2.14",
-        "chalk": "^5.3.0"
+        "chalk": "^4.1.2"
     },
     "devDependencies": {
         "@types/inquirer": "^9.0.7",
