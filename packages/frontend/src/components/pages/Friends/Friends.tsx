@@ -182,8 +182,6 @@ export default function Friends() {
         username || '',
         os.hostname(),
         { task_name: 'connection', task_device: os.hostname(), task_status: 'pending' },
-        [],
-        () => { },
         () => { }
       );
 

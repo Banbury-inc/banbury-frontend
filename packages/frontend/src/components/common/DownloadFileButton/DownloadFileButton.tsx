@@ -74,9 +74,6 @@ export default function DownloadFileButton({
           selectedDeviceNames,
           selectedFileInfo,
           taskInfo,
-          tasks,
-          setTasks,
-          setTaskbox_expanded,
           websocket
         ),
         timeoutPromise

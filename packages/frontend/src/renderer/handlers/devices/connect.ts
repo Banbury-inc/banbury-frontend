@@ -4,9 +4,8 @@ export const connect = async (
     username: string,
     device_name: string,
     taskInfo: TaskInfo,
-    tasks: any[],
     setTasks: (tasks: any[]) => void,
-    setTaskbox_expanded: (expanded: boolean) => void
 ) => {
-    return deviceConnect(username, device_name, taskInfo, tasks, setTasks, setTaskbox_expanded);
+    // Use taskInfo as the third parameter since that's what the TypeScript type expects
+    return deviceConnect(username, device_name, taskInfo as any, setTasks);
 }; 

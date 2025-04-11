@@ -304,9 +304,6 @@ export default function Files() {
           selectedDeviceNames,
           selectedFileInfo,
           taskInfo,
-          tasks || [],
-          setTasks,
-          setTaskbox_expanded,
           websocket as unknown as WebSocket,
         );
         if (response === 'No file selected') {
