@@ -46,10 +46,10 @@ export default function SignUp() {
     const data = new FormData(event.currentTarget);
     try {
       const result = await handlers.users.registerUser(
-        data.get('firstName') as string,
-        data.get('lastName') as string,
         data.get('username') as string,
         data.get('password') as string,
+        data.get('firstName') as string,
+        data.get('lastName') as string,
         data.get('phone_number') as string,
         data.get('email') as string,
         data.get('picture') as string
