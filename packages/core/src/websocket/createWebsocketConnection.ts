@@ -4,7 +4,7 @@ import banbury from '..';
 import { ConnectionManager } from './connection_manager';
 import { WS_OPTIONS, RECONNECT_CONFIG } from './connection_cleanup';
 import { recordFailure } from './circuit_breaker';
-import { download_request, handleFileSyncError, TaskInfo, FileSyncRequest, handleTransferError } from './files/file_transfer';
+import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/file_transfer';
 import { handleFileRequest } from './files/file_sender';
 import { handleFileTransferMessage } from './files/file_transfer_handler';
 
@@ -26,10 +26,8 @@ const FALLBACK_ENDPOINTS = [
 export async function createWebSocketConnection(
   username: string,
   device_name: string,
-  taskInfo: TaskInfo,
   tasks: any[],
   setTasks: (tasks: any[]) => void,
-  setTaskbox_expanded: (expanded: boolean) => void,
   callback: (socket: WebSocket) => void
 ): Promise<string> {
   let retryCount = 0;
@@ -44,16 +42,13 @@ export async function createWebSocketConnection(
       
       // Apply fallback transformations if needed
       if (fallbackIndex >= 0 && fallbackIndex < FALLBACK_ENDPOINTS.length) {
-        const originalUrl = url_ws;
         url_ws = FALLBACK_ENDPOINTS[fallbackIndex](url_ws);
-        console.log(`Using fallback endpoint ${fallbackIndex + 1}/${FALLBACK_ENDPOINTS.length}: ${originalUrl} -> ${url_ws}`);
       }
       
       const device_id = await get_device_id(username);
       const cleanDeviceId = encodeURIComponent(String(device_id).replace(/\s+/g, ''));
       const entire_url_ws = `${url_ws}${cleanDeviceId}/`.replace(/([^:]\/)\/+/g, "$1");
 
-      console.log(`Attempting connection to: ${entire_url_ws} (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}, fallback: ${fallbackIndex + 1})`);
 
       // Check if we should attempt connection using ConnectionManager
       const connectionManager = ConnectionManager.getInstance();
@@ -86,7 +81,6 @@ export async function createWebSocketConnection(
       // Configure binary type for browser WebSocket
       if (typeof window !== 'undefined') {
         socket.binaryType = 'arraybuffer';
-        console.log('WebSocket binary type set to:', socket.binaryType);
       }
 
       // Store as active connection
@@ -105,7 +99,6 @@ export async function createWebSocketConnection(
           // Clear the connection timeout
           clearTimeout(connectionTimeoutId);
           
-          console.log(`WebSocket connection established successfully after ${retryCount + 1} attempt(s)`);
           connectionManager.recordConnectionAttempt(true);
 
           const message = {
@@ -130,7 +123,6 @@ export async function createWebSocketConnection(
       };
 
       socket.onclose = function (event: CloseEvent) {
-        console.log('closing websocket')
         try {
           // Clear the connection timeout if it's still active
           clearTimeout(connectionTimeoutId);
@@ -184,16 +176,8 @@ export async function createWebSocketConnection(
       
       socket.onmessage = async function (event: MessageEvent) {
         try {
-          console.log('event: ', event);
           // Handle binary data (file chunks)
           if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
-            console.log('========================================');
-            console.log('📦 BINARY DATA RECEIVED');
-            console.log('----------------------------------------');
-            console.log(`   Size: ${event.data instanceof ArrayBuffer ? event.data.byteLength : event.data.size} bytes`);
-            console.log(`   Type: ${event.data instanceof ArrayBuffer ? 'ArrayBuffer' : 'Blob'}`);
-            console.log(`   Timestamp: ${new Date().toISOString()}`);
-            console.log('========================================');
 
             // Pass to file transfer handler
             await handleFileTransferMessage(event, socket);
@@ -204,7 +188,6 @@ export async function createWebSocketConnection(
           if (typeof event.data === 'string') {
             try {
               const data = JSON.parse(event.data);
-              console.log('Received message:', data);
               
               // Handle file transfer related messages
               if (data.message_type && (
@@ -212,36 +195,28 @@ export async function createWebSocketConnection(
                 data.type === 'transfer_room_joined' ||
                 data.message_type === 'join_transfer_room'
               )) {
-                console.log('📨 Received file transfer message:', data.message_type || data.type);
                 await handleFileTransferMessage(event, socket);
                 return;
               }
 
               // Handle file requests
               if (data.request_type === 'file_request') {
-                console.log('🔄 File request received:', data);
-                await handleFileRequest(data, socket, tasks, setTasks, setTaskbox_expanded);
+                await handleFileRequest(data, socket, tasks, setTasks);
                 return;
               }
 
               // Handle transfer room joined confirmation
               if (data.type === 'transfer_room_joined') {
-                console.log('🔗 Joined transfer room:', data.transfer_room);
                 return;
               }
 
               // Handle left transfer room confirmation
               if (data.type === 'left_transfer_room') {
-                console.log('👋 LEFT TRANSFER ROOM:', data.transfer_room);
-                console.log('----------------------------------------');
-                console.log(`   Time: ${new Date().toISOString()}`);
-                console.log('----------------------------------------');
                 return;
               }
 
               // Handle chunk received acknowledgments
               if (data.message_type === 'chunk_received') {
-                console.log('✓ Chunk received acknowledgment:', data.size, 'bytes');
                 return;
               }
 
@@ -253,8 +228,6 @@ export async function createWebSocketConnection(
                   console.error('❌ Invalid download queue in sync request');
                   return;
                 }
-
-                console.log('🔄 Processing file sync request with queue:', syncRequest.download_queue);
 
                 // Process each file in the download queue
                 for (const fileInfo of syncRequest.download_queue) {
@@ -277,7 +250,7 @@ export async function createWebSocketConnection(
                       }
                     );
                   } catch (error) {
-                    handleFileSyncError(error, fileInfo, tasks, setTasks, setTaskbox_expanded);
+                    handleFileSyncError(error, fileInfo, tasks, setTasks);
                   }
                 }
 
@@ -291,7 +264,6 @@ export async function createWebSocketConnection(
               // Handle file sent successfully messages
               if (data.type === "file_sent_successfully" || data.message === "File sent successfully") {
                 try {
-                  console.log('✅ File sent successfully:', data.file_name);
                   
                   // Send completion confirmation
                   const final_message = {
@@ -320,13 +292,9 @@ export async function createWebSocketConnection(
                     data.file_name,
                     tasks,
                     setTasks,
-                    setTaskbox_expanded
                   );
                 }
               }
-            if (data.type === "file_transfer_complete") {
-              console.log('✅ File transfer completed:', data.file_name);
-            }
 
             } catch (error) {
               console.error('❌ Error processing message:', error);
@@ -362,7 +330,6 @@ export async function createWebSocketConnection(
     }
     
     if (retryCount < MAX_RETRY_ATTEMPTS || fallbackIndex >= 0) {
-      console.log(`Retrying connection in ${RETRY_DELAY_MS}ms (attempt ${retryCount + 1}/${MAX_RETRY_ATTEMPTS}, fallback: ${fallbackIndex + 1})`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
     }
   }
@@ -375,20 +342,16 @@ export async function createWebSocketConnection(
 export async function connect(
   username: string,
   device_name: string,
-  taskInfo: TaskInfo,
-  tasks: any[] | null,
+  tasks: string[] | null,
   setTasks: (tasks: any[]) => void,
-  setTaskbox_expanded: (expanded: boolean) => void
 ): Promise<WebSocket> {
   return new Promise((resolve) => {
     createWebSocketConnection(
       username,
       device_name,
-      taskInfo,
       tasks || [],
       setTasks,
-      setTaskbox_expanded,
-      (socket) => {
+      (socket: any) => {
         resolve(socket);
       }
     );

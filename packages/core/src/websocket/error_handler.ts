@@ -3,10 +3,9 @@ export function handleTransferError(
   fileName: string,
   tasks: any[] | null,
   setTasks: ((tasks: any[]) => void) | null,
-  setTaskbox_expanded: ((expanded: boolean) => void) | null,
   deviceName?: string
 ) {
-  if (!tasks || !setTasks || !setTaskbox_expanded) {
+  if (!tasks || !setTasks) {
     return;
   }
 
@@ -25,11 +24,10 @@ export function handleTransferError(
   );
 
   setTasks(updatedTasks);
-  setTaskbox_expanded(true);
 }
 
 // Add file sync error handling
-export function handleFileSyncError(error: any, fileInfo: any, tasks: any[], setTasks: (tasks: any[]) => void, setTaskbox_expanded: (expanded: boolean) => void) {
+export function handleFileSyncError(error: any, fileInfo: any, tasks: any[], setTasks: (tasks: any[]) => void) {
   
   let errorType: 'save_error' | 'file_not_found' | 'device_offline' | 'permission_denied' | 'transfer_failed' = 'transfer_failed';
   
@@ -48,6 +46,5 @@ export function handleFileSyncError(error: any, fileInfo: any, tasks: any[], set
     fileInfo.file_name,
     tasks,
     setTasks,
-    setTaskbox_expanded
   );
 } 

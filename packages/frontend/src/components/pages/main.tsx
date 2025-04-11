@@ -99,7 +99,7 @@ interface TabState {
 export default function PermanentDrawerLeft() {
   const location = useLocation();
   const theme = useTheme();
-  const { username, redirect_to_login, tasks, setTasks, setTaskbox_expanded, setSocket } = useAuth();
+  const { username, redirect_to_login, tasks, setTasks, setSocket } = useAuth();
   const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'Files');
   const [backHistory, setBackHistory] = useState<string[]>([]);
   const [forwardHistory, setForwardHistory] = useState<string[]>([]);
@@ -148,12 +148,9 @@ export default function PermanentDrawerLeft() {
           const websocket = await connect(
             username,
             os.hostname(), // device_name
-            { task_name: 'connection', task_device: os.hostname(), task_status: 'pending' }, // taskInfo
             tasks || [],
             setTasks,
-            setTaskbox_expanded
           );
-          console.log("WebSocket connection established:", websocket);
           if (isSubscribed) {
             setSocket(websocket);
             detectFileChanges(username, bcloudDirectoryPath);

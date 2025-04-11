@@ -1,7 +1,7 @@
 import banbury from "..";
 
-export function downloadFile(username: string, files: string[], devices: string[], fileInfo: any, taskInfo: any, tasks: any[], setTasks: any, setTaskbox_expanded: any, websocket: WebSocket): Promise<string> {
-  return new Promise(async (resolve, reject) => {
+export function downloadFile(username: string, files: string[], devices: string[], fileInfo: any, taskInfo: any, websocket: WebSocket): Promise<string> {
+  return new Promise((resolve, reject) => {
     let currentTransferRoom: string | null = null;
 
     // Validate inputs
@@ -34,7 +34,6 @@ export function downloadFile(username: string, files: string[], devices: string[
       
       // Leave the transfer room if we joined one
       if (currentTransferRoom) {
-        console.log('Requesting to leave transfer room:', currentTransferRoom);
         websocket.send(JSON.stringify({
           message_type: 'leave_transfer_room',
           transfer_room: currentTransferRoom
@@ -66,12 +65,10 @@ export function downloadFile(username: string, files: string[], devices: string[
           const data = JSON.parse(event.data);
 
           if (data.message_type === 'file_transfer_complete_ack' && data.file_name === files[0]) {
-            console.log('File transfer complete ack received for:', data.file_name);
             // Don't resolve yet, wait for full transaction completion
           }
 
           if (data.message === 'File transaction complete' && data.file_name === files[0]) {
-            console.log('File transaction complete message received for:', data.file_name);
             try {
               banbury.analytics.addFileRequestSuccess();
             } catch (error) {
@@ -94,14 +91,15 @@ export function downloadFile(username: string, files: string[], devices: string[
 
     websocket.addEventListener('message', messageHandler);
 
-    try {
-      currentTransferRoom = await banbury.device.download_request(username, files[0], files[0], fileInfo, websocket, taskInfo);
-      console.log('Download request sent, transfer room:', currentTransferRoom);
-    } catch (error) {
-      console.error('Error sending download request:', error);
-      cleanup();
-      reject('Failed to send download request');
-    }
+    banbury.device.download_request(username, files[0], files[0], fileInfo, websocket, taskInfo)
+      .then(room => {
+        currentTransferRoom = room;
+      })
+      .catch(error => {
+        console.error('Error sending download request:', error);
+        cleanup();
+        reject('Failed to send download request');
+      });
   });
 }
 

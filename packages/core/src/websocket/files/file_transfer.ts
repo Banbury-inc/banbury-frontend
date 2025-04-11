@@ -1,14 +1,10 @@
 import os from 'os';
 import { get_device_id } from '../../device/get_device_id';
 import { addDownloadsInfo } from '../../device/add_downloads_info';
-import { addUploadsInfo } from '../../device/add_uploads_info';
 
-// Add a map to track total bytes uploaded for each file
-const fileUploadProgress = new Map<string, number>();
 
 // Function to send a download request using the provided socket
 export async function download_request(username: string, file_name: string, file_path: string, fileInfo: any, socket: WebSocket, taskInfo: TaskInfo) {
-  console.log('sending download request:', file_name, file_path, fileInfo);
 
   // Update taskInfo with the file information
   taskInfo.fileInfo = [{
@@ -30,7 +26,6 @@ export async function download_request(username: string, file_name: string, file
       transfer_room: transfer_room
     };
 
-    console.log('Joining transfer room:', transfer_room);
 
     let joinTimeout: NodeJS.Timeout;
     
@@ -40,11 +35,10 @@ export async function download_request(username: string, file_name: string, file
         if (data.type === "transfer_room_joined" && data.transfer_room === transfer_room) {
           clearTimeout(joinTimeout);
           socket.removeEventListener('message', handleJoinConfirmation);
-          console.log('Successfully joined transfer room:', transfer_room);
           resolve();
         }
       } catch (error) {
-        console.error('Error handling join confirmation:', error);
+        socket.send(JSON.stringify({'error': 'Invalid JSON response from server', 'details': error}));
       }
     };
 
@@ -96,8 +90,6 @@ export function updateDownloadProgress(fileInfo: any, bytesReceived: number) {
   const totalSize = fileInfo[0]?.file_size || 0;
   const progress = (bytesReceived / totalSize) * 100;
 
-  console.log('Updating download progress');
-
   // Update the downloads info with new progress
   addDownloadsInfo([{
     filename: fileInfo[0]?.file_name,
@@ -140,11 +132,6 @@ export { handleTransferError, handleFileSyncError } from '../error_handler';
 // Add a function to leave a transfer room
 export async function leaveTransferRoom(socket: WebSocket, transfer_room: string): Promise<void> {
   try {
-    console.log('========================================');
-    console.log('👋 REQUESTING TO LEAVE TRANSFER ROOM:', transfer_room);
-    console.log('----------------------------------------');
-    console.log(`   Time: ${new Date().toISOString()}`);
-    console.log('========================================');
     
     // Send leave room request
     socket.send(JSON.stringify({
@@ -159,12 +146,11 @@ export async function leaveTransferRoom(socket: WebSocket, transfer_room: string
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'left_transfer_room' && data.transfer_room === transfer_room) {
-            console.log(`✅ Confirmed leaving transfer room: ${transfer_room}`);
             socket.removeEventListener('message', handleResponse);
             resolve();
           }
         } catch (error) {
-          // Ignore non-JSON messages
+          socket.send(JSON.stringify({'error': 'Invalid JSON response from server', 'details': error}));
         }
       };
       
@@ -174,11 +160,10 @@ export async function leaveTransferRoom(socket: WebSocket, transfer_room: string
       // Set timeout to resolve anyway after 5 seconds
       setTimeout(() => {
         socket.removeEventListener('message', handleResponse);
-        console.log(`⚠️ Timeout waiting for transfer room leave confirmation: ${transfer_room}`);
         resolve();
       }, 5000);
     });
   } catch (error) {
-    console.error('❌ Error leaving transfer room:', error);
+    socket.send(JSON.stringify({'error': 'Error leaving transfer room', 'details': error}));
   }
 } 

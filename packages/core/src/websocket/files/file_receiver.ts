@@ -38,12 +38,6 @@ class FileReceiver {
   public handleFileStart(fileInfo: FileInfo): void {
     this.fileInfo = fileInfo;
     const savePath = path.join(this.downloadPath, fileInfo.file_name);
-    
-    console.log('Starting file download:', {
-      fileName: fileInfo.file_name,
-      savePath,
-      fileSize: fileInfo.file_size
-    });
 
     try {
       // Create write stream
@@ -70,21 +64,10 @@ class FileReceiver {
     }
 
     try {
-      console.log('========================================');
-      console.log('📥 FILE CHUNK RECEIVED:');
-      console.log('----------------------------------------');
-      console.log(`   File: ${this.fileInfo.file_name}`);
-      console.log(`   Chunk size: ${chunk.length} bytes`);
-      console.log(`   Total received: ${this.receivedBytes + chunk.length} / ${this.fileInfo.file_size} bytes`);
-      console.log(`   Progress: ${((this.receivedBytes + chunk.length) / this.fileInfo.file_size * 100).toFixed(2)}%`);
-      console.log(`   Timestamp: ${new Date().toISOString()}`);
-      console.log('========================================');
       
       // Write chunk to file
-      console.log('📝 Writing chunk to file stream...');
       this.fileStream.write(chunk);
       this.receivedBytes += chunk.length;
-      console.log(`✅ Chunk written successfully. Total bytes received: ${this.receivedBytes}`);
 
       // Create a new ArrayBuffer from the chunk data to ensure it's the right type
       const arrayBuffer = new Uint8Array(chunk).buffer;
@@ -93,11 +76,9 @@ class FileReceiver {
         fileType: this.fileInfo.kind,
         totalSize: this.fileInfo.file_size
       });
-      console.log('✅ Progress tracking updated');
 
       // Update overall download progress
       updateDownloadProgress([this.fileInfo], this.receivedBytes);
-      console.log('✅ Download progress updated');
 
     } catch (error) {
       console.error('Error handling file chunk:', error);
@@ -129,13 +110,6 @@ class FileReceiver {
       if (stats.size !== fileInfo.file_size) {
         throw new Error('File size mismatch');
       }
-
-      console.log('File download complete:', {
-        fileName: fileInfo.file_name,
-        savedTo: finalPath,
-        size: stats.size,
-        finalPath: finalPath
-      });
 
       this.cleanup();
       return finalPath;

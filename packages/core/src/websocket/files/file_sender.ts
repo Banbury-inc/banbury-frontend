@@ -1,8 +1,4 @@
 import * as fs from 'fs';
-import * as path from 'path';
-import { handleTransferError } from './file_transfer';
-import { handleUploadProgress } from './handle_upload_progress';
-import { TaskInfo } from './file_transfer';
 
 interface FileRequestData {
   file_path: string;
@@ -18,10 +14,8 @@ export async function handleFileRequest(
   socket: WebSocket,
   tasks: any[],
   setTasks: (tasks: any[]) => void,
-  setTaskbox_expanded: (expanded: boolean) => void
 ): Promise<void> {
   const { file_name, file_path, requesting_device_id, transfer_room } = data;
-  console.log('🚀 Starting file transfer:', { file_name, file_path, transfer_room });
 
   try {
     // Join transfer room first
@@ -45,11 +39,6 @@ export async function handleFileRequest(
       }
     }));
 
-    console.log('📤 Sending file:', {
-      name: file_name,
-      size: fileStats.size,
-      path: file_path
-    });
 
     // Send file in chunks
     for await (const chunk of fileStream) {
@@ -58,12 +47,10 @@ export async function handleFileRequest(
       
       // Convert Node Buffer to ArrayBuffer
       const arrayBuffer = chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
-      console.log(`📦 Sending chunk: ${arrayBuffer.byteLength} bytes as binary data`);
       
       try {
         // Send binary data
         socket.send(arrayBuffer);
-        console.log(`✅ Chunk sent successfully: ${arrayBuffer.byteLength} bytes`);
         
         // Wait for acknowledgment (optional)
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -81,8 +68,6 @@ export async function handleFileRequest(
       requesting_device_id: requesting_device_id
     }));
 
-    console.log('✅ File transfer completed:', file_name);
-
     // Update task status
     if (tasks && setTasks) {
       const updatedTasks = tasks.map(task =>
@@ -93,13 +78,7 @@ export async function handleFileRequest(
 
     // Leave transfer room after successful completion
     if (transfer_room) {
-      console.log('Scheduling to leave transfer room after sending completion:', transfer_room);
       setTimeout(() => {
-        console.log('========================================');
-        console.log('👋 LEAVING TRANSFER ROOM AFTER SENDING:', transfer_room);
-        console.log('----------------------------------------');
-        console.log(`   Time: ${new Date().toISOString()}`);
-        console.log('========================================');
         
         socket.send(JSON.stringify({
           message_type: 'leave_transfer_room',
