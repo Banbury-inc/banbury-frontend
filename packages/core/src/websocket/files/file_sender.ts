@@ -49,7 +49,6 @@ export async function handleFileRequest(
       const arrayBuffer = chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
       
       try {
-        console.log('Sending chunk:', arrayBuffer);
         // Send binary data
         socket.send(arrayBuffer);
         

@@ -38,7 +38,6 @@ class FileReceiver {
   public handleFileStart(fileInfo: FileInfo): void {
     this.fileInfo = fileInfo;
     const savePath = path.join(this.downloadPath, fileInfo.file_name);
-    console.log('Saving file to:', savePath);
 
     try {
       // Create write stream
@@ -61,7 +60,6 @@ class FileReceiver {
 
   public handleFileChunk(chunk: Buffer): void {
     if (!this.fileStream || !this.fileInfo) {
-      console.log('No active file transfer');
       throw new Error('No active file transfer');
     }
 
@@ -70,9 +68,6 @@ class FileReceiver {
       // Write chunk to file
       this.fileStream.write(chunk);
       this.receivedBytes += chunk.length;
-
-      // Log progress as ratio
-      console.log(`Download progress: ${this.receivedBytes}/${this.fileInfo.file_size} (${(this.receivedBytes / this.fileInfo.file_size * 100).toFixed(2)}%)`);
       
       // Create a new ArrayBuffer from the chunk data to ensure it's the right type
       const arrayBuffer = new Uint8Array(chunk).buffer;
