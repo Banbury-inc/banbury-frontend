@@ -53,9 +53,9 @@ export const config: Config = {
       return 'ws://www.api.dev.banbury.io/ws/consumer/';
     }
     else if (this.semi_local) {
-      return 'ws://10.123.1.90:8082/ws/consumer';
+      return 'ws://10.123.1.90:8080/ws/consumer';
     } else {
-      return 'ws://0.0.0.0:8082/ws/consumer/';
+      return 'ws://0.0.0.0:8080/ws/consumer/';
     }
   }
 }
