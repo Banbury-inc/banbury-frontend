@@ -60,7 +60,6 @@ class FileReceiver {
   }
 
   public handleFileChunk(chunk: Buffer): void {
-    console.log('Received chunk:', chunk);
     if (!this.fileStream || !this.fileInfo) {
       console.log('No active file transfer');
       throw new Error('No active file transfer');

@@ -13,6 +13,7 @@ function getDataTypeName(data: BinaryData): string {
 }
 
 export async function handleFileTransferMessage(event: MessageEvent<BinaryData | string>, socket: WebSocket) {
+  console.log('event', event);
 
   try {
     // Handle binary data (file chunks)
@@ -55,6 +56,13 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
     // Handle JSON messages
     if (typeof event.data === 'string') {
       const data = JSON.parse(event.data);
+      console.log('received message', data);
+      if (data.type === 'download_request_sent') {
+        const file_info = data.file_info[0];
+        console.log('File info:', file_info);
+        fileReceiver.handleFileStart(file_info);
+        return;
+      }
       switch (data.message_type) {
         case 'transfer_room_joined':
           activeTransferRooms.add(data.transfer_room);

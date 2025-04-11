@@ -201,6 +201,11 @@ export async function createWebSocketConnection(
                 return;
               }
 
+              if (data.type === 'download_request_sent') {
+                await handleFileTransferMessage(event, socket);
+                return;
+              }
+
               // Handle file requests
               if (data.request_type === 'file_request') {
                 await handleFileRequest(data, socket, tasks, setTasks);
