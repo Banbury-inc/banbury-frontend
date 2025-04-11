@@ -175,6 +175,7 @@ export async function createWebSocketConnection(
       };
       
       socket.onmessage = async function (event: MessageEvent) {
+        console.log('Received message:', event.data);
         try {
           // Handle binary data (file chunks)
           if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {

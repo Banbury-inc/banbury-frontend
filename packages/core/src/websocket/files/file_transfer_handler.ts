@@ -13,12 +13,12 @@ function getDataTypeName(data: BinaryData): string {
 }
 
 export async function handleFileTransferMessage(event: MessageEvent<BinaryData | string>, socket: WebSocket) {
-  // Log ALL incoming data regardless of type
 
   try {
     // Handle binary data (file chunks)
     if (event.data instanceof ArrayBuffer || event.data instanceof Blob || Buffer.isBuffer(event.data)) {
       const binaryData = event.data;
+      console.log(`Received ${getDataTypeName(binaryData)} data:`, binaryData);
 
       try {
         let chunk: Buffer;
@@ -58,16 +58,11 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
       switch (data.message_type) {
         case 'transfer_room_joined':
           activeTransferRooms.add(data.transfer_room);
+          
           break;
 
         case 'file_transfer_start':
           fileReceiver.handleFileStart(data.file_info);
-          socket.send(JSON.stringify({
-            message_type: 'file_transfer_start_ack',
-            status: 'ready',
-            file_name: data.file_info.file_name,
-            transfer_room: data.transfer_room
-          }));
           break;
 
         case 'file_transfer_complete':
