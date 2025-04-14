@@ -69,7 +69,6 @@ test.describe('Account creation tests', () => {
     try {
       // Generate a random username
       const username = generateRandomUsername();
-      console.log('Attempting to create account with username:', username);
 
       // Fill in the registration form
       await window.fill('input[name="firstName"]', 'Test');
