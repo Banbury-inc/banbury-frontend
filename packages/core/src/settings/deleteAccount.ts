@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { CONFIG } from '../config';
 
@@ -10,14 +9,15 @@ import { CONFIG } from '../config';
 export async function deleteAccount(
   username: string | null,
 ) {
+  if (!username) {
+    return 'missing_username';
+  }
 
   try {
-
     const url = `${CONFIG.url}/settings/delete_account/${username}/`;
     const response = await axios.post<{ result: string; username: string; }>(url, {
     });
     const result = response.data.result;
-
 
     if (result === 'success') {
       return response.data.result;
