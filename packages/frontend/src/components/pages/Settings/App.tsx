@@ -101,10 +101,10 @@ export default function App() {
                 setShowAlert(true);
                 setOpenDialog(false);
             }
-        } catch (error) {
+        } catch (error: any) {
             setUpdateStatus({
                 title: 'Error',
-                messages: ['An error occurred while deleting your account.']
+                messages: ['An error occurred while deleting your account: ' + error.message]
             });
             setShowAlert(true);
             setOpenDialog(false);
