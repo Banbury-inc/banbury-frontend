@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { greetUser } from './greet';
 import { getScannedFolders } from './devices';
 import chalk from 'chalk';
+import { deleteAccount } from './settings';
 
 const program = new Command();
 
@@ -37,5 +38,19 @@ deviceCommand
     process.exit(0);
   });
 
+const settingsCommand = program
+.command('settings')
+.description('Settings-related commands');
+
+settingsCommand
+.command('delete-account')
+.description('Delete a user account')
+.argument('[username]', 'username to delete', 'User')
+.action(async (username: string) => {
+  const response = await deleteAccount(username);
+  // eslint-disable-next-line no-console
+  console.log(response);
+  process.exit(0);
+});
 
 program.parse(); 
