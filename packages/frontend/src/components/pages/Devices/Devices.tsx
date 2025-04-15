@@ -227,6 +227,7 @@ export default function Devices() {
 
   useEffect(() => {
     handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username);
+    setIsLoading(false);
   }, [username, updates]);
 
 
