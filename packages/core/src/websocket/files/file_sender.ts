@@ -30,7 +30,7 @@ export async function handleFileRequest(
 
     // Send file transfer start message
     socket.send(JSON.stringify({
-      message_type: 'file_transfer_start',
+      message_type: 'start_file_transfer',
       file_info: {
         file_name: file_name,
         file_size: fileStats.size,

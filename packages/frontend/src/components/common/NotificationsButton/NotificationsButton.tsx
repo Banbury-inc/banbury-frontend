@@ -32,7 +32,7 @@ export default function NotificationsButton() {
     // Add websocket listener
     const handleMessage = (event: MessageEvent) => {
       try {
-        const data = JSON.parse(event.data);
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (data.type === 'notification_update') {
           fetchNotifications(username, setNotifications);
         }

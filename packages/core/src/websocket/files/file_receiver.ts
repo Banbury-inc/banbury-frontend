@@ -68,7 +68,7 @@ class FileReceiver {
       // Write chunk to file
       this.fileStream.write(chunk);
       this.receivedBytes += chunk.length;
-
+      
       // Create a new ArrayBuffer from the chunk data to ensure it's the right type
       const arrayBuffer = new Uint8Array(chunk).buffer;
       handleReceivedFileChunk(arrayBuffer, {
