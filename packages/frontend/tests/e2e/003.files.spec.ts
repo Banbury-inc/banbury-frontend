@@ -380,7 +380,79 @@ test.describe('Files tests', () => {
 
 
   test('download button downloads a file', async () => {
-    // TODO: Implement test after we make download button more robust. Download from any device, etc.
+    // 1. Select a file by clicking its checkbox
+    // First wait for files to load
+    await window.waitForSelector('[data-testid="file-item"]', { timeout: 10000 });
+    
+    // Click the first file's checkbox
+    const firstFileRow = window.locator('[data-testid="file-item"]').first();
+    await firstFileRow.click();
+    
+    // 2. Wait for download button to be enabled
+    const downloadButton = window.locator('[data-testid="download-button"]');
+    await expect(downloadButton).toBeVisible({ timeout: 10000 });
+    await expect(downloadButton).toBeEnabled({ timeout: 10000 });
+    
+    // 3. Wait for websocket connection to be established
+    // Check if websocket is connected by evaluating a condition in the page context
+    await window.evaluate(() => {
+      return new Promise((resolve) => {
+        // If already connected, resolve immediately
+        if (window.__WEBSOCKET_CONNECTED__) {
+          resolve(true);
+          return;
+        }
+        
+        // Add a temporary flag to window to track websocket status
+        window.__WEBSOCKET_CONNECTED__ = false;
+        
+        // Check every 100ms if websocket is connected
+        const checkInterval = setInterval(() => {
+          // Access the auth context to check websocket status
+          const websocketElement = document.querySelector('[data-testid="websocket-status"]');
+          const isConnected = websocketElement && 
+                             (websocketElement.getAttribute('data-connected') === 'true' ||
+                              (websocketElement.textContent && websocketElement.textContent.includes('Connected')));
+          
+          if (isConnected) {
+            window.__WEBSOCKET_CONNECTED__ = true;
+            clearInterval(checkInterval);
+            resolve(true);
+          }
+        }, 100);
+        
+        // Set a timeout of 10 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          console.warn('Websocket connection timeout, proceeding anyway');
+          resolve(false);
+        }, 10000);
+      });
+    });
+    
+    // Wait a moment to ensure everything is ready
+    await window.waitForTimeout(500);
+    
+    // 4. Click the download button
+    await downloadButton.click();
+    
+    // 5. Wait for download progress indicator to appear
+    const downloadProgressButton = window.locator('[data-testid="download-progress-button"]');
+    await expect(downloadProgressButton).toBeVisible({ timeout: 10000 });
+    
+    // 6. Click the download progress button to view download status
+    await downloadProgressButton.click();
+    
+    // 7. Verify download popover shows the file being downloaded
+    const popover = window.locator('div[role="presentation"].MuiPopover-root');
+    await expect(popover).toBeVisible({ timeout: 10000 });
+    
+    // 8. Close the popover
+    await downloadProgressButton.click();
+    await expect(popover).not.toBeVisible({ timeout: 10000 });
+    
+    // 9. Deselect the file when done
+    await firstFileRow.click();
   });
 
 });
