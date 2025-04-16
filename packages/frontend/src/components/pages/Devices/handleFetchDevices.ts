@@ -10,8 +10,8 @@ export function handleFetchDevices(
   setIsLoading: any,
   setLastname: any,
   username: string | null,
-) {
-  const fetchDevices = async () => {
+): () => Promise<void> {
+  return async () => {
     try {
       const previousSelectedDeviceName = selectedDevice?.device_name; // Store the previously selected device name
       setIsLoading(true);
@@ -162,7 +162,6 @@ export function handleFetchDevices(
       setIsLoading(false);
     }
   };
-  return fetchDevices;
 }
 
 

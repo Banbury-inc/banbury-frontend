@@ -226,8 +226,8 @@ export default function Devices() {
 
 
   useEffect(() => {
-    handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username);
-    setIsLoading(false);
+    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+    fetchDevicesFunc();
   }, [username, updates]);
 
 
@@ -276,7 +276,8 @@ export default function Devices() {
   };
 
   const handleFoldersUpdate = () => {
-    handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username);
+    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+    fetchDevicesFunc();
   };
 
   const handleSyncStorageChange = async (value: string) => {
@@ -289,7 +290,8 @@ export default function Devices() {
 
       if (result === 'success') {
         setUpdates(updates + 1);
-        handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username);
+        const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+        fetchDevicesFunc();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
         await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
@@ -411,7 +413,7 @@ export default function Devices() {
                   </Button>
                 </Tooltip>
               </Grid>
-              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, setSelectedDevice, username)} />
+              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username)} />
             </Grid>
           </Stack>
         </CardContent>
