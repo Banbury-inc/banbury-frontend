@@ -2,64 +2,6 @@ import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
 
-// Helper function to check API connectivity
-async function checkAPIConnectivity(window) {
-  return await window.evaluate(async () => {
-    try {
-      // Get the base URL from config
-      const getBanburyConfigUrl = () => {
-        const isProduction = false; // Set based on your environment
-        const isDev = true;
-        const isSemiLocal = false;
-        
-        if (isProduction) {
-          return 'http://54.224.116.254:8080';
-        } else if (isDev) {
-          return 'http://www.api.dev.banbury.io';
-        } else if (isSemiLocal) {
-          return 'http://192.168.50.72:8080';
-        } else {
-          return 'http://0.0.0.0:8080';
-        }
-      };
-      
-      const username = localStorage.getItem('authToken');
-      if (!username) {
-        return { success: false, error: 'Not logged in - no username found' };
-      }
-      
-      const baseUrl = getBanburyConfigUrl();
-      const deviceUrl = `${baseUrl}/devices/getdeviceinfo/${username}/`;
-      
-      console.log(`Testing API connection to: ${deviceUrl}`);
-      const response = await fetch(deviceUrl);
-      
-      if (!response.ok) {
-        return { 
-          success: false, 
-          status: response.status,
-          statusText: response.statusText,
-          url: deviceUrl
-        };
-      }
-      
-      const data = await response.json();
-      return { 
-        success: true, 
-        deviceCount: data.devices?.length || 0,
-        firstDeviceName: data.devices?.[0]?.device_name || 'None',
-        url: deviceUrl
-      };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.message,
-        stack: error.stack
-      };
-    }
-  });
-}
-
 test.describe('Devices tests', () => {
   let electronApp;
   let window;
@@ -236,12 +178,8 @@ test.describe('Devices tests', () => {
 
   test('can view devices in the devices page', async () => {
     // First check API connectivity
-    console.log('Testing API connectivity...');
-    const apiStatus = await checkAPIConnectivity(window);
-    console.log('API Status:', apiStatus);
     
     // Ensure any open popover is closed by clicking away from it
-    console.log('Ensuring no popovers are open...');
     await window.evaluate(() => {
       // Try to close any open popovers by clicking on the body
       document.body.click();
@@ -260,41 +198,16 @@ test.describe('Devices tests', () => {
     // Wait for any popovers to close
     await window.waitForTimeout(500);
     
-    // Navigate to the Devices page if not already there
-    console.log('Navigating to Devices page...');
-    
     // Check if we're already on the Devices page
     const isOnDevicesPage = await window.evaluate(() => {
       return !!document.querySelector('table[aria-labelledby="tableTitle"]');
     });
     
     if (!isOnDevicesPage) {
-      // Try clicking the Devices button
-      try {
         await window.click('[data-testid="sidebar-button-Devices"]');
-      } catch (error) {
-        console.log('Error clicking Devices button, trying alternative approach:', error.message);
-        // If that fails, try finding the button differently
-        const devicesButtons = window.locator('button', { hasText: 'Devices' });
-        if (await devicesButtons.count() > 0) {
-          await devicesButtons.first().click();
-        } else {
-          console.log('Could not find Devices button, attempting direct navigation...');
-          // If all else fails, we might be able to directly navigate
-          await window.evaluate(() => {
-            // This assumes your app uses some kind of router or history API
-            window.history.pushState({}, '', '/devices');
-            // Trigger a navigation event
-            window.dispatchEvent(new Event('popstate'));
-          });
-        }
-      }
-    } else {
-      console.log('Already on Devices page');
     }
     
     // Wait for the page to load
-    console.log('Waiting for Devices page to load...');
     await window.waitForTimeout(2000);
     
     // Try to find specific elements that should be present in the devices UI
@@ -303,16 +216,13 @@ test.describe('Devices tests', () => {
       await window.locator('button:has([data-testid="AddToQueueIcon"])').count() // Add device button
     ];
     
-    console.log('Device page UI elements found:', devicePageElements);
     expect(devicePageElements.some(count => count > 0)).toBeTruthy();
     
     // Check that the devices table exists
     const deviceTable = window.locator('table[aria-labelledby="tableTitle"]');
-    console.log('Checking for device table visibility...');
     await expect(deviceTable).toBeVisible({ timeout: 10000 });
     
     // Wait for loading state to finish (either skeletons disappear or "No devices" message appears)
-    console.log('Waiting for loading state to finish...');
     await window.waitForFunction(() => {
       const skeletons = document.querySelectorAll('.MuiSkeleton-root');
       const noDevicesMsg = document.querySelector('td[colspan="3"] .MuiTypography-body1');
@@ -327,8 +237,6 @@ test.describe('Devices tests', () => {
     
     // Check if the UI shows "No devices available" message
     if (hasNoDevicesMessage) {
-      console.log('UI shows "No devices available" message');
-      
       // Verify the "No devices available" message is shown
       const noDevicesMessage = deviceTable.locator('text=No devices available');
       await expect(noDevicesMessage).toBeVisible({ timeout: 5000 });
@@ -341,31 +249,21 @@ test.describe('Devices tests', () => {
       return;
     }
     
-    // If we don't have "No devices" message, then we should check for actual device rows
-    console.log('Checking for device rows...');
-    
     // Get all device rows (excluding loading skeletons)
     const deviceRows = deviceTable.locator('tbody > tr:not(:has(.MuiSkeleton-root))');
     
     // Check if we have at least one device
     const deviceCount = await deviceRows.count();
-    console.log(`Found ${deviceCount} devices on the page`);
     
     // We must have at least one device row if we don't have "No devices" message
     expect(deviceCount).toBeGreaterThan(0);
     
     // Click the first device to view its details
-    console.log('Selecting the first device...');
     await deviceRows.first().click();
     
     // Verify device details panel is visible
     const deviceDetailsPanel = window.locator('h4').first();
-    console.log('Checking for device details panel...');
     await expect(deviceDetailsPanel).toBeVisible({ timeout: 10000 });
-    
-    // Get the device name for logging
-    const deviceName = await deviceDetailsPanel.textContent();
-    console.log(`Selected device: ${deviceName}`);
     
     // Verify the tabs for device details exist
     const deviceTabs = window.locator('div[role="tablist"] button');
@@ -376,17 +274,11 @@ test.describe('Devices tests', () => {
     await expect(deviceInfoSection).toBeVisible({ timeout: 5000 });
     
     // Test passes if we can view device details
-    console.log('Device details displayed successfully');
   });
 
   test('handles empty devices state correctly', async () => {
-    // First check API connectivity
-    console.log('Testing API connectivity...');
-    const apiStatus = await checkAPIConnectivity(window);
-    console.log('API Status:', apiStatus);
     
     // Ensure any open popover is closed
-    console.log('Ensuring no popovers are open...');
     await window.evaluate(() => {
       document.body.click();
       const escKeyEvent = new KeyboardEvent('keydown', {
@@ -401,25 +293,15 @@ test.describe('Devices tests', () => {
     });
     
     // Navigate to the Devices page
-    console.log('Navigating to Devices page...');
     const isOnDevicesPage = await window.evaluate(() => {
       return !!document.querySelector('table[aria-labelledby="tableTitle"]');
     });
     
     if (!isOnDevicesPage) {
-      try {
         await window.click('[data-testid="sidebar-button-Devices"]');
-      } catch (error) {
-        console.log('Error clicking Devices button, trying alternative approach:', error.message);
-        const devicesButtons = window.locator('button', { hasText: 'Devices' });
-        if (await devicesButtons.count() > 0) {
-          await devicesButtons.first().click();
-        }
-      }
     }
     
     // Mock empty devices response
-    console.log('Mocking empty devices response...');
     await window.evaluate(() => {
       // Override fetch to return empty devices list
       const originalFetch = window.fetch;
@@ -447,7 +329,6 @@ test.describe('Devices tests', () => {
     await window.waitForTimeout(1000);
     
     // Check for the "No devices available" message
-    console.log('Checking for "No devices available" message...');
     const deviceTable = window.locator('table[aria-labelledby="tableTitle"]');
     
     // Wait for the loading state to complete
@@ -463,10 +344,8 @@ test.describe('Devices tests', () => {
     const isMessageVisible = await noDevicesMessage.isVisible().catch(() => false);
     
     if (isMessageVisible) {
-      console.log('Empty state message is visible');
       await expect(noDevicesMessage).toBeVisible();
     } else {
-      console.log('Message not immediately visible, forcing UI update...');
       
       // Try forcing the UI to display the empty state
       await window.evaluate(() => {
@@ -504,8 +383,6 @@ test.describe('Devices tests', () => {
     await window.evaluate(() => {
       delete window.fetch;
     });
-    
-    console.log('Empty devices state verified successfully');
   });
 
   test('can delete a device', async () => {
