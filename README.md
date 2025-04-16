@@ -16,7 +16,7 @@
 
 <p align="center">
     <a href="https://banbury.io/"><b>Website</b></a> •
-    <a href="https://banbury.io/Cloud"><b>Install</b></a> •
+    <a href="https://banbury.io/features"><b>Install</b></a> •
     <a href="https://github.com/Banbury-inc/Banbury-Cloud/releases"><b>Releases</b></a>
 </p>
 
