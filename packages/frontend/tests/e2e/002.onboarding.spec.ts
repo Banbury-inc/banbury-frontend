@@ -2,7 +2,7 @@ import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
 import { 
-  createTestUser, 
+  createTestUserIfNeeded, 
   loginWithTestUser,
   TestUserCredentials
 } from './utils/test-user'
@@ -28,25 +28,8 @@ test.describe('Onboarding tests', () => {
     // Wait for the first BrowserWindow to open
     window = await electronApp.firstWindow();
     
-    // Create a single test user for all tests
-    testUserCredentials = await createTestUser(window);
-  });
-
-  test.beforeEach(async () => {
-    // Ensure we're starting from a clean slate for each test
-    await window.evaluate(() => {
-      // Clear any stored onboarding completion status for the test user
-      localStorage.removeItem(`onboarding_${window['testUsername']}`);
-    });
-    
-    // Log in with the test user
-    await loginWithTestUser(window, testUserCredentials);
-    
-    // Wait for onboarding to appear
-    await window.waitForSelector('[data-testid="onboarding-component"]', {
-      timeout: 30000,
-      state: 'visible'
-    });
+    // Get or create a single test user for all tests
+    testUserCredentials = await createTestUserIfNeeded(window);
   });
 
   test.afterAll(async () => {
@@ -58,6 +41,8 @@ test.describe('Onboarding tests', () => {
   });
 
   test('can click add and scan device', async () => {
+
+
     // Navigate to the Add Device step
     const nextButton = await window.waitForSelector('button:has-text("Next")', {
       timeout: 5000

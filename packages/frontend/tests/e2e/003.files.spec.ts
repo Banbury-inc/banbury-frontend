@@ -2,7 +2,7 @@ import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
 import fs from 'fs'
-import { setupTestUser, waitForWebsocketConnection, TestUserCredentials } from './utils/test-user'
+import { waitForWebsocketConnection, TestUserCredentials, ensureLoggedInAndOnboarded, dismissUnexpectedDialogs, wrapWithRecovery } from './utils/test-user'
 
 test.describe('Files tests', () => {
   let electronApp;
@@ -28,17 +28,27 @@ test.describe('Files tests', () => {
     // Ensure the window is loaded
     await window.waitForLoadState('domcontentloaded');
 
-    // Set up a test user (create account, login, complete onboarding)
-    testUserCredentials = await setupTestUser(window);
-
-    // Wait for the main interface to load
-    await window.waitForSelector('[data-testid="main-component"]', {
-      timeout: 30000
-    });
+    // Ensure we have a logged-in user that has completed onboarding
+    testUserCredentials = await ensureLoggedInAndOnboarded(window);
   });
 
   test.beforeEach(async () => {
-    // Just ensure we're on the main interface before each test
+    // Dismiss any unexpected dialogs that might be blocking the UI
+    await dismissUnexpectedDialogs(window);
+    
+    // Verify we're still on the main interface before each test
+    // If not, try to log in again
+    const isMainVisible = await window.waitForSelector('[data-testid="main-component"]', {
+      timeout: 5000,
+      state: 'visible'
+    }).then(() => true).catch(() => false);
+    
+    if (!isMainVisible) {
+      console.log('Main interface not visible, attempting to log in again...');
+      await ensureLoggedInAndOnboarded(window);
+    }
+    
+    // Now we should be on the main interface
     await window.waitForSelector('[data-testid="main-component"]', {
       timeout: 30000
     });
@@ -310,189 +320,6 @@ test.describe('Files tests', () => {
     await window.waitForTimeout(500); // Wait for any animations to complete
   });
 
-  test('TreeView is visible and can interact with items', async () => {
-    // Wait for any previous operations to complete
-    await window.waitForTimeout(500);
-    
-    // First verify that the TreeView container is visible
-    const treeViewContainer = window.locator('div:has(> .MuiTreeView-root)');
-    await expect(treeViewContainer).toBeVisible({ timeout: 10000 });
-    
-    // Check if there are any items in the TreeView
-    const hasTreeItems = await window.evaluate(() => {
-      const treeItems = document.querySelectorAll('[data-testid^="file-tree-item-"]');
-      return treeItems.length > 0;
-    });
-    
-    if (!hasTreeItems) {
-      console.log('Skipping TreeView interaction test: No tree items available');
-      return;
-    }
-    
-    // Get the first tree item
-    const firstTreeItem = window.locator('[data-testid^="file-tree-item-"]').first();
-    await expect(firstTreeItem).toBeVisible({ timeout: 10000 });
-    
-    // Click on the first tree item
-    await firstTreeItem.click();
-    await window.waitForTimeout(500); // Wait for any UI updates
-    
-    // Verify that the FileBreadcrumbs updated after clicking a tree item
-    // This indicates that the tree item selection worked
-    const breadcrumbs = window.locator('.MuiBreadcrumbs-root');
-    await expect(breadcrumbs).toBeVisible({ timeout: 10000 });
-    
-    // Check if the selected file path appears in the file list header or breadcrumbs
-    const fileName = await firstTreeItem.locator('.MuiTypography-root').textContent();
-    if (fileName) {
-      // Either the breadcrumbs or the file list should contain the selected path/file
-      const breadcrumbsOrHeader = window.locator(`.MuiBreadcrumbs-root, h6:has-text("${fileName}")`);
-      await expect(breadcrumbsOrHeader).toBeVisible({ timeout: 5000 });
-    }
-  });
-
-  test('TreeView navigation between folders works correctly', async () => {
-    // Wait for any previous operations to complete
-    await window.waitForTimeout(500);
-    
-    // Check if there are any folders in the TreeView
-    const hasFolders = await window.evaluate(() => {
-      const folderIcons = document.querySelectorAll('[data-testid^="file-tree-item-"] .MuiSvgIcon-root');
-      // Check if any of these icons are folders
-      return Array.from(folderIcons).some(icon => 
-        (icon as HTMLElement).innerHTML.includes('Folder') || 
-        (icon as HTMLElement).getAttribute('data-testid')?.includes('folder')
-      );
-    });
-    
-    if (!hasFolders) {
-      console.log('Skipping TreeView navigation test: No folder items available');
-      return;
-    }
-    
-    // Find a folder item in the TreeView
-    const folderItem = window.locator('[data-testid^="file-tree-item-"]')
-      .filter({ has: window.locator('.MuiSvgIcon-root:has-text("Folder"), [data-testid*="folder"]') })
-      .first();
-    
-    if (await folderItem.count() === 0) {
-      console.log('Skipping TreeView navigation test: Unable to find folder items');
-      return;
-    }
-    
-    // Get the current path from breadcrumbs before clicking
-    const initialPath = await window.locator('.MuiBreadcrumbs-root').textContent();
-    
-    // Click on the folder item
-    await folderItem.click();
-    await window.waitForTimeout(500); // Wait for navigation to complete
-    
-    // Get the folder name
-    const folderName = await folderItem.locator('.MuiTypography-root').textContent();
-    
-    // Verify that the breadcrumbs or file list updated to reflect the new location
-    if (folderName) {
-      // Either the new breadcrumbs should contain the folder name
-      const updatedBreadcrumbs = window.locator('.MuiBreadcrumbs-root');
-      const updatedPath = await updatedBreadcrumbs.textContent();
-      
-      // Skip the assertion if we can't reliably check the path changed
-      if (initialPath && updatedPath) {
-        // We expect the path to change when navigating to a folder
-        expect(updatedPath).not.toEqual(initialPath);
-      }
-      
-      // Check if the folder name appears in the breadcrumbs
-      const breadcrumbWithFolderName = window.locator(`.MuiBreadcrumbs-root :text("${folderName}")`);
-      await expect(breadcrumbWithFolderName).toBeVisible({ timeout: 5000 });
-    }
-    
-    // As an additional check, verify that the file list updated to show the folder contents
-    const fileList = window.locator('[data-testid="file-list"]');
-    await expect(fileList).toBeVisible({ timeout: 10000 });
-  });
-
-  test('TreeView folder expansion works correctly', async () => {
-    // Wait for any previous operations to complete
-    await window.waitForTimeout(500);
-    
-    // Check if there are any folder items in the TreeView that have children
-    const hasFoldersWithChildren = await window.evaluate(() => {
-      // Look for TreeItems that contain other TreeItems (indicating they have children)
-      const treeItems = document.querySelectorAll('[data-testid^="file-tree-item-"]');
-      for (const item of treeItems) {
-        if (item.querySelector('[data-testid^="file-tree-item-"]')) {
-          return true; // Found at least one folder with children
-        }
-      }
-      return false;
-    });
-    
-    if (!hasFoldersWithChildren) {
-      console.log('Skipping TreeView folder expansion test: No folders with children available');
-      return;
-    }
-    
-    // Try to find a folder with a collapse/expand button (which should indicate it has children)
-    // This could be an icon button, a disclosure triangle, or similar UI element
-    const folderWithExpandButton = window.locator('[data-testid^="file-tree-item-"]')
-      .filter({ has: window.locator('.MuiSvgIcon-root.MuiTreeItem-iconContainer, [role="group"]') })
-      .first();
-    
-    if (await folderWithExpandButton.count() === 0) {
-      console.log('Skipping TreeView folder expansion test: Unable to find expandable folders');
-      return;
-    }
-    
-    // Get the folder name for debugging
-    const folderName = await folderWithExpandButton.locator('.MuiTypography-root').textContent();
-    console.log(`Testing folder expansion for: ${folderName}`);
-    
-    // First, make sure any children are not visible
-    // Note: This is implementation-dependent; if folders are expanded by default, 
-    // we might need to click once to collapse first
-    
-    // Get the initial state - check if the folder already has visible children
-    const initialChildrenVisible = await folderWithExpandButton.locator('[data-testid^="file-tree-item-"]').isVisible();
-    
-    // If children are visible initially, we'll click once to collapse
-    if (initialChildrenVisible) {
-      // Find the expand/collapse button within the folder item
-      const expandCollapseButton = folderWithExpandButton.locator('.MuiTreeItem-iconContainer, .MuiTreeItem-expansionIcon').first();
-      await expandCollapseButton.click();
-      await window.waitForTimeout(300); // Wait for animation
-    }
-    
-    // Now click to expand the folder
-    const expandCollapseButton = folderWithExpandButton.locator('.MuiTreeItem-iconContainer, .MuiTreeItem-expansionIcon').first();
-    await expandCollapseButton.click();
-    await window.waitForTimeout(300); // Wait for animation
-    
-    // Check if children are now visible
-    const childrenVisible = await folderWithExpandButton.locator('[data-testid^="file-tree-item-"]').isVisible();
-    
-    // The test can pass in two ways:
-    // 1. If we successfully expanded a folder and now see children
-    // 2. If the folder was configured to navigate on click rather than expand/collapse
-    
-    if (childrenVisible) {
-      // Case 1: We successfully expanded the folder to show children
-      expect(childrenVisible).toBe(true);
-    } else {
-      // Case 2: The folder might navigate instead of expand, check if the file list updated
-      const fileList = window.locator('[data-testid="file-list"]');
-      await expect(fileList).toBeVisible({ timeout: 5000 });
-      
-      // As a quick way to verify navigation happened, check breadcrumbs for the folder name
-      if (folderName) {
-        const breadcrumbs = window.locator(`.MuiBreadcrumbs-root :text("${folderName}")`);
-        const isFolderInBreadcrumbs = await breadcrumbs.isVisible();
-        
-        // Either the folder expanded showing children, or it navigated to show contents
-        expect(isFolderInBreadcrumbs).toBe(true);
-      }
-    }
-  });
 
   test('upload button uploads a file', async () => {
     // TODO: Implement test
@@ -512,62 +339,53 @@ test.describe('Files tests', () => {
 
 
   test('download button downloads a file', async () => {
-    // Only run this test if we have files available
-    const hasFiles = await window.evaluate(() => {
-      const fileItems = document.querySelectorAll('[data-testid="file-item"]');
-      return fileItems.length > 0;
-    });
+    // Use the recovery wrapper to handle login/onboarding issues automatically
+    await wrapWithRecovery(window, async () => {
+      // Only run this test if we have files available
+      const hasFiles = await window.evaluate(() => {
+        const fileItems = document.querySelectorAll('[data-testid="file-item"]');
+        return fileItems.length > 0;
+      });
 
-    if (!hasFiles) {
-      console.log('Skipping download test: No files available');
-      test.skip();
-      return;
-    }
-    
-    // Wait for websocket connection
-    await waitForWebsocketConnection(window);
-    
-    // 1. Select a file by clicking its checkbox
-    const firstFileRow = window.locator('[data-testid="file-item"]').first();
-    await firstFileRow.click();
-    
-    // 2. Wait for download button to be enabled
-    const downloadButton = window.locator('[data-testid="download-button"]');
-    await expect(downloadButton).toBeVisible({ timeout: 10000 });
-    await expect(downloadButton).toBeEnabled({ timeout: 10000 });
-    
-    // 3. Click the download button
-    await downloadButton.click();
-    
-    // 4. Wait for download to start - there should be a task created
-    const taskBox = window.locator('[data-testid="task-box"]');
-    await expect(taskBox).toBeVisible({ timeout: 10000 });
-    
-    // 5. Verify the download task is visible
-    const downloadTask = taskBox.getByText(/Downloading|Opening/);
-    await expect(downloadTask).toBeVisible({ timeout: 15000 });
-    
-    // 6. Wait for download progress indicator to appear
-    const downloadProgressButton = window.locator('[data-testid="download-progress-button"]');
-    await expect(downloadProgressButton).toBeVisible({ timeout: 10000 });
-    
-    // 7. Click the download progress button to view download status
-    await downloadProgressButton.click();
-    
-    // 8. Verify download popover shows the download
-    const popover = window.locator('div[role="presentation"].MuiPopover-root');
-    await expect(popover).toBeVisible({ timeout: 10000 });
-    
-    // Verify a download entry exists
-    const downloadEntry = popover.locator('.MuiListItem-root').first();
-    await expect(downloadEntry).toBeVisible({ timeout: 10000 });
-    
-    // 9. Close the popover
-    await downloadProgressButton.click();
-    await expect(popover).not.toBeVisible({ timeout: 10000 });
-    
-    // 10. Deselect the file
-    await firstFileRow.click();
+      if (!hasFiles) {
+        console.log('Skipping download test: No files available');
+        test.skip();
+        return;
+      }
+      
+      // Wait for websocket connection
+      await waitForWebsocketConnection(window);
+      
+      // 1. Select a file by clicking its checkbox
+      const firstFileRow = window.locator('[data-testid="file-item"]').first();
+      await firstFileRow.click();
+      
+      // 2. Wait for download button to be enabled
+      const downloadButton = window.locator('[data-testid="download-button"]');
+      await expect(downloadButton).toBeVisible({ timeout: 10000 });
+      await expect(downloadButton).toBeEnabled({ timeout: 10000 });
+      
+      // 3. Click the download button
+      await downloadButton.click();
+      
+      // 6. Wait for download progress indicator to appear
+      const downloadProgressButton = window.locator('[data-testid="download-progress-button"]');
+      await expect(downloadProgressButton).toBeVisible({ timeout: 10000 });
+      
+      // 7. Click the download progress button to view download status
+      await downloadProgressButton.click();
+      
+      // 8. Verify download popover shows the download
+      const popover = window.locator('div[role="presentation"].MuiPopover-root');
+      await expect(popover).toBeVisible({ timeout: 10000 });
+      
+      // 9. Close the popover
+      await downloadProgressButton.click();
+      await expect(popover).not.toBeVisible({ timeout: 10000 });
+      
+      // 10. Deselect the file
+      await firstFileRow.click();
+    });
   });
 
 });

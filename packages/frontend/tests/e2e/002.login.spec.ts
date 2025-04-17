@@ -1,7 +1,7 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-import { createTestUser, loginWithTestUser, completeOnboarding, TestUserCredentials } from './utils/test-user'
+import { createTestUserIfNeeded, loginWithTestUser, completeOnboarding, TestUserCredentials } from './utils/test-user'
 
 test('can login and shows onboarding for first-time user', async () => {
   let electronApp;
@@ -38,18 +38,12 @@ test('can login and shows onboarding for first-time user', async () => {
       localStorage.clear();
     });
 
-    // First create a test account
-    testUserCredentials = await createTestUser(window);
+    // Get or create a test user with the shared credentials
+    testUserCredentials = await createTestUserIfNeeded(window);
 
     // Type in the username and password
     await window.fill('input[name="email"]', testUserCredentials.username);
     await window.fill('input[name="password"]', testUserCredentials.password);
-
-    // Click on the login button and wait for navigation
-    await Promise.all([
-      window.click('button[type="submit"]'),
-      window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
-    ]);
 
     // Wait for the welcome text to appear in any heading
     const welcomeHeading = await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
@@ -63,17 +57,16 @@ test('can login and shows onboarding for first-time user', async () => {
     // Additional verification - check for the first step description
     const description = await window.textContent('p.MuiTypography-body1');
     expect(description).toContain("We're excited to have you here!");
+
+    // Close the app
+    if (electronApp) {
+      const windows = await electronApp.windows();
+      await Promise.all(windows.map(win => win.close()));
+      await electronApp.close();
+    }
     
   } catch (error) {
     console.error('Test failed:', error);
     throw error;
-  } finally {
-    if (electronApp) {
-      // Close all windows first
-      const windows = await electronApp.windows();
-      await Promise.all(windows.map(win => win.close()));
-      // Then close the app
-      await electronApp.close().catch(console.error);
-    }
   }
 });

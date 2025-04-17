@@ -1,7 +1,7 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-import { setupTestUser, TestUserCredentials } from './utils/test-user'
+import { ensureLoggedInAndOnboarded, TestUserCredentials } from './utils/test-user'
 
 test.describe('AI tests', () => {
   let electronApp;
@@ -27,8 +27,8 @@ test.describe('AI tests', () => {
     // Ensure the window is loaded
     await window.waitForLoadState('domcontentloaded');
 
-    // Set up a test user (create account, login, complete onboarding)
-    testUserCredentials = await setupTestUser(window);
+    // Ensure we have a logged-in user that has completed onboarding
+    testUserCredentials = await ensureLoggedInAndOnboarded(window);
 
     // Click on the AI tab
     await window.click('[data-testid="sidebar-button-AI"]');

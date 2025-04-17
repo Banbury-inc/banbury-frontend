@@ -1,7 +1,7 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-import { setupTestUser, TestUserCredentials } from './utils/test-user'
+import { ensureLoggedInAndOnboarded, setupTestUser, TestUserCredentials } from './utils/test-user'
 
 test.describe('Devices tests', () => {
   let electronApp;
@@ -27,46 +27,8 @@ test.describe('Devices tests', () => {
     // Ensure the window is loaded
     await window.waitForLoadState('domcontentloaded');
 
-    // Add console error tracking
-    await window.evaluate(() => {
-      (window as any).__TEST_CONSOLE_ERRORS = [];
-      const originalConsoleError = console.error;
-      console.error = function(...args) {
-        (window as any).__TEST_CONSOLE_ERRORS.push(args);
-        originalConsoleError.apply(console, args);
-      };
-
-      // Add network request tracking for debugging
-      const originalFetch = window.fetch;
-      window.fetch = async function(...args) {
-        try {
-          const response = await originalFetch.apply(window, args);
-          return response;
-        } catch (error) {
-          console.error('Fetch error:', error, 'URL:', args[0]);
-          throw error;
-        }
-      };
-
-      // Add XHR tracking
-      const originalXHROpen = XMLHttpRequest.prototype.open;
-      XMLHttpRequest.prototype.open = function(method, url, ...rest) {
-        this._url = url;
-        this._method = method;
-        return originalXHROpen.call(this, method, url, ...rest);
-      };
-
-      const originalXHRSend = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.send = function(...args) {
-        this.addEventListener('error', (e) => {
-          console.error('XHR error:', e, 'URL:', this._url, 'Method:', this._method);
-        });
-        return originalXHRSend.apply(this, args);
-      };
-    });
-
-    // Set up a test user (create account, login, complete onboarding)
-    testUserCredentials = await setupTestUser(window);
+    // Ensure we have a logged-in user that has completed onboarding
+    testUserCredentials = await ensureLoggedInAndOnboarded(window);
 
     // Click on the Devices tab
     await window.click('[data-testid="sidebar-button-Devices"]');
@@ -123,6 +85,9 @@ test.describe('Devices tests', () => {
     // Verify tabs are present
     const tabs = popover.getByRole('button').filter({ hasText: /All downloads|Completed|Skipped|Failed/ });
     await expect(tabs).toHaveCount(4, { timeout: 10000 });
+
+    // Close the popover
+    await popover.click();
   });
 
   test('can view devices in the devices page', async () => {
