@@ -225,6 +225,7 @@ export default function Public_Profile() {
                                         </Box>
                                         <Box sx={{ width: '300px' }}>
                                             <TextField
+                                                data-testid="phone-number-input"
                                                 size="small"
                                                 value={phone_number ?? ''}
                                                 onChange={(e) => setPhoneNumber(e.target.value)}
@@ -250,6 +251,7 @@ export default function Public_Profile() {
                                         </Box>
                                         <Box sx={{ width: '300px' }}>
                                             <TextField
+                                                data-testid="email-input"
                                                 size="small"
                                                 value={email ?? ''}
                                                 onChange={(e) => setEmail(e.target.value)}
@@ -266,6 +268,7 @@ export default function Public_Profile() {
                     </Grid>
                     <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <Button
+                            data-testid="save-button"
                             variant="outlined"
                             size="small"
                             onClick={() => {

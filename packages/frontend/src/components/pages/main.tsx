@@ -528,6 +528,7 @@ export default function PermanentDrawerLeft() {
                           minWidth: '30px',
                         }}
                         onClick={() => handleSidebarChange(text)}
+                        data-testid={`sidebar-button-${text}`}
                       >
                         {text === 'Logs' && <FactCheckOutlinedIcon fontSize='inherit' />}
                         {text === 'Settings' && <SettingsIcon fontSize='inherit' />}

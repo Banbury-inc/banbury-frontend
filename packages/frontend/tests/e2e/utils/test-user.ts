@@ -517,14 +517,14 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
           const startTime = Date.now();
           let deviceAdded = false;
           
-          while (Date.now() - startTime < 15000 && !deviceAdded) {
+          while (Date.now() - startTime < 1000 && !deviceAdded) {
             deviceAdded = await window.evaluate(() => {
               const button = document.querySelector('[data-testid="onboarding-add-device-button"]');
               return Boolean(button && button.textContent && button.textContent.includes('Device Added'));
             });
             
             if (!deviceAdded) {
-              await window.waitForTimeout(500);
+              await window.waitForTimeout(100);
             }
           }
         }
