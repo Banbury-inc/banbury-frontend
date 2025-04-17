@@ -3,14 +3,14 @@ import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
 import { 
   createTestUserIfNeeded, 
-  loginWithTestUser,
+  loginWithTestUser as _loginWithTestUser,
   TestUserCredentials
 } from './utils/test-user'
 
 test.describe('Onboarding tests', () => {
   let electronApp;
   let window;
-  let testUserCredentials: TestUserCredentials;
+  let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
@@ -29,7 +29,7 @@ test.describe('Onboarding tests', () => {
     window = await electronApp.firstWindow();
     
     // Get or create a single test user for all tests
-    testUserCredentials = await createTestUserIfNeeded(window);
+    _testUserCredentials = await createTestUserIfNeeded(window);
   });
 
   test.afterAll(async () => {

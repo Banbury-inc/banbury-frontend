@@ -6,7 +6,7 @@ import { ensureLoggedInAndOnboarded, TestUserCredentials } from './utils/test-us
 test.describe('AI tests', () => {
   let electronApp;
   let window;
-  let testUserCredentials: TestUserCredentials;
+  let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
@@ -28,7 +28,7 @@ test.describe('AI tests', () => {
     await window.waitForLoadState('domcontentloaded');
 
     // Ensure we have a logged-in user that has completed onboarding
-    testUserCredentials = await ensureLoggedInAndOnboarded(window);
+    _testUserCredentials = await ensureLoggedInAndOnboarded(window);
 
     // Click on the AI tab
     await window.click('[data-testid="sidebar-button-AI"]');

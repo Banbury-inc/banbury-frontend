@@ -1,14 +1,12 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-import { ensureLoggedInAndOnboarded, TestUserCredentials, dismissUnexpectedDialogs, wrapWithRecovery } from './utils/test-user'
-import { dialog } from 'electron';
-import { O } from 'ollama/dist/shared/ollama.f6b57f53.js';
+import { ensureLoggedInAndOnboarded, TestUserCredentials, dismissUnexpectedDialogs, wrapWithRecovery as _wrapWithRecovery } from './utils/test-user'
 
 test.describe('Settings tests', () => {
   let electronApp;
   let window;
-  let testUserCredentials: TestUserCredentials;
+  let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
@@ -30,7 +28,7 @@ test.describe('Settings tests', () => {
     await window.waitForLoadState('domcontentloaded');
 
     // Ensure we have a logged-in user that has completed onboarding
-    testUserCredentials = await ensureLoggedInAndOnboarded(window);
+    _testUserCredentials = await ensureLoggedInAndOnboarded(window);
 
     // Click on the Settings tab
     await window.click('[data-testid="sidebar-button-Settings"]');
@@ -53,14 +51,14 @@ test.describe('Settings tests', () => {
     // If not on settings, navigate there
     if (!isOnSettingsPage) {
       await window.click('[data-testid="sidebar-button-Settings"]').catch(error => {
-        console.log('Error clicking settings button:', error);
+        console.warn('Error clicking settings button:', error);
       });
       
       // Wait for settings page to load
       await window.waitForSelector('h1:has-text("Settings")', { 
         timeout: 1000
       }).catch(error => {
-        console.log('Error waiting for settings page:', error);
+        console.warn('Error waiting for settings page:', error);
       });
     }
     

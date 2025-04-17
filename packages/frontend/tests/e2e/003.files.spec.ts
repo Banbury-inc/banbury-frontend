@@ -1,13 +1,13 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-import fs from 'fs'
+import _fs from 'fs'
 import { waitForWebsocketConnection, TestUserCredentials, ensureLoggedInAndOnboarded, dismissUnexpectedDialogs, wrapWithRecovery } from './utils/test-user'
 
 test.describe('Files tests', () => {
   let electronApp;
   let window;
-  let testUserCredentials: TestUserCredentials;
+  let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
@@ -29,7 +29,7 @@ test.describe('Files tests', () => {
     await window.waitForLoadState('domcontentloaded');
 
     // Ensure we have a logged-in user that has completed onboarding
-    testUserCredentials = await ensureLoggedInAndOnboarded(window);
+    _testUserCredentials = await ensureLoggedInAndOnboarded(window);
   });
 
   test.beforeEach(async () => {
@@ -44,7 +44,7 @@ test.describe('Files tests', () => {
     }).then(() => true).catch(() => false);
     
     if (!isMainVisible) {
-      console.log('Main interface not visible, attempting to log in again...');
+      console.info('Main interface not visible, attempting to log in again...');
       await ensureLoggedInAndOnboarded(window);
     }
     
@@ -70,7 +70,7 @@ test.describe('Files tests', () => {
     const count = await downloadButton.count();
     if (count > 0) {
       for (let i = 0; i < count; i++) {
-        await downloadButton.nth(i).evaluate(el => el.outerHTML);
+        console.info(await downloadButton.nth(i).evaluate(el => el.outerHTML));
       }
     }
 
@@ -348,7 +348,7 @@ test.describe('Files tests', () => {
       });
 
       if (!hasFiles) {
-        console.log('Skipping download test: No files available');
+        console.info('Skipping download test: No files available');
         test.skip();
         return;
       }

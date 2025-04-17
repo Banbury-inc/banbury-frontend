@@ -2,9 +2,9 @@ import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
 import { 
-  generateRandomUsername, 
+  generateRandomUsername as _generateRandomUsername, 
   getSharedTestUserCredentials,
-  createTestUserIfNeeded
+  createTestUserIfNeeded as _createTestUserIfNeeded
 } from './utils/test-user'
 
 test.describe('Account creation tests', () => {

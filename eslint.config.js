@@ -13,7 +13,8 @@ module.exports = [
       "**/node_modules/**",
       "**/dependency/**",
       // Specific files to ignore
-      "**/src/renderer/components/common/upload_progress/upload_progress.tsx"
+      "**/src/renderer/components/common/upload_progress/upload_progress.tsx",
+      "**/src/tests/**",
     ],
   },
   {

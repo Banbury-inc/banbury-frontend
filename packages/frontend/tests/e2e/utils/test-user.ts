@@ -1,4 +1,4 @@
-import { Page, BrowserContext } from '@playwright/test';
+import { Page } from '@playwright/test';
 
 // Singleton test user credentials
 let sharedTestUserCredentials: TestUserCredentials | null = null;
@@ -94,6 +94,7 @@ export async function createTestUserIfNeeded(window: Page): Promise<TestUserCred
     // If login is successful, account exists
     return credentials;
   } catch (error) {
+    console.warn('Login failed, likely because account doesn\'t exist:', error);
     // Login failed, likely because account doesn't exist
     // So create a new account
     return await createTestUser(window);
@@ -215,7 +216,7 @@ export async function completeOnboarding(window: Page): Promise<void> {
     
   } catch (error) {
     // If something goes wrong with the detailed approach, fall back to the simpler approach
-    console.log('Error in detailed onboarding flow, falling back to simpler approach', error);
+    console.warn('Error in detailed onboarding flow, falling back to simpler approach', error);
     
     // Simplified approach: just click through all steps
     for (let i = 0; i < 4; i++) {
@@ -240,7 +241,7 @@ export async function completeOnboarding(window: Page): Promise<void> {
         // Wait a bit for animations
         await window.waitForTimeout(1000);
       } catch (stepError) {
-        console.log(`Error in step ${i} of simplified onboarding, continuing...`, stepError);
+        console.warn(`Error in step ${i} of simplified onboarding, continuing...`, stepError);
         continue;
       }
     }
@@ -250,7 +251,7 @@ export async function completeOnboarding(window: Page): Promise<void> {
   await window.waitForSelector('[data-testid="main-component"]', {
     timeout: 30000
   }).catch(() => {
-    console.log('Could not find main component after onboarding');
+    console.warn('Could not find main component after onboarding');
   });
 }
 
@@ -389,6 +390,7 @@ export async function setupTestUser(window: Page): Promise<TestUserCredentials> 
       await completeOnboarding(window);
     }
   } catch (error) {
+    console.warn('Error checking for onboarding component:', error);
     // Onboarding may already be completed, which is fine
   }
   
@@ -411,7 +413,7 @@ export async function waitForWebsocketConnection(window: Page): Promise<boolean>
         }
         
         // Check if the websocket exists and is connected
-        const isConnected = window.hasOwnProperty('websocket') && 
+        const isConnected = Object.prototype.hasOwnProperty.call(window, 'websocket') && 
                            (window as any).websocket && 
                            (window as any).websocket.readyState === WebSocket.OPEN;
         
@@ -451,6 +453,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       // Try to log in with the credentials
       await loginWithTestUser(window, credentials);
     } catch (error) {
+      console.warn('Login failed, likely because account doesn\'t exist:', error);
       // If login fails, create user and then log in
       await createTestUser(window);
       await loginWithTestUser(window, credentials);
@@ -464,7 +467,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
   }).then(() => true).catch(() => false);
   
   if (isOnboardingVisible) {
-    console.log('Onboarding flow detected, completing it...');
+    console.warn('Onboarding flow detected, completing it...');
     
     // First check which step of onboarding we're on
     const welcomeStep = await window.waitForSelector('h4:has-text("Welcome to Banbury")', { 
@@ -479,18 +482,16 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       timeout: 1000 
     }).then(() => true).catch(() => false);
     
-    const finalStep = !welcomeStep && !addDeviceStep && !scanDeviceStep;
-    
     // Handle each step based on where we are
     if (welcomeStep) {
-      console.log('Handling welcome step');
+      console.warn('Handling welcome step');
       try {
         // Click Next on welcome step
         const nextButton = await window.waitForSelector('button:has-text("Next")', { timeout: 3000 });
         await nextButton.click();
         await window.waitForTimeout(500);
       } catch (error) {
-        console.log('Error in welcome step, continuing', error);
+        console.warn('Error in welcome step, continuing', error);
       }
     }
     
@@ -500,7 +501,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     }).then(() => true).catch(() => false);
     
     if (addDeviceStep || isAddDeviceVisible) {
-      console.log('Handling add device step');
+      console.warn('Handling add device step');
       try {
         // Click the "Add Device" button
         const addDeviceButton = await window.waitForSelector('[data-testid="onboarding-add-device-button"]', {
@@ -536,7 +537,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
         await skipButton.click();
         await window.waitForTimeout(500);
       } catch (error) {
-        console.log('Error in add device step, continuing', error);
+        console.warn('Error in add device step, continuing', error);
       }
     }
     
@@ -546,7 +547,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     }).then(() => true).catch(() => false);
     
     if (scanDeviceStep || isScanDeviceVisible) {
-      console.log('Handling scan device step');
+      console.warn('Handling scan device step');
       try {
         // Click the "Scan Device" button
         const scanDeviceButton = await window.waitForSelector('[data-testid="onboarding-scan-device-button"]', {
@@ -576,8 +577,9 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
               if (Date.now() - startTime > 10000 && !deviceScanned) {
                 try {
                   await scanDeviceButton.click();
-                  console.log('Retrying scan device button click');
+                  console.warn('Retrying scan device button click');
                 } catch (e) {
+                  console.warn('Error clicking scan device button on retry', e);
                   // Ignore errors on retry
                 }
               }
@@ -586,7 +588,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
           
           // If still not scanned, force continue
           if (!deviceScanned) {
-            console.log('Device scan taking too long, forcing continue');
+            console.warn('Device scan taking too long, forcing continue');
           }
         }
         
@@ -597,7 +599,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
         await skipContinueButton.click();
         await window.waitForTimeout(500);
       } catch (error) {
-        console.log('Error in scan device step, continuing', error);
+        console.warn('Error in scan device step, continuing', error);
       }
     }
     
@@ -609,7 +611,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       await finishButton.click();
       await window.waitForTimeout(1000);
     } catch (error) {
-      console.log('Error in final step, continuing', error);
+      console.warn('Error in final step, continuing', error);
     }
     
     // If the detailed steps failed, fall back to the completeOnboarding helper
@@ -619,7 +621,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     }).then(() => true).catch(() => false);
     
     if (isStillOnboarding) {
-      console.log('Still on onboarding, using completeOnboarding helper');
+      console.warn('Still on onboarding, using completeOnboarding helper');
       await completeOnboarding(window);
     }
   }
@@ -660,14 +662,14 @@ export async function dismissUnexpectedDialogs(window: Page): Promise<boolean> {
       if (closeButton) {
         await closeButton.click();
         dismissed = true;
-        console.log('Dismissed a dialog by clicking close button');
+        console.warn('Dismissed a dialog by clicking close button');
       } else {
         // Try clicking outside the dialog (backdrop)
         const backdrop = await window.waitForSelector('.MuiBackdrop-root', { timeout: 1000 }).catch(() => null);
         if (backdrop) {
           await backdrop.click({ position: { x: 10, y: 10 } });
           dismissed = true;
-          console.log('Dismissed a dialog by clicking backdrop');
+          console.warn('Dismissed a dialog by clicking backdrop');
         }
       }
     }
@@ -678,7 +680,7 @@ export async function dismissUnexpectedDialogs(window: Page): Promise<boolean> {
       // Click outside the popover to dismiss it
       await window.mouse.click(0, 0);
       dismissed = true;
-      console.log('Dismissed a popover by clicking outside');
+      console.warn('Dismissed a popover by clicking outside');
     }
     
     // Wait a moment for the dialog/popover to fully close
@@ -687,7 +689,7 @@ export async function dismissUnexpectedDialogs(window: Page): Promise<boolean> {
     }
     
   } catch (error) {
-    console.log('Error trying to dismiss dialogs', error);
+    console.warn('Error trying to dismiss dialogs', error);
   }
   
   return dismissed;
@@ -706,7 +708,7 @@ export async function wrapWithRecovery(window: Page, testFn: () => Promise<void>
     // Try running the test function
     await testFn();
   } catch (error) {
-    console.log('Test failed, attempting recovery...', error);
+    console.warn('Test failed, attempting recovery...', error);
     
     // First dismiss any dialogs
     await dismissUnexpectedDialogs(window);
@@ -718,7 +720,7 @@ export async function wrapWithRecovery(window: Page, testFn: () => Promise<void>
     }).then(() => true).catch(() => false);
     
     if (isLoginVisible) {
-      console.log('Login screen detected, logging in again...');
+      console.warn('Login screen detected, logging in again...');
       await ensureLoggedInAndOnboarded(window);
       
       // Retry the test function
@@ -733,7 +735,7 @@ export async function wrapWithRecovery(window: Page, testFn: () => Promise<void>
     }).then(() => true).catch(() => false);
     
     if (isOnboardingVisible) {
-      console.log('Onboarding screen detected, completing onboarding...');
+      console.warn('Onboarding screen detected, completing onboarding...');
       await ensureLoggedInAndOnboarded(window);
       
       // Retry the test function

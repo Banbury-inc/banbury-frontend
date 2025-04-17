@@ -1,7 +1,7 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-import { createTestUserIfNeeded, loginWithTestUser, completeOnboarding, TestUserCredentials } from './utils/test-user'
+import { createTestUserIfNeeded, loginWithTestUser as _loginWithTestUser, completeOnboarding as _completeOnboarding, TestUserCredentials } from './utils/test-user'
 
 test('can login and shows onboarding for first-time user', async () => {
   let electronApp;

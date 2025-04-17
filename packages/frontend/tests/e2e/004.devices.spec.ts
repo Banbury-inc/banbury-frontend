@@ -1,12 +1,12 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-import { ensureLoggedInAndOnboarded, setupTestUser, TestUserCredentials } from './utils/test-user'
+import { ensureLoggedInAndOnboarded, setupTestUser as _setupTestUser, TestUserCredentials } from './utils/test-user'
 
 test.describe('Devices tests', () => {
   let electronApp;
   let window;
-  let testUserCredentials: TestUserCredentials;
+  let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
@@ -28,7 +28,7 @@ test.describe('Devices tests', () => {
     await window.waitForLoadState('domcontentloaded');
 
     // Ensure we have a logged-in user that has completed onboarding
-    testUserCredentials = await ensureLoggedInAndOnboarded(window);
+    _testUserCredentials = await ensureLoggedInAndOnboarded(window);
 
     // Click on the Devices tab
     await window.click('[data-testid="sidebar-button-Devices"]');
