@@ -12,10 +12,11 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../../renderer/context/AuthContext';
-import { banbury } from '@banbury/core';
 import { handlers } from '../../../../renderer/handlers';
 import path from 'path';
 import os from 'os';
+import { banbury } from '@banbury/core';
+import fs from 'fs';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -144,11 +145,45 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     setError(null);
     try {
       const defaultDirectory = path.join(os.homedir(), 'BCloud');
+      
+      // Make sure the directory exists
+      if (!fs.existsSync(defaultDirectory)) {
+        fs.mkdirSync(defaultDirectory, { recursive: true });
+        // Create a welcome file in the directory
+        const welcomeFilePath = path.join(defaultDirectory, 'welcome.txt');
+        fs.writeFileSync(
+          welcomeFilePath,
+          `Welcome to Banbury Cloud! This is the directory that will contain all of the files that you would like to have in the cloud and streamed throughout all of your devices.`
+        );
+      }
+      
       const task_description = 'Setting up default sync directory';
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
 
-      await handlers.devices.addScannedFolder(defaultDirectory, username ?? '');
+      await banbury.device.add_scanned_folder(defaultDirectory, username ?? '');
       await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      
+      // Start a new task for scanning
+      const scanTaskDescription = 'Scanning files in the default sync directory';
+      const scanTaskInfo = await banbury.sessions.addTask(username ?? '', scanTaskDescription, tasks, setTasks);
+      
+      // Call scanFolder with progress callback
+      await banbury.device.scanFolder(username ?? '', defaultDirectory, (progress, speed) => {
+        if (scanTaskInfo) {
+          // Update task progress
+          scanTaskInfo.task_progress = progress;
+          scanTaskInfo.task_message = `Scanning: ${speed}`;
+          banbury.sessions.updateTask(username ?? '', scanTaskInfo);
+        }
+      });
+      
+      // Complete the scan task
+      if (scanTaskInfo) {
+        scanTaskInfo.task_progress = 100;
+        scanTaskInfo.task_status = 'complete';
+        await banbury.sessions.updateTask(username ?? '', scanTaskInfo);
+      }
+      
       setDeviceScanned(true);
       handleNext();
     } catch (error) {
@@ -176,6 +211,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       case 1: // Add Device step
         return (
           <Button
+            data-testid="onboarding-add-device-button"
             variant="contained"
             color="primary"
             size="small"
@@ -189,6 +225,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       case 2: // Scan Device step
         return (
           <Button
+            data-testid="onboarding-scan-device-button"
             variant="contained"
             color="primary"
             size="small"
@@ -243,6 +280,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             {renderActionButton()}
             
             <Button
+              data-testid="onboarding-next-button"
               variant="contained"
               size="small"
               onClick={handleNext}

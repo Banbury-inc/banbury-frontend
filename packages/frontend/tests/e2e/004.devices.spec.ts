@@ -1,10 +1,12 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
+import { setupTestUser, TestUserCredentials } from './utils/test-user'
 
 test.describe('Devices tests', () => {
   let electronApp;
   let window;
+  let testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
@@ -63,64 +65,11 @@ test.describe('Devices tests', () => {
       };
     });
 
-    // Check if we're already logged in
-    const isLoggedIn = await window.evaluate(() => {
-      return !!localStorage.getItem('authToken');
-    });
+    // Set up a test user (create account, login, complete onboarding)
+    testUserCredentials = await setupTestUser(window);
 
-    if (!isLoggedIn) {
-      // Handle login
-      await window.waitForSelector('input[name="email"]');
-      await window.fill('input[name="email"]', 'mmills');
-      await window.fill('input[name="password"]', 'dirtballer');
-      
-      // Add debug logging before login
-      await window.evaluate(() => {
-      });
-
-      // Click login and wait for response
-      await Promise.all([
-        window.click('button[type="submit"]'),
-        window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
-      ]);
-
-      // Add debug logging after login
-      await window.evaluate(() => {
-      });
-
-      // Check if onboarding is needed
-      const needsOnboarding = await window.evaluate(() => {
-        return !localStorage.getItem('onboarding_mmills');
-      });
-
-      if (needsOnboarding) {
-        // Handle onboarding
-        await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
-          timeout: 30000,
-        });
-
-        // Click through onboarding steps
-        for (let i = 0; i < 4; i++) {
-          // If not the last step, click Next/Skip & Continue
-          if (i < 3) {
-            const nextButton = await window.waitForSelector('button:has-text("Next"), button:has-text("Skip & Continue")', {
-              timeout: 5000
-            });
-            await nextButton.click();
-          } else {
-            // On the last step, click Finish
-            const finishButton = await window.waitForSelector('button:has-text("Finish")', {
-              timeout: 5000
-            });
-            await finishButton.click();
-          }
-          // Wait a bit for animations
-          await window.waitForTimeout(1000);
-        }
-      }
-      // Click on the Devices tab
-      await window.click('[data-testid="sidebar-button-Devices"]');
-    }
+    // Click on the Devices tab
+    await window.click('[data-testid="sidebar-button-Devices"]');
 
     // Wait for the main interface to load
     await window.waitForSelector('[data-testid="main-component"]', {

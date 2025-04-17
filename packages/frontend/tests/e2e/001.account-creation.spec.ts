@@ -1,16 +1,7 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-
-// Function to generate a random username
-function generateRandomUsername(length = 10) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `test_${result}`;
-}
+import { generateRandomUsername } from './utils/test-user'
 
 test.describe('Account creation tests', () => {
   let electronApp;
