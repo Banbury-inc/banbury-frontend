@@ -1,4 +1,4 @@
-# Banbury Cloud
+# Banbury
 
 <p align="center">
 <a href="https://raw.githubusercontent.com/Banbury-inc/Banbury-Cloud/main/packages/frontend/static/NeuraNet_Icons/ios/AppIcon-83.5@2x~ipad.png">
