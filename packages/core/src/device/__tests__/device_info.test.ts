@@ -27,6 +27,17 @@ test('name returns a string', async () => {
   expect(typeof name).toBe('string');
 });
 
+test('ram_usage returns a number between 0 and 100', async () => {
+  const usage = await deviceInfo.ram_usage();
+  expect(usage).toBeGreaterThanOrEqual(0);
+  expect(usage).toBeLessThanOrEqual(100);
+});
+
+test('ram_total returns a positive number', async () => {
+  const total = await deviceInfo.ram_total();
+  expect(total).toBeGreaterThan(0);
+});
+
 test('battery_status returns a number between 0 and 100', async () => {
   const status = await deviceInfo.battery_status();
   expect(status).toBeGreaterThanOrEqual(0);
