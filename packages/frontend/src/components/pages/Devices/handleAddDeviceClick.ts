@@ -31,7 +31,7 @@ export function handleAddDeviceClick(
         // Add default directory and refresh device list
         try {
           const defaultDirectory = path.join(os.homedir(), 'BCloud');
-          await handlers.devices.addScannedFolder(defaultDirectory, username ?? '');
+          await banbury.device.add_scanned_folder(defaultDirectory, username ?? '');
           handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
           await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
           showAlert('Success', ['Device added successfully'], 'success');

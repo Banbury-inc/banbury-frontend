@@ -1,16 +1,11 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
-
-// Function to generate a random username
-function generateRandomUsername(length = 10) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `test_${result}`;
-}
+import { 
+  generateRandomUsername as _generateRandomUsername, 
+  getSharedTestUserCredentials,
+  createTestUserIfNeeded as _createTestUserIfNeeded
+} from './utils/test-user'
 
 test.describe('Account creation tests', () => {
   let electronApp;
@@ -46,13 +41,6 @@ test.describe('Account creation tests', () => {
     await window.evaluate(() => {
       localStorage.clear();
     });
-
-    // Click on "Don't have an account? Sign Up" link
-    const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
-    await signUpLink.click();
-
-    // Wait for the registration form to appear
-    await window.waitForSelector('h1:has-text("Sign up")');
   });
 
   test.afterEach(async () => {
@@ -65,16 +53,23 @@ test.describe('Account creation tests', () => {
     }
   });
 
-  test('can create new account and login successfully', async () => {
+  test('can create new account successfully', async () => {
     try {
-      // Generate a random username
-      const username = generateRandomUsername();
+      // Get the shared test user credentials
+      const credentials = getSharedTestUserCredentials();
 
+      // Click on "Don't have an account? Sign Up" link
+      const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
+      await signUpLink.click();
+
+      // Wait for the registration form to appear
+      await window.waitForSelector('h1:has-text("Sign up")');
+      
       // Fill in the registration form
-      await window.fill('input[name="firstName"]', 'Test');
-      await window.fill('input[name="lastName"]', 'User');
-      await window.fill('input[name="username"]', username);
-      await window.fill('input[name="password"]', 'testpassword123');
+      await window.fill('input[name="firstName"]', credentials.firstName);
+      await window.fill('input[name="lastName"]', credentials.lastName);
+      await window.fill('input[name="username"]', credentials.username);
+      await window.fill('input[name="password"]', credentials.password);
 
       // Submit the registration form
       await window.click('button[type="submit"]');
@@ -82,29 +77,6 @@ test.describe('Account creation tests', () => {
       // Wait for registration success and redirection to login
       await window.waitForSelector('h1:has-text("Sign in")', { timeout: 10000 });
 
-      // Fill in the login form with the newly created account
-      await window.fill('input[name="email"]', username);
-      await window.fill('input[name="password"]', 'testpassword123');
-
-      // Click on the login button and wait for navigation
-      await Promise.all([
-        window.click('button[type="submit"]'),
-        window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
-      ]);
-
-      // Wait for the onboarding component to appear
-      await window.waitForSelector('[data-testid="onboarding-component"]', {
-        timeout: 30000,
-        state: 'visible'
-      });
-
-      // Verify we're on the first step of onboarding
-      const stepLabel = await window.textContent('.MuiStepLabel-label');
-      expect(stepLabel).toContain('Welcome to Banbury');
-
-      // Verify the welcome description
-      const description = await window.textContent('p.MuiTypography-body1');
-      expect(description).toContain("We're excited to have you here!");
     } catch (error) {
       console.error('Test failed:', error);
       throw error;
@@ -113,14 +85,21 @@ test.describe('Account creation tests', () => {
 
   test('shows error when registering existing user', async () => {
     try {
-      // Use a fixed username that we know exists
-      const existingUsername = 'testuser';
+      // Use our shared test user credentials to test duplicate registration
+      const credentials = getSharedTestUserCredentials();
+
+      // Click on "Don't have an account? Sign Up" link
+      const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
+      await signUpLink.click();
+
+      // Wait for the registration form to appear
+      await window.waitForSelector('h1:has-text("Sign up")');
 
       // Fill in the registration form with existing user
-      await window.fill('input[name="firstName"]', 'Test');
-      await window.fill('input[name="lastName"]', 'User');
-      await window.fill('input[name="username"]', existingUsername);
-      await window.fill('input[name="password"]', 'testpassword123');
+      await window.fill('input[name="firstName"]', credentials.firstName);
+      await window.fill('input[name="lastName"]', credentials.lastName);
+      await window.fill('input[name="username"]', credentials.username);
+      await window.fill('input[name="password"]', credentials.password);
 
       // Submit the registration form
       await window.click('button[type="submit"]');

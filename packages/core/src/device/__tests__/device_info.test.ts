@@ -6,17 +6,6 @@ test('cpu_usage returns a number between 0 and 100', async () => {
   expect(usage).toBeLessThanOrEqual(100);
 });
 
-test('ram_usage returns a number between 0 and 100', async () => {
-  const usage = await deviceInfo.ram_usage();
-  expect(usage).toBeGreaterThanOrEqual(0);
-  expect(usage).toBeLessThanOrEqual(100);
-});
-
-test('ram_total returns a positive number', async () => {
-  const total = await deviceInfo.ram_total();
-  expect(total).toBeGreaterThan(0);
-});
-
 test('ram_free returns a non-negative number', async () => {
   const free = await deviceInfo.ram_free();
   expect(free).toBeGreaterThanOrEqual(0);
@@ -36,6 +25,17 @@ test('name returns a string', async () => {
   const name = await deviceInfo.name();
   expect(name).toBeDefined();
   expect(typeof name).toBe('string');
+});
+
+test('ram_usage returns a number between 0 and 100', async () => {
+  const usage = await deviceInfo.ram_usage();
+  expect(usage).toBeGreaterThanOrEqual(0);
+  expect(usage).toBeLessThanOrEqual(100);
+});
+
+test('ram_total returns a positive number', async () => {
+  const total = await deviceInfo.ram_total();
+  expect(total).toBeGreaterThan(0);
 });
 
 test('battery_status returns a number between 0 and 100', async () => {

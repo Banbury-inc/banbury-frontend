@@ -183,6 +183,7 @@ export default function App() {
                         </Grid>
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
+                                data-testid="delete-account-button"
                                 variant="contained"
                                 color="error"
                                 size="small"

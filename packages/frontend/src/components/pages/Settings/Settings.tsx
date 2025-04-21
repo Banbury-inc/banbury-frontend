@@ -135,6 +135,7 @@ export default function Settings() {
               <List component="nav">
                 {sections.map((section) => (
                   <ListItemButton
+                    data-testid={`sidebar-button-${section.id}`}
                     key={section.id}
                     selected={activeSection === section.id}
                     onClick={() => handleSectionClick(section.id)}

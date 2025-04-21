@@ -1,10 +1,12 @@
 import { test, expect, _electron as electron } from '@playwright/test'
 import * as path from 'path'
 import { getElectronConfig } from './utils/electron-config'
+import { ensureLoggedInAndOnboarded, setupTestUser as _setupTestUser, TestUserCredentials } from './utils/test-user'
 
 test.describe('Devices tests', () => {
   let electronApp;
   let window;
+  let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the correct path to the Electron app
@@ -25,102 +27,11 @@ test.describe('Devices tests', () => {
     // Ensure the window is loaded
     await window.waitForLoadState('domcontentloaded');
 
-    // Add console error tracking
-    await window.evaluate(() => {
-      (window as any).__TEST_CONSOLE_ERRORS = [];
-      const originalConsoleError = console.error;
-      console.error = function(...args) {
-        (window as any).__TEST_CONSOLE_ERRORS.push(args);
-        originalConsoleError.apply(console, args);
-      };
+    // Ensure we have a logged-in user that has completed onboarding
+    _testUserCredentials = await ensureLoggedInAndOnboarded(window);
 
-      // Add network request tracking for debugging
-      const originalFetch = window.fetch;
-      window.fetch = async function(...args) {
-        try {
-          const response = await originalFetch.apply(window, args);
-          return response;
-        } catch (error) {
-          console.error('Fetch error:', error, 'URL:', args[0]);
-          throw error;
-        }
-      };
-
-      // Add XHR tracking
-      const originalXHROpen = XMLHttpRequest.prototype.open;
-      XMLHttpRequest.prototype.open = function(method, url, ...rest) {
-        this._url = url;
-        this._method = method;
-        return originalXHROpen.call(this, method, url, ...rest);
-      };
-
-      const originalXHRSend = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.send = function(...args) {
-        this.addEventListener('error', (e) => {
-          console.error('XHR error:', e, 'URL:', this._url, 'Method:', this._method);
-        });
-        return originalXHRSend.apply(this, args);
-      };
-    });
-
-    // Check if we're already logged in
-    const isLoggedIn = await window.evaluate(() => {
-      return !!localStorage.getItem('authToken');
-    });
-
-    if (!isLoggedIn) {
-      // Handle login
-      await window.waitForSelector('input[name="email"]');
-      await window.fill('input[name="email"]', 'mmills');
-      await window.fill('input[name="password"]', 'dirtballer');
-      
-      // Add debug logging before login
-      await window.evaluate(() => {
-      });
-
-      // Click login and wait for response
-      await Promise.all([
-        window.click('button[type="submit"]'),
-        window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
-      ]);
-
-      // Add debug logging after login
-      await window.evaluate(() => {
-      });
-
-      // Check if onboarding is needed
-      const needsOnboarding = await window.evaluate(() => {
-        return !localStorage.getItem('onboarding_mmills');
-      });
-
-      if (needsOnboarding) {
-        // Handle onboarding
-        await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
-          timeout: 30000,
-        });
-
-        // Click through onboarding steps
-        for (let i = 0; i < 4; i++) {
-          // If not the last step, click Next/Skip & Continue
-          if (i < 3) {
-            const nextButton = await window.waitForSelector('button:has-text("Next"), button:has-text("Skip & Continue")', {
-              timeout: 5000
-            });
-            await nextButton.click();
-          } else {
-            // On the last step, click Finish
-            const finishButton = await window.waitForSelector('button:has-text("Finish")', {
-              timeout: 5000
-            });
-            await finishButton.click();
-          }
-          // Wait a bit for animations
-          await window.waitForTimeout(1000);
-        }
-      }
-      // Click on the Devices tab
-      await window.click('[data-testid="sidebar-button-Devices"]');
-    }
+    // Click on the Devices tab
+    await window.click('[data-testid="sidebar-button-Devices"]');
 
     // Wait for the main interface to load
     await window.waitForSelector('[data-testid="main-component"]', {
@@ -174,6 +85,9 @@ test.describe('Devices tests', () => {
     // Verify tabs are present
     const tabs = popover.getByRole('button').filter({ hasText: /All downloads|Completed|Skipped|Failed/ });
     await expect(tabs).toHaveCount(4, { timeout: 10000 });
+
+    // Close the popover
+    await popover.click();
   });
 
   test('can view devices in the devices page', async () => {

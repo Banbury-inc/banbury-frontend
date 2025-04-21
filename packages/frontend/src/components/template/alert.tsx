@@ -41,6 +41,7 @@ export function Alert({ title, messages, variant = 'info', isVisible }: AlertPro
 
     return (
         <div 
+            data-testid={`alert-${variant}`}
             className={`
                 fixed top-4 right-4 z-50 rounded-md p-4 
                 transition-all duration-300 ease-in-out
