@@ -28,27 +28,21 @@ export async function add_scanned_folder(
 
     if (result === 'success') {
 
-      console.log("add scanned folder success");
 
       return result;
     }
     if (result === 'fail') {
-      console.log("add scanned folder failed");
       return 'failed';
     }
     if (result === 'task_already_exists') {
-      console.log("task already exists");
       return 'exists';
     }
 
     else {
-      console.log("add scanned folder failed");
-      console.log(result);
       return 'task_add failed';
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
-    return 'error'; // Ensure an error is returned if the request fails
+    return error;
   }
 }
 

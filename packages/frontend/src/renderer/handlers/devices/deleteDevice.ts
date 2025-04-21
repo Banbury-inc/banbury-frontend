@@ -13,7 +13,6 @@ export function deleteDevice(device_name: string[]): string {
   senderSocket.write(fileHeader);
   senderSocket.write(endOfHeader);
 
-  const jobCompleted = false;
   senderSocket.on('data', (data) => {
     buffer = Buffer.concat([buffer, data]);
     if (buffer.includes(endOfHeader) && !header) {
@@ -24,12 +23,6 @@ export function deleteDevice(device_name: string[]): string {
         header = headerPart.toString();
         buffer = content;
       }
-    }
-  });
-
-  senderSocket.on('end', () => {
-    if (!jobCompleted) {
-      console.log('Connection closed before login completion.');
     }
   });
 

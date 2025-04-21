@@ -13,7 +13,8 @@ module.exports = [
       "**/node_modules/**",
       "**/dependency/**",
       // Specific files to ignore
-      "**/src/renderer/components/common/upload_progress/upload_progress.tsx"
+      "**/src/renderer/components/common/upload_progress/upload_progress.tsx",
+      "**/src/tests/**",
     ],
   },
   {
@@ -57,6 +58,9 @@ module.exports = [
       // TypeScript rules
       "no-unused-vars": "off",
       "no-undef": "off",
+      "no-console": ["error", {
+        allow: ["warn", "error", "info"]
+      }],
       "@typescript-eslint/no-unused-vars": ["error", {
         "vars": "all",
         "args": "after-used",

@@ -11,7 +11,6 @@ export async function backButton(
     setBackHistory([...backHistory, global_file_path]); // Add current path to back history
     setGlobal_file_path(newPath);
     setForwardHistory([]); // Clear forward history
-    console.log(backHistory);
   } else {
     console.warn("Global file path is not defined or is null");
   }

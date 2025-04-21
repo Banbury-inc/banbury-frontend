@@ -1,7 +1,19 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
+const threadLoader = require('thread-loader');
+const { EsbuildPlugin } = require('esbuild-loader');
+
+// Warm up thread-loader
+threadLoader.warmup(
+  {
+    workers: 4,
+    workerParallelJobs: 50,
+  },
+  ['ts-loader', 'css-loader', 'postcss-loader']
+);
 
 const rootPath = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(rootPath, "../..");
 
 const config = {
   resolve: {
@@ -10,20 +22,63 @@ const config = {
     alias: {
       'react': path.resolve('./node_modules/react'),
       'react-dom': path.resolve('./node_modules/react-dom'),
+      'osx-temperature-sensor': false
+    },
+    fallback: {
+      'osx-temperature-sensor': false
     }
   },
   entry: path.resolve(rootPath, "src/renderer", "index.tsx"),
   target: "electron-renderer",
-  devtool: "source-map",
+  devtool: process.env.NODE_ENV === 'development' ? 'eval-cheap-module-source-map' : 'source-map',
+  cache: {
+    type: 'filesystem',
+    buildDependencies: {
+      config: [__filename]
+    }
+  },
+  optimization: {
+    minimizer: [
+      new EsbuildPlugin({
+        target: 'es2015',
+        css: true
+      })
+    ],
+    moduleIds: 'deterministic',
+    runtimeChunk: 'single',
+    splitChunks: {
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+      },
+    },
+  },
   module: {
     rules: [
       {
         test: /\.(js|ts|tsx)$/,
         exclude: /node_modules/,
         include: /src/,
-        use: {
-          loader: "ts-loader",
-        },
+        use: [
+          {
+            loader: 'thread-loader',
+            options: {
+              workers: 4,
+              workerParallelJobs: 50,
+            }
+          },
+          {
+            loader: "esbuild-loader",
+            options: {
+              loader: 'tsx',
+              target: 'es2015',
+              tsconfigRaw: require(path.resolve(projectRoot, 'tsconfig.json'))
+            }
+          }
+        ],
       },
       {
         test: /\.css$/,
@@ -50,8 +105,7 @@ const config = {
       publicPath: "/",
     },
     headers: {
-      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;",
-      'Access-Control-Allow-Origin': '*'
+      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
     },
     port: 8081,
     historyApiFallback: true,

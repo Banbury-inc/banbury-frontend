@@ -33,7 +33,6 @@ export async function deleteFile(
               console.error(`Error deleting directory: ${err}`);
               reject(err);
             } else {
-              console.log(`Directory '${fileName}' deleted successfully at ${filePath}`);
               resolve();
             }
           });
@@ -43,7 +42,6 @@ export async function deleteFile(
               console.error(`Error deleting file: ${err}`);
               reject(err);
             } else {
-              console.log(`File '${fileName}' deleted successfully at ${filePath}`);
               resolve();
             }
           });

@@ -1,5 +1,4 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
-import { devices } from '@playwright/test';
 import { platform } from 'os';
 
 // Platform-specific configurations
@@ -27,7 +26,8 @@ const platformConfig = {
       DISPLAY: process.env.DISPLAY || ':99',
       ELECTRON_ENABLE_LOGGING: '1',
       DEBUG: 'electron*,playwright*'
-    }
+    },
+    headless: true,
   }
 };
 
@@ -38,11 +38,14 @@ const config: PlaywrightTestConfig = {
   timeout: 180000, // 3 minutes
   retries: 2,
   workers: 1,
-  reporter: 'list',
+  headless: true,
+  reporter: [['html', { outputFolder: './tests/playwright-report' }], ['list']],
+  outputDir: './tests/test-results',
   use: {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    headless: true,
     launchOptions: {
       env: {
         ...process.env,
@@ -61,21 +64,10 @@ const config: PlaywrightTestConfig = {
           env: {
             ...process.env,
             ...platformConfig[currentPlatform].env
-          }
+          },
+          headless: true,
         }
       }
-    },
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
     },
   ],
   webServer: {

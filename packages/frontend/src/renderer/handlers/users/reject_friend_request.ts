@@ -17,16 +17,13 @@ export async function rejectFriendRequest(
 
     const result = response.data.result;
     if (result === 'success') {
-      console.log("reject friend request success");
       return 'success';
     }
     if (result === 'fail') {
-      console.log("reject friend request failed");
       return 'failed';
     }
 
     else {
-      console.log("reject friend request failed");
       return 'reject friend request failed';
     }
   } catch (error) {

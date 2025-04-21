@@ -28,7 +28,6 @@ export function addDownloadsInfo(newDownloads: DownloadInfo[]): DownloadInfo[] {
       const downloadingIndex = activeDownloads.findIndex(
         download => download.status === 'downloading'
       );
-      console.log("downloadingIndex", downloadingIndex)
 
       if (downloadingIndex !== -1) {
         // Calculate time remaining
@@ -51,7 +50,6 @@ export function addDownloadsInfo(newDownloads: DownloadInfo[]): DownloadInfo[] {
       const existingDownloadIndex = activeDownloads.findIndex(
         download => download.filename === newDownload.filename
       );
-      console.log("existingDownloadIndex", existingDownloadIndex)
 
       // Calculate time remaining
       const timeRemaining = calculateTimeRemaining(newDownload);

@@ -20,7 +20,6 @@ export async function getUserInfo(username: string) {
     );
 
     if (response.data.status === 'success') {
-      console.log("get user info success");
       const user_data = {
         "first_name": response.data.first_name,
         "last_name": response.data.last_name,
@@ -31,10 +30,8 @@ export async function getUserInfo(username: string) {
         "friends": response.data.friends,
         "online": response.data.online,
       }
-      console.log("user_data", user_data);
       return user_data;
     }
-    console.log("get user info failed. response:", response);
     return null;
   } catch (error) {
     console.error('Error fetching data:', error);

@@ -121,49 +121,64 @@ async function createWindow(): Promise<void> {
       contextIsolation: false,
       devTools: process.env.NODE_ENV !== "production",
       webSecurity: false,
-      allowRunningInsecureContent: true,
+      allowRunningInsecureContent: false,
       webgl: true,
     },
   });
 
+  try {
+    if (process.env.NODE_ENV === "development") {
+      await waitForWebpackReady("http://localhost:8081");
+      mainWindow.loadURL("http://localhost:8081");
+    } else {
+      mainWindow.loadURL(
+        url.format({
+          pathname: path.join(__dirname, "renderer/index.html"),
+          protocol: "file:",
+          slashes: true,
+        })
+      );
+    }
 
-  if (process.env.NODE_ENV === "development") {
-    await waitForWebpackReady("http://localhost:8081");
-    mainWindow.loadURL("http://localhost:8081");
-  } else {
-    mainWindow.loadURL(
-      url.format({
-        pathname: path.join(__dirname, "renderer/index.html"),
-        protocol: "file:",
-        slashes: true,
-      })
-    );
+    mainWindow.on("closed", () => {
+      mainWindow = null;
+    });
+
+    mainWindow.webContents.on('did-finish-load', () => {
+      // Initialize services after window is ready
+      initializeOllama();
+    });
+
+    const updateService = new UpdateService(mainWindow);
+
+    // Check for updates when app starts
+    updateService.checkForUpdates();
+  } catch (error) {
+    if (mainWindow) {
+      mainWindow.webContents.send('show-alert', {
+        title: 'Startup Error',
+        messages: [(error as Error).message || 'Failed to start the application'],
+        variant: 'error'
+      });
+    }
+    throw error; // Re-throw to ensure the error is logged by Electron
   }
-
-  mainWindow.on("closed", () => {
-    mainWindow = null;
-  });
-
-  mainWindow.webContents.on('did-finish-load', () => {
-    // Initialize services after window is ready
-    initializeOllama();
-  });
-
-  const updateService = new UpdateService(mainWindow);
-
-  // Check for updates when app starts
-  updateService.checkForUpdates();
 }
 
 // Add helper function to wait for webpack dev server
 async function waitForWebpackReady(url: string): Promise<void> {
-  const axios = require('axios');
-  while (true) {
+  const maxAttempts = 30; // Maximum number of attempts (30 * 200ms = 6 seconds)
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
     try {
       await axios.get(url);
-      break;
+      return; // Successfully connected
     } catch (error) {
-      console.error(error);
+      attempts++;
+      if (attempts >= maxAttempts) {
+        throw new Error(`Failed to connect to webpack dev server at ${url} after ${maxAttempts} attempts. Error message: ${error}`);
+      }
       await new Promise(resolve => setTimeout(resolve, 200));
     }
   }

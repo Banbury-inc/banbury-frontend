@@ -6,7 +6,6 @@ import { SmallDeviceInfo as SmallDeviceInfoType } from '../types/deviceTypes'; /
 import { banbury } from '../index';
 
 export async function small_ping_request(username: string, senderSocket: net.Socket): Promise<void> {
-  console.log("received small ping request");
   // Handle ping request
   const user = username;
   // let user = Object.keys(credentials)[0];
@@ -92,6 +91,5 @@ export async function ping_request(username: string, senderSocket: net.Socket): 
   };
 
   await banbury.networking.send_device_info(senderSocket, device_info_json);
-  console.log("completed ping request");
 }
 

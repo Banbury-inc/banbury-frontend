@@ -44,6 +44,7 @@ module.exports = {
         '**/build/**',
         '**/node_modules/**',
         '**/dependency/**',
-        'src/renderer/components/common/upload_progress/upload_progress.tsx'
+        'src/renderer/components/common/upload_progress/upload_progress.tsx',
+        'src/tests/**'
     ]
 }; 

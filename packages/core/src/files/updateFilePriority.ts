@@ -8,18 +8,11 @@ export async function updateFilePriority(
     username: string,
     priority: number,
 ) {
-
-
-    console.log('updateFilePriority called with file_id: ', file_id, 'username: ', username, 'priority: ', priority);
-
-
     let url = ''
 
     try {
 
         url = `${CONFIG.url}/predictions/update_file_priority/${username}/`;
-
-
         const response = await axios.post<{ result: string; username: string; }>(url, {
             file_id: file_id,
             priority: priority,
@@ -42,8 +35,7 @@ export async function updateFilePriority(
             return 'task_add failed';
         }
     } catch (error) {
-        console.error('Error fetching data:', error);
-        return 'error'; // Ensure an error is returned if the request fails
+        return error; // Ensure an error is returned if the request fails
     }
 }
 

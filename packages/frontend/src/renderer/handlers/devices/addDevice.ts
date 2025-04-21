@@ -40,8 +40,6 @@ export async function addDevice(username: string) {
 
     // Use the correct URL format as shown in the Django URLconf
     const url = `${banbury.config.url}/devices/add_device/${encodeURIComponent(username)}/${encodeURIComponent(device_name)}/`;
-    console.log('Sending request to:', url);
-    console.log('Device data:', deviceData);
 
     const response = await axios.post(url, deviceData, {
       headers: {
@@ -49,17 +47,12 @@ export async function addDevice(username: string) {
       }
     });
 
-    console.log('Response:', response.data);
 
     if (response.data.result === 'success') {
-      console.log("device add_success");
       return 'success';
     } else if (response.data.result === 'device_already_exists') {
-      console.log("device already exists");
       return 'exists';
     } else {
-      console.log("device_add failed");
-      console.log(response.data);
       return 'failed';
     }
   } catch (error: any) {

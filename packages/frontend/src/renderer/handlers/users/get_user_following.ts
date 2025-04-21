@@ -12,10 +12,8 @@ export async function getUserFollowing(username: string) {
     );
 
     if (response.data.result === 'success') {
-      console.log("get user following success");
       return response;
     }
-    console.log("get user following failed");
     return null;
   } catch (error) {
     console.error('Error fetching data:', error);

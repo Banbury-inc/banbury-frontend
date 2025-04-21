@@ -10,7 +10,7 @@ export function uploadFile(file_path: any) {
   try {
     fs.copyFileSync(file_path, path.join(directory_path, path.basename(file_path)));
   } catch (error) {
-    console.log(`Error copying file: ${error}`);
+    return error;
   }
 
   return '';
