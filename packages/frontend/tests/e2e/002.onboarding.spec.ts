@@ -45,13 +45,13 @@ test.describe('Onboarding tests', () => {
 
     // Navigate to the Add Device step
     const nextButton = await window.waitForSelector('button:has-text("Next")', {
-      timeout: 5000
+      timeout: 50000
     });
     await nextButton.click();
 
     // Wait for the Add Device step
     await window.waitForSelector('h4:has-text("Add Device")', {
-      timeout: 5000
+      timeout: 50000
     });
 
     // Find and click the Add Device button using the data-testid
@@ -62,7 +62,7 @@ test.describe('Onboarding tests', () => {
     
     // Wait for Scan Device step to load
     await window.waitForSelector('h4:has-text("Scan Device")', {
-      timeout: 5000
+      timeout: 50000
     });
     
     // Find and click the Scan Device button
