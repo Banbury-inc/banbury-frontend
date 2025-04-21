@@ -178,7 +178,9 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
-      "teamId": "5Q7W7ZFVLS",
+      "notarize": {
+        "teamId": "5Q7W7ZFVLS"
+      },
       "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
         "dmg",
