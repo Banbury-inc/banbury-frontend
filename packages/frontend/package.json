@@ -109,7 +109,7 @@
     "autoprefixer": "^10.4.20",
     "cross-env": "^7.0.3",
     "electron": "19.0.8",
-    "electron-builder": "^26.0.12",
+    "electron-builder": "^23.6.0",
     "esbuild-loader": "^4.3.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react": "^7.37.4",
@@ -178,9 +178,6 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
-      "notarize": {
-        "teamId": "5Q7W7ZFVLS"
-      },
       "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
         "dmg",
