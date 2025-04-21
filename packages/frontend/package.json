@@ -24,7 +24,7 @@
     "lint:fix": "eslint --fix .",
     "lint:watch": "eslint --watch .",
     "package": "npm-run-all build package:dist",
-    "deploy": "npm run build && electron-builder --publish always",
+    "deploy": "electron-builder --publish always",
     "package:dist": "electron-builder",
     "package:mac": "electron-builder --mac --arm64",
     "package:app": "electron-builder --dir --mac --arm64",
