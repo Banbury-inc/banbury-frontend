@@ -121,7 +121,7 @@ async function createWindow(): Promise<void> {
       contextIsolation: false,
       devTools: process.env.NODE_ENV !== "production",
       webSecurity: false,
-      allowRunningInsecureContent: true,
+      allowRunningInsecureContent: false,
       webgl: true,
     },
   });
