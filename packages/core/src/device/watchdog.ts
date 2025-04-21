@@ -18,6 +18,22 @@ const directory_path: string = path.join(os.homedir(), directory_name);
 const snapshot_json: string = path.join(directory_path, file_name);
 
 
+// Function to ensure the snapshot file exists
+function ensureSnapshotFileExists(): void {
+  try {
+    // Check if directory exists, if not create it
+    if (!fs.existsSync(directory_path)) {
+      fs.mkdirSync(directory_path, { recursive: true });
+    }
+    
+    // Check if file exists, if not create it with empty array
+    if (!fs.existsSync(snapshot_json)) {
+      fs.writeFileSync(snapshot_json, JSON.stringify([], null, 2), 'utf8');
+    }
+  } catch (error) {
+    console.error('Error creating snapshot file:', error);
+  }
+}
 
 function getFileKind(filename: string) {
   const ext = path.extname(filename).toLowerCase();
@@ -97,43 +113,45 @@ function onFileAdded(filePath: string, username: string) {
 
   filesInfo.push(fileInfo);
 
+  try {
+    // Ensure snapshot file exists
+    ensureSnapshotFileExists();
+
+    // Read the snapshot JSON file
+    const data = fs.readFileSync(snapshot_json, 'utf8');
+    const database_snapshot = JSON.parse(data);  // Parse JSON data
 
 
-  // Read the snapshot JSON file
-  const data = fs.readFileSync(snapshot_json, 'utf8');
-  const database_snapshot = JSON.parse(data);  // Parse JSON data
+    // Check if the file already exists in the snapshot
+    const existingFileIndex = database_snapshot.findIndex(
+      (file: { file_name: string; file_path: string }) =>
+        file.file_name === path.basename(filePath) && file.file_path === filePath
+    );
 
+    if (existingFileIndex !== -1) {
+      // If the file already exists, update the existing entry
+      database_snapshot[existingFileIndex] = fileInfo;
+    } else {
+      // If the file does not exist, add the new file to the snapshot
+      database_snapshot.push(fileInfo);
+    }
 
-  // Check if the file already exists in the snapshot
-  const existingFileIndex = database_snapshot.findIndex(
-    (file: { file_name: string; file_path: string }) =>
-      file.file_name === path.basename(filePath) && file.file_path === filePath
-  );
+    // Write the updated JSON back to the file
+    fs.writeFileSync(snapshot_json, JSON.stringify(database_snapshot, null, 2), 'utf8');
 
-  if (existingFileIndex !== -1) {
-    // If the file already exists, update the existing entry
-    database_snapshot[existingFileIndex] = fileInfo;
-  } else {
-    // If the file does not exist, add the new file to the snapshot
-    database_snapshot.push(fileInfo);
+    fileWatcherEmitter.emit('fileChanged');
+
+    // Call the handler to add files
+    banbury.files.addFiles(username, filesInfo);
+  } catch (error) {
+    console.error('Error processing file addition:', error);
   }
-
-  // Write the updated JSON back to the file
-  fs.writeFileSync(snapshot_json, JSON.stringify(database_snapshot, null, 2), 'utf8');
-
-  fileWatcherEmitter.emit('fileChanged');
-
-
-
-  // Call the handler to add files
-  banbury.files.addFiles(username, filesInfo);
 
   filesInfo = [];
 }
 
 // Function that gets triggered when a new file is added
 function onFileDeleted(filePath: string, username: string) {
-
 
   let filesInfo: any[] = [];
   const fileInfo = {
@@ -148,37 +166,38 @@ function onFileDeleted(filePath: string, username: string) {
     "file_parent": '',
     "original_device": '', // Assuming the current device name as the original device
     "kind": '',
-
-
   };
 
   filesInfo.push(fileInfo);
 
+  try {
+    // Ensure snapshot file exists
+    ensureSnapshotFileExists();
+  
+    // Read the snapshot JSON file
+    const data = fs.readFileSync(snapshot_json, 'utf8');
+    let database_snapshot = JSON.parse(data);  // Parse JSON data
 
-  // Read the snapshot JSON file
-  const data = fs.readFileSync(snapshot_json, 'utf8');
-  let database_snapshot = JSON.parse(data);  // Parse JSON data
+    // File to delete (you can adjust this filePath)
+    const file_name_to_delete = path.basename(filePath);
+    const file_path_to_delete = path.join(path.dirname(filePath), path.basename(filePath));
 
-  // File to delete (you can adjust this filePath)
-  const file_name_to_delete = path.basename(filePath);
-  const file_path_to_delete = path.join(path.dirname(filePath), path.basename(filePath));
+    // Search and remove the matching entry in the JSON array
+    database_snapshot = database_snapshot.filter(
+      (file: { file_name: string; file_path: string }) =>
+        !(file.file_name === file_name_to_delete && file.file_path === file_path_to_delete)
+    );
 
-  // Search and remove the matching entry in the JSON array
-  database_snapshot = database_snapshot.filter(
-    (file: { file_name: string; file_path: string }) =>
-      !(file.file_name === file_name_to_delete && file.file_path === file_path_to_delete)
-  );
+    // Write the updated JSON back to the file
+    fs.writeFileSync(snapshot_json, JSON.stringify(database_snapshot, null, 2), 'utf8');
 
-  // Write the updated JSON back to the file
-  fs.writeFileSync(snapshot_json, JSON.stringify(database_snapshot, null, 2), 'utf8');
+    fileWatcherEmitter.emit('fileChanged');
 
-
-
-  fileWatcherEmitter.emit('fileChanged');
-
-
-  // Call the handler to remove files (adjust the neuranet logic as needed)
-  banbury.files.removeFiles(username, os.hostname(), filesInfo);
+    // Call the handler to remove files (adjust the neuranet logic as needed)
+    banbury.files.removeFiles(username, os.hostname(), filesInfo);
+  } catch (error) {
+    console.error('Error processing file deletion:', error);
+  }
 
   filesInfo = [];
 }
@@ -187,6 +206,9 @@ function onFileDeleted(filePath: string, username: string) {
 
 // Function to handle file change events
 export function detectFileChanges(directoryPath: string, username: string) {
+  // Ensure snapshot file exists before starting the watcher
+  ensureSnapshotFileExists();
+  
   // Initialize the watcher
   const watcher = chokidar.watch(directoryPath, {
     persistent: true,
