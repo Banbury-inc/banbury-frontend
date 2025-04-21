@@ -176,6 +176,7 @@
     },
     "mac": {
       "hardenedRuntime": true,
+      "teamId": "5Q7W7ZFVLS",
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
