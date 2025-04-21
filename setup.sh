@@ -5,10 +5,6 @@ set -ex
 
 echo "🚀 Setting up Banbury development environment..."
 
-# Clean all previous builds
-echo "🧹 Cleaning previous builds..."
-npm run clean
-
 # Install dependencies if node_modules doesn't exist
 if [ ! -d "node_modules" ]; then
     echo "📦 Installing dependencies..."
