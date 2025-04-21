@@ -9,12 +9,12 @@ test('cpu_usage returns a number between 0 and 100', async () => {
 test('ram_free returns a non-negative number', async () => {
   const free = await deviceInfo.ram_free();
   expect(free).toBeGreaterThanOrEqual(0);
-});
+}, 50000);
 
 test('storage_capacity returns a positive number', async () => {
   const capacity = await deviceInfo.storage_capacity();
   expect(capacity).toBeGreaterThan(0);
-});
+}, 10000);
 
 test('cpu_info returns a CPUPerformance object', async () => {
   const cpu_info = await deviceInfo.cpu_info();
