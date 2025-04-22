@@ -15,6 +15,9 @@ export interface DownloadInfo {
   totalSize: number;
   downloadedSize: number;
   timeRemaining?: number;
+  // Add fields needed for cancellation
+  sending_device_id?: string;
+  transfer_room?: string;
 }
 
 // Store for active downloads

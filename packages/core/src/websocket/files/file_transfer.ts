@@ -1,6 +1,6 @@
 import os from 'os';
 import { get_device_id } from '../../device/get_device_id';
-import { addDownloadsInfo } from '../../device/add_downloads_info';
+import { addDownloadsInfo, DownloadInfo, getDownloadsInfo, clearDownloadsInfo, cleanupDownloadTracker } from '../../device/add_downloads_info';
 
 
 // Function to send a download request using the provided socket
@@ -53,14 +53,16 @@ export async function download_request(username: string, file_name: string, file
   });
 
   // Create download progress object
-  const downloadInfo = {
+  const downloadInfo: DownloadInfo = {
     filename: fileInfo[0]?.file_name || file_name,
     fileType: fileInfo[0]?.kind || 'Unknown',
     progress: 0,
     status: 'downloading' as const,
     totalSize: fileInfo[0]?.file_size || 0,
     downloadedSize: 0,
-    timeRemaining: undefined
+    timeRemaining: undefined,
+    sending_device_id: sending_device_id,
+    transfer_room: transfer_room,
   };
 
   // Add to downloads tracking
@@ -169,9 +171,16 @@ export async function leaveTransferRoom(socket: WebSocket, transfer_room: string
 }
 
 // Function to send a cancel download request
-export async function cancel_download_request(socket: WebSocket, username: string, filename: string) {
+export async function cancel_download_request(socket: WebSocket, username: string, downloadInfo: DownloadInfo) {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     console.error('WebSocket is not open for cancelling download.');
+    return;
+  }
+
+  if (!downloadInfo.sending_device_id || !downloadInfo.transfer_room) {
+    console.error('Cannot cancel download: Missing sending_device_id or transfer_room in DownloadInfo', downloadInfo);
+    // Optionally update the download status to failed locally
+    addDownloadsInfo([{ ...downloadInfo, status: 'failed' }]); 
     return;
   }
 
@@ -180,13 +189,14 @@ export async function cancel_download_request(socket: WebSocket, username: strin
     const message = {
       message_type: "cancel_download_request",
       username: username,
-      filename: filename,
+      filename: downloadInfo.filename,
       requesting_device_id: requesting_device_id,
-      // We might need transfer_room here if the backend requires it
-      // Ideally, the backend can associate filename + requesting_device_id with the active transfer
+      // Add the required fields for the backend handler
+      sending_device_id: downloadInfo.sending_device_id,
+      transfer_room: downloadInfo.transfer_room,
     };
     socket.send(JSON.stringify(message));
-    console.log(`Sent cancel request for file: ${filename}`);
+    console.log(`Sent cancel request for file: ${downloadInfo.filename} in room ${downloadInfo.transfer_room}`);
 
     // Note: This only sends the request. We might need logic here or elsewhere
     // to handle confirmation or update UI state immediately to 'cancelling'.
@@ -196,5 +206,7 @@ export async function cancel_download_request(socket: WebSocket, username: strin
     console.error('Error sending cancel download request:', error);
     // Optionally send an error message back via websocket if appropriate
     // socket.send(JSON.stringify({ 'error': 'Failed to send cancel request', 'details': error }));
+    // Update status to failed locally on error
+    addDownloadsInfo([{ ...downloadInfo, status: 'failed' }]); 
   }
 } 

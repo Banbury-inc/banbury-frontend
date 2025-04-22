@@ -48,7 +48,7 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
         return;
     }
 
-    await banbury.files.cancel_download_request(websocket, username, downloadToCancel.filename);
+    await banbury.files.cancel_download_request(websocket, username, downloadToCancel);
 
     addDownloadsInfo([
       {
