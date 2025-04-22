@@ -91,7 +91,19 @@ export default function DownloadFileButton({
     } catch (error) {
       console.error('Download error:', error);
       
-      // More specific error handling
+      // Update download status to 'failed' for all selected files
+      const failedDownloadsUpdate = selectedFileInfo.map(fileInfo => ({
+        filename: fileInfo.file_name,
+        fileType: fileInfo.kind || 'Unknown',
+        progress: fileInfo.progress || 0, // Keep existing progress if available
+        status: 'failed' as const,
+        totalSize: fileInfo.file_size || 0,
+        downloadedSize: fileInfo.downloadedSize || 0, // Keep existing downloaded size
+        timeRemaining: undefined
+      }));
+      addDownloadsInfo(failedDownloadsUpdate); // Update the core download info
+
+      // More specific error handling for alerts
       if (error instanceof Error) {
         if (error.message.includes('timed out')) {
           showAlert('Download timed out', ['The download request timed out. Please try again.'], 'error');
