@@ -166,4 +166,35 @@ export async function leaveTransferRoom(socket: WebSocket, transfer_room: string
   } catch (error) {
     socket.send(JSON.stringify({'error': 'Error leaving transfer room', 'details': error}));
   }
+}
+
+// Function to send a cancel download request
+export async function cancel_download_request(socket: WebSocket, username: string, filename: string) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error('WebSocket is not open for cancelling download.');
+    return;
+  }
+
+  try {
+    const requesting_device_id = await get_device_id(username);
+    const message = {
+      message_type: "cancel_download_request",
+      username: username,
+      filename: filename,
+      requesting_device_id: requesting_device_id,
+      // We might need transfer_room here if the backend requires it
+      // Ideally, the backend can associate filename + requesting_device_id with the active transfer
+    };
+    socket.send(JSON.stringify(message));
+    console.log(`Sent cancel request for file: ${filename}`);
+
+    // Note: This only sends the request. We might need logic here or elsewhere
+    // to handle confirmation or update UI state immediately to 'cancelling'.
+    // For now, rely on addDownloadsInfo being called separately.
+
+  } catch (error) {
+    console.error('Error sending cancel download request:', error);
+    // Optionally send an error message back via websocket if appropriate
+    // socket.send(JSON.stringify({ 'error': 'Failed to send cancel request', 'details': error }));
+  }
 } 

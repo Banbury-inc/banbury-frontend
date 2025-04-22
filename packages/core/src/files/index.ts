@@ -9,3 +9,4 @@ export * from './addDeviceIdtoFileSyncFiles';
 export * from './shareFile';
 export * from './makeFilePublic';
 export * from './makeFilePrivate';
+export { cancel_download_request } from '../websocket/files/file_transfer';
