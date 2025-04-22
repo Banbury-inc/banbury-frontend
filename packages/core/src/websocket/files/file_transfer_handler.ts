@@ -54,20 +54,37 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
     // Handle JSON messages
     if (typeof event.data === 'string') {
       const data = JSON.parse(event.data);
+
+      // Check for transfer_room first as it's needed by several types
+      const transfer_room = data.transfer_room;
+
       if (data.type === 'download_request_sent') {
         const file_info = data.file_info[0];
-        fileReceiver.handleFileStart(file_info);
+        // Pass the transfer_room when starting the receiver
+        if (transfer_room) {
+          fileReceiver.handleFileStart(file_info, transfer_room);
+        } else {
+          console.error('[TransferHandler] download_request_sent missing transfer_room');
+        }
         return;
       }
+      
       switch (data.message_type) {
         case 'transfer_room_joined':
-          activeTransferRooms.add(data.transfer_room);
-          
+          if (transfer_room) {
+            activeTransferRooms.add(transfer_room);
+            console.log(`[TransferHandler] Joined room: ${transfer_room}`);
+          }
           break;
 
         case 'file_transfer_start':
         case 'start_file_transfer':
-          fileReceiver.handleFileStart(data.file_info);
+          // Pass transfer_room when starting receiver via this message type too
+          if (transfer_room) {
+            fileReceiver.handleFileStart(data.file_info, transfer_room);
+          } else {
+             console.error(`[TransferHandler] ${data.message_type} missing transfer_room`);
+          }
           break;
 
         case 'file_transfer_complete':
@@ -82,9 +99,9 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
               transfer_room: data.transfer_room
             }));
             // Leave the transfer room after a short delay
-            if (data.transfer_room && activeTransferRooms.has(data.transfer_room)) {
+            if (transfer_room && activeTransferRooms.has(transfer_room)) {
               setTimeout(() => {
-                activeTransferRooms.delete(data.transfer_room);
+                activeTransferRooms.delete(transfer_room);
                 socket.send(JSON.stringify({
                   message_type: 'leave_transfer_room',
                   transfer_room: data.transfer_room,
@@ -101,21 +118,9 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
           }
           break;
 
-        case 'leave_transfer_room':
-          if (data.transfer_room && activeTransferRooms.has(data.transfer_room)) {
-            
-            activeTransferRooms.delete(data.transfer_room);
-            socket.send(JSON.stringify({
-              message_type: 'left_transfer_room',
-              transfer_room: data.transfer_room,
-              timestamp: Date.now()
-            }));
-          }
-          break;
-
         case 'file_transfer_error':
-          if (data.transfer_room) {
-            activeTransferRooms.delete(data.transfer_room);
+          if (transfer_room) {
+            activeTransferRooms.delete(transfer_room);
           }
           fileReceiver.cleanup();
           break;

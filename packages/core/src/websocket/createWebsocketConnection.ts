@@ -8,6 +8,7 @@ import { download_request, handleFileSyncError, FileSyncRequest, handleTransferE
 import { handleFileRequest, cancelFileSend } from './files/file_sender';
 import { handleFileTransferMessage } from './files/file_transfer_handler';
 import { fileReceiver } from './files/file_receiver';
+import { addDownloadsInfo, getDownloadsInfo, DownloadInfo } from '../device/add_downloads_info';
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
@@ -188,14 +189,37 @@ export async function createWebSocketConnection(
           if (typeof event.data === 'string') {
             try {
               const data = JSON.parse(event.data);
-              
-              // Handle cancellation instruction from backend for *sending* client
-              if (data.type === 'cancel_transfer') {
+              const message_type = data.message_type || data.type; // Handle both patterns
+              const transfer_room = data.transfer_room;
+
+              // Handle sender cancellation instruction
+              if (message_type === 'cancel_transfer') {
                 console.log('[WebSocket] Received cancel_transfer instruction:', data);
-                if (data.transfer_room) {
-                  cancelFileSend(data.transfer_room);
+                if (transfer_room) {
+                  cancelFileSend(transfer_room);
                 } else {
                   console.warn('[WebSocket] cancel_transfer message missing transfer_room');
+                }
+                return; 
+              }
+
+              // Handle sender leaving the transfer room (transfer ended/cancelled/errored)
+              if (message_type === 'leave_transfer_room' || message_type === 'left_transfer_room') { // Handle both backend confirmation and sender leaving
+                console.log(`[WebSocket] Received ${message_type} for room:`, transfer_room);
+                if (transfer_room) {
+                  // Stop the receiver from writing more data for this transfer
+                  fileReceiver.stopCurrentTransfer(`Received ${message_type}`);
+
+                  // Find the download and update status to skipped if it was still downloading
+                  const downloads = getDownloadsInfo();
+                  const downloadToUpdate = downloads.find(d => d.transfer_room === transfer_room);
+                  
+                  if (downloadToUpdate && downloadToUpdate.status === 'downloading') {
+                    console.log(`[WebSocket] Marking download as skipped due to ${message_type}:`, downloadToUpdate.filename);
+                    addDownloadsInfo([{ ...downloadToUpdate, status: 'skipped' }]);
+                  } else {
+                    console.log(`[WebSocket] Download for room ${transfer_room} not found or already finished/failed.`);
+                  }
                 }
                 return; // Message handled
               }
@@ -219,11 +243,6 @@ export async function createWebSocketConnection(
               // Handle file requests
               if (data.request_type === 'file_request') {
                 await handleFileRequest(data, socket, tasks, setTasks);
-                return;
-              }
-
-              // Handle left transfer room confirmation
-              if (data.type === 'left_transfer_room') {
                 return;
               }
 
