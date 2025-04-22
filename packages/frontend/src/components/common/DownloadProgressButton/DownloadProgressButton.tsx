@@ -12,23 +12,20 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-// For the trigger button
+import ErrorIcon from '@mui/icons-material/Error';
+import WarningIcon from '@mui/icons-material/Warning';
+import { useAuth } from '../../../renderer/context/AuthContext';
+import { banbury } from '@banbury/core';
+import { addDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
 
 interface DownloadProgressProps {
-  downloads: {
-    filename: string;
-    fileType: string;
-    progress: number;
-    status: 'downloading' | 'completed' | 'failed' | 'skipped';
-    totalSize: number;
-    downloadedSize: number;
-    timeRemaining?: number;
-  }[];
+  downloads: DownloadInfo[];
 }
 
 export default function DownloadProgress({ downloads }: DownloadProgressProps) {
   const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'skipped' | 'failed'>('all');
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const { username, websocket } = useAuth();
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (anchorEl) {
@@ -42,13 +39,33 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
     setAnchorEl(null);
   };
 
+  const handleCancelClick = async (downloadToCancel: DownloadInfo) => {
+    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+      console.error('Cannot cancel download: WebSocket is not open.');
+      return;
+    }
+    if (!username) {
+        console.error('Cannot cancel download: Username not found.');
+        return;
+    }
+
+    await banbury.files.cancel_download_request(websocket, username, downloadToCancel);
+
+    addDownloadsInfo([
+      {
+        ...downloadToCancel,
+        status: 'failed',
+        progress: downloadToCancel.progress,
+        timeRemaining: undefined,
+      },
+    ]);
+  };
+
   const open = Boolean(anchorEl);
   const id = open ? 'progress-popover' : undefined;
 
-  // Show upload count badge if there are active uploads
   const activeDownloads = downloads.filter(download => download.status === 'downloading').length;
 
-  // Add this filtering logic before the return statement
   const filteredDownloads = downloads.filter(download => {
     if (selectedTab === 'all') return true;
     return download.status === selectedTab;
@@ -112,7 +129,6 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
         }}
       >
         <Box sx={{ p: 2 }}>
-          {/* Header */}
           <Box sx={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -125,7 +141,6 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
             </IconButton>
           </Box>
 
-          {/* Tabs */}
           <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
             {['All downloads', 'Completed', 'Skipped', 'Failed'].map((tab) => (
               <Button
@@ -147,7 +162,6 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
             ))}
           </Stack>
 
-          {/* Upload List */}
           <Stack spacing={2}>
             {filteredDownloads.length === 0 ? (
               <Typography sx={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', py: 4 }}>
@@ -164,20 +178,25 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                     p: 1
                   }}
                 >
-                  {/* Status Icon */}
                   {download.status === 'downloading' ? (
                     <CircularProgress size={24} />
-                  ) : (
+                  ) : download.status === 'completed' ? (
                     <CheckCircleIcon color="success" />
-                  )}
+                  ) : download.status === 'failed' ? (
+                    <ErrorIcon color="error" />
+                  ) : download.status === 'skipped' ? (
+                    <WarningIcon sx={{ color: 'warning.main' }} />
+                  ) : null}
 
-                  {/* File Info */}
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ color: 'white' }}>{download.filename}</Typography>
                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
                       {download.status === 'downloading'
                         ? `Downloading ${(download.downloadedSize / (1024 * 1024)).toFixed(1)}mb / ${(download.totalSize / (1024 * 1024)).toFixed(1)}mb - ${download.timeRemaining}s left...`
-                        : `Downloaded to Files`
+                        : download.status === 'completed' ? `Downloaded to Files`
+                        : download.status === 'failed' ? 'Download failed'
+                        : download.status === 'skipped' ? 'Download skipped'
+                        : 'Status unknown'
                       }
                     </Typography>
                     {download.status === 'downloading' && (
@@ -189,7 +208,6 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                     )}
                   </Box>
 
-                  {/* Action Button */}
                   {download.status === 'downloading' ? (
                     <Button
                       variant="contained"
@@ -197,6 +215,7 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                       sx={{
                         fontSize: '12px',
                       }}
+                      onClick={() => handleCancelClick(download)}
                     >
                       Cancel
                     </Button>

@@ -183,6 +183,38 @@ export function downloadFile(username: string, files: string[], devices: string[
             resolve('success');
           }
 
+          // Add handling for download_cancelled message type
+          if (data.type === 'download_cancelled' || data.message_type === 'download_cancelled') {
+            // Update progress to skipped
+            addDownloadsInfo([{
+              filename: files[0],
+              fileType: fileInfo[0]?.kind || 'Unknown',
+              progress: 0,
+              status: 'skipped',
+              totalSize: fileInfo[0]?.file_size || 0,
+              downloadedSize: 0,
+            }]);
+            cleanup();
+            resolve('skipped'); // Resolve with 'skipped' status instead of rejecting
+            return;
+          }
+
+          // Also handle leave_transfer_room as it may indicate a cancelled download
+          if (data.type === 'leave_transfer_room' || data.type === 'left_transfer_room') {
+            // Update progress to skipped if we're still downloading
+            addDownloadsInfo([{
+              filename: files[0],
+              fileType: fileInfo[0]?.kind || 'Unknown',
+              progress: 0,
+              status: 'skipped',
+              totalSize: fileInfo[0]?.file_size || 0,
+              downloadedSize: 0,
+            }]);
+            cleanup();
+            resolve('skipped');
+            return;
+          }
+
           if (['File not found', 'Device offline', 'Permission denied', 'Transfer failed', 'file_transfer_error'].includes(data.message_type || data.message)) {
             console.error('Download error message received:', data);
             // Update progress to failed for remote downloads too

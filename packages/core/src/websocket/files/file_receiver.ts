@@ -16,6 +16,7 @@ class FileReceiver {
   private receivedBytes: number = 0;
   private fileInfo: FileInfo | null = null;
   private downloadPath: string;
+  private currentTransferRoom: string | null = null;
 
   constructor() {
     this.downloadPath = CONFIG.download_destination || path.join(process.env.HOME || process.env.USERPROFILE || '', 'Downloads');
@@ -35,8 +36,13 @@ class FileReceiver {
     }
   }
 
-  public handleFileStart(fileInfo: FileInfo): void {
+  public handleFileStart(fileInfo: FileInfo, transfer_room: string): void {
+    if (this.fileInfo) {
+      console.warn('[FileReceiver] Already handling a transfer. Cleaning up previous.');
+      this.cleanup();
+    }
     this.fileInfo = fileInfo;
+    this.currentTransferRoom = transfer_room;
     const savePath = path.join(this.downloadPath, fileInfo.file_name);
 
     try {
@@ -121,17 +127,25 @@ class FileReceiver {
     }
   }
 
+  public stopCurrentTransfer(): void {
+    if (!this.fileInfo) {
+      return;
+    }
+    this.cleanup();
+  }
+
   public cleanup(): void {
     if (this.fileStream) {
       try {
-        this.fileStream.end();
+        this.fileStream.close();
       } catch (error) {
-        console.error('Error closing file stream:', error);
+        console.error('[FileReceiver] Error closing file stream:', error);
       }
       this.fileStream = null;
     }
     this.fileInfo = null;
     this.receivedBytes = 0;
+    this.currentTransferRoom = null;
   }
 }
 

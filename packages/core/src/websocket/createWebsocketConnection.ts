@@ -5,8 +5,10 @@ import { ConnectionManager } from './connection_manager';
 import { WS_OPTIONS, RECONNECT_CONFIG } from './connection_cleanup';
 import { recordFailure } from './circuit_breaker';
 import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/file_transfer';
-import { handleFileRequest } from './files/file_sender';
+import { handleFileRequest, cancelFileSend } from './files/file_sender';
 import { handleFileTransferMessage } from './files/file_transfer_handler';
+import { fileReceiver } from './files/file_receiver';
+import { addDownloadsInfo, getDownloadsInfo } from '../device/add_downloads_info';
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
@@ -176,9 +178,9 @@ export async function createWebSocketConnection(
       
       socket.onmessage = async function (event: MessageEvent) {
         try {
+
           // Handle binary data (file chunks)
           if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
-
             // Pass to file transfer handler
             await handleFileTransferMessage(event, socket);
             return;
@@ -188,7 +190,38 @@ export async function createWebSocketConnection(
           if (typeof event.data === 'string') {
             try {
               const data = JSON.parse(event.data);
-              
+              const message_type = data.message_type || data.type; // Handle both patterns
+              const transfer_room = data.transfer_room;
+
+              // Handle sender cancellation instruction
+              if (message_type === 'cancel_transfer') {
+                if (transfer_room) {
+                  cancelFileSend(transfer_room);
+                } else {
+                  console.warn('[WebSocket] cancel_transfer message missing transfer_room');
+                }
+                return; 
+              }
+
+              // Handle sender leaving the transfer room (transfer ended/cancelled/errored)
+              if (message_type === 'leave_transfer_room' || message_type === 'left_transfer_room') { // Handle both backend confirmation and sender leaving
+                if (transfer_room) {
+                  // Stop the receiver from writing more data for this transfer
+                  fileReceiver.stopCurrentTransfer();
+
+                  // Find the download and update status to skipped if it was still downloading
+                  const downloads = getDownloadsInfo();
+                  const downloadToUpdate = downloads.find(d => d.transfer_room === transfer_room);
+                  
+                  if (downloadToUpdate && downloadToUpdate.status === 'downloading') {
+                    addDownloadsInfo([{ ...downloadToUpdate, status: 'skipped' }]);
+                  } else {
+                    console.warn(`[WebSocket] Download for room ${transfer_room} not found or already finished/failed.`);
+                  }
+                }
+                return; // Message handled
+              }
+
               // Handle file transfer related messages
               if (data.message_type && (
                 data.message_type.startsWith('file_transfer_') || 
@@ -208,11 +241,6 @@ export async function createWebSocketConnection(
               // Handle file requests
               if (data.request_type === 'file_request') {
                 await handleFileRequest(data, socket, tasks, setTasks);
-                return;
-              }
-
-              // Handle left transfer room confirmation
-              if (data.type === 'left_transfer_room') {
                 return;
               }
 
