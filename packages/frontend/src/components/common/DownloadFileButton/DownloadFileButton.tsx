@@ -91,10 +91,12 @@ export default function DownloadFileButton({
     } catch (error) {
       console.error('Download error:', error);
       
-      // More specific error handling
+      // More specific error handling for alerts
       if (error instanceof Error) {
         if (error.message.includes('timed out')) {
           showAlert('Download timed out', ['The download request timed out. Please try again.'], 'error');
+        } else if (error.message.toLowerCase().includes('file not found')) {
+          showAlert('Download failed', ['The requested file could not be found on any available device.'], 'error');
         } else {
           showAlert('Download failed', [`Error: ${error.message}`], 'error');
         }
