@@ -4,11 +4,11 @@ import banbury from '..';
 import { ConnectionManager } from './connection_manager';
 import { WS_OPTIONS, RECONNECT_CONFIG } from './connection_cleanup';
 import { recordFailure } from './circuit_breaker';
-import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError, updateDownloadProgress, leaveTransferRoom, cancel_download_request } from './files/file_transfer';
+import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/file_transfer';
 import { handleFileRequest, cancelFileSend } from './files/file_sender';
 import { handleFileTransferMessage } from './files/file_transfer_handler';
 import { fileReceiver } from './files/file_receiver';
-import { addDownloadsInfo, getDownloadsInfo, DownloadInfo } from '../device/add_downloads_info';
+import { addDownloadsInfo, getDownloadsInfo } from '../device/add_downloads_info';
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
@@ -179,7 +179,6 @@ export async function createWebSocketConnection(
       socket.onmessage = async function (event: MessageEvent) {
         try {
 
-          console.log('[WebSocket] Received message:', event.data);
           // Handle binary data (file chunks)
           if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
             // Pass to file transfer handler
@@ -196,7 +195,6 @@ export async function createWebSocketConnection(
 
               // Handle sender cancellation instruction
               if (message_type === 'cancel_transfer') {
-                console.log('[WebSocket] Received cancel_transfer instruction:', data);
                 if (transfer_room) {
                   cancelFileSend(transfer_room);
                 } else {
@@ -207,20 +205,18 @@ export async function createWebSocketConnection(
 
               // Handle sender leaving the transfer room (transfer ended/cancelled/errored)
               if (message_type === 'leave_transfer_room' || message_type === 'left_transfer_room') { // Handle both backend confirmation and sender leaving
-                console.log(`[WebSocket] Received ${message_type} for room:`, transfer_room);
                 if (transfer_room) {
                   // Stop the receiver from writing more data for this transfer
-                  fileReceiver.stopCurrentTransfer(`Received ${message_type}`);
+                  fileReceiver.stopCurrentTransfer();
 
                   // Find the download and update status to skipped if it was still downloading
                   const downloads = getDownloadsInfo();
                   const downloadToUpdate = downloads.find(d => d.transfer_room === transfer_room);
                   
                   if (downloadToUpdate && downloadToUpdate.status === 'downloading') {
-                    console.log(`[WebSocket] Marking download as skipped due to ${message_type}:`, downloadToUpdate.filename);
                     addDownloadsInfo([{ ...downloadToUpdate, status: 'skipped' }]);
                   } else {
-                    console.log(`[WebSocket] Download for room ${transfer_room} not found or already finished/failed.`);
+                    console.warn(`[WebSocket] Download for room ${transfer_room} not found or already finished/failed.`);
                   }
                 }
                 return; // Message handled

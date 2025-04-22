@@ -44,7 +44,6 @@ class FileReceiver {
     this.fileInfo = fileInfo;
     this.currentTransferRoom = transfer_room;
     const savePath = path.join(this.downloadPath, fileInfo.file_name);
-    console.log(`[FileReceiver] Starting transfer for room ${transfer_room}, file: ${fileInfo.file_name}`);
 
     try {
       // Create write stream
@@ -98,7 +97,6 @@ class FileReceiver {
     if (!this.fileStream || !this.fileInfo) {
       throw new Error('No active file transfer');
     }
-    console.log(`[FileReceiver] Completing transfer for room ${this.currentTransferRoom}`);
 
     // Store non-null variables locally
     const fileStream = this.fileStream;
@@ -129,11 +127,10 @@ class FileReceiver {
     }
   }
 
-  public stopCurrentTransfer(reason: string = 'stopped externally'): void {
+  public stopCurrentTransfer(): void {
     if (!this.fileInfo) {
       return;
     }
-    console.log(`[FileReceiver] Stopping transfer for room ${this.currentTransferRoom}. Reason: ${reason}`);
     this.cleanup();
   }
 
@@ -149,7 +146,6 @@ class FileReceiver {
     this.fileInfo = null;
     this.receivedBytes = 0;
     this.currentTransferRoom = null;
-    console.log('[FileReceiver] Cleaned up resources.');
   }
 }
 

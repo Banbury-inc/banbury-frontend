@@ -73,7 +73,6 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
         case 'transfer_room_joined':
           if (transfer_room) {
             activeTransferRooms.add(transfer_room);
-            console.log(`[TransferHandler] Joined room: ${transfer_room}`);
           }
           break;
 

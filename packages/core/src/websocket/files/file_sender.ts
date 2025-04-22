@@ -16,7 +16,6 @@ const activeSenders = new Map<string, { shouldCancel: boolean, stream: fs.ReadSt
 export function cancelFileSend(transfer_room: string): void {
   const senderInfo = activeSenders.get(transfer_room);
   if (senderInfo) {
-    console.log(`[FileSender] Received cancel signal for room: ${transfer_room}`);
     senderInfo.shouldCancel = true;
     // The stream will be destroyed and cleaned up in the sending loop
   } else {
@@ -59,7 +58,6 @@ export async function handleFileRequest(
 
     // Add to active senders map *before* starting the loop
     activeSenders.set(transfer_room, { shouldCancel: false, stream: fileStream });
-    console.log(`[FileSender] Starting send for room: ${transfer_room}, file: ${file_name}`);
 
     // Send file transfer start message
     socket.send(JSON.stringify({
@@ -78,7 +76,6 @@ export async function handleFileRequest(
 
       // Check for cancellation signal before sending chunk
       if (senderInfo?.shouldCancel) {
-        console.log(`[FileSender] Cancellation detected for room: ${transfer_room}. Stopping stream.`);
         // Stream will be destroyed in the finally block
         break; // Exit the loop
       }
@@ -104,12 +101,10 @@ export async function handleFileRequest(
     // Check if the loop was exited due to cancellation
     const senderInfoAfterLoop = activeSenders.get(transfer_room);
     if (senderInfoAfterLoop?.shouldCancel) {
-        console.log(`[FileSender] Transfer cancelled for room: ${transfer_room}. Skipping completion message.`);
         // Optionally send a specific cancellation confirmation
         // socket.send(JSON.stringify({ message_type: 'transfer_cancelled_by_sender', transfer_room }));
     } else {
         // Send completion message only if not cancelled
-        console.log(`[FileSender] Sending completion message for room: ${transfer_room}`);
         socket.send(JSON.stringify({
           message_type: 'file_transfer_complete',
           file_name: file_name,
@@ -137,13 +132,11 @@ export async function handleFileRequest(
       transfer_room: transfer_room
     }));
   } finally {
-    console.log(`[FileSender] Cleaning up for room: ${transfer_room}`);
     // Ensure stream is destroyed and entry is removed from map
     if (fileStream) {
       fileStream.destroy();
     }
     activeSenders.delete(transfer_room);
-    console.log(`[FileSender] Removed sender entry for room: ${transfer_room}`);
 
     // Leave transfer room after completion or cancellation
     // It's important the sender also leaves the room
@@ -152,6 +145,5 @@ export async function handleFileRequest(
       transfer_room: transfer_room,
       timestamp: Date.now()
     }));
-    console.log(`[FileSender] Sent leave_transfer_room for room: ${transfer_room}`);
   }
 } 

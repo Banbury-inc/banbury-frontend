@@ -185,7 +185,6 @@ export function downloadFile(username: string, files: string[], devices: string[
 
           // Add handling for download_cancelled message type
           if (data.type === 'download_cancelled' || data.message_type === 'download_cancelled') {
-            console.log('Download cancelled by sender or backend');
             // Update progress to skipped
             addDownloadsInfo([{
               filename: files[0],
@@ -202,7 +201,6 @@ export function downloadFile(username: string, files: string[], devices: string[
 
           // Also handle leave_transfer_room as it may indicate a cancelled download
           if (data.type === 'leave_transfer_room' || data.type === 'left_transfer_room') {
-            console.log('Transfer room left - marking download as skipped');
             // Update progress to skipped if we're still downloading
             addDownloadsInfo([{
               filename: files[0],

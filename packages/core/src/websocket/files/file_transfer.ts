@@ -1,6 +1,6 @@
 import os from 'os';
 import { get_device_id } from '../../device/get_device_id';
-import { addDownloadsInfo, DownloadInfo, getDownloadsInfo, clearDownloadsInfo, cleanupDownloadTracker } from '../../device/add_downloads_info';
+import { addDownloadsInfo, DownloadInfo } from '../../device/add_downloads_info';
 
 
 // Function to send a download request using the provided socket
@@ -196,7 +196,6 @@ export async function cancel_download_request(socket: WebSocket, username: strin
       transfer_room: downloadInfo.transfer_room,
     };
     socket.send(JSON.stringify(message));
-    console.log(`Sent cancel request for file: ${downloadInfo.filename} in room ${downloadInfo.transfer_room}`);
 
     // Note: This only sends the request. We might need logic here or elsewhere
     // to handle confirmation or update UI state immediately to 'cancelling'.
