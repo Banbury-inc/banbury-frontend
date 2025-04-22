@@ -4,9 +4,10 @@ import banbury from '..';
 import { ConnectionManager } from './connection_manager';
 import { WS_OPTIONS, RECONNECT_CONFIG } from './connection_cleanup';
 import { recordFailure } from './circuit_breaker';
-import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/file_transfer';
-import { handleFileRequest } from './files/file_sender';
+import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError, updateDownloadProgress, leaveTransferRoom, cancel_download_request } from './files/file_transfer';
+import { handleFileRequest, cancelFileSend } from './files/file_sender';
 import { handleFileTransferMessage } from './files/file_transfer_handler';
+import { fileReceiver } from './files/file_receiver';
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
@@ -178,7 +179,6 @@ export async function createWebSocketConnection(
         try {
           // Handle binary data (file chunks)
           if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
-
             // Pass to file transfer handler
             await handleFileTransferMessage(event, socket);
             return;
@@ -189,6 +189,17 @@ export async function createWebSocketConnection(
             try {
               const data = JSON.parse(event.data);
               
+              // Handle cancellation instruction from backend for *sending* client
+              if (data.type === 'cancel_transfer') {
+                console.log('[WebSocket] Received cancel_transfer instruction:', data);
+                if (data.transfer_room) {
+                  cancelFileSend(data.transfer_room);
+                } else {
+                  console.warn('[WebSocket] cancel_transfer message missing transfer_room');
+                }
+                return; // Message handled
+              }
+
               // Handle file transfer related messages
               if (data.message_type && (
                 data.message_type.startsWith('file_transfer_') || 
