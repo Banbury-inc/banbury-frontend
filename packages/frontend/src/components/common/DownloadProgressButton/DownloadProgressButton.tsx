@@ -13,6 +13,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 import { addDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
@@ -181,8 +182,10 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                     <CircularProgress size={24} />
                   ) : download.status === 'completed' ? (
                     <CheckCircleIcon color="success" />
-                  ) : download.status === 'failed' || download.status === 'skipped' ? (
+                  ) : download.status === 'failed' ? (
                     <ErrorIcon color="error" />
+                  ) : download.status === 'skipped' ? (
+                    <WarningIcon sx={{ color: 'warning.main' }} />
                   ) : null}
 
                   <Box sx={{ flex: 1 }}>
