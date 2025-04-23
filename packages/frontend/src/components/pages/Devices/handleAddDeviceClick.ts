@@ -4,7 +4,11 @@ import banbury from '@banbury/core';
 import { handlers } from '../../../renderer/handlers';
 import { handleFetchDevices } from './handleFetchDevices';
 
-
+interface DeviceResponse {
+  result: string;
+  message?: string;
+  username?: string;
+}
 
 export function handleAddDeviceClick(
   selectedDevice: any,
@@ -25,9 +29,10 @@ export function handleAddDeviceClick(
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const result = await handlers.devices.addDevice(username ?? '');
+      const response = await handlers.devices.addDevice(username ?? '');
+      const result = response as unknown as DeviceResponse;
 
-      if (result === 'success') {
+      if (result.result === 'success') {
         // Add default directory and refresh device list
         try {
           const defaultDirectory = path.join(os.homedir(), 'BCloud');
@@ -46,6 +51,16 @@ export function handleAddDeviceClick(
           );
           showAlert('Error', ['Failed to set up default directory', folderError instanceof Error ? folderError.message : 'Unknown error'], 'error');
         }
+      } else if (result.result === 'error') {
+        const errorMessage = result.message || 'Failed to add device';
+        await banbury.sessions.failTask(
+          username ?? '',
+          taskInfo,
+          errorMessage,
+          tasks,
+          setTasks
+        );
+        showAlert('Error', [errorMessage], 'error');
       } else {
         await banbury.sessions.failTask(
           username ?? '',
