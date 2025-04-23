@@ -32,15 +32,12 @@ export default function SyncButton() {
 
 
   const handleClick = async (event: React.MouseEvent<HTMLElement>) => {
-    console.log('handleClick');
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     // Fetch folders to display, but don't start scanning
     const syncFolders = await getSyncFolders(devices || [], username || '');
-    console.log('syncFolders', syncFolders);
     if (syncFolders.error && syncFolders.error === 'Failed to get device ID') {
       // set syncData to empty
-      console.log('Device not found, setting syncData to empty');
       setSyncData({ syncingFiles: [], recentlyChanged: [] });
       setDeviceNotFound(true);
       return;
