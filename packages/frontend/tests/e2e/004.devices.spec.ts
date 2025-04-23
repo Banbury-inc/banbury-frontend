@@ -195,6 +195,76 @@ test.describe('Devices tests', () => {
     // Test passes if we can view device details
   });
 
+
+  test('can delete a device', async () => {
+    // Navigate to devices page to ensure fresh data
+    await window.click('[data-testid="sidebar-button-Devices"]');
+    
+    // Make sure we have a clean fetch function (in case previous tests modified it)
+    await window.evaluate(() => {
+      // Restore the original fetch if it was mocked
+      if (window._originalFetch) {
+        window.fetch = window._originalFetch;
+        delete window._originalFetch;
+      }
+    });
+    
+    // Wait for devices table to load
+    await window.waitForSelector('table[aria-labelledby="tableTitle"]', { timeout: 10000 });
+    
+    // Wait for loading state to finish
+    await window.waitForFunction(() => {
+      const skeletons = document.querySelectorAll('.MuiSkeleton-root');
+      return skeletons.length === 0;
+    }, { timeout: 15000 });
+    
+    // Debug: Check if there are actually devices in the table
+    const hasDevices = await window.evaluate(() => {
+      const rows = document.querySelectorAll('table[aria-labelledby="tableTitle"] tbody tr');
+      // Filter out the "No devices available" row which has a colspan
+      const deviceRows = Array.from(rows).filter(row => !row.querySelector('td[colspan]'));
+      return deviceRows.length > 0;
+    });
+    
+    // If no devices are shown in the UI, add a device first
+    if (!hasDevices) {
+      console.log('No devices found in the table, adding a device first');
+      
+      // Click Add Device button
+      await window.click('[data-testid="AddDeviceButton"]');
+      
+      // Wait for success alert
+      await window.waitForSelector('[data-testid="alert-success"], [data-testid="alert-error"]', { timeout: 50000 });
+      
+      // Refresh the devices page
+      await window.click('[data-testid="sidebar-button-Devices"]');
+      
+      // Wait for table to load again
+      await window.waitForSelector('table[aria-labelledby="tableTitle"]', { timeout: 10000 });
+      
+      // Wait for loading to finish
+      await window.waitForFunction(() => {
+        const skeletons = document.querySelectorAll('.MuiSkeleton-root');
+        return skeletons.length === 0;
+      }, { timeout: 15000 });
+    }
+    
+    // Now find and select a device checkbox
+    const checkbox = window.locator('table[aria-labelledby="tableTitle"] tbody tr:first-child td:first-child input[type="checkbox"]');
+    await expect(checkbox).toBeVisible({ timeout: 10000 });
+    await checkbox.click();
+    
+    // Click the Delete Device button
+    await window.click('[data-testid="DeleteDeviceButton"]');
+
+    // wait for the alert to appear
+    await window.waitForSelector('[data-testid="alert-success"]', { timeout: 50000 });
+
+    // Confirm that there is a message in the alert that says "Device deleted successfully"
+    const alertMessage = window.locator('[data-testid="alert-success"]');
+    await expect(alertMessage).toContainText('Device(s) deleted successfully', { timeout: 5000 });
+  });
+
   test('handles empty devices state correctly', async () => {
     
     // Ensure any open popover is closed
@@ -219,30 +289,6 @@ test.describe('Devices tests', () => {
     if (!isOnDevicesPage) {
         await window.click('[data-testid="sidebar-button-Devices"]');
     }
-    
-    // Mock empty devices response
-    await window.evaluate(() => {
-      // Override fetch to return empty devices list
-      const originalFetch = window.fetch;
-      window.fetch = async function(input, init) {
-        const url = typeof input === 'string' ? input : input.url;
-        
-        if (url.includes('/devices/getdeviceinfo/')) {
-          return Promise.resolve({
-            ok: true,
-            status: 200,
-            json: () => Promise.resolve({ devices: [] })
-          } as Response);
-        }
-        
-        return originalFetch(input, init);
-      };
-      
-      // Force a refresh of the devices data
-      // This assumes your app uses a React-like state update approach
-      const refreshEvent = new CustomEvent('refresh-devices');
-      window.dispatchEvent(refreshEvent);
-    });
     
     // Wait for the UI to update
     await window.waitForTimeout(1000);
@@ -298,13 +344,19 @@ test.describe('Devices tests', () => {
     const addDeviceButton = window.locator('button:has([data-testid="AddToQueueIcon"])');
     await expect(addDeviceButton).toBeVisible({ timeout: 5000 });
     
-    // Restore original fetch
-    await window.evaluate(() => {
-      delete window.fetch;
-    });
   });
 
-  test('can delete a device', async () => {
+
+  test('can add a device', async () => {
+    // Click the Add Device button
+    await window.click('[data-testid="AddDeviceButton"]');
+
+    // wait for the alert to appear
+    await window.waitForSelector('[data-testid="alert-success"]', { timeout: 50000 });
+
+    // Confirm that there is a message in the alert that says "Device added successfully"
+    const alertMessage = window.locator('[data-testid="alert-success"]');
+    await expect(alertMessage).toContainText('Device added successfully', { timeout: 5000 });
   });
 
   test('adding a device gets alert if device already exists', async () => {

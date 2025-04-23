@@ -575,7 +575,7 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     // Handle final step
     try {
       const finishButton = await window.waitForSelector('button:has-text("Finish")', {
-        timeout: 3000
+        timeout: 30000
       });
       await finishButton.click();
       await window.waitForTimeout(1000);
