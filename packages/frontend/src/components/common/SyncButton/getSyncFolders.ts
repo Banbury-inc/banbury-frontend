@@ -2,22 +2,30 @@ import banbury from '@banbury/core';
 
 export const getSyncFolders = async (devices: any[], username: string) => {
     try {
-        if (!Array.isArray(devices)) {
-            throw new Error('Invalid devices array provided');
-        }
-
+        console.log('Devices array:', devices);
+        
         const deviceId = await banbury.device.get_device_id(username || 'default');
-        if (!deviceId) {
-            throw new Error('Failed to retrieve device ID');
-        }
+        console.log('Device ID:', deviceId);
 
         const device = devices.find((device) => device._id === deviceId);
+        console.log('Found device:', device);
+        
+        // Check if device is not found
         if (!device) {
-            throw new Error(`Device not found for ID: ${deviceId}`);
+            console.log('Device not found, returning error');
+            return {
+                syncingFiles: [],
+                recentlyChanged: [],
+                error: 'Device not found'
+            };
         }
 
         const scannedFolders = device.scanned_folders || [];
+
+        console.log('scannedFolders', scannedFolders);
+
         const scanProgress = device.scan_progress || {};
+        console.log('scanProgress', scanProgress);
 
         const syncingFiles = scannedFolders.map((folder: any) => ({
             filename: folder,
@@ -30,7 +38,6 @@ export const getSyncFolders = async (devices: any[], username: string) => {
             recentlyChanged: []
         };
     } catch (error) {
-        console.error('Error in getSyncFolders:', error);
         return {
             syncingFiles: [],
             recentlyChanged: [],

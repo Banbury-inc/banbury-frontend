@@ -3,6 +3,7 @@ import { Button, Popover, Box, Typography, Stack, LinearProgress, IconButton, To
 import FolderIcon from '@mui/icons-material/Folder';
 import { banbury } from '@banbury/core';
 import { useAuth } from '../../../renderer/context/AuthContext';
+import { useAlert } from '../../../renderer/context/AlertContext';
 import SyncIcon from '@mui/icons-material/Sync';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
@@ -22,17 +23,29 @@ export default function SyncButton() {
     recentlyChanged: any[];
   }>({ syncingFiles: [], recentlyChanged: [] });
   const [isScanning, setIsScanning] = useState(false);
+  const [deviceNotFound, setDeviceNotFound] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const { username, devices, tasks, setTasks } = useAuth();
+  const { showAlert } = useAlert();
 
 
   const handleClick = async (event: React.MouseEvent<HTMLElement>) => {
+    console.log('handleClick');
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     // Fetch folders to display, but don't start scanning
     const syncFolders = await getSyncFolders(devices || [], username || '');
+    console.log('syncFolders', syncFolders);
+    if (syncFolders.error && syncFolders.error === 'Failed to get device ID') {
+      // set syncData to empty
+      console.log('Device not found, setting syncData to empty');
+      setSyncData({ syncingFiles: [], recentlyChanged: [] });
+      setDeviceNotFound(true);
+      return;
+    }
+    setDeviceNotFound(false);
     // Initialize folders while preserving existing progress
     const foldersWithProgress = {
       ...syncFolders,
@@ -128,6 +141,16 @@ export default function SyncButton() {
 
         if (result === 'success') {
           await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        } else if (result === 'device_not_found') {
+          // Handle device not found error
+          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          showAlert('Device Not Found', ['Current device not added. Please add device before scanning.'], 'error');
+          break; // Stop scanning remaining folders
+        } else if (result === 'unauthorized') {
+          // Handle unauthorized error
+          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          showAlert('Authentication Error', ['You are not authorized to access this resource. Please log in again.'], 'error');
+          break; // Stop scanning remaining folders
         }
       } catch (error) {
         console.error('Sync error:', error);
@@ -223,6 +246,7 @@ export default function SyncButton() {
         <Box sx={{ p: 2 }}>
           <Button
             onClick={triggerFolderSelect}
+            disabled={isScanning || deviceNotFound}
             startIcon={<CreateNewFolderIcon fontSize="inherit" />}
             sx={{
               mr: 2, mb: 2, width: '100%',
@@ -308,10 +332,14 @@ export default function SyncButton() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                color: '#2fca45',
+                color: deviceNotFound ? '#ff6b6b' : '#2fca45',
                 mt: 1
               }}>
-                <Typography>Loading...</Typography>
+                <Typography>
+                  {deviceNotFound 
+                    ? 'Device not added.' 
+                    : 'Loading...'}
+                </Typography>
               </Box>
             )}
           </Stack>
@@ -324,7 +352,7 @@ export default function SyncButton() {
                 fontSize: '12px',
               }}
               onClick={handleSyncClick}
-              disabled={isScanning}
+              disabled={isScanning || deviceNotFound}
               startIcon={<SearchIcon />}
             >
               {isScanning ? 'Scanning...' : 'Scan'}
