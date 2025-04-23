@@ -5,7 +5,6 @@ import path from 'path';
 import { DateTime } from 'luxon';
 import { CONFIG } from '../config';
 import { fetchDeviceData } from './fetchDeviceData';
-import axios from 'axios';
 
 export async function scanFolder(
   username: string,
@@ -143,7 +142,7 @@ export async function scanFolder(
 
       // Final progress update
       return 'success';
-  } catch (error) {
-    return 'error';
+  } catch (error: any) {
+    return 'error: ' + error.message;
   }
 }
