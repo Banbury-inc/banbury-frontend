@@ -19,6 +19,8 @@ export async function delete_device(
     });
     const result = response.data.result;
 
+    console.log('result', result);
+
     if (result === 'success') {
 
 
@@ -36,7 +38,7 @@ export async function delete_device(
     }
 
     else {
-      return 'task_add failed';
+      return 'task_add failed: ' + result;
     }
   } catch (error) {
     return error;

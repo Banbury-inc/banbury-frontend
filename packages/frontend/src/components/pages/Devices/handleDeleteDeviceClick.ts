@@ -24,9 +24,11 @@ export function handleDeleteDeviceClick(
     try {
       const task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      console.log('taskInfo', taskInfo);
       setTaskbox_expanded(true);
 
-      const result = handlers.devices.deleteDevice(selectedDeviceNames);
+      const result = await banbury.device.delete_device(username ?? '');
+      console.log('result', result);
 
       if (result === 'success') {
         handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setFirstname, setIsLoading, setLastname, username);
