@@ -275,6 +275,39 @@ export default function Devices() {
     setSelectedDevice(device);
   };
 
+  const handleCheckboxClick = (event: React.MouseEvent<unknown>, device: DeviceData) => {
+    event.stopPropagation();
+    const deviceName = device.device_name;
+    const selectedIndex = selectedDeviceNames.indexOf(deviceName);
+    let newSelectedDeviceNames: string[] = [];
+
+    if (selectedIndex === -1) {
+      newSelectedDeviceNames = newSelectedDeviceNames.concat(selectedDeviceNames, deviceName);
+    } else if (selectedIndex === 0) {
+      newSelectedDeviceNames = newSelectedDeviceNames.concat(selectedDeviceNames.slice(1));
+    } else if (selectedIndex === selectedDeviceNames.length - 1) {
+      newSelectedDeviceNames = newSelectedDeviceNames.concat(selectedDeviceNames.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelectedDeviceNames = newSelectedDeviceNames.concat(
+        selectedDeviceNames.slice(0, selectedIndex),
+        selectedDeviceNames.slice(selectedIndex + 1)
+      );
+    }
+    
+    setSelectedDeviceNames(newSelectedDeviceNames);
+  };
+
+  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      const newSelectedDeviceNames = allDevices.map((device) => device.device_name);
+      setSelectedDeviceNames(newSelectedDeviceNames);
+      return;
+    }
+    setSelectedDeviceNames([]);
+  };
+
+  const isSelected = (deviceName: string) => selectedDeviceNames.indexOf(deviceName) !== -1;
+
   const handleFoldersUpdate = () => {
     const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
     fetchDevicesFunc();
@@ -407,7 +440,8 @@ export default function Devices() {
               <Grid item paddingRight={1}>
                 <Tooltip title="Delete Device">
                   <Button
-                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setAllDevices, setFirstname, setIsLoading, setLastname, username)}
+                    data-testid="DeleteDeviceButton"
+                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setAllDevices, setFirstname, setIsLoading, setLastname, username, setSelectedDevice)}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >
                     <DeleteIcon fontSize="inherit" />
@@ -442,10 +476,10 @@ export default function Devices() {
               <TableContainer sx={{ maxHeight: '96%', overflowY: 'auto', overflowX: 'auto' }}>
                 <Table aria-labelledby="tableTitle" size="small">
                   <EnhancedTableHead
-                    numSelected={0}
+                    numSelected={selectedDeviceNames.length}
                     order={order}
                     orderBy={orderBy}
-                    onSelectAllClick={() => { }}
+                    onSelectAllClick={handleSelectAllClick}
                     onRequestSort={() => { }}
                     rowCount={allDevices.length}
                   />
@@ -486,8 +520,11 @@ export default function Devices() {
                             >
                               <TableCell padding="checkbox">
                                 <Checkbox
+                                  data-testid={`device-checkbox-${row.id}`}
                                   size='small'
                                   color="primary"
+                                  checked={isSelected(row.device_name)}
+                                  onClick={(event) => handleCheckboxClick(event, row)}
                                   inputProps={{
                                     'aria-labelledby': labelId,
                                   }}

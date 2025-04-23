@@ -1,5 +1,4 @@
 import banbury from '@banbury/core';
-import { handlers } from '../../../renderer/handlers';
 import { handleFetchDevices } from './handleFetchDevices';
 
 export function handleDeleteDeviceClick(
@@ -13,7 +12,8 @@ export function handleDeleteDeviceClick(
   setFirstname: any,
   setIsLoading: any,
   setLastname: any,
-  username: string | null
+  username: string | null,
+  setSelectedDevice?: any
 ) {
   const handleDeleteDevice = async () => {
     if (!selectedDeviceNames.length) {
@@ -26,10 +26,16 @@ export function handleDeleteDeviceClick(
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const result = handlers.devices.deleteDevice(selectedDeviceNames);
+      const result = await banbury.device.delete_device(username ?? '', selectedDeviceNames);
 
-      if (result === 'success') {
-        handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+      if (Array.isArray(result) && result.every(r => r === 'success')) {
+        if (setSelectedDevice) {
+          setSelectedDevice(null);
+        }
+        
+        const fetchDevicesFn = handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+        await fetchDevicesFn();
+        
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         setSelectedDeviceNames([]);
         showAlert('Success', ['Device(s) deleted successfully'], 'success');

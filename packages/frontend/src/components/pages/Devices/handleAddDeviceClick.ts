@@ -36,7 +36,11 @@ export function handleAddDeviceClick(
         try {
           const defaultDirectory = path.join(os.homedir(), 'BCloud');
           await banbury.device.add_scanned_folder(defaultDirectory, username);
-          handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+          
+          // Call fetchDevices function and await its result to ensure it completes before proceeding
+          const fetchDevicesFn = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+          await fetchDevicesFn();
+          
           await banbury.sessions.completeTask(username, taskInfo, tasks, setTasks);
           showAlert('Success', ['Device added successfully'], 'success');
         } catch (folderError) {
