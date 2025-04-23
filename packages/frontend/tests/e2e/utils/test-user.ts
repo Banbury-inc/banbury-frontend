@@ -560,44 +560,13 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
         if (!buttonText.includes('Device Scanned')) {
           await scanDeviceButton.click();
           
-          // Wait for scan to complete with explicit timeout and retries
-          const startTime = Date.now();
-          let deviceScanned = false;
-          
-          while (Date.now() - startTime < 20000 && !deviceScanned) {
-            deviceScanned = await window.evaluate(() => {
-              const button = document.querySelector('[data-testid="onboarding-scan-device-button"]');
-              return Boolean(button && button.textContent && button.textContent.includes('Device Scanned'));
-            });
-            
-            if (!deviceScanned) {
-              await window.waitForTimeout(1000);
-              
-              // If it's taking too long, try clicking again
-              if (Date.now() - startTime > 10000 && !deviceScanned) {
-                try {
-                  await scanDeviceButton.click();
-                  console.warn('Retrying scan device button click');
-                } catch (e) {
-                  console.warn('Error clicking scan device button on retry', e);
-                  // Ignore errors on retry
-                }
-              }
-            }
-          }
-          
-          // If still not scanned, force continue
-          if (!deviceScanned) {
-            console.warn('Device scan taking too long, forcing continue');
-          }
+          // Wait for the Finish button to be visible
+          const finishButton = await window.waitForSelector('button:has-text("Finish")', {
+            timeout: 5000
+          });
+          await finishButton.click();
+          await window.waitForTimeout(1000);
         }
-        
-        // Click Skip & Continue
-        const skipContinueButton = await window.waitForSelector('button:has-text("Skip & Continue")', {
-          timeout: 5000
-        });
-        await skipContinueButton.click();
-        await window.waitForTimeout(500);
       } catch (error) {
         console.warn('Error in scan device step, continuing', error);
       }
