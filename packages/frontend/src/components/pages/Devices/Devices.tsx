@@ -394,6 +394,7 @@ export default function Devices() {
               <Grid item paddingRight={1}>
                 <Tooltip title="Add Device">
                   <Button
+                    data-testid="AddDeviceButton"
                     onClick={handleAddDeviceClick(selectedDevice, setTaskbox_expanded, setTasks, showAlert, tasks, setLastname, setFirstname, setIsLoading, setAllDevices, setSelectedDevice, username)}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >

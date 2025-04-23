@@ -40,10 +40,15 @@ test.describe('Devices tests', () => {
   });
 
   test.beforeEach(async () => {
+
+    // Ensure we're on the Devices page
+    await window.click('[data-testid="sidebar-button-Devices"]');
+
     // Just ensure we're on the main interface before each test
     await window.waitForSelector('[data-testid="main-component"]', {
       timeout: 30000
     });
+
   });
 
   test.afterAll(async () => {
@@ -302,7 +307,16 @@ test.describe('Devices tests', () => {
   test('can delete a device', async () => {
   });
 
-  test('can add a device', async () => {
+  test('adding a device gets alert if device already exists', async () => {
+    // Click the Add Device button
+    await window.click('[data-testid="AddDeviceButton"]');
+
+    // wait for the alert to appear
+    await window.waitForSelector('[data-testid="alert-error"]', { timeout: 50000 });
+
+    // Confirm that there is a message in the alert that says "Device already exists"
+    const alertMessage = window.locator('[data-testid="alert-error"]');
+    await expect(alertMessage).toContainText('Device already exists', { timeout: 5000 });
   });
 
   test('can edit a device', async () => {
