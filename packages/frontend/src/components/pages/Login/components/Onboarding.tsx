@@ -76,10 +76,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const { username, tasks, setTasks } = useAuth();
   const [deviceAdded, setDeviceAdded] = useState(false);
   const [deviceScanned, setDeviceScanned] = useState(false);
+  const [deviceExistsAlert, setDeviceExistsAlert] = useState(false);
 
   const handleAddDevice = async () => {
     setLoading(true);
     setError(null);
+    setDeviceExistsAlert(false);
     let taskInfo: any = null;
     
     try {
@@ -92,17 +94,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
       try {
         // Make sure we're using the correct endpoint
-        const result = await handlers.devices.addDevice(username);
+        const response = await handlers.devices.addDevice(username);
+        console.log('response', response);
+        const result = response.result;
 
         if (result === 'success') {
           setDeviceAdded(true);
           await banbury.sessions.completeTask(username, taskInfo, tasks, setTasks);
           handleNext();
-        } else if (result === 'exists') {
+        } else if (result === 'error' && response.message === 'Device already exists.') {
           // If device already exists, we can consider that a success
           setDeviceAdded(true);
+          setDeviceExistsAlert(true);
           await banbury.sessions.completeTask(username, taskInfo, tasks, setTasks);
-          handleNext();
         } else {
           throw new Error('Failed to add device: ' + result);
         }
@@ -195,6 +199,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   const handleNext = () => {
+    setDeviceExistsAlert(false);
     if (activeStep === steps.length - 1) {
       onComplete();
     } else {
@@ -263,6 +268,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             {error && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 {error}
+              </Alert>
+            )}
+            {deviceExistsAlert && (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                Device already exists. You can continue.
               </Alert>
             )}
           </Box>
