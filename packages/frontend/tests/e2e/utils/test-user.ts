@@ -24,19 +24,19 @@ export interface TestUserCredentials {
 export function getSharedTestUserCredentials(): TestUserCredentials {
   if (!sharedTestUserCredentials) {
     // Create a new shared credentials object
-    // sharedTestUserCredentials = {
-    //   username: generateRandomUsername(),
-    //   password: 'testpassword123',
-    //   firstName: 'Test',
-    //   lastName: 'User'
-    // };
-
     sharedTestUserCredentials = {
-      username: 'mmills',
-      password: 'dirtballer',
-      firstName: 'Michael',
-      lastName: 'Mills'
+      username: generateRandomUsername(),
+      password: 'testpassword123',
+      firstName: 'Test',
+      lastName: 'User'
     };
+
+    // sharedTestUserCredentials = {
+    //   username: 'mmills',
+    //   password: 'dirtballer',
+    //   firstName: 'Michael',
+    //   lastName: 'Mills'
+    // };
   }
   return sharedTestUserCredentials;
 }
