@@ -1,5 +1,4 @@
 import banbury from '@banbury/core';
-import { handlers } from '../../../renderer/handlers';
 import { handleFetchDevices } from './handleFetchDevices';
 
 export function handleDeleteDeviceClick(

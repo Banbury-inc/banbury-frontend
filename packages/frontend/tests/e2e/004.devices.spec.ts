@@ -228,7 +228,6 @@ test.describe('Devices tests', () => {
     
     // If no devices are shown in the UI, add a device first
     if (!hasDevices) {
-      console.log('No devices found in the table, adding a device first');
       
       // Click Add Device button
       await window.click('[data-testid="AddDeviceButton"]');
