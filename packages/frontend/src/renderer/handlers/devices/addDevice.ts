@@ -3,10 +3,6 @@ import * as DateUtils from '../../../../../core/src/utils/dateUtils';
 import banbury from '@banbury/core';
 
 export async function addDevice(username: string) {
-  try {
-    if (!username) {
-      throw new Error('Username is required');
-    }
 
     const device_name = banbury.device.name();
     const storage_capacity_GB = await banbury.device.storage_capacity();
@@ -41,30 +37,22 @@ export async function addDevice(username: string) {
     // Use the correct URL format as shown in the Django URLconf
     const url = `${banbury.config.url}/devices/add_device/${encodeURIComponent(username)}/${encodeURIComponent(device_name)}/`;
 
+    try {
+      const response = await axios.post(url, deviceData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1],
+        },
+        withCredentials: true
+      });
 
-    const response = await axios.post(url, deviceData, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1],
-      },
-      withCredentials: true
-    });
-
-
-    if (response.data.result === 'success') {
-      return 'success';
-    } else if (response.data.result === 'error') {
       return response.data;
-    } else {
-      return response.data;
+    } catch (error) {
+      console.error('Error in addDevice request:', error);
+      return {
+        result: 'error',
+        message: error instanceof Error ? error.message : 'Network request failed'
+      };
     }
-  } catch (error: any) {
-    console.error('Error adding device:', error);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-    }
-    throw error;
-  }
 }
 

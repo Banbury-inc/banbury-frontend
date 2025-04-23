@@ -65,6 +65,9 @@ export default function NotificationsButton() {
   };
 
   const handleMarkAllAsRead = async () => {
+    // Ensure notifications is an array before filtering
+    if (!Array.isArray(notifications)) return;
+    
     // Get all unread notifications
     const unreadNotifications = notifications.filter(notif => !notif.read);
 
@@ -84,6 +87,9 @@ export default function NotificationsButton() {
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
+    // Ensure notifications is an array before filtering
+    if (!Array.isArray(notifications)) return;
+    
     try {
       await banbury.notifications.deleteNotification(notificationId, username as string);
       setNotifications(notifications.filter(n => n._id !== notificationId));
@@ -93,6 +99,9 @@ export default function NotificationsButton() {
   };
 
   const handleDeleteAll = async () => {
+    // Ensure notifications is an array
+    if (!Array.isArray(notifications)) return;
+    
     try {
       await Promise.all(
         notifications.map(notification =>
@@ -107,7 +116,8 @@ export default function NotificationsButton() {
 
   const open = Boolean(anchorEl);
   const id = open ? 'notifications-popover' : undefined;
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Ensure notifications is an array before filtering
+  const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.read).length : 0;
 
   const formatTimestamp = (timestamp: string) => {
     try {

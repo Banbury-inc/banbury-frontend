@@ -155,3 +155,7 @@ dist
 # Local History for Visual Studio Code
 .history/
 .aider*
+
+# Playwright
+**/playwright-report/
+**/test-results/
