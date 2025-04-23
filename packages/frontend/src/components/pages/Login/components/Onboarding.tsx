@@ -95,7 +95,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       try {
         // Make sure we're using the correct endpoint
         const response = await handlers.devices.addDevice(username);
-        console.log('response', response);
         const result = response.result;
 
         if (result === 'success') {
