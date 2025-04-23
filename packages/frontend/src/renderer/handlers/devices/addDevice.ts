@@ -41,7 +41,6 @@ export async function addDevice(username: string) {
     // Use the correct URL format as shown in the Django URLconf
     const url = `${banbury.config.url}/devices/add_device/${encodeURIComponent(username)}/${encodeURIComponent(device_name)}/`;
 
-    console.log(url);
 
     const response = await axios.post(url, deviceData, {
       headers: {
@@ -51,7 +50,6 @@ export async function addDevice(username: string) {
       withCredentials: true
     });
 
-    console.log(response.data);
 
     if (response.data.result === 'success') {
       return 'success';
