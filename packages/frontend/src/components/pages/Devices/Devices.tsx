@@ -440,7 +440,7 @@ export default function Devices() {
               <Grid item paddingRight={1}>
                 <Tooltip title="Delete Device">
                   <Button
-                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setAllDevices, setFirstname, setIsLoading, setLastname, username)}
+                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setAllDevices, setFirstname, setIsLoading, setLastname, username, setSelectedDevice)}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >
                     <DeleteIcon fontSize="inherit" />

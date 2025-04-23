@@ -13,7 +13,8 @@ export function handleDeleteDeviceClick(
   setFirstname: any,
   setIsLoading: any,
   setLastname: any,
-  username: string | null
+  username: string | null,
+  setSelectedDevice?: any
 ) {
   const handleDeleteDevice = async () => {
     if (!selectedDeviceNames.length) {
@@ -24,14 +25,18 @@ export function handleDeleteDeviceClick(
     try {
       const task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
-      console.log('taskInfo', taskInfo);
       setTaskbox_expanded(true);
 
-      const result = await banbury.device.delete_device(username ?? '');
-      console.log('result', result);
+      const result = await banbury.device.delete_device(username ?? '', selectedDeviceNames);
 
-      if (result === 'success') {
-        handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+      if (Array.isArray(result) && result.every(r => r === 'success')) {
+        if (setSelectedDevice) {
+          setSelectedDevice(null);
+        }
+        
+        const fetchDevicesFn = handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+        await fetchDevicesFn();
+        
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         setSelectedDeviceNames([]);
         showAlert('Success', ['Device(s) deleted successfully'], 'success');
