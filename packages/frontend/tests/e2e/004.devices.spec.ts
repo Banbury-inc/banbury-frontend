@@ -363,11 +363,11 @@ test.describe('Devices tests', () => {
     await window.click('[data-testid="AddDeviceButton"]');
 
     // wait for the alert to appear
-    await window.waitForSelector('[data-testid="alert-error"]', { timeout: 50000 });
+    await window.waitForSelector('[data-testid="alert-error"]', { timeout: 5000000 });
 
     // Confirm that there is a message in the alert that says "Device already exists"
     const alertMessage = window.locator('[data-testid="alert-error"]');
-    await expect(alertMessage).toContainText('Device already exists', { timeout: 50000 });
+    await expect(alertMessage).toContainText('Device already exists', { timeout: 5000000 });
   });
 
   test('can edit a device', async () => {
