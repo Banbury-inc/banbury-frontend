@@ -107,7 +107,6 @@ export default function SyncButton() {
   };
 
   const handleSyncClick = async () => {
-    console.log('handleSyncClick');
     setIsScanning(true);
 
     // Only reset progress for folders that haven't completed scanning
@@ -122,7 +121,6 @@ export default function SyncButton() {
 
 
     for (const file of syncData.syncingFiles) {
-      console.log('file', file);
       // Skip already synced files
       if (file.progress === 100) continue;
 

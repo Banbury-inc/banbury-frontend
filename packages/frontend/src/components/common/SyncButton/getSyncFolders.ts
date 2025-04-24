@@ -16,9 +16,7 @@ export const getSyncFolders = async (devices: any[], username: string) => {
     }
 
     const scannedFolders = device.scanned_folders || [];
-    console.log(scannedFolders);
     const scanProgress = device.scan_progress || {};
-    console.log(scanProgress);
     const syncingFiles = scannedFolders.map((folder: any) => ({
       filename: folder,
       progress: scanProgress[folder] || 100,
