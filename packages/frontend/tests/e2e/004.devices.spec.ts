@@ -262,6 +262,9 @@ test.describe('Devices tests', () => {
     // Confirm that there is a message in the alert that says "Device deleted successfully"
     const alertMessage = window.locator('[data-testid="alert-success"]');
     await expect(alertMessage).toContainText('Device(s) deleted successfully', { timeout: 5000 });
+
+    // wait for the alert to disappear
+    await window.waitForSelector('[data-testid="alert-success"]', { state: 'hidden' });
   });
 
   test('handles empty devices state correctly', async () => {
@@ -368,6 +371,9 @@ test.describe('Devices tests', () => {
     // Confirm that there is a message in the alert that says "Device already exists"
     const alertMessage = window.locator('[data-testid="alert-error"]');
     await expect(alertMessage).toContainText('Device already exists', { timeout: 5000000 });
+
+    // wait for the alert to disappear
+    await window.waitForSelector('[data-testid="alert-error"]', { state: 'hidden' });
   });
 
   test('can edit a device', async () => {
