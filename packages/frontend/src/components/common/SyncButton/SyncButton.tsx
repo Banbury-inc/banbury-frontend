@@ -78,7 +78,22 @@ export default function SyncButton() {
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
         const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
-        setSyncData(updatedFolders);
+
+
+        // Initialize folders while preserving existing progress
+        const foldersWithProgress = {
+          ...updatedFolders,
+          syncingFiles: updatedFolders.syncingFiles.map((f: any) => {
+            const existingFile = syncData.syncingFiles.find(ef => ef.filename === f.filename);
+            return {
+              ...f,
+              progress: existingFile ? existingFile.progress : 0,
+              speed: existingFile ? existingFile.speed : undefined
+            };
+          })
+        };
+
+        setSyncData(foldersWithProgress);
       }
     } catch (err) {
       console.error('Failed to sync folder. Please try again. Error:', err);
@@ -92,6 +107,7 @@ export default function SyncButton() {
   };
 
   const handleSyncClick = async () => {
+    console.log('handleSyncClick');
     setIsScanning(true);
 
     // Only reset progress for folders that haven't completed scanning
@@ -104,7 +120,9 @@ export default function SyncButton() {
       }))
     }));
 
+
     for (const file of syncData.syncingFiles) {
+      console.log('file', file);
       // Skip already synced files
       if (file.progress === 100) continue;
 
