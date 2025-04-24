@@ -95,7 +95,7 @@ test.describe('Settings tests', () => {
       
       // Wait for the success notification
       const notification = window.locator('[data-testid="alert-success"]');
-      await expect(notification).toBeVisible({ timeout: 10000 });
+      await expect(notification).toBeVisible();
       
       
       
@@ -119,7 +119,7 @@ test.describe('Settings tests', () => {
       
       // Wait for the success notification
       const notification = window.locator('[data-testid="alert-success"]');
-      await expect(notification).toBeVisible({ timeout: 10000 });
+      await expect(notification).toBeVisible();
 
   });
 

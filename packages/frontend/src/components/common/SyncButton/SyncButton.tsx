@@ -27,7 +27,7 @@ export default function SyncButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { username, devices, tasks, setTasks } = useAuth();
+  const { username, devices, tasks, setTasks, setDevices } = useAuth();
   const { showAlert } = useAlert();
 
 
@@ -75,6 +75,7 @@ export default function SyncButton() {
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         // Get fresh devices data first
         const updatedDevices = await fetchDeviceData(username ?? '');
+        setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
         const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
         setSyncData(updatedFolders);
@@ -177,6 +178,7 @@ export default function SyncButton() {
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         // Get fresh devices data first
         const updatedDevices = await fetchDeviceData(username ?? '');
+        setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
         const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
         setSyncData(updatedFolders);
