@@ -1,5 +1,6 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { platform } from 'os';
+import path from 'path';
 
 // Platform-specific configurations
 const platformConfig = {
@@ -39,6 +40,8 @@ const config: PlaywrightTestConfig = {
   retries: 2,
   workers: 1,
   headless: true,
+  globalSetup: path.join(__dirname, 'tests/e2e/global-setup.ts'),
+  globalTeardown: path.join(__dirname, 'tests/e2e/global-teardown.ts'),
   reporter: [['html', { outputFolder: './tests/playwright-report' }], ['list']],
   outputDir: './tests/test-results',
   use: {

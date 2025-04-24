@@ -27,7 +27,7 @@ export default function SyncButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { username, devices, tasks, setTasks } = useAuth();
+  const { username, devices, tasks, setTasks, setDevices } = useAuth();
   const { showAlert } = useAlert();
 
 
@@ -75,9 +75,25 @@ export default function SyncButton() {
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         // Get fresh devices data first
         const updatedDevices = await fetchDeviceData(username ?? '');
+        setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
         const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
-        setSyncData(updatedFolders);
+
+
+        // Initialize folders while preserving existing progress
+        const foldersWithProgress = {
+          ...updatedFolders,
+          syncingFiles: updatedFolders.syncingFiles.map((f: any) => {
+            const existingFile = syncData.syncingFiles.find(ef => ef.filename === f.filename);
+            return {
+              ...f,
+              progress: existingFile ? existingFile.progress : 0,
+              speed: existingFile ? existingFile.speed : undefined
+            };
+          })
+        };
+
+        setSyncData(foldersWithProgress);
       }
     } catch (err) {
       console.error('Failed to sync folder. Please try again. Error:', err);
@@ -102,6 +118,7 @@ export default function SyncButton() {
         speed: f.progress === 100 ? 'Synced' : undefined
       }))
     }));
+
 
     for (const file of syncData.syncingFiles) {
       // Skip already synced files
@@ -177,6 +194,7 @@ export default function SyncButton() {
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
         // Get fresh devices data first
         const updatedDevices = await fetchDeviceData(username ?? '');
+        setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
         const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
         setSyncData(updatedFolders);
@@ -216,6 +234,7 @@ export default function SyncButton() {
       /> */}
 
       <Popover
+        data-testid="sync-popover"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
@@ -242,6 +261,7 @@ export default function SyncButton() {
       >
         <Box sx={{ p: 2 }}>
           <Button
+            data-testid="add-folder-button"
             onClick={triggerFolderSelect}
             disabled={isScanning || deviceNotFound}
             startIcon={<CreateNewFolderIcon fontSize="inherit" />}
@@ -293,6 +313,7 @@ export default function SyncButton() {
                         </Typography>
                         <Box sx={{ width: '100px' }}>
                           <LinearProgress
+                            data-testid="progress-bar"
                             variant="determinate"
                             value={file.progress}
                             sx={{
@@ -306,6 +327,7 @@ export default function SyncButton() {
                       </>
                     )}
                     <IconButton
+                      data-testid="remove-folder-button"
                       onClick={() => handleRemoveFolder(file.filename)}
                       size="small"
                       sx={{
@@ -343,6 +365,7 @@ export default function SyncButton() {
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             <Button
+              data-testid="scan-button"
               variant="contained"
               size="small"
               sx={{

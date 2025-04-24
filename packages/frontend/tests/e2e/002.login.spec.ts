@@ -1,38 +1,18 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import * as path from 'path'
-import { getElectronConfig } from './utils/electron-config'
+import { test, expect } from '@playwright/test'
 import { createTestUserIfNeeded, loginWithTestUser as _loginWithTestUser, completeOnboarding as _completeOnboarding, TestUserCredentials } from './utils/test-user'
+import { getSharedContext } from './utils/test-runner'
 
 test('can login and shows onboarding for first-time user', async () => {
-  let electronApp;
+  const sharedContext = getSharedContext();
   let testUserCredentials: TestUserCredentials;
   
   try {
-    // Get the correct path to the Electron app
-    const electronPath = path.resolve(__dirname, '../../');
+    // Get the window from shared context
+    const window = sharedContext.window;
+    if (!window) {
+      throw new Error('Window is not initialized');
+    }
     
-    // Launch Electron app with shared configuration
-    electronApp = await electron.launch(getElectronConfig(electronPath))
-      .catch(async (error) => {
-        console.error('Failed to launch electron:', error);
-        throw error;
-      });
-
-    // Wait for app to be ready
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const isPackaged = await electronApp.evaluate(async ({ app }) => {
-      return app.isPackaged;
-    });
-
-    expect(isPackaged).toBe(false);
-
-    // Wait for the first BrowserWindow to open
-    const window = await electronApp.firstWindow();
-    
-    // Ensure the window is loaded
-    await window.waitForLoadState('domcontentloaded');
-
     // Clear localStorage to ensure we're testing first-time login
     await window.evaluate(() => {
       localStorage.clear();
@@ -57,13 +37,6 @@ test('can login and shows onboarding for first-time user', async () => {
     // Additional verification - check for the first step description
     const description = await window.textContent('p.MuiTypography-body1');
     expect(description).toContain("We're excited to have you here!");
-
-    // Close the app
-    if (electronApp) {
-      const windows = await electronApp.windows();
-      await Promise.all(windows.map(win => win.close()));
-      await electronApp.close();
-    }
     
   } catch (error) {
     console.error('Test failed:', error);
