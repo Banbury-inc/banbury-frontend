@@ -1,68 +1,46 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import * as path from 'path'
-import { getElectronConfig } from './utils/electron-config'
+import { test, expect, Page } from '@playwright/test'
 import { ensureLoggedInAndOnboarded, setupTestUser as _setupTestUser, TestUserCredentials } from './utils/test-user'
+import { getSharedContext } from './utils/test-runner'
+
+// This will hold our page object throughout the test file
+let page: Page;
 
 test.describe('Devices tests', () => {
-  let electronApp;
-  let window;
   let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
-    // Get the correct path to the Electron app
-    const electronPath = path.resolve(__dirname, '../../');
-    
-    // Launch Electron app with shared configuration
-    electronApp = await electron.launch(getElectronConfig(electronPath));
+    // Get the shared context
+    const sharedContext = getSharedContext();
+    page = sharedContext.window!;
+    if (!page) {
+      throw new Error('Page is not initialized');
+    }
 
-    const isPackaged = await electronApp.evaluate(async ({ app }) => {
-      return app.isPackaged;
-    });
-
-    expect(isPackaged).toBe(false);
-
-    // Wait for the first BrowserWindow to open
-    window = await electronApp.firstWindow();
-    
-    // Ensure the window is loaded
-    await window.waitForLoadState('domcontentloaded');
-
-    // Ensure we have a logged-in user that has completed onboarding
-    _testUserCredentials = await ensureLoggedInAndOnboarded(window);
+    // Ensure user is logged in and onboarded
+    await ensureLoggedInAndOnboarded(page);
 
     // Click on the Devices tab
-    await window.click('[data-testid="sidebar-button-Devices"]');
+    await page.click('[data-testid="sidebar-button-Devices"]');
 
     // Wait for the main interface to load
-    await window.waitForSelector('[data-testid="main-component"]', {
+    await page.waitForSelector('[data-testid="main-component"]', {
       timeout: 30000
     });
   });
 
   test.beforeEach(async () => {
-
     // Ensure we're on the Devices page
-    await window.click('[data-testid="sidebar-button-Devices"]');
+    await page.click('[data-testid="sidebar-button-Devices"]');
 
     // Just ensure we're on the main interface before each test
-    await window.waitForSelector('[data-testid="main-component"]', {
+    await page.waitForSelector('[data-testid="main-component"]', {
       timeout: 30000
     });
-
-  });
-
-  test.afterAll(async () => {
-    if (electronApp) {
-      const windows = await electronApp.windows();
-      await Promise.all(windows.map(win => win.close()));
-      await electronApp.close();
-    }
   });
 
   test('download progress button is clickable and opens popover', async () => {
-
     // Find and click the download progress button using the test ID
-    const downloadButton = window.locator('[data-testid="download-progress-button"]');
+    const downloadButton = page.locator('[data-testid="download-progress-button"]');
 
     // Log the number of matching elements and their HTML for debugging
     const count = await downloadButton.count();
@@ -80,7 +58,7 @@ test.describe('Devices tests', () => {
     await downloadButton.click();
 
     // Verify the popover appears with increased timeout
-    const popover = window.locator('div[role="presentation"].MuiPopover-root');
+    const popover = page.locator('div[role="presentation"].MuiPopover-root');
     await expect(popover).toBeVisible({ timeout: 10000 });
     
     // Verify popover content
@@ -99,7 +77,7 @@ test.describe('Devices tests', () => {
     // First check API connectivity
     
     // Ensure any open popover is closed by clicking away from it
-    await window.evaluate(() => {
+    await page.evaluate(() => {
       // Try to close any open popovers by clicking on the body
       document.body.click();
       // Also press ESC to close popovers
@@ -115,34 +93,34 @@ test.describe('Devices tests', () => {
     });
     
     // Wait for any popovers to close
-    await window.waitForTimeout(500);
+    await page.waitForTimeout(500);
     
     // Check if we're already on the Devices page
-    const isOnDevicesPage = await window.evaluate(() => {
+    const isOnDevicesPage = await page.evaluate(() => {
       return !!document.querySelector('table[aria-labelledby="tableTitle"]');
     });
     
     if (!isOnDevicesPage) {
-        await window.click('[data-testid="sidebar-button-Devices"]');
+        await page.click('[data-testid="sidebar-button-Devices"]');
     }
     
     // Wait for the page to load
-    await window.waitForTimeout(2000);
+    await page.waitForTimeout(2000);
     
     // Try to find specific elements that should be present in the devices UI
     const devicePageElements = [
-      await window.locator('table[aria-labelledby="tableTitle"]').count(),      // Device table
-      await window.locator('button:has([data-testid="AddToQueueIcon"])').count() // Add device button
+      await page.locator('table[aria-labelledby="tableTitle"]').count(),      // Device table
+      await page.locator('button:has([data-testid="AddToQueueIcon"])').count() // Add device button
     ];
     
     expect(devicePageElements.some(count => count > 0)).toBeTruthy();
     
     // Check that the devices table exists
-    const deviceTable = window.locator('table[aria-labelledby="tableTitle"]');
+    const deviceTable = page.locator('table[aria-labelledby="tableTitle"]');
     await expect(deviceTable).toBeVisible({ timeout: 10000 });
     
     // Wait for loading state to finish (either skeletons disappear or "No devices" message appears)
-    await window.waitForFunction(() => {
+    await page.waitForFunction(() => {
       const skeletons = document.querySelectorAll('.MuiSkeleton-root');
       const noDevicesMsg = document.querySelector('td[colspan="3"] .MuiTypography-body1');
       // Either skeletons are gone OR we see the no devices message
@@ -150,7 +128,7 @@ test.describe('Devices tests', () => {
     }, { timeout: 15000 });
 
     // Determine if the table shows no devices message
-    const hasNoDevicesMessage = await window.evaluate(() => {
+    const hasNoDevicesMessage = await page.evaluate(() => {
       return !!document.querySelector('td[colspan="3"] .MuiTypography-body1');
     });
     
@@ -161,7 +139,7 @@ test.describe('Devices tests', () => {
       await expect(noDevicesMessage).toBeVisible({ timeout: 5000 });
       
       // Check for the "Add Device" button which should be available
-      const addDeviceButton = window.locator('button[title="Add Device"]');
+      const addDeviceButton = page.locator('button[title="Add Device"]');
       await expect(addDeviceButton).toBeVisible({ timeout: 5000 });
       
       // Test passes in empty state
@@ -181,45 +159,44 @@ test.describe('Devices tests', () => {
     await deviceRows.first().click();
     
     // Verify device details panel is visible
-    const deviceDetailsPanel = window.locator('h4').first();
+    const deviceDetailsPanel = page.locator('h4').first();
     await expect(deviceDetailsPanel).toBeVisible({ timeout: 10000 });
     
     // Verify the tabs for device details exist
-    const deviceTabs = window.locator('div[role="tablist"] button');
+    const deviceTabs = page.locator('div[role="tablist"] button');
     await expect(deviceTabs).toHaveCount(3, { timeout: 5000 });
     
     // Verify specific device details sections are visible
-    const deviceInfoSection = window.locator('h6:has-text("Device Info")');
+    const deviceInfoSection = page.locator('h6:has-text("Device Info")');
     await expect(deviceInfoSection).toBeVisible({ timeout: 5000 });
     
     // Test passes if we can view device details
   });
 
-
   test('can delete a device', async () => {
     // Navigate to devices page to ensure fresh data
-    await window.click('[data-testid="sidebar-button-Devices"]');
+    await page.click('[data-testid="sidebar-button-Devices"]');
     
     // Make sure we have a clean fetch function (in case previous tests modified it)
-    await window.evaluate(() => {
+    await page.evaluate(() => {
       // Restore the original fetch if it was mocked
-      if (window._originalFetch) {
-        window.fetch = window._originalFetch;
-        delete window._originalFetch;
+      if ((window as any)._originalFetch) {
+        window.fetch = (window as any)._originalFetch;
+        delete (window as any)._originalFetch;
       }
     });
     
     // Wait for devices table to load
-    await window.waitForSelector('table[aria-labelledby="tableTitle"]', { timeout: 10000 });
+    await page.waitForSelector('table[aria-labelledby="tableTitle"]', { timeout: 10000 });
     
     // Wait for loading state to finish
-    await window.waitForFunction(() => {
+    await page.waitForFunction(() => {
       const skeletons = document.querySelectorAll('.MuiSkeleton-root');
       return skeletons.length === 0;
     }, { timeout: 15000 });
     
     // Debug: Check if there are actually devices in the table
-    const hasDevices = await window.evaluate(() => {
+    const hasDevices = await page.evaluate(() => {
       const rows = document.querySelectorAll('table[aria-labelledby="tableTitle"] tbody tr');
       // Filter out the "No devices available" row which has a colspan
       const deviceRows = Array.from(rows).filter(row => !row.querySelector('td[colspan]'));
@@ -230,47 +207,47 @@ test.describe('Devices tests', () => {
     if (!hasDevices) {
       
       // Click Add Device button
-      await window.click('[data-testid="AddDeviceButton"]');
+      await page.click('[data-testid="AddDeviceButton"]');
       
       // Wait for success alert
-      await window.waitForSelector('[data-testid="alert-success"], [data-testid="alert-error"]', { timeout: 50000 });
+      await page.waitForSelector('[data-testid="alert-success"], [data-testid="alert-error"]', { timeout: 50000 });
       
       // Refresh the devices page
-      await window.click('[data-testid="sidebar-button-Devices"]');
+      await page.click('[data-testid="sidebar-button-Devices"]');
       
       // Wait for table to load again
-      await window.waitForSelector('table[aria-labelledby="tableTitle"]', { timeout: 10000 });
+      await page.waitForSelector('table[aria-labelledby="tableTitle"]', { timeout: 10000 });
       
       // Wait for loading to finish
-      await window.waitForFunction(() => {
+      await page.waitForFunction(() => {
         const skeletons = document.querySelectorAll('.MuiSkeleton-root');
         return skeletons.length === 0;
       }, { timeout: 15000 });
     }
     
     // Now find and select a device checkbox
-    const checkbox = window.locator('table[aria-labelledby="tableTitle"] tbody tr:first-child td:first-child input[type="checkbox"]');
+    const checkbox = page.locator('table[aria-labelledby="tableTitle"] tbody tr:first-child td:first-child input[type="checkbox"]');
     await expect(checkbox).toBeVisible({ timeout: 10000 });
     await checkbox.click();
     
     // Click the Delete Device button
-    await window.click('[data-testid="DeleteDeviceButton"]');
+    await page.click('[data-testid="DeleteDeviceButton"]');
 
     // wait for the alert to appear
-    await window.waitForSelector('[data-testid="alert-success"]', { timeout: 50000 });
+    await page.waitForSelector('[data-testid="alert-success"]', { timeout: 50000 });
 
     // Confirm that there is a message in the alert that says "Device deleted successfully"
-    const alertMessage = window.locator('[data-testid="alert-success"]');
+    const alertMessage = page.locator('[data-testid="alert-success"]');
     await expect(alertMessage).toContainText('Device(s) deleted successfully', { timeout: 5000 });
 
     // wait for the alert to disappear
-    await window.waitForSelector('[data-testid="alert-success"]', { state: 'hidden' });
+    await page.waitForSelector('[data-testid="alert-success"]', { state: 'hidden' });
   });
 
   test('handles empty devices state correctly', async () => {
     
     // Ensure any open popover is closed
-    await window.evaluate(() => {
+    await page.evaluate(() => {
       document.body.click();
       const escKeyEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
@@ -284,22 +261,22 @@ test.describe('Devices tests', () => {
     });
     
     // Navigate to the Devices page
-    const isOnDevicesPage = await window.evaluate(() => {
+    const isOnDevicesPage = await page.evaluate(() => {
       return !!document.querySelector('table[aria-labelledby="tableTitle"]');
     });
     
     if (!isOnDevicesPage) {
-        await window.click('[data-testid="sidebar-button-Devices"]');
+        await page.click('[data-testid="sidebar-button-Devices"]');
     }
     
     // Wait for the UI to update
-    await window.waitForTimeout(1000);
+    await page.waitForTimeout(1000);
     
     // Check for the "No devices available" message
-    const deviceTable = window.locator('table[aria-labelledby="tableTitle"]');
+    const deviceTable = page.locator('table[aria-labelledby="tableTitle"]');
     
     // Wait for the loading state to complete
-    await window.waitForFunction(() => {
+    await page.waitForFunction(() => {
       const skeletons = document.querySelectorAll('.MuiSkeleton-root');
       return skeletons.length === 0;
     }, { timeout: 10000 });
@@ -315,7 +292,7 @@ test.describe('Devices tests', () => {
     } else {
       
       // Try forcing the UI to display the empty state
-      await window.evaluate(() => {
+      await page.evaluate(() => {
         // This will display a simulated empty state for testing purposes only
         const tableBody = document.querySelector('table[aria-labelledby="tableTitle"] tbody');
         if (tableBody) {
@@ -343,7 +320,7 @@ test.describe('Devices tests', () => {
     }
     
     // Verify that the Add Device button is available in the empty state
-    const addDeviceButton = window.locator('button:has([data-testid="AddToQueueIcon"])');
+    const addDeviceButton = page.locator('button:has([data-testid="AddToQueueIcon"])');
     await expect(addDeviceButton).toBeVisible({ timeout: 5000 });
     
   });
@@ -351,29 +328,29 @@ test.describe('Devices tests', () => {
 
   test('can add a device', async () => {
     // Click the Add Device button
-    await window.click('[data-testid="AddDeviceButton"]');
+    await page.click('[data-testid="AddDeviceButton"]');
 
     // wait for the alert to appear
-    await window.waitForSelector('[data-testid="alert-success"]', { timeout: 5000000 });
+    await page.waitForSelector('[data-testid="alert-success"]', { timeout: 5000000 });
 
     // Confirm that there is a message in the alert that says "Device added successfully"
-    const alertMessage = window.locator('[data-testid="alert-success"]');
+    const alertMessage = page.locator('[data-testid="alert-success"]');
     await expect(alertMessage).toContainText('Device added successfully', { timeout: 5000000 });
   });
 
   test('adding a device gets alert if device already exists', async () => {
     // Click the Add Device button
-    await window.click('[data-testid="AddDeviceButton"]');
+    await page.click('[data-testid="AddDeviceButton"]');
 
     // wait for the alert to appear
-    await window.waitForSelector('[data-testid="alert-error"]', { timeout: 5000000 });
+    await page.waitForSelector('[data-testid="alert-error"]', { timeout: 5000000 });
 
     // Confirm that there is a message in the alert that says "Device already exists"
-    const alertMessage = window.locator('[data-testid="alert-error"]');
+    const alertMessage = page.locator('[data-testid="alert-error"]');
     await expect(alertMessage).toContainText('Device already exists', { timeout: 5000000 });
 
     // wait for the alert to disappear
-    await window.waitForSelector('[data-testid="alert-error"]', { state: 'hidden' });
+    await page.waitForSelector('[data-testid="alert-error"]', { state: 'hidden' });
   });
 
   test('can edit a device', async () => {

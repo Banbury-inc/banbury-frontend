@@ -234,6 +234,7 @@ export default function SyncButton() {
       /> */}
 
       <Popover
+        data-testid="sync-popover"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
@@ -260,6 +261,7 @@ export default function SyncButton() {
       >
         <Box sx={{ p: 2 }}>
           <Button
+            data-testid="add-folder-button"
             onClick={triggerFolderSelect}
             disabled={isScanning || deviceNotFound}
             startIcon={<CreateNewFolderIcon fontSize="inherit" />}
@@ -311,6 +313,7 @@ export default function SyncButton() {
                         </Typography>
                         <Box sx={{ width: '100px' }}>
                           <LinearProgress
+                            data-testid="progress-bar"
                             variant="determinate"
                             value={file.progress}
                             sx={{
@@ -324,6 +327,7 @@ export default function SyncButton() {
                       </>
                     )}
                     <IconButton
+                      data-testid="remove-folder-button"
                       onClick={() => handleRemoveFolder(file.filename)}
                       size="small"
                       sx={{
@@ -361,6 +365,7 @@ export default function SyncButton() {
 
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             <Button
+              data-testid="scan-button"
               variant="contained"
               size="small"
               sx={{

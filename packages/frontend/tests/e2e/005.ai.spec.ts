@@ -1,63 +1,43 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import * as path from 'path'
-import { getElectronConfig } from './utils/electron-config'
+import { test, expect, Page } from '@playwright/test'
 import { ensureLoggedInAndOnboarded, TestUserCredentials } from './utils/test-user'
+import { getSharedContext } from './utils/test-runner'
+
+// This will hold our page object throughout the test file
+let page: Page;
 
 test.describe('AI tests', () => {
-  let electronApp;
-  let window;
   let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
-    // Get the correct path to the Electron app
-    const electronPath = path.resolve(__dirname, '../../');
+    // Get the shared context
+    const sharedContext = getSharedContext();
+    page = sharedContext.window!;
+    if (!page) {
+      throw new Error('Page is not initialized');
+    }
+
+    // Ensure user is logged in and onboarded
+    await ensureLoggedInAndOnboarded(page);
     
-    // Launch Electron app with shared configuration
-    electronApp = await electron.launch(getElectronConfig(electronPath));
-
-    const isPackaged = await electronApp.evaluate(async ({ app }) => {
-      return app.isPackaged;
-    });
-
-    expect(isPackaged).toBe(false);
-
-    // Wait for the first BrowserWindow to open
-    window = await electronApp.firstWindow();
-    
-    // Ensure the window is loaded
-    await window.waitForLoadState('domcontentloaded');
-
-    // Ensure we have a logged-in user that has completed onboarding
-    _testUserCredentials = await ensureLoggedInAndOnboarded(window);
-
     // Click on the AI tab
-    await window.click('[data-testid="sidebar-button-AI"]');
+    await page.click('[data-testid="sidebar-button-AI"]');
 
     // Wait for the main interface to load
-    await window.waitForSelector('[data-testid="main-component"]', {
+    await page.waitForSelector('[data-testid="main-component"]', {
       timeout: 30000
     });
   });
 
   test.beforeEach(async () => {
     // Just ensure we're on the main interface before each test
-    await window.waitForSelector('[data-testid="main-component"]', {
+    await page.waitForSelector('[data-testid="main-component"]', {
       timeout: 30000
     });
   });
 
-  test.afterAll(async () => {
-    if (electronApp) {
-      const windows = await electronApp.windows();
-      await Promise.all(windows.map(win => win.close()));
-      await electronApp.close();
-    }
-  });
-
   test('download progress button is clickable and opens popover', async () => {
-
     // Find and click the download progress button using the test ID
-    const downloadButton = window.locator('[data-testid="download-progress-button"]');
+    const downloadButton = page.locator('[data-testid="download-progress-button"]');
 
     // Log the number of matching elements and their HTML for debugging
     const count = await downloadButton.count();
@@ -75,7 +55,7 @@ test.describe('AI tests', () => {
     await downloadButton.click();
 
     // Verify the popover appears with increased timeout
-    const popover = window.locator('div[role="presentation"].MuiPopover-root');
+    const popover = page.locator('div[role="presentation"].MuiPopover-root');
     await expect(popover).toBeVisible({ timeout: 10000 });
     
     // Verify popover content

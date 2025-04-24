@@ -1,47 +1,20 @@
-import { test, expect, _electron as electron } from '@playwright/test'
-import * as path from 'path'
-import { getElectronConfig } from './utils/electron-config'
+import { test, expect } from '@playwright/test'
 import { 
   createTestUserIfNeeded, 
   loginWithTestUser as _loginWithTestUser,
   TestUserCredentials
 } from './utils/test-user'
+import { getSharedContext } from './utils/test-runner'
 
 test.describe('Onboarding tests', () => {
-  let electronApp;
-  let window;
   let _testUserCredentials: TestUserCredentials;
 
-  test.beforeAll(async () => {
-    // Get the correct path to the Electron app
-    const electronPath = path.resolve(__dirname, '../../');
-    
-    // Launch Electron app with shared configuration
-    electronApp = await electron.launch(getElectronConfig(electronPath));
-
-    const isPackaged = await electronApp.evaluate(async ({ app }) => {
-      return app.isPackaged;
-    });
-
-    expect(isPackaged).toBe(false);
-
-    // Wait for the first BrowserWindow to open
-    window = await electronApp.firstWindow();
-    
-    // Get or create a single test user for all tests
-    _testUserCredentials = await createTestUserIfNeeded(window);
-  });
-
-  test.afterAll(async () => {
-    if (electronApp) {
-      const windows = await electronApp.windows();
-      await Promise.all(windows.map(win => win.close()));
-      await electronApp.close();
-    }
-  });
-
   test('can click add and scan device', async () => {
-
+    const sharedContext = getSharedContext();
+    const window = sharedContext.window;
+    if (!window) {
+      throw new Error('Window is not initialized');
+    }
 
     // Navigate to the Add Device step
     const nextButton = await window.waitForSelector('button:has-text("Next")', {

@@ -439,158 +439,60 @@ export async function waitForWebsocketConnection(window: Page): Promise<boolean>
  * @returns Promise<TestUserCredentials> - The credentials of the logged-in user
  */
 export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUserCredentials> {
-  // Get or create the credentials
-  const credentials = getSharedTestUserCredentials();
-  
-  // Check if we're already logged in
-  const isAlreadyLoggedIn = await window.evaluate(() => {
-    return !!localStorage.getItem('accessToken');
-  }).catch(() => false);
-  
-  // If not logged in, we need to log in
-  if (!isAlreadyLoggedIn) {
-    try {
-      // Try to log in with the credentials
-      await loginWithTestUser(window, credentials);
-    } catch (error) {
-      console.warn('Login failed, likely because account doesn\'t exist:', error);
-      // If login fails, create user and then log in
-      await createTestUser(window);
-      await loginWithTestUser(window, credentials);
-    }
-  }
-  
-  // Check if we need to complete onboarding
-  const isOnboardingVisible = await window.waitForSelector('[data-testid="onboarding-component"]', {
-    timeout: 10000,
-    state: 'visible'
-  }).then(() => true).catch(() => false);
-  
-  if (isOnboardingVisible) {
-    console.warn('Onboarding flow detected, completing it...');
+  try {
+    // Try to dismiss any unexpected dialogs first
+    await dismissUnexpectedDialogs(window);
     
-    // First check which step of onboarding we're on
-    const welcomeStep = await window.waitForSelector('h4:has-text("Welcome to Banbury")', { 
-      timeout: 1000 
-    }).then(() => true).catch(() => false);
+    // Check if we're already logged in by looking for the main component
+    const isLoggedIn = await window.locator('[data-testid="main-component"]').isVisible({ timeout: 5000 })
+      .catch(() => false);
     
-    const addDeviceStep = await window.waitForSelector('h4:has-text("Add Device")', { 
-      timeout: 1000 
-    }).then(() => true).catch(() => false);
-    
-    const scanDeviceStep = await window.waitForSelector('h4:has-text("Scan Device")', { 
-      timeout: 1000 
-    }).then(() => true).catch(() => false);
-    
-    // Handle each step based on where we are
-    if (welcomeStep) {
-      console.warn('Handling welcome step');
-      try {
-        // Click Next on welcome step
-        const nextButton = await window.waitForSelector('button:has-text("Next")', { timeout: 3000 });
-        await nextButton.click();
-        await window.waitForTimeout(500);
-      } catch (error) {
-        console.warn('Error in welcome step, continuing', error);
-      }
+    if (isLoggedIn) {
+      console.log('User is already logged in with main component visible');
+      return getSharedTestUserCredentials();
     }
     
-    // Check again for add device step (we might have reached it after welcome)
-    const isAddDeviceVisible = await window.waitForSelector('h4:has-text("Add Device")', { 
-      timeout: 3000 
-    }).then(() => true).catch(() => false);
+    // Check if we're on the login page
+    const isOnLoginPage = await window.locator('h1:has-text("Sign in")').isVisible({ timeout: 5000 })
+      .catch(() => false);
     
-    if (addDeviceStep || isAddDeviceVisible) {
-      console.warn('Handling add device step');
-      try {
-        // Click the "Add Device" button
-        const addDeviceButton = await window.waitForSelector('[data-testid="onboarding-add-device-button"]', {
-          timeout: 5000
-        });
-        
-        // Check if it's already been clicked
-        const rawButtonText = await addDeviceButton.textContent();
-        const buttonText = typeof rawButtonText === 'string' ? rawButtonText : '';
-        if (!buttonText.includes('Device Added')) {
-          await addDeviceButton.click();
-          
-          // Wait for device to be added with an explicit timeout check
-          const startTime = Date.now();
-          let deviceAdded = false;
-          
-          while (Date.now() - startTime < 1000 && !deviceAdded) {
-            deviceAdded = await window.evaluate(() => {
-              const button = document.querySelector('[data-testid="onboarding-add-device-button"]');
-              return Boolean(button && button.textContent && button.textContent.includes('Device Added'));
-            });
-            
-            if (!deviceAdded) {
-              await window.waitForTimeout(100);
-            }
-          }
-        }
-        
-        // Click Skip & Continue
-        const skipButton = await window.waitForSelector('button:has-text("Skip & Continue")', {
-          timeout: 5000
-        });
-        await skipButton.click();
-        await window.waitForTimeout(500);
-      } catch (error) {
-        console.warn('Error in add device step, continuing', error);
-      }
+    if (!isOnLoginPage) {
+      console.log('Not on login page, navigating there...');
+      // Assuming there's some nav element or function to go to login
+      // For now, we'll just reload the page which should take us to login if not authenticated
+      await window.reload();
+      await window.waitForLoadState('domcontentloaded');
+      await window.waitForSelector('h1:has-text("Sign in")', { timeout: 10000 });
     }
     
-    // Check again for scan device step (we might have reached it after add device)
-    const isScanDeviceVisible = await window.waitForSelector('h4:has-text("Scan Device")', { 
-      timeout: 3000 
-    }).then(() => true).catch(() => false);
+    // Get or create a test user
+    const credentials = await createTestUserIfNeeded(window);
     
-    if (scanDeviceStep || isScanDeviceVisible) {
-      console.warn('Handling scan device step');
-      try {
-        // Click the "Scan Device" button
-        const scanDeviceButton = await window.waitForSelector('[data-testid="onboarding-scan-device-button"]', {
-          timeout: 5000
-        });
-        
-        // Check if it's already been clicked
-        const rawButtonText = await scanDeviceButton.textContent();
-        const buttonText = typeof rawButtonText === 'string' ? rawButtonText : '';
-        if (!buttonText.includes('Device Scanned')) {
-          await scanDeviceButton.click();
-          
-          // Wait for the Finish button to be visible
-          const finishButton = await window.waitForSelector('button:has-text("Finish")', {
-            timeout: 5000
-          });
-          await finishButton.click();
-          await window.waitForTimeout(1000);
-        }
-      } catch (error) {
-        console.warn('Error in scan device step, continuing', error);
-      }
-    }
+    // We should be on the login page now, sign in
+    await loginWithTestUser(window, credentials);
     
+    // Check if we need to complete onboarding
+    const isOnOnboarding = await window.locator('[data-testid="onboarding-component"]').isVisible({ timeout: 5000 })
+      .catch(() => false);
     
-    // If the detailed steps failed, fall back to the completeOnboarding helper
-    const isStillOnboarding = await window.waitForSelector('[data-testid="onboarding-component"]', {
-      timeout: 3000,
-      state: 'visible'
-    }).then(() => true).catch(() => false);
-    
-    if (isStillOnboarding) {
-      console.warn('Still on onboarding, using completeOnboarding helper');
+    if (isOnOnboarding) {
+      console.log('User needs to complete onboarding');
       await completeOnboarding(window);
     }
+    
+    // Wait for the main component to be visible
+    await window.waitForSelector('[data-testid="main-component"]', {
+      timeout: 30000,
+      state: 'visible'
+    });
+    
+    console.log('Successfully logged in and onboarded');
+    return credentials;
+    
+  } catch (error) {
+    console.error('Error during login/onboarding:', error);
+    throw new Error(`Failed to ensure user is logged in and onboarded: ${error}`);
   }
-  
-  // Wait for the main interface to be visible
-  await window.waitForSelector('[data-testid="main-component"]', {
-    timeout: 30000
-  });
-  
-  return credentials;
 }
 
 /**
@@ -664,45 +566,25 @@ export async function dismissUnexpectedDialogs(window: Page): Promise<boolean> {
  */
 export async function wrapWithRecovery(window: Page, testFn: () => Promise<void>): Promise<void> {
   try {
-    // Try running the test function
+    // First try to make sure we're logged in
+    await ensureLoggedInAndOnboarded(window);
+    
+    // Try to run the test function
     await testFn();
   } catch (error) {
-    console.warn('Test failed, attempting recovery...', error);
-    
-    // First dismiss any dialogs
+    console.error('Test function failed, attempting recovery...', error);
+
+    // Attempt to dismiss any dialogs that might be blocking interaction
     await dismissUnexpectedDialogs(window);
     
-    // Check if we need to log in again
-    const isLoginVisible = await window.waitForSelector('h1:has-text("Sign in")', {
-      timeout: 3000,
-      state: 'visible'
-    }).then(() => true).catch(() => false);
+    // Wait a moment for UI to stabilize
+    await window.waitForTimeout(1000);
     
-    if (isLoginVisible) {
-      console.warn('Login screen detected, logging in again...');
-      await ensureLoggedInAndOnboarded(window);
-      
-      // Retry the test function
-      await testFn();
-      return;
-    }
+    // Try to ensure user is logged in again
+    await ensureLoggedInAndOnboarded(window);
     
-    // Check if we're in onboarding
-    const isOnboardingVisible = await window.waitForSelector('[data-testid="onboarding-component"]', {
-      timeout: 3000,
-      state: 'visible'
-    }).then(() => true).catch(() => false);
-    
-    if (isOnboardingVisible) {
-      console.warn('Onboarding screen detected, completing onboarding...');
-      await ensureLoggedInAndOnboarded(window);
-      
-      // Retry the test function
-      await testFn();
-      return;
-    }
-    
-    // If we can't recover, rethrow the original error
-    throw error;
+    // If we've made it this far, try running the test again
+    console.log('Recovered state, retrying test function...');
+    await testFn();
   }
 } 
