@@ -1,13 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { 
-  createTestUserIfNeeded, 
   loginWithTestUser as _loginWithTestUser,
-  TestUserCredentials
 } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
 
 test.describe('Onboarding tests', () => {
-  let _testUserCredentials: TestUserCredentials;
 
   test('can click add and scan device', async () => {
     const sharedContext = getSharedContext();

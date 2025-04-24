@@ -448,7 +448,6 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       .catch(() => false);
     
     if (isLoggedIn) {
-      console.log('User is already logged in with main component visible');
       return getSharedTestUserCredentials();
     }
     
@@ -457,7 +456,6 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       .catch(() => false);
     
     if (!isOnLoginPage) {
-      console.log('Not on login page, navigating there...');
       // Assuming there's some nav element or function to go to login
       // For now, we'll just reload the page which should take us to login if not authenticated
       await window.reload();
@@ -476,7 +474,6 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       .catch(() => false);
     
     if (isOnOnboarding) {
-      console.log('User needs to complete onboarding');
       await completeOnboarding(window);
     }
     
@@ -486,11 +483,9 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       state: 'visible'
     });
     
-    console.log('Successfully logged in and onboarded');
     return credentials;
     
   } catch (error) {
-    console.error('Error during login/onboarding:', error);
     throw new Error(`Failed to ensure user is logged in and onboarded: ${error}`);
   }
 }
@@ -584,7 +579,6 @@ export async function wrapWithRecovery(window: Page, testFn: () => Promise<void>
     await ensureLoggedInAndOnboarded(window);
     
     // If we've made it this far, try running the test again
-    console.log('Recovered state, retrying test function...');
     await testFn();
   }
 } 

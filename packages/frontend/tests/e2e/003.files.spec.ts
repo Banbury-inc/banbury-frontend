@@ -1,6 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import _fs from 'fs'
-import { waitForWebsocketConnection, TestUserCredentials, ensureLoggedInAndOnboarded, dismissUnexpectedDialogs, wrapWithRecovery } from './utils/test-user'
+import { waitForWebsocketConnection, ensureLoggedInAndOnboarded, wrapWithRecovery } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
 import * as path from 'path'
 
@@ -8,7 +8,6 @@ import * as path from 'path'
 let page: Page;
 
 test.describe('Files tests', () => {
-  let _testUserCredentials: TestUserCredentials;
 
   test.beforeAll(async () => {
     // Get the shared context
@@ -304,7 +303,6 @@ test.describe('Files tests', () => {
           }
           
           // Log progress for debugging
-          console.log(`Progress: ${progressValue}%, attempt: ${attempt + 1}/${maxAttempts}`);
           
           // Wait before next check
           await page.waitForTimeout(1000);
@@ -346,7 +344,6 @@ test.describe('Files tests', () => {
       // First check if there's at least one folder visible
       const folderCount = await syncPopover.locator('[data-testid="remove-folder-button"]').count();
       if (folderCount === 0) {
-        console.log('No folders to remove, adding a test folder first');
         
         // Add a folder first if there are none
         const addFolderButton = syncPopover.locator('[data-testid="add-folder-button"]');
@@ -375,7 +372,6 @@ test.describe('Files tests', () => {
       
       // Store the text content of the first folder to verify it's removed later
       const firstFolderText = await folders[0].textContent();
-      console.log("Folder to be removed:", firstFolderText);
       
       // Find and click the remove folder button for the first folder
       const removeFolderButton = syncPopover.locator('[data-testid="remove-folder-button"]').first();

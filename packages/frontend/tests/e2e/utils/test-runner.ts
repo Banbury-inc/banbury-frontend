@@ -35,9 +35,6 @@ export class SharedTestContext {
       // Wait for app to be ready
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const isPackaged = await this.electronApp.evaluate(async ({ app }) => {
-        return app.isPackaged;
-      });
 
       // Wait for the first BrowserWindow to open
       this.window = await this.electronApp.firstWindow();

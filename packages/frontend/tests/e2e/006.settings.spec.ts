@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test'
-import { ensureLoggedInAndOnboarded, TestUserCredentials, dismissUnexpectedDialogs, wrapWithRecovery as _wrapWithRecovery } from './utils/test-user'
+import { ensureLoggedInAndOnboarded, wrapWithRecovery as _wrapWithRecovery } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
 
 // This will hold our page object throughout the test file
