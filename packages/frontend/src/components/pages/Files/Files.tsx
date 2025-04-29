@@ -1,7 +1,6 @@
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import { CardContent, Skeleton, LinearProgress } from '@mui/material';
+import { CardContent } from '@mui/material';
 import Box from '@mui/material/Box';
-import ButtonBase from '@mui/material/ButtonBase';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
 import Grid from '@mui/material/Grid';
@@ -27,7 +26,6 @@ import { DatabaseData, Order } from './types/index';
 import ShareFileButton from '../../../components/common/ShareFileButton/ShareFileButton';
 import AddFileToSyncButton from '../../../components/common/AddFileToSyncButton';
 import { newUseFileData } from './hooks/newUseFileData';
-import Rating from '@mui/material/Rating';
 import Dialog from '@mui/material/Dialog';
 import SyncButton from '../../../components/common/SyncButton/SyncButton';
 import DownloadFileButton from '../../../components/common/DownloadFileButton/DownloadFileButton';
@@ -38,16 +36,6 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
 import { formatFileSize } from './utils/formatFileSize';
 import FileTable from './components/Table/Table';
-
-const getHeadCells = () => [
-  { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-  { id: 'file_size', numeric: false, label: 'Size', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-  { id: 'kind', numeric: false, label: 'Kind', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-  { id: 'device_name', numeric: false, label: 'Location', isVisibleOnSmallScreen: false, isVisibleNotOnCloudSync: true },
-  { id: 'available', numeric: false, label: 'Status', isVisibleOnSmallScreen: false, isVisibleNotOnCloudSync: true },
-  { id: 'file_priority', numeric: false, label: 'Priority', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: false },
-  { id: 'date_uploaded', numeric: true, label: 'Date Uploaded', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-];
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
