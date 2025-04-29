@@ -47,13 +47,23 @@ export async function createWebSocketConnection(
         url_ws = FALLBACK_ENDPOINTS[fallbackIndex](url_ws);
       }
       
+      // Initialize connection manager
+      const connectionManager = ConnectionManager.getInstance();
+      
       const device_id = await get_device_id(username);
-      const cleanDeviceId = encodeURIComponent(String(device_id).replace(/\s+/g, ''));
+      
+      // Check if device_id result is an error
+      if (device_id.result === 'error') {
+        console.error('Failed to get device ID:', device_id.message);
+        connectionManager.recordConnectionAttempt(false);
+        recordFailure(new Error(device_id.message));
+        return 'connection_error';
+      }
+      
+      const cleanDeviceId = encodeURIComponent(String(device_id.message).replace(/\s+/g, ''));
       const entire_url_ws = `${url_ws}${cleanDeviceId}/`.replace(/([^:]\/)\/+/g, "$1");
 
-
       // Check if we should attempt connection using ConnectionManager
-      const connectionManager = ConnectionManager.getInstance();
       await connectionManager.shouldAttemptConnection();
       
       // Create socket with error handling
