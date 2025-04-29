@@ -362,22 +362,6 @@ export default function PermanentDrawerLeft() {
                     }
                   `}
                 </style>
-                <div className="flex flex-grow no-drag">
-                  <CustomTabs
-                    tabs={tabs}
-                    activeTab={currentTabId}
-                    onTabChange={handleTabChange}
-                    onTabClose={handleCloseTab}
-                    onTabAdd={handleAddTab}
-                    onReorder={(sourceIndex, destinationIndex) => {
-                      const newTabs = [...tabs];
-                      const [draggedItem] = newTabs.splice(sourceIndex, 1);
-                      newTabs.splice(destinationIndex, 0, draggedItem);
-                      setTabs(newTabs);
-                    }}
-                  />
-                </div>
-
                 <Menu
                   open={contextMenu !== null}
                   onClose={handleContextMenuClose}

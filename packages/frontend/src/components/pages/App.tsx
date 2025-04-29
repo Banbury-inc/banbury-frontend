@@ -1,6 +1,6 @@
 import { Box, CssBaseline, ThemeProvider } from "@mui/material";
 import React  from "react";
-import theme from "../../renderer/theme";
+import theme from "../../renderer/themes/theme";
 import { BrowserRouter } from "react-router-dom";
 import Login from "./Login/Login";
 import { AuthProvider } from "../../renderer/context/AuthContext";
