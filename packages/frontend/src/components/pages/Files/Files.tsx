@@ -24,6 +24,7 @@ import os from 'os';
 import path from 'path';
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../../../renderer/context/AuthContext';
+import { useAlert } from '../../../renderer/context/AlertContext';
 import { handlers } from '../../../renderer/handlers';
 import banbury from '@banbury/core';
 import FileTreeView from './components/NewTreeView/FileTreeView';
@@ -155,6 +156,7 @@ export default function Files() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { websocket } = useAuth();
+  const { showAlert } = useAlert();
   const {
     updates,
     setUpdates,
@@ -293,7 +295,7 @@ export default function Files() {
         // shell.openPath(newSelectedFilePaths[0]);
       }
       if (!fileFound && !folderFound) {
-        console.error(`File '${file_name}' not found in directory, searhing other devices`);
+        console.error(`File '${file_name}' not found in directory, searching other devices`);
 
         const task_description = 'Opening ' + selectedFileNames.join(', ');
         const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
@@ -308,9 +310,15 @@ export default function Files() {
         );
         if (response === 'No file selected') {
           await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          showAlert('No file selected', ['Please select a file to download'], 'warning');
+        }
+        if (response === 'file_not_found') {
+          await banbury.sessions.failTask(username ?? '', taskInfo, 'File not found', tasks, setTasks);
+          showAlert('File not found', [`The file "${file_name}" could not be found on the selected device.`], 'error');
         }
         if (response === 'File not available') {
           await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          showAlert('File not available', ['The selected file is not currently available for download.'], 'error');
         }
         if (response === 'success') {
           await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
@@ -336,6 +344,7 @@ export default function Files() {
       }
     } catch (err) {
       console.error('Error searching for file:', err);
+      showAlert('Error', ['An error occurred while accessing the file.'], 'error');
     }
   };
   const handleClick = (event: React.MouseEvent<unknown> | React.ChangeEvent<HTMLInputElement>, id: number) => {

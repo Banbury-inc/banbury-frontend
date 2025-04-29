@@ -31,6 +31,22 @@ export function downloadFile(username: string, files: string[], devices: string[
       const fileSize = fileInfo[0]?.file_size || 0;
       const fileType = fileInfo[0]?.kind || 'Unknown';
       
+      // Check if the file exists
+      if (!fs.existsSync(filePath)) {
+        // Update progress to failed
+        addDownloadsInfo([{
+          filename: fileName,
+          fileType: fileType,
+          progress: 0,
+          status: 'failed',
+          totalSize: fileSize,
+          downloadedSize: 0,
+        }]);
+        
+        reject('file_not_found');
+        return;
+      }
+      
       // Create destination directory if it doesn't exist
       if (!fs.existsSync(CONFIG.download_destination)) {
         try {
@@ -215,7 +231,24 @@ export function downloadFile(username: string, files: string[], devices: string[
             return;
           }
 
-          if (['File not found', 'Device offline', 'Permission denied', 'Transfer failed', 'file_transfer_error'].includes(data.message_type || data.message)) {
+          // Handle specific file not found error message
+          if (data.message_type === 'file_not_found' || data.message === 'File not found') {
+            console.error('File not found:', files[0]);
+            // Update progress to failed
+            addDownloadsInfo([{
+              filename: files[0],
+              fileType: fileInfo[0]?.kind || 'Unknown',
+              progress: 0,
+              status: 'failed',
+              totalSize: fileInfo[0]?.file_size || 0,
+              downloadedSize: 0,
+            }]);
+            cleanup();
+            reject('file_not_found');
+            return;
+          }
+
+          if (['Device offline', 'Permission denied', 'Transfer failed', 'file_transfer_error'].includes(data.message_type || data.message)) {
             console.error('Download error message received:', data);
             // Update progress to failed for remote downloads too
             addDownloadsInfo([{
