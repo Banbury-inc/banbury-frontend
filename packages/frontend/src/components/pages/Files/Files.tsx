@@ -349,6 +349,25 @@ export default function Files() {
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
             <Grid container justifyContent="flex-start" alignItems="flex-start">
               <Grid item>
+                <NavigateBackButton
+                  backHistory={_backHistory}
+                  setBackHistory={setBackHistory}
+                  filePath={filePath}
+                  setFilePath={setFilePath}
+                  setForwardHistory={setForwardHistory}
+                />
+              </Grid>
+              <Grid item>
+                <NavigateForwardButton
+                  backHistory={_backHistory}
+                  setBackHistory={setBackHistory}
+                  forwardHistory={_forwardHistory}
+                  setForwardHistory={setForwardHistory}
+                  filePath={filePath}
+                  setFilePath={setFilePath}
+                />
+              </Grid>
+              <Grid item>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                   <Grid item paddingRight={1}>
                     <Tooltip title="Upload">

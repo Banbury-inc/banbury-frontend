@@ -32,9 +32,6 @@ import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import Logs from './Logs/Logs';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { Stack } from '@mui/material';
-import { handlers } from '../../renderer/handlers';
-import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
-import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
 import UploadProgress from '../common/UploadProgressButton/UploadProgressButton';
 import DownloadProgress from '../common/DownloadProgressButton/DownloadProgressButton';
 import NotificationsButton from '../common/NotificationsButton/NotificationsButton';
@@ -97,8 +94,6 @@ interface TabState {
 export default function PermanentDrawerLeft() {
   const theme = useTheme();
   const { username, redirect_to_login, tasks, setTasks, setSocket } = useAuth();
-  const [backHistory, setBackHistory] = useState<string[]>([]);
-  const [forwardHistory, setForwardHistory] = useState<string[]>([]);
   const open = false;
   const [tabs, setTabs] = useState<TabState[]>([
     {
@@ -249,65 +244,6 @@ export default function PermanentDrawerLeft() {
                 '-webkit-app-region': 'no-drag'
               }
             }}>
-              <div className="no-drag" style={{ zIndex: 9999 }}>
-                <Tooltip title="Navigate back">
-                  <Button
-                    data-testid="navigate-back-button"
-                    onClick={() =>
-                      handlers.buttons.backButton(
-                        '',
-                        () => { },
-                        backHistory,
-                        setBackHistory,
-                        () => { },
-                      )
-                    }
-                    disabled={backHistory.length === 0}
-                    sx={{ 
-                      paddingLeft: '4px', 
-                      paddingRight: '4px', 
-                      marginTop: '8px', 
-                      minWidth: '30px',
-                      height: '30px',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      }
-                    }}
-                  >
-                    <NavigateBeforeOutlinedIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
-              </div>
-              <div className="no-drag" style={{ zIndex: 9999 }}>
-                <Tooltip title="Navigate forward">
-                  <Button
-                    data-testid="navigate-forward-button"
-                    onClick={() =>
-                      handlers.buttons.forwardButton(
-                        '',
-                        () => { },
-                        backHistory,
-                        setBackHistory,
-                        forwardHistory,
-                        setForwardHistory
-                      )
-                    }
-                    disabled={forwardHistory.length === 0}
-                    sx={{ 
-                      paddingLeft: '4px', 
-                      paddingRight: '4px', 
-                      marginTop: '8px', 
-                      minWidth: '30px',
-                      height: '30px',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      }
-                    }}
-                  >
-                    <NavigateNextOutlinedIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
-              </div>
               <div className="flex justify-between items-center h-8 bg-[#212121]">
                 <style>
                   {`
