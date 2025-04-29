@@ -79,12 +79,15 @@ export default function DownloadFileButton({
         timeoutPromise
       ]);
 
-      if (response === 'No file selected' || response === 'file_not_found') {
+      if (response === 'No file selected') {
         await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
-        showAlert(`Download failed: ${response}`, ['error']);
+        showAlert('No file selected', ['Please select a file to download'], 'warning');
+      } else if (response === 'file_not_found') {
+        await banbury.sessions.failTask(username ?? '', taskInfo, 'File not found', tasks, setTasks);
+        showAlert('File not found', [`The file "${selectedFileNames[0]}" could not be found on the selected device.`], 'error');
       } else if (response === 'success') {
         await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
-        showAlert('Download completed successfully', ['success']);
+        showAlert('Download completed successfully', ['Your file has been downloaded successfully'], 'success');
       }
 
       setSelected([]);
@@ -104,7 +107,9 @@ export default function DownloadFileButton({
       addDownloadsInfo(failedDownloadsUpdate); // Update the core download info
 
       // More specific error handling for alerts
-      if (error instanceof Error) {
+      if (typeof error === 'string' && error === 'file_not_found') {
+        showAlert('File not found', [`The file "${selectedFileNames[0]}" could not be found on the selected device.`], 'error');
+      } else if (error instanceof Error) {
         if (error.message.includes('timed out')) {
           showAlert('Download timed out', ['The download request timed out. Please try again.'], 'error');
         } else {
