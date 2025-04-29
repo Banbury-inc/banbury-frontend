@@ -32,9 +32,6 @@ import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import Logs from './Logs/Logs';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import { Stack } from '@mui/material';
-import { handlers } from '../../renderer/handlers';
-import NavigateBeforeOutlinedIcon from '@mui/icons-material/NavigateBeforeOutlined';
-import NavigateNextOutlinedIcon from '@mui/icons-material/NavigateNextOutlined';
 import UploadProgress from '../common/UploadProgressButton/UploadProgressButton';
 import DownloadProgress from '../common/DownloadProgressButton/DownloadProgressButton';
 import NotificationsButton from '../common/NotificationsButton/NotificationsButton';
@@ -97,8 +94,6 @@ interface TabState {
 export default function PermanentDrawerLeft() {
   const theme = useTheme();
   const { username, redirect_to_login, tasks, setTasks, setSocket } = useAuth();
-  const [backHistory, setBackHistory] = useState<string[]>([]);
-  const [forwardHistory, setForwardHistory] = useState<string[]>([]);
   const open = false;
   const [tabs, setTabs] = useState<TabState[]>([
     {
