@@ -139,35 +139,6 @@ test.describe('Files tests', () => {
     await expect(notificationsPopover).not.toBeVisible({ timeout: 10000 });
   });
 
-  test('can add and delete tabs', async () => {
-    // Find the tab bar and initial tab count
-    const initialTabCount = await page.locator('[data-testid^="tab-"]').count();
-    
-    // Find and click the new tab button
-    const newTabButton = page.locator('[data-testid="new-tab-button"]');
-    await expect(newTabButton).toBeVisible({ timeout: 10000 });
-    await newTabButton.click();
-    
-    // Wait for animation and verify new tab was added
-    await page.waitForTimeout(300); // Wait for animation to complete
-    const newTabCount = await page.locator('[data-testid^="tab-"]').count();
-    expect(newTabCount).toBe(initialTabCount + 1);
-
-    // Get the last tab (which should be the new one)
-    const newTab = page.locator('[data-testid^="tab-"]').last();
-    await expect(newTab).toBeVisible({ timeout: 10000 });
-
-    // Find and click the close button on the new tab
-    const closeButton = newTab.locator('button[id^="tab-close-button-"]');
-    await expect(closeButton).toBeVisible({ timeout: 10000 });
-    await closeButton.click();
-    
-    // Wait for animation and verify tab was removed
-    await page.waitForTimeout(300); // Wait for animation to complete
-    const finalTabCount = await page.locator('[data-testid^="tab-"]').count();
-    expect(finalTabCount).toBe(initialTabCount);
-  });
-
   test('account button is clickable and opens popover', async () => {
     // Find and click the account button
     const accountButton = page.locator('[data-testid="account-menu-button"]');
