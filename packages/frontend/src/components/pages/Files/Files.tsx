@@ -45,6 +45,8 @@ import { styled } from '@mui/material/styles';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
+import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
+import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
 
 const getHeadCells = (): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -460,6 +462,25 @@ export default function Files() {
         <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
             <Grid container justifyContent="flex-start" alignItems="flex-start">
+              <Grid item>
+                <NavigateBackButton
+                  backHistory={_backHistory}
+                  setBackHistory={setBackHistory}
+                  filePath={filePath}
+                  setFilePath={setFilePath}
+                  setForwardHistory={setForwardHistory}
+                />
+              </Grid>
+              <Grid item>
+                <NavigateForwardButton
+                  backHistory={_backHistory}
+                  setBackHistory={setBackHistory}
+                  forwardHistory={_forwardHistory}
+                  setForwardHistory={setForwardHistory}
+                  filePath={filePath}
+                  setFilePath={setFilePath}
+                />
+              </Grid>
               <Grid item>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
                   <Grid item paddingRight={1}>
