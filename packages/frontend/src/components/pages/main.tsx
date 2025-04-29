@@ -20,7 +20,6 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Sync from './Sync/Sync';
 import { useAuth } from '../../renderer/context/AuthContext';
-import { useLocation } from 'react-router-dom';
 import Login from './Login/Login';
 import Tooltip from '@mui/material/Tooltip';
 import os from 'os';
@@ -40,7 +39,6 @@ import UploadProgress from '../common/UploadProgressButton/UploadProgressButton'
 import DownloadProgress from '../common/DownloadProgressButton/DownloadProgressButton';
 import NotificationsButton from '../common/NotificationsButton/NotificationsButton';
 import AccountMenuIcon from '../common/AccountMenuIcon';
-import { Tabs as CustomTabs } from '../common/Tabs/Tabs';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { getDownloadsInfo } from '@banbury/core/src/device/add_downloads_info';
@@ -97,10 +95,8 @@ interface TabState {
 }
 
 export default function PermanentDrawerLeft() {
-  const location = useLocation();
   const theme = useTheme();
   const { username, redirect_to_login, tasks, setTasks, setSocket } = useAuth();
-  const [activeTab, setActiveTab] = React.useState(location.state?.activeTab || 'Files');
   const [backHistory, setBackHistory] = useState<string[]>([]);
   const [forwardHistory, setForwardHistory] = useState<string[]>([]);
   const open = false;
@@ -111,7 +107,7 @@ export default function PermanentDrawerLeft() {
       view: 'Files',
     }
   ]);
-  const [currentTabId, setCurrentTabId] = useState('tab-1');
+  const [currentTabId] = useState('tab-1');
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
     mouseY: number;
@@ -205,31 +201,6 @@ export default function PermanentDrawerLeft() {
     return <Login />;
   }
 
-  const handleCloseTab = (tabId: string) => {
-    if (tabs.length === 1) return;
-
-    const newTabs = tabs.filter(tab => tab.id !== tabId);
-    setTabs(newTabs);
-
-    if (currentTabId === tabId) {
-      const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-      const newActiveTab = newTabs[Math.max(0, tabIndex - 1)];
-      setCurrentTabId(newActiveTab.id);
-      setActiveTab(newActiveTab.view); // Update the active view based on the tab
-    }
-  };
-
-  const handleAddTab = () => {
-    const newTabId = `tab-${Date.now()}`;
-    const newTab: TabState = {
-      id: newTabId,
-      label: activeTab,
-      view: activeTab,
-    };
-    setTabs([...tabs, newTab]);
-    setCurrentTabId(newTabId);
-  };
-
   // Update when sidebar selection changes
   const handleSidebarChange = (newView: string) => {
     // Update the current tab's view and label
@@ -240,16 +211,6 @@ export default function PermanentDrawerLeft() {
           : tab
       )
     );
-    setActiveTab(newView);
-  };
-
-  // Handle tab changes
-  const handleTabChange = (tabId: string) => {
-    setCurrentTabId(tabId);
-    const tab = tabs.find(t => t.id === tabId);
-    if (tab) {
-      setActiveTab(tab.view); // Restore the view associated with this tab
-    }
   };
 
   const handleContextMenuClose = () => {
@@ -362,22 +323,6 @@ export default function PermanentDrawerLeft() {
                     }
                   `}
                 </style>
-                <div className="flex flex-grow no-drag">
-                  <CustomTabs
-                    tabs={tabs}
-                    activeTab={currentTabId}
-                    onTabChange={handleTabChange}
-                    onTabClose={handleCloseTab}
-                    onTabAdd={handleAddTab}
-                    onReorder={(sourceIndex, destinationIndex) => {
-                      const newTabs = [...tabs];
-                      const [draggedItem] = newTabs.splice(sourceIndex, 1);
-                      newTabs.splice(destinationIndex, 0, draggedItem);
-                      setTabs(newTabs);
-                    }}
-                  />
-                </div>
-
                 <Menu
                   open={contextMenu !== null}
                   onClose={handleContextMenuClose}

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Skeleton } from '@mui/material';
 import { TreeView, TreeItem } from '@mui/x-tree-view';
 import GrainIcon from '@mui/icons-material/Grain';
 import DevicesIcon from '@mui/icons-material/Devices';
@@ -40,6 +40,7 @@ export default function FileTreeView() {
   const {setSyncFiles, global_file_path, username} = useAuth();
   const [syncRows, setSyncRows] = useState<DatabaseData[]>([]);
   const disableFetch = false;
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,16 +52,17 @@ export default function FileTreeView() {
       setSyncFiles(new_synced_files || []);
       const treeData = buildTree(new_synced_files || []);
       setSyncRows(treeData);
+      setIsLoading(false);
     };
 
     fetchData();
   }, [username, disableFetch, global_file_path]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
-    return nodes.map((node) => (
+    return nodes.map((node, index) => (
       <TreeItem
-        key={node.id}
-        itemId={node.id}
+        key={`${node.id}-${index}`}
+        itemId={`${node.id.toString()}-${index}`}
         label={
           <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             {getIconForKind(node.kind)}
@@ -74,7 +76,6 @@ export default function FileTreeView() {
                 textOverflow: 'ellipsis',
                 maxWidth: 'calc(100% - 24px)',
               }}
-
             >
               {node.file_name}
             </Typography>
@@ -88,16 +89,24 @@ export default function FileTreeView() {
 
   return (
     <Box sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
-      <TreeView
-        aria-label="file system navigator"
-        sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
-      // onNodeSelect={handleNodeSelect}
-      >
-        {renderTreeItems(syncRows)}
-      </TreeView>
+      {isLoading ? (
+        <>
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 2 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 2 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 4 }} />
+          <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 4 }} />
+        </>
+      ) : (
+        <TreeView
+          aria-label="file system navigator"
+          sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
+        >
+          {renderTreeItems(syncRows)}
+        </TreeView>
+      )}
     </Box>
   )
-
 }
 
 

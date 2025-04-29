@@ -66,10 +66,10 @@ export default function FileTreeView() {
   }, [username, disableFetch, global_file_path]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
-    return nodes.map((node) => (
+    return nodes.map((node, index) => (
       <TreeItem
-        key={node.id}
-        itemId={node.id.toString()}
+        key={`${node.id}-${index}`}
+        itemId={`${node.id.toString()}-${index}`}
         label={
           <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
             {getIconForKind(node.kind)}
