@@ -22,7 +22,7 @@ export function buildTree(files: DatabaseData[]): DatabaseData[] {
     owner: '',
   };
 
-  files.forEach((file) => {
+  files.forEach((file, fileIndex) => {
     // Skip files without a device name
     if (!file.device_name) {
       return;
@@ -33,7 +33,7 @@ export function buildTree(files: DatabaseData[]): DatabaseData[] {
       // Create a file node directly under Cloud Sync
       const fileNode: DatabaseData = {
         _id: file._id,
-        id: file.id,
+        id: `${file.id}-${fileIndex}-${Date.now()}`, // Make ID unique with index and timestamp
         file_name: file.file_name,
         kind: file.kind,
         date_uploaded: file.date_uploaded,
