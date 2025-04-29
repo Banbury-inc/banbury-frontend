@@ -45,6 +45,7 @@ import { styled } from '@mui/material/styles';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
+import { formatFileSize } from './utils/formatFileSize';
 
 const getHeadCells = (): HeadCell[] => [
   { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
@@ -715,7 +716,7 @@ export default function Files() {
                                       {row.file_name}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary" display="block">
-                                      {row.file_size}
+                                      {formatFileSize(row.file_size)}
                                     </Typography>
                                     {!isCloudSync && (
                                       <Typography
@@ -857,7 +858,7 @@ export default function Files() {
                                           textOverflow: 'ellipsis',
                                         }}
                                       >
-                                        {row.file_size}
+                                        {formatFileSize(row.file_size)}
                                       </TableCell>
 
                                       {(!isCloudSync) && (
