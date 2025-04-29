@@ -36,6 +36,8 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
 import { formatFileSize } from './utils/formatFileSize';
 import FileTable from './components/Table/Table';
+import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
+import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
