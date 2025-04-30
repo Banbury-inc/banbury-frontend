@@ -3,12 +3,13 @@ import { DatabaseData } from '../types';
 import { fetchAllData } from '../utils/fetchAllData';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { fileWatcherEmitter } from '@banbury/core/src/device/watchdog';
+import banbury from '@banbury/core';
 
 export const useAllFileData = (
   username: string | null,
   filePath: string,
   filePathDevice: string | null,
-  currentView: 'files' | 'sync' | 'shared',
+  currentView: 'files' | 'sync' | 'shared' | 's3files',
   setFirstname: (name: string) => void,
   setLastname: (name: string) => void,
   files: any,
@@ -31,13 +32,42 @@ export const useAllFileData = (
         setDevices(Array.isArray(deviceData) ? deviceData : []);
       }
       
-      // Fetch files based on current view
-      const newFiles = await fetchAllData(
-        username || '',
-        filePath,
-        currentView,
-        fetchedFiles
-      );
+      let newFiles: DatabaseData[] = [];
+      
+      // Special handling for S3 files
+      if (currentView === 's3files') {
+        try {
+          const s3Result = await banbury.files.listS3Files(username || '');
+          if (s3Result && s3Result.files) {
+            // Convert S3 files to DatabaseData format
+            newFiles = s3Result.files.map((s3File: any, index: number) => ({
+              id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
+              file_name: s3File.file_name,
+              file_path: `Core/S3Files/${s3File.file_name}`,
+              file_size: s3File.file_size,
+              kind: s3File.file_type || 'File',
+              device_name: s3File.device_name || 'S3 Storage',
+              available: 'Available',
+              date_uploaded: s3File.date_uploaded,
+              date_modified: s3File.date_modified,
+              s3_url: s3File.s3_url,
+              source: 's3files',
+              is_s3: true
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching S3 files:', error);
+          newFiles = [];
+        }
+      } else {
+        // Fetch files based on current view
+        newFiles = await fetchAllData(
+          username || '',
+          filePath,
+          currentView,
+          fetchedFiles
+        );
+      }
       
       // If we actually have files OR we're explicitly switching contexts
       // This prevents clearing the view when API returns empty results temporarily
@@ -57,11 +87,13 @@ export const useAllFileData = (
         // Add new files to the Map (will automatically overwrite duplicates)
         // Ensure each file has a unique ID
         newFiles.forEach((file, index) => {
-          // For Sync and Shared views, ensure file paths include the right prefix
+          // For Sync, Shared, and S3 views, ensure file paths include the right prefix
           if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
             file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
           } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
             file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
+          } else if (currentView === 's3files' && !file.file_path.includes('Core/S3Files/')) {
+            file.file_path = `Core/S3Files/${file.file_path.split('/').pop() || file.file_name}`;
           }
           
           // Generate a unique ID if missing
@@ -95,12 +127,41 @@ export const useAllFileData = (
   useEffect(() => {
     const handleFileChange = async () => {
       // Re-fetch files when changes are detected
-      const newFiles = await fetchAllData(
-        username || '',
-        filePath,
-        currentView,
-        fetchedFiles
-      );
+      let newFiles: DatabaseData[] = [];
+      
+      // Special handling for S3 files
+      if (currentView === 's3files') {
+        try {
+          const s3Result = await banbury.files.listS3Files(username || '');
+          if (s3Result && s3Result.files) {
+            // Convert S3 files to DatabaseData format
+            newFiles = s3Result.files.map((s3File: any, index: number) => ({
+              id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
+              file_name: s3File.file_name,
+              file_path: `Core/S3Files/${s3File.file_name}`,
+              file_size: s3File.file_size,
+              kind: s3File.file_type || 'File',
+              device_name: s3File.device_name || 'S3 Storage',
+              available: 'Available',
+              date_uploaded: s3File.date_uploaded,
+              date_modified: s3File.date_modified,
+              s3_url: s3File.s3_url,
+              source: 's3files',
+              is_s3: true
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching S3 files:', error);
+          newFiles = [];
+        }
+      } else {
+        newFiles = await fetchAllData(
+          username || '',
+          filePath,
+          currentView,
+          fetchedFiles
+        );
+      }
       
       if (newFiles && newFiles.length > 0) {
         // Update files using same logic as above
@@ -116,11 +177,13 @@ export const useAllFileData = (
         
         // Ensure each file has a unique ID
         newFiles.forEach((file, index) => {
-          // For Sync and Shared views, ensure file paths include the right prefix
+          // For Sync, Shared, and S3 views, ensure file paths include the right prefix
           if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
             file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
           } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
             file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
+          } else if (currentView === 's3files' && !file.file_path.includes('Core/S3Files/')) {
+            file.file_path = `Core/S3Files/${file.file_path.split('/').pop() || file.file_name}`;
           }
           
           // Generate a unique ID if missing

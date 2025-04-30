@@ -27,7 +27,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Name', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared']
+    visibleIn: ['files', 'sync', 'shared', 's3files']
   },
   { 
     id: 'file_size', 
@@ -35,7 +35,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Size', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared']
+    visibleIn: ['files', 'sync', 'shared', 's3files']
   },
   { 
     id: 'kind', 
@@ -43,7 +43,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Kind', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared']
+    visibleIn: ['files', 'sync', 'shared', 's3files']
   },
   { 
     id: 'device_name', 
@@ -51,7 +51,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Location', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared']
+    visibleIn: ['files', 'sync', 'shared', 's3files']
   },
   { 
     id: 'available', 
@@ -59,7 +59,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Status', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared']
+    visibleIn: ['files', 'sync', 'shared', 's3files']
   },
   { 
     id: 'file_priority', 
@@ -75,7 +75,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Date Uploaded', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared']
+    visibleIn: ['files', 'sync', 'shared', 's3files']
   },
   // { 
   //   id: 'is_public', 

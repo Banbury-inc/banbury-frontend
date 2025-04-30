@@ -130,7 +130,6 @@ export default function Files() {
     owner: true,
     date_modified: true
   });
-  const [isS3FilesDialogOpen, setIsS3FilesDialogOpen] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -180,7 +179,7 @@ export default function Files() {
     username,
     filePath,
     filePathDevice,
-    currentContext === 's3files' ? 'files' : currentContext,
+    currentContext,
     setFirstname,
     setLastname,
     files,
@@ -413,15 +412,6 @@ export default function Files() {
     setUpdates(updates + 1);
   };
 
-  // S3 Files Dialog Handlers
-  const handleOpenS3FilesDialog = () => {
-    setIsS3FilesDialogOpen(true);
-  };
-
-  const handleCloseS3FilesDialog = () => {
-    setIsS3FilesDialogOpen(false);
-  };
-
   return (
     <Box sx={{
       width: '100%',
@@ -480,7 +470,7 @@ export default function Files() {
               <Grid item paddingRight={1}>
                 <Tooltip title="View S3 Files">
                   <IconButton
-                    onClick={handleOpenS3FilesDialog}
+                    onClick={() => setFilePath('S3Files')}
                     sx={{ minWidth: 'auto', padding: '6px' }}
                   >
                     <CloudIcon />
@@ -649,9 +639,7 @@ export default function Files() {
                 flexDirection: 'column',
                 transition: 'all 0.2s ease-in-out' // Smooth transition for view changes
               }}>
-                {currentContext === 's3files' ? (
-                  <S3FilesView />
-                ) : fileRows.length === 0 ? (
+                {fileRows.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 5 }}>
                     <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h5" color="textSecondary">
@@ -660,6 +648,7 @@ export default function Files() {
                     <Typography variant="body2" color="textSecondary">
                       {isCloudSync ? "No files are currently synced." :
                        isShared ? "No files have been shared with you." :
+                       currentContext === 's3files' ? "No files found in S3 storage." :
                        "Please upload a file to get started."}
                     </Typography>
                   </Box>
@@ -812,35 +801,6 @@ export default function Files() {
         maxWidth="sm"
         fullWidth
       >
-      </Dialog>
-      
-      {/* S3 Files Dialog */}
-      <Dialog
-        open={isS3FilesDialogOpen}
-        onClose={handleCloseS3FilesDialog}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: { height: '80vh' }
-        }}
-      >
-        <DialogTitle>
-          S3 Cloud Storage Files
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseS3FilesDialog}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ p: 0 }}>
-          <S3FilesView />
-        </DialogContent>
       </Dialog>
     </Box>
   );
