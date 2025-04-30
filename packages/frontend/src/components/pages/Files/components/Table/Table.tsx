@@ -27,7 +27,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Name', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 's3files']
+    visibleIn: ['files', 'sync', 'shared', 'cloud']
   },
   { 
     id: 'file_size', 
@@ -35,7 +35,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Size', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 's3files']
+    visibleIn: ['files', 'sync', 'shared', 'cloud']
   },
   { 
     id: 'kind', 
@@ -43,7 +43,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Kind', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 's3files']
+    visibleIn: ['files', 'sync', 'shared', 'cloud']
   },
   { 
     id: 'device_name', 
@@ -51,7 +51,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Location', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 's3files']
+    visibleIn: ['files', 'sync', 'shared', 'cloud']
   },
   { 
     id: 'available', 
@@ -59,7 +59,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Status', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 's3files']
+    visibleIn: ['files', 'sync', 'shared', 'cloud']
   },
   { 
     id: 'file_priority', 
@@ -75,7 +75,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Date Uploaded', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 's3files']
+    visibleIn: ['files', 'sync', 'shared', 'cloud']
   },
   // { 
   //   id: 'is_public', 
@@ -113,7 +113,7 @@ const getHeadCells = (): HeadCell[] => [
 
 interface EnhancedTableHeadProps extends EnhancedTableProps {
   columnVisibility?: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared' | 's3files';
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
 }
 
 function EnhancedTableHead(props: EnhancedTableHeadProps) {
@@ -233,7 +233,7 @@ interface FileTableProps {
   setHoveredRowId: (id: string | number | null) => void;
   handlePriorityChange: (row: any, newValue: number | null) => void;
   columnVisibility: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared' | 's3files';
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
 }
 
 const FileTable: React.FC<FileTableProps> = ({

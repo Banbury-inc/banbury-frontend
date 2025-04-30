@@ -162,13 +162,13 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
-  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 's3files' => {
+  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' => {
     if (filePath.includes('Core/Sync') || filePath === 'Sync') {
       return 'sync';
     } else if (filePath.includes('Core/Shared') || filePath === 'Shared') {
       return 'shared';
-    } else if (filePath.includes('Core/S3Files') || filePath === 'S3Files') {
-      return 's3files';
+    } else if (filePath.includes('Core/Cloud') || filePath === 'Cloud') {
+      return 'cloud';
     }
     return 'files';
   };
@@ -493,16 +493,6 @@ export default function Files() {
                 />
               </Grid>
               <Grid item paddingRight={1}>
-                <Tooltip title="View S3 Files">
-                  <IconButton
-                    onClick={() => setFilePath('S3Files')}
-                    sx={{ minWidth: 'auto', padding: '6px' }}
-                  >
-                    <CloudIcon />
-                  </IconButton>
-                </Tooltip>
-              </Grid>
-              <Grid item paddingRight={1}>
                 <DeleteFileButton
                   selectedFileNames={selectedFileNames}
                   filePath={filePath}
@@ -673,7 +663,7 @@ export default function Files() {
                     <Typography variant="body2" color="textSecondary">
                       {isCloudSync ? "No files are currently synced." :
                        isShared ? "No files have been shared with you." :
-                       currentContext === 's3files' ? "No files found in S3 storage." :
+                       currentContext === 'cloud' ? "No files found in S3 storage." :
                        "Please upload a file to get started."}
                     </Typography>
                   </Box>

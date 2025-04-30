@@ -17,7 +17,7 @@ export interface DatabaseData {
   children?: DatabaseData[];
   helpers?: number;
   shared_with?: string[];
-  source?: 'files' | 'sync' | 'shared' | 's3files';
+  source?: 'files' | 'sync' | 'shared' | 'cloud';
   owner?: string;
   date_modified?: string;
   is_s3?: boolean;
@@ -34,7 +34,7 @@ export interface HeadCell {
   numeric: boolean;
   isVisibleOnSmallScreen: boolean;
   isVisibleNotOnCloudSync: boolean;
-  visibleIn?: Array<'files' | 'sync' | 'shared' | 's3files'>;
+  visibleIn?: Array<'files' | 'sync' | 'shared' | 'cloud'>;
 }
 
 export interface EnhancedTableProps {
@@ -44,5 +44,5 @@ export interface EnhancedTableProps {
   order: Order;
   orderBy: keyof DatabaseData;
   rowCount: number;
-  currentView?: 'files' | 'sync' | 'shared' | 's3files';
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
 }

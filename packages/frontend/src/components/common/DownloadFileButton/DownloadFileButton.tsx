@@ -65,7 +65,7 @@ export default function DownloadFileButton({
           for (const file of selectedFileInfo) {
             if (file.is_s3) {
               // Use the new function that saves directly to BCloud directory
-              const filePath = await banbury.files.saveS3FileToBCloud(
+              await banbury.files.saveS3FileToBCloud(
                 username ?? '',
                 file.id.toString(),
                 file.file_name
@@ -88,7 +88,7 @@ export default function DownloadFileButton({
           addDownloadsInfo(completedDownloadsUpdate); // Update the core download info
           
 
-          showAlert('Download completed successfully', ['Your S3 files have been downloaded successfully'], 'success');
+          showAlert('Download completed successfully', ['Your Cloud file has been downloaded successfully'], 'success');
           setSelected([]);
           return;
         } catch (error) {

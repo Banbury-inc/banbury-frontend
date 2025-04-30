@@ -30,7 +30,7 @@ function getIconForKind(kind: string) {
       return <CloudOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'SharedFolder':
       return <FolderSharedOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
-    case 'S3FilesFolder':
+    case 'CloudFolder':
       return <CloudDoneIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Folder':
       return <FolderIcon style={{ marginRight: 5 }} fontSize="inherit" />;
@@ -57,7 +57,7 @@ const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
     const updatedFileRows = [...fileRows];
     
     // Create the S3 Files node if Core node exists
-    if (!updatedFileRows[coreNodeIndex].children?.some(child => child.id === 'S3Files')) {
+    if (!updatedFileRows[coreNodeIndex].children?.some(child => child.id === 'Cloud')) {
       // Ensure the children array exists
       if (!updatedFileRows[coreNodeIndex].children) {
         updatedFileRows[coreNodeIndex].children = [];
@@ -65,14 +65,14 @@ const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
       
       // Add the S3 Files node as a child of Core
       updatedFileRows[coreNodeIndex].children.push({
-        id: 'S3Files',
-        _id: 'S3Files',
-        file_name: 'S3 Files',
+        id: 'Cloud',
+        _id: 'Cloud',
+        file_name: 'Cloud',
         file_parent: 'Core',
-        kind: 'S3FilesFolder',
+        kind: 'Cloud',
         device_name: '',
         date_uploaded: '',
-        file_path: 'Core/S3Files',
+        file_path: 'Core/Cloud',
         file_size: '0',
         file_type: '',
         shared_with: [],

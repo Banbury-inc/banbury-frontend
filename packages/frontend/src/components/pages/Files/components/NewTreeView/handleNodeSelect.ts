@@ -35,9 +35,9 @@ export const handleNodeSelect = (
       newFilePath = selectedNode.id;
       setFilePathDevice('');
     }
-    // Handle S3Files node specially
-    else if (selectedNode.id === 'S3Files') {
-      newFilePath = 'Core/S3Files';
+    // Handle Cloud node specially
+    else if (selectedNode.id === 'Cloud') {
+      newFilePath = 'Core/Cloud';
       setFilePathDevice('');
     }
     // Don't set path for main Devices, Sync, or Shared nodes
