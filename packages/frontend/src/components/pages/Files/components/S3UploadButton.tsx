@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Button, CircularProgress, Tooltip } from '@mui/material';
+import { Button, Tooltip } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { useAuth } from '../../../../renderer/context/AuthContext';
 import { useAlert } from '../../../../renderer/context/AlertContext';
@@ -40,16 +40,16 @@ const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUpload
       const failedUploads = results.filter(result => result.error);
       
       if (failedUploads.length > 0) {
-        showAlert('Upload Failed', ['Some files failed to upload to S3.'], 'error');
+        showAlert('Upload Failed', ['Some files failed to upload to the Cloud.'], 'error');
       } else {
-        showAlert('Upload Complete', ['Files successfully uploaded to S3.'], 'success');
+        showAlert('Upload Complete', ['Files successfully uploaded to the Cloud.'], 'success');
         if (onUploadComplete) {
           onUploadComplete();
         }
       }
     } catch (error) {
-      console.error('Error uploading files to S3:', error);
-      showAlert('Upload Error', [(error as Error).message || 'Failed to upload files to S3.'], 'error');
+      console.error('Error uploading files to the Cloud:', error);
+      showAlert('Upload Error', [(error as Error).message || 'Failed to upload files to Cloud.'], 'error');
     } finally {
       setUploading(false);
       // Clear the file input
@@ -74,7 +74,7 @@ const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUpload
         style={{ display: 'none' }}
         multiple
       />
-      <Tooltip title="Upload to S3">
+      <Tooltip title="Upload to Cloud">
         <Button
           onClick={handleButtonClick}
           disabled={uploading}

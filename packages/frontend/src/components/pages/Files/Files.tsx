@@ -32,11 +32,6 @@ import DeleteFileButton from '../../../components/common/DeleteFileBtton/DeleteF
 import { styled } from '@mui/material/styles';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
-import CloudIcon from '@mui/icons-material/Cloud';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
 import ToggleColumnsButton from './components/ToggleColumnsButton/ToggleColumnsButton';
 import { formatFileSize } from './utils/formatFileSize';
@@ -47,7 +42,6 @@ import _ViewSelector from './components/ViewSelector/ViewSelector';
 import { useAllFileData } from './hooks/useAllFileData';
 import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 import S3UploadButton from './components/S3UploadButton';
-import S3FilesView from './components/S3FilesView';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -247,7 +241,7 @@ export default function Files() {
         setTaskbox_expanded(true);
         
         // Use the direct save function instead of browser download
-        const filePath = await banbury.files.saveS3FileToBCloud(
+        await banbury.files.saveS3FileToBCloud(
           username ?? '',
           file.id.toString(),
           file_name
@@ -663,7 +657,7 @@ export default function Files() {
                     <Typography variant="body2" color="textSecondary">
                       {isCloudSync ? "No files are currently synced." :
                        isShared ? "No files have been shared with you." :
-                       currentContext === 'cloud' ? "No files found in S3 storage." :
+                       currentContext === 'cloud' ? "No files found in Cloud storage." :
                        "Please upload a file to get started."}
                     </Typography>
                   </Box>

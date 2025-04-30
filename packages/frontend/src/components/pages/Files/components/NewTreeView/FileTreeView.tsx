@@ -7,9 +7,9 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ImageIcon from '@mui/icons-material/Image';
 import VideocamIcon from '@mui/icons-material/Videocam'; import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import DescriptionIcon from '@mui/icons-material/Description';
-import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
+import SyncIcon from '@mui/icons-material/Sync';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../../renderer/context/AuthContext';
 import { buildTree } from './utils/buildTree';
@@ -27,10 +27,10 @@ function getIconForKind(kind: string) {
     case 'DevicesFolder':
       return <DevicesIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'SyncFolder':
-      return <CloudOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
+      return <SyncIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'SharedFolder':
       return <FolderSharedOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
-    case 'CloudFolder':
+    case 'Cloud':
       return <CloudDoneIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Folder':
       return <FolderIcon style={{ marginRight: 5 }} fontSize="inherit" />;

@@ -6,7 +6,6 @@ import DownloadIcon from '@mui/icons-material/Download';
 import React from "react";
 import { handlers } from "../../../renderer/handlers";
 import { addDownloadsInfo } from "@banbury/core/src/device/add_downloads_info";
-import { shell } from 'electron';
 
 export default function DownloadFileButton({
   selectedFileNames,
