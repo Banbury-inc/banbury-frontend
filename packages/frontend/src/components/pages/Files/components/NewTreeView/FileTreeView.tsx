@@ -67,6 +67,7 @@ export default function FileTreeView({
   const disableFetch = false;
   const cache = new Map<string, DatabaseData[]>();
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedNodes, setExpandedNodes] = useState<string[]>(['Core']);
 
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
@@ -230,6 +231,7 @@ export default function FileTreeView({
         <TreeView
           aria-label="file system navigator"
           sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
+          defaultExpandedItems={['Core']}
         >
           {renderTreeItems(fileRows)}
         </TreeView>
