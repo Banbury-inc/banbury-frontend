@@ -24,7 +24,10 @@ export const handleNodeSelect = (
     }
     return null;
   };
+  
   const selectedNode = findNodeById(fileRows, nodeId);
+  console.log("Selected node:", selectedNode);
+  
   if (selectedNode) {
     let newFilePath = '';
     // Don't set path for root core node
@@ -44,16 +47,28 @@ export const handleNodeSelect = (
     }
     // If it's a file/folder under Sync
     else if (selectedNode.file_parent === 'Sync' || selectedNode.file_path?.includes('Core/Sync/')) {
-      newFilePath = `Core/Sync/${selectedNode.file_name}`;
+      // Construct the path correctly depending on whether we have a full path
+      if (selectedNode.file_path && selectedNode.file_path.includes('Core/Sync/')) {
+        newFilePath = selectedNode.file_path;
+      } else {
+        newFilePath = `Core/Sync/${selectedNode.file_name}`;
+      }
     }
     // If it's a file/folder under Shared
     else if (selectedNode.file_parent === 'Shared' || selectedNode.file_path?.includes('Core/Shared/')) {
-      newFilePath = `Core/Shared/${selectedNode.file_name}`;
+      // Construct the path correctly depending on whether we have a full path
+      if (selectedNode.file_path && selectedNode.file_path.includes('Core/Shared/')) {
+        newFilePath = selectedNode.file_path;
+      } else {
+        newFilePath = `Core/Shared/${selectedNode.file_name}`;
+      }
     }
     // For files and folders under devices
     else if (selectedNode.file_path) {
       newFilePath = `Core/Devices/${selectedNode.device_name}${selectedNode.file_path}`;
     }
+
+    console.log("Setting new file path:", newFilePath);
 
     // Update navigation history
     if (currentPath) {
@@ -63,8 +78,6 @@ export const handleNodeSelect = (
 
     // Set the global file path and device
     setFilePath(newFilePath);
-    setFilePathDevice(selectedNode.device_name);
-    // Log the node information
-
+    setFilePathDevice(selectedNode.device_name || '');
   }
 };

@@ -31,6 +31,8 @@ export const useAllFileData = (
         setDevices(Array.isArray(deviceData) ? deviceData : []);
       }
       
+      console.log(`Fetching data for ${currentView} view at path "${filePath}"`);
+      
       // Fetch files based on current view
       const newFiles = await fetchAllData(
         username || '',
@@ -39,20 +41,37 @@ export const useAllFileData = (
         fetchedFiles
       );
       
+      console.log(`Received ${newFiles?.length || 0} files for ${currentView} view`);
+      
+      // If we actually have files OR we're explicitly switching contexts
+      // This prevents clearing the view when API returns empty results temporarily
       if (newFiles && newFiles.length > 0) {
         // Create a Map to store unique files
         const uniqueFilesMap = new Map<string, DatabaseData>();
         
-        // Add existing fetched files to the Map
+        // Add existing fetched files to the Map - only for the same context
+        // This preserves files during navigation within the same context
         fetchedFiles
-          .filter(file => file.source === currentView) // Only keep files from current view
+          .filter(file => file.source === currentView)
           .forEach(file => {
             const uniqueKey = `${file.file_path}-${file.device_name}-${file.source}`;
             uniqueFilesMap.set(uniqueKey, file);
           });
         
         // Add new files to the Map (will automatically overwrite duplicates)
-        newFiles.forEach(file => {
+        // Ensure each file has a unique ID
+        newFiles.forEach((file, index) => {
+          // For Sync and Shared views, ensure file paths include the right prefix
+          if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
+            file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
+          } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
+            file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
+          }
+          
+          // Generate a unique ID if missing
+          if (!file.id || file.id === undefined) {
+            file.id = `file-${file.file_path}-${file.device_name}-${index}-${Date.now()}`;
+          }
           const uniqueKey = `${file.file_path}-${file.device_name}-${file.source}`;
           uniqueFilesMap.set(uniqueKey, file);
         });
@@ -60,24 +79,21 @@ export const useAllFileData = (
         // Convert Map back to array
         const updatedFiles = Array.from(uniqueFilesMap.values());
         
+        // Keep previous files from other contexts, only update current context files
         setFetchedFiles(prevFiles => {
-          // Keep files from other views, replace files from current view
           const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
           return [...otherViewFiles, ...updatedFiles];
         });
         
         // Set the current view's files to fileRows
         setFileRows(updatedFiles);
-      } else {
-        // If no files found for current view, set empty array
-        setFileRows([]);
       }
       
       setIsLoading(false);
     };
 
     fetchAndUpdateData();
-  }, [username, filePath, currentView, devices, setDevices]);
+  }, [username, filePath, currentView]);
 
   // Listen for file changes
   useEffect(() => {
@@ -94,6 +110,7 @@ export const useAllFileData = (
         // Update files using same logic as above
         const uniqueFilesMap = new Map<string, DatabaseData>();
         
+        // Preserve existing files to prevent flicker
         fetchedFiles
           .filter(file => file.source === currentView)
           .forEach(file => {
@@ -101,19 +118,35 @@ export const useAllFileData = (
             uniqueFilesMap.set(uniqueKey, file);
           });
         
-        newFiles.forEach(file => {
+        // Ensure each file has a unique ID
+        newFiles.forEach((file, index) => {
+          // For Sync and Shared views, ensure file paths include the right prefix
+          if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
+            file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
+          } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
+            file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
+          }
+          
+          // Generate a unique ID if missing
+          if (!file.id || file.id === undefined) {
+            file.id = `file-${file.file_path}-${file.device_name}-${index}-${Date.now()}`;
+          }
           const uniqueKey = `${file.file_path}-${file.device_name}-${file.source}`;
           uniqueFilesMap.set(uniqueKey, file);
         });
         
         const updatedFiles = Array.from(uniqueFilesMap.values());
         
-        setFetchedFiles(prevFiles => {
-          const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
-          return [...otherViewFiles, ...updatedFiles];
-        });
-        
-        setFileRows(updatedFiles);
+        // Only update state if we actually have changes to make
+        // This prevents unnecessary re-renders
+        if (updatedFiles.length > 0) {
+          setFetchedFiles(prevFiles => {
+            const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
+            return [...otherViewFiles, ...updatedFiles];
+          });
+          
+          setFileRows(updatedFiles);
+        }
       }
     };
 

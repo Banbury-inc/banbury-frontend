@@ -344,7 +344,7 @@ const FileTable: React.FC<FileTableProps> = ({
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
-                    key={`row-${row.id}`}
+                    key={`row-${row.id || `${row.file_path}-${row.device_name}-${index}`}`}
                     selected={isItemSelected}
                     onMouseEnter={() => setHoveredRowId(row.id)}
                     onMouseLeave={() => setHoveredRowId(null)}
@@ -477,7 +477,7 @@ const FileTable: React.FC<FileTableProps> = ({
                         }}
                       >
                         <Rating
-                          name={`priority-${row.id}`}
+                          name={`priority-${row.id || `${row.file_path}-${row.device_name}-${index}`}`}
                           value={Number(row.file_priority) || 0}
                           max={3}
                           onChange={(_event, newValue) => handlePriorityChange(row, newValue)}
