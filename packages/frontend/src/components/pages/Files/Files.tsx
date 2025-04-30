@@ -41,6 +41,7 @@ import NavigateForwardButton from './components/NavigateForwardButton/NavigateFo
 import _ViewSelector from './components/ViewSelector/ViewSelector';
 import { useAllFileData } from './hooks/useAllFileData';
 import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
+import S3UploadButton from './components/S3UploadButton';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -450,6 +451,12 @@ export default function Files() {
                   tasks={tasks || []}
                   setTasks={setTasks}
                   websocket={websocket as WebSocket}
+                />
+              </Grid>
+              <Grid item paddingRight={1}>
+                <S3UploadButton 
+                  filePath={filePath}
+                  onUploadComplete={() => setUpdates(updates + 1)}
                 />
               </Grid>
               <Grid item paddingRight={1}>

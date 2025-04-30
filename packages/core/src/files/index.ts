@@ -11,5 +11,6 @@ export * from './addDeviceIdtoFileSyncFiles';
 export * from './shareFile';
 export * from './makeFilePublic';
 export * from './makeFilePrivate';
+export * from './uploadToS3';
 
 export const cancel_download_request = cancelDownloadRequestInternal;
