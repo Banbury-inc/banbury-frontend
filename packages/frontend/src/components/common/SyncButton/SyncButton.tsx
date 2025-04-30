@@ -65,6 +65,16 @@ export default function SyncButton() {
     try {
       const absoluteFolderPath = path.dirname(file.path);
 
+      // Check if folder is already in scanned folders
+      const existingFolder = syncData.syncingFiles.find(
+        (folder) => folder.filename === absoluteFolderPath
+      );
+      
+      if (existingFolder) {
+        showAlert('Folder Already Added', [`The folder "${absoluteFolderPath}" is already being scanned.`], 'warning');
+        return;
+      }
+
       // Add the selected folder as a scanned folder
       const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
