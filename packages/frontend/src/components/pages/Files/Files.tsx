@@ -394,10 +394,10 @@ export default function Files() {
       { id: 'file_priority', label: 'Priority', visible: columnVisibility.file_priority },
       { id: 'available', label: 'Status', visible: columnVisibility.available },
       { id: 'date_uploaded', label: 'Date Uploaded', visible: columnVisibility.date_uploaded },
-      { id: 'is_public', label: 'Visibility', visible: columnVisibility.is_public },
-      { id: 'original_device', label: 'Original Device', visible: columnVisibility.original_device },
-      { id: 'owner', label: 'Owner', visible: columnVisibility.owner },
-      { id: 'date_modified', label: 'Last Modified', visible: columnVisibility.date_modified }
+      //{ id: 'is_public', label: 'Visibility', visible: columnVisibility.is_public },
+      // { id: 'original_device', label: 'Original Device', visible: columnVisibility.original_device },
+      // { id: 'owner', label: 'Owner', visible: columnVisibility.owner },
+      // { id: 'date_modified', label: 'Last Modified', visible: columnVisibility.date_modified }
     ];
   };
   

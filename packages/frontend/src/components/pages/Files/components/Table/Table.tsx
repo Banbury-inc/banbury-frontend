@@ -77,38 +77,38 @@ const getHeadCells = (): HeadCell[] => [
     isVisibleNotOnCloudSync: true,
     visibleIn: ['files', 'sync', 'shared']
   },
-  { 
-    id: 'is_public', 
-    numeric: false, 
-    label: 'Visibility', 
-    isVisibleOnSmallScreen: false, 
-    isVisibleNotOnCloudSync: true,
-    visibleIn: ['files']
-  },
-  { 
-    id: 'original_device', 
-    numeric: false, 
-    label: 'Original Device', 
-    isVisibleOnSmallScreen: false, 
-    isVisibleNotOnCloudSync: true,
-    visibleIn: ['shared']
-  },
-  { 
-    id: 'owner', 
-    numeric: false, 
-    label: 'Owner', 
-    isVisibleOnSmallScreen: false, 
-    isVisibleNotOnCloudSync: true,
-    visibleIn: ['shared']
-  },
-  { 
-    id: 'date_modified', 
-    numeric: false, 
-    label: 'Last Modified', 
-    isVisibleOnSmallScreen: false, 
-    isVisibleNotOnCloudSync: true,
-    visibleIn: ['shared']
-  }
+  // { 
+  //   id: 'is_public', 
+  //   numeric: false, 
+  //   label: 'Visibility', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['files']
+  // },
+  // { 
+  //   id: 'original_device', 
+  //   numeric: false, 
+  //   label: 'Original Device', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['shared']
+  // },
+  // { 
+  //   id: 'owner', 
+  //   numeric: false, 
+  //   label: 'Owner', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['shared']
+  // },
+  // { 
+  //   id: 'date_modified', 
+  //   numeric: false, 
+  //   label: 'Last Modified', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['shared']
+  // }
 ];
 
 interface EnhancedTableHeadProps extends EnhancedTableProps {
