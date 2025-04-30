@@ -745,7 +745,7 @@ export default function Files() {
                         rowsPerPage={rowsPerPage}
                         isCloudSync={isCloudSync}
                         hoveredRowId={hoveredRowId}
-                        devices={devices || []}
+                        _devices={devices || []}
                         onRequestSort={handleRequestSort}
                         onSelectAllClick={handleSelectAllClick}
                         handleClick={handleClick}
