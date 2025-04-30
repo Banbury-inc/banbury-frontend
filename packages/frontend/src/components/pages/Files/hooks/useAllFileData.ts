@@ -130,7 +130,7 @@ export const useAllFileData = (
       let newFiles: DatabaseData[] = [];
       
       // Special handling for S3 files
-      if (currentView === 's3files') {
+      if (currentView === 'cloud') {
         try {
           const s3Result = await banbury.files.listS3Files(username || '');
           if (s3Result && s3Result.files) {
@@ -146,7 +146,7 @@ export const useAllFileData = (
               date_uploaded: s3File.date_uploaded,
               date_modified: s3File.date_modified,
               s3_url: s3File.s3_url,
-              source: 's3files',
+              source: 'cloud',
               is_s3: true
             }));
           }
@@ -182,8 +182,8 @@ export const useAllFileData = (
             file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
           } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
             file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
-          } else if (currentView === 's3files' && !file.file_path.includes('Core/S3Files/')) {
-            file.file_path = `Core/S3Files/${file.file_path.split('/').pop() || file.file_name}`;
+          } else if (currentView === 'cloud' && !file.file_path.includes('Core/Cloud/')) {
+            file.file_path = `Core/Cloud/${file.file_path.split('/').pop() || file.file_name}`;
           }
           
           // Generate a unique ID if missing
