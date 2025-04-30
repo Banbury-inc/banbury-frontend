@@ -109,6 +109,7 @@ export default function Settings() {
     <Box sx={{
       width: '100%',
       height: '100vh',
+      paddingTop: '4px',
       display: 'flex',
       flexDirection: 'column'
     }}>
