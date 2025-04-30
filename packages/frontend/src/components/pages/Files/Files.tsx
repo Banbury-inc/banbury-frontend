@@ -468,16 +468,6 @@ export default function Files() {
                 />
               </Grid>
               <Grid item paddingRight={1}>
-                <Tooltip title="View S3 Files">
-                  <IconButton
-                    onClick={() => setFilePath('S3Files')}
-                    sx={{ minWidth: 'auto', padding: '6px' }}
-                  >
-                    <CloudIcon />
-                  </IconButton>
-                </Tooltip>
-              </Grid>
-              <Grid item paddingRight={1}>
                 <DeleteFileButton
                   selectedFileNames={selectedFileNames}
                   filePath={filePath}

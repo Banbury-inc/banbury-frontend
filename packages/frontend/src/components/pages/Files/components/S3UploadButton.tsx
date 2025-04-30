@@ -76,20 +76,11 @@ const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUpload
       />
       <Tooltip title="Upload to S3">
         <Button
-          variant="contained"
-          color="primary"
           onClick={handleButtonClick}
-          startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}
           disabled={uploading}
-          sx={{ 
-            minWidth: 'auto', 
-            padding: '6px',
-            '& .MuiButton-startIcon': {
-              margin: 0
-            }
-          }}
+          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
         >
-          {uploading ? '' : 'S3'}
+          <CloudUploadIcon fontSize="inherit" />
         </Button>
       </Tooltip>
     </>
