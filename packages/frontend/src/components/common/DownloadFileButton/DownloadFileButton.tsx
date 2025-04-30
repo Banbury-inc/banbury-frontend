@@ -74,6 +74,20 @@ export default function DownloadFileButton({
           }
           
           await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+
+          // Update download status to 'completed' for all selected files
+          const completedDownloadsUpdate = selectedFileInfo.map(fileInfo => ({
+            filename: fileInfo.file_name,
+            fileType: fileInfo.kind || 'Unknown',
+            progress: 100,
+            status: 'completed' as const,
+            totalSize: fileInfo.file_size || 0,
+            downloadedSize: fileInfo.file_size || 0,
+            timeRemaining: undefined
+          }));
+          addDownloadsInfo(completedDownloadsUpdate); // Update the core download info
+          
+
           showAlert('Download completed successfully', ['Your S3 files have been downloaded successfully'], 'success');
           setSelected([]);
           return;
