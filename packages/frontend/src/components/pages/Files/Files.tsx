@@ -555,11 +555,11 @@ export default function Files() {
                           px: 0.5,
                           transition: 'all 0.2s ease-in-out' // Smooth transition for view changes
                       }}>
-                        <Grid container spacing={2} sx={{ p: 2 }}>
+                        <Grid container spacing={2} sx={{ p: 1.5 }}>
                           {fileRows.map((row) => {
                             const isItemSelected = isSelected(row.id as number);
                             return (
-                              <Grid item xs={viewType === 'grid' ? 2.4 : 4} key={row.id}>
+                              <Grid item xs={viewType === 'grid' ? 1.5 : 3} key={row.id}>
                                 <Card
                                   data-testid="file-item"
                                   sx={{
@@ -604,22 +604,22 @@ export default function Files() {
                                       display: 'flex',
                                       justifyContent: 'center',
                                       alignItems: 'center',
-                                      p: 2,
+                                      p: 1,
                                       bgcolor: 'background.default',
                                       border: '1px solid',
                                       borderColor: 'divider',
                                       borderRadius: '8px',
-                                      m: 1.5,
-                                      minHeight: '120px'
+                                      m: 1,
+                                      minHeight: '60px'
                                     }}
                                   >
                                     {row.kind === 'Folder' ? (
-                                      <FolderIcon sx={{ fontSize: 60, color: 'primary.main' }} />
+                                      <FolderIcon sx={{ fontSize: 30, color: 'primary.main' }} />
                                     ) : (
-                                      <InsertDriveFileIcon sx={{ fontSize: 60, color: 'text.secondary' }} />
+                                      <InsertDriveFileIcon sx={{ fontSize: 30, color: 'text.secondary' }} />
                                     )}
                                   </Box>
-                                  <CardContent sx={{ flexGrow: 1, pt: 1, px: 2, pb: 2 }}>
+                                  <CardContent sx={{ flexGrow: 1, pt: 0.5, px: 1.5, pb: 1 }}>
                                     <Typography variant="body2" noWrap>
                                       {row.file_name}
                                     </Typography>
