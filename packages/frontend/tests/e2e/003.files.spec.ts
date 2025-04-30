@@ -421,6 +421,15 @@ test.describe('Files tests', () => {
     // Verify popover is visible
     await expect(viewPopover).toBeVisible({ timeout: 10000 });
 
+    // Verify view options are visible
+    const listViewOption = viewPopover.locator('[data-testid="view-option-list"]');
+    const gridViewOption = viewPopover.locator('[data-testid="view-option-grid"]');
+    const largeGridViewOption = viewPopover.locator('[data-testid="view-option-large_grid"]');
+
+    await expect(listViewOption).toBeVisible({ timeout: 10000 });
+    await expect(gridViewOption).toBeVisible({ timeout: 10000 });
+    await expect(largeGridViewOption).toBeVisible({ timeout: 10000 });
+
     // Wait a moment before closing
     await page.waitForTimeout(100);
 
@@ -452,11 +461,17 @@ test.describe('Files tests', () => {
     const largeGridViewOption = viewPopover.locator('[data-testid="view-option-large_grid"]');
     await expect(largeGridViewOption).toBeVisible({ timeout: 10000 });
     await largeGridViewOption.click();
-    await page.waitForTimeout(100); // Wait for click to register
+    await page.waitForTimeout(500); // Wait for click to register and view to change
     
     // Verify the view has changed
     const fileList = page.locator('[data-testid="file-list"]');
     await expect(fileList).toBeVisible({ timeout: 10000 });
+    
+    // Check if the file grid view is active by looking for grid items
+    const gridItems = page.locator('.MuiGrid-item');
+    await expect(gridItems.first()).toBeVisible({ timeout: 10000 });
+    
+    // Verify the view attribute
     await expect(fileList).toHaveAttribute('data-view', 'large_grid', { timeout: 10000 });
     await page.waitForTimeout(500); // Wait for any animations to complete
   });

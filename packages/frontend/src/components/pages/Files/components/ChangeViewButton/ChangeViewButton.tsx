@@ -66,7 +66,7 @@ export default function ChangeViewButton({ currentView, onViewChange }: ChangeVi
         </Button>
       </Tooltip>
       <Popover
-        data-testid="change-view-popover"
+        data-testid="change-view-menu"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
