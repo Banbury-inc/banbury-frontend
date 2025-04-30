@@ -7,6 +7,8 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ImageIcon from '@mui/icons-material/Image';
 import VideocamIcon from '@mui/icons-material/Videocam'; import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import DescriptionIcon from '@mui/icons-material/Description';
+import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../../renderer/context/AuthContext';
 import { buildTree } from './utils/buildTree';
@@ -22,6 +24,12 @@ function getIconForKind(kind: string) {
       return <GrainIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Device':
       return <DevicesIcon style={{ marginRight: 5 }} fontSize="inherit" />;
+    case 'DevicesFolder':
+      return <DevicesIcon style={{ marginRight: 5 }} fontSize="inherit" />;
+    case 'SyncFolder':
+      return <CloudOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
+    case 'SharedFolder':
+      return <FolderSharedOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Folder':
       return <FolderIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Image':
@@ -59,6 +67,7 @@ export default function FileTreeView({
   const disableFetch = false;
   const cache = new Map<string, DatabaseData[]>();
   const [isLoading, setIsLoading] = useState(true);
+  const [_expandedNodes, _setExpandedNodes] = useState<string[]>(['Core']);
 
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
@@ -222,6 +231,7 @@ export default function FileTreeView({
         <TreeView
           aria-label="file system navigator"
           sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
+          defaultExpandedItems={['Core']}
         >
           {renderTreeItems(fileRows)}
         </TreeView>

@@ -11,30 +11,114 @@ import {
   Checkbox,
   ButtonBase,
   Rating,
-  Skeleton
+  Skeleton,
+  useMediaQuery,
+  Typography as _Typography
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
-import { DatabaseData, Order } from '../../types';
+import { DatabaseData, Order, HeadCell, EnhancedTableProps } from '../../types';
 import { formatFileSize } from '../../utils/formatFileSize';
-import { EnhancedTableProps, HeadCell } from '../../types';
 
 // Import the head cells function
 const getHeadCells = (): HeadCell[] => [
-  { id: 'file_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-  { id: 'file_size', numeric: false, label: 'Size', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-  { id: 'kind', numeric: false, label: 'Kind', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
-  { id: 'device_name', numeric: false, label: 'Location', isVisibleOnSmallScreen: false, isVisibleNotOnCloudSync: true },
-  { id: 'available', numeric: false, label: 'Status', isVisibleOnSmallScreen: false, isVisibleNotOnCloudSync: true },
-  { id: 'file_priority', numeric: false, label: 'Priority', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: false },
-  { id: 'date_uploaded', numeric: true, label: 'Date Uploaded', isVisibleOnSmallScreen: true, isVisibleNotOnCloudSync: true },
+  { 
+    id: 'file_name', 
+    numeric: false, 
+    label: 'Name', 
+    isVisibleOnSmallScreen: true, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync', 'shared']
+  },
+  { 
+    id: 'file_size', 
+    numeric: false, 
+    label: 'Size', 
+    isVisibleOnSmallScreen: true, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync', 'shared']
+  },
+  { 
+    id: 'kind', 
+    numeric: false, 
+    label: 'Kind', 
+    isVisibleOnSmallScreen: true, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync', 'shared']
+  },
+  { 
+    id: 'device_name', 
+    numeric: false, 
+    label: 'Location', 
+    isVisibleOnSmallScreen: true, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync', 'shared']
+  },
+  { 
+    id: 'available', 
+    numeric: false, 
+    label: 'Status', 
+    isVisibleOnSmallScreen: false, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync', 'shared']
+  },
+  { 
+    id: 'file_priority', 
+    numeric: false, 
+    label: 'Priority', 
+    isVisibleOnSmallScreen: false, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync']
+  },
+  { 
+    id: 'date_uploaded', 
+    numeric: false, 
+    label: 'Date Uploaded', 
+    isVisibleOnSmallScreen: false, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync', 'shared']
+  },
+  // { 
+  //   id: 'is_public', 
+  //   numeric: false, 
+  //   label: 'Visibility', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['files']
+  // },
+  // { 
+  //   id: 'original_device', 
+  //   numeric: false, 
+  //   label: 'Original Device', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['shared']
+  // },
+  // { 
+  //   id: 'owner', 
+  //   numeric: false, 
+  //   label: 'Owner', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['shared']
+  // },
+  // { 
+  //   id: 'date_modified', 
+  //   numeric: false, 
+  //   label: 'Last Modified', 
+  //   isVisibleOnSmallScreen: false, 
+  //   isVisibleNotOnCloudSync: true,
+  //   visibleIn: ['shared']
+  // }
 ];
 
 interface EnhancedTableHeadProps extends EnhancedTableProps {
   columnVisibility?: { [key: string]: boolean };
+  currentView?: 'files' | 'sync' | 'shared';
 }
 
 function EnhancedTableHead(props: EnhancedTableHeadProps) {
-  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort, columnVisibility } = props;
+  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort, currentView } = props;
+  const isSmallScreen = useMediaQuery('(max-width:960px)');
   const headCells = getHeadCells();
   const createSortHandler = (property: keyof DatabaseData) => (event: React.MouseEvent<unknown>) => {
     onRequestSort(event, property);
@@ -64,7 +148,11 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
           />
         </TableCell>
         {headCells
-          .filter(headCell => !columnVisibility || columnVisibility[headCell.id] !== false)
+          .filter((headCell: HeadCell) => {
+            const isVisibleOnCurrentScreen = !isSmallScreen || headCell.isVisibleOnSmallScreen;
+            const isVisibleInCurrentView = !headCell.visibleIn || headCell.visibleIn.includes(currentView || 'files');
+            return isVisibleOnCurrentScreen && isVisibleInCurrentView;
+          })
           .map((headCell: HeadCell, index: number) => (
             <TableCell
               key={`${headCell.id}-${index}`}
@@ -93,58 +181,62 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
   );
 }
 
-function stableSort<T>(array: T[], comparator: (a: T, b: T) => number): T[] {
-  return array
-    .map((el, index) => ({ el, index })) // Attach the original index to each element
+function stableSort<T>(array: readonly T[], comparator: (a: T, b: T) => number): T[] {
+  return [...array]
+    .map((el, index) => ({ el, index }))
     .sort((a, b) => {
       const order = comparator(a.el, b.el);
-      if (order !== 0) return order; // If elements are not equal, sort them according to `comparator`
-      return a.index - b.index; // If elements are equal, sort them according to their original position
+      if (order !== 0) return order;
+      return a.index - b.index;
     })
-    .map(({ el }) => el); // Extract the sorted elements
+    .map(({ el }) => el);
 }
 
-function getComparator<Key extends keyof any>(
+function getComparator(
   order: Order,
-  orderBy: Key,
-): (a: { [key in Key]: number | string }, b: { [key in Key]: number | string }) => number {
+  orderBy: keyof DatabaseData,
+): (a: DatabaseData, b: DatabaseData) => number {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
     : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-  if (b[orderBy] < a[orderBy]) {
+function descendingComparator(a: DatabaseData, b: DatabaseData, orderBy: keyof DatabaseData) {
+  const aValue = a[orderBy] || '';
+  const bValue = b[orderBy] || '';
+  
+  if (bValue < aValue) {
     return -1;
   }
-  if (b[orderBy] > a[orderBy]) {
+  if (bValue > aValue) {
     return 1;
   }
   return 0;
 }
 
 interface FileTableProps {
-  fileRows: any[];
+  fileRows: DatabaseData[];
   isLoading: boolean;
   order: Order;
   orderBy: keyof DatabaseData;
-  selected: readonly number[];
+  selected: readonly (string | number)[];
   page: number;
   rowsPerPage: number;
   isCloudSync: boolean;
-  hoveredRowId: number | null;
-  devices: any[];
+  hoveredRowId: string | number | null;
+  _devices: any[];
   onRequestSort: (event: React.MouseEvent<unknown>, property: keyof DatabaseData) => void;
   onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleClick: (event: React.MouseEvent<unknown> | React.ChangeEvent<HTMLInputElement>, id: number) => void;
-  handleFileNameClick: (id: number) => Promise<void>;
-  isSelected: (id: number) => boolean;
-  setHoveredRowId: (id: number | null) => void;
-  handlePriorityChange: (row: any, newValue: number | null) => Promise<void>;
-  columnVisibility?: { [key: string]: boolean };
+  handleClick: (event: React.MouseEvent<unknown> | React.ChangeEvent<HTMLInputElement>, id: string | number) => void;
+  handleFileNameClick: (id: string | number) => void;
+  isSelected: (id: string | number) => boolean;
+  setHoveredRowId: (id: string | number | null) => void;
+  handlePriorityChange: (row: any, newValue: number | null) => void;
+  columnVisibility: { [key: string]: boolean };
+  currentView?: 'files' | 'sync' | 'shared';
 }
 
-export default function FileTable({
+const FileTable: React.FC<FileTableProps> = ({
   fileRows,
   isLoading,
   order,
@@ -152,9 +244,8 @@ export default function FileTable({
   selected,
   page,
   rowsPerPage,
-  isCloudSync,
   hoveredRowId,
-  devices: _devices,
+  _devices,
   onRequestSort,
   onSelectAllClick,
   handleClick,
@@ -162,15 +253,12 @@ export default function FileTable({
   isSelected,
   setHoveredRowId,
   handlePriorityChange,
-  columnVisibility
-}: FileTableProps) {
-  
-  // Helper function to check if a column is visible
-  const isColumnVisible = (columnId: string): boolean => {
-    if (!columnVisibility) return true;
-    return columnVisibility[columnId] !== false;
-  };
-  
+  columnVisibility,
+  currentView = 'files'
+}) => {
+  // Empty rows calculation for pagination display
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - fileRows.length) : 0;
+
   return (
     <TableContainer 
       data-testid="file-list"
@@ -197,7 +285,7 @@ export default function FileTable({
           onSelectAllClick={onSelectAllClick}
           onRequestSort={onRequestSort}
           rowCount={fileRows.length}
-          columnVisibility={columnVisibility}
+          currentView={currentView}
         />
         <TableBody>
           {isLoading
@@ -208,32 +296,32 @@ export default function FileTable({
                 <TableCell padding="checkbox" size="small">
                   <Skeleton variant="rectangular" width={24} height={24} />
                 </TableCell>
-                {isColumnVisible('file_name') && (
+                {columnVisibility.file_name && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
-                {isColumnVisible('file_size') && (
+                {columnVisibility.file_size && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
-                {isColumnVisible('kind') && (
+                {columnVisibility.kind && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
-                {isColumnVisible('device_name') && (
+                {columnVisibility.device_name && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
-                {isColumnVisible('available') && (
+                {columnVisibility.available && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
-                {isColumnVisible('date_uploaded') && (
+                {columnVisibility.date_uploaded && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
@@ -243,20 +331,20 @@ export default function FileTable({
             : stableSort(fileRows, getComparator(order, orderBy))
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((row, index) => {
-                const isItemSelected = isSelected(row.id as number);
+                const isItemSelected = isSelected(row.id);
                 const labelId = `enhanced-table-checkbox-${index}`;
 
                 return (
                   <TableRow
                     hover
                     data-testid="file-item"
-                    onClick={(event) => handleClick(event, row.id as number)}
+                    onClick={(event) => handleClick(event, row.id)}
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
-                    key={row.id}
+                    key={`row-${row.id || `${row.file_path}-${row.device_name}-${index}`}`}
                     selected={isItemSelected}
-                    onMouseEnter={() => setHoveredRowId(row.id as number)}
+                    onMouseEnter={() => setHoveredRowId(row.id)}
                     onMouseLeave={() => setHoveredRowId(null)}
                   >
                     <TableCell sx={{ borderBottomColor: '#424242' }} padding="checkbox" size="small">
@@ -270,7 +358,7 @@ export default function FileTable({
                       ) : null}
                     </TableCell>
 
-                    {isColumnVisible('file_name') && (
+                    {columnVisibility.file_name && (
                       <TableCell
                         sx={{
                           borderBottomColor: '#424242',
@@ -286,7 +374,7 @@ export default function FileTable({
                         <ButtonBase
                           onClick={(event) => {
                             event.stopPropagation();
-                            handleFileNameClick(row.id as number);
+                            handleFileNameClick(row.id);
                           }}
                           style={{ textDecoration: 'none' }}
                         >
@@ -295,7 +383,7 @@ export default function FileTable({
                       </TableCell>
                     )}
 
-                    {isColumnVisible('file_size') && (
+                    {columnVisibility.file_size && (
                       <TableCell
                         align="left"
                         padding="normal"
@@ -310,7 +398,7 @@ export default function FileTable({
                       </TableCell>
                     )}
 
-                    {(!isCloudSync && isColumnVisible('kind')) && (
+                    {columnVisibility.kind && (
                       <TableCell
                         align="left"
                         sx={{
@@ -324,7 +412,7 @@ export default function FileTable({
                       </TableCell>
                     )}
 
-                    {(!isCloudSync && isColumnVisible('device_name')) && (
+                    {columnVisibility.device_name && (
                       <TableCell
                         align="left"
                         sx={{
@@ -338,7 +426,7 @@ export default function FileTable({
                       </TableCell>
                     )}
 
-                    {(!isCloudSync && isColumnVisible('available')) && (
+                    {columnVisibility.available && (
                       <TableCell
                         align="left"
                         padding="normal"
@@ -359,22 +447,7 @@ export default function FileTable({
                       </TableCell>
                     )}
 
-                    {isColumnVisible('is_public') && (
-                      <TableCell
-                        align="left"
-                        padding="normal"
-                        sx={{
-                          borderBottomColor: '#424242',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {row.is_public ? 'Public' : 'Private'}
-                      </TableCell>
-                    )}
-
-                    {(isCloudSync && isColumnVisible('file_priority')) && (
+                    {columnVisibility.file_priority && (currentView === 'files' || currentView === 'sync') && (
                       <TableCell
                         align="left"
                         padding="normal"
@@ -387,9 +460,9 @@ export default function FileTable({
                         }}
                       >
                         <Rating
-                          name={`priority-${row.id}`}
-                          value={Number(row.file_priority)}
-                          max={5}
+                          name={`priority-${row.id || `${row.file_path}-${row.device_name}-${index}`}`}
+                          value={Number(row.file_priority) || 0}
+                          max={3}
                           onChange={(_event, newValue) => handlePriorityChange(row, newValue)}
                           sx={{
                             fontSize: '16px',
@@ -406,7 +479,7 @@ export default function FileTable({
                       </TableCell>
                     )}
 
-                    {(!isCloudSync && isColumnVisible('date_uploaded')) && (
+                    {columnVisibility.date_uploaded && (
                       <TableCell
                         padding="normal"
                         align="right"
@@ -420,11 +493,77 @@ export default function FileTable({
                         {row.date_uploaded}
                       </TableCell>
                     )}
+                    {columnVisibility.is_public && (
+                      <TableCell
+                        padding="normal"
+                        align="right"
+                        sx={{
+                          borderBottomColor: '#424242',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {row.is_public}
+                      </TableCell>
+                    )}
+
+                    {currentView === 'shared' && row.original_device && (
+                      <TableCell
+                        align="left"
+                        padding="normal"
+                        sx={{
+                          borderBottomColor: '#424242',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {row.original_device}
+                      </TableCell>
+                    )}
+
+                    {currentView === 'shared' && row.owner && (
+                      <TableCell
+                        align="left"
+                        padding="normal"
+                        sx={{
+                          borderBottomColor: '#424242',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {row.owner}
+                      </TableCell>
+                    )}
+
+                    {currentView === 'shared' && row.date_modified && (
+                      <TableCell
+                        align="left"
+                        padding="normal"
+                        sx={{
+                          borderBottomColor: '#424242',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {row.date_modified}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
+          {emptyRows > 0 && (
+            <TableRow style={{ height: 33 * emptyRows }}>
+              <TableCell colSpan={6} />
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </TableContainer>
   );
-}
+};
+
+export default FileTable;

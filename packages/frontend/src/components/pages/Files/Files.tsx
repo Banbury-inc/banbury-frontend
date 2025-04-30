@@ -25,7 +25,6 @@ import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
 import ShareFileButton from '../../../components/common/ShareFileButton/ShareFileButton';
 import AddFileToSyncButton from '../../../components/common/AddFileToSyncButton';
-import { newUseFileData } from './hooks/newUseFileData';
 import Dialog from '@mui/material/Dialog';
 import SyncButton from '../../../components/common/SyncButton/SyncButton';
 import DownloadFileButton from '../../../components/common/DownloadFileButton/DownloadFileButton';
@@ -39,6 +38,9 @@ import { formatFileSize } from './utils/formatFileSize';
 import FileTable from './components/Table/Table';
 import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
 import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
+import _ViewSelector from './components/ViewSelector/ViewSelector';
+import { useAllFileData } from './hooks/useAllFileData';
+import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -72,11 +74,11 @@ const ResizeHandle = styled('div')(({ theme }) => ({
 export default function Files() {
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DatabaseData>('file_name');
-  const [selected, setSelected] = useState<readonly number[]>([]);
+  const [selected, setSelected] = useState<readonly (string | number)[]>([]);
   const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
-  const [hoveredRowId, setHoveredRowId] = useState<number | null>(null);
+  const [hoveredRowId, setHoveredRowId] = useState<string | number | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(100);
   const { websocket } = useAuth();
@@ -116,7 +118,10 @@ export default function Files() {
     available: true,
     file_priority: true,
     date_uploaded: true,
-    is_public: true
+    is_public: true,
+    original_device: true,
+    owner: true,
+    date_modified: true
   });
 
   useEffect(() => {
@@ -150,22 +155,29 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
+  const getCurrentContext = (): 'files' | 'sync' | 'shared' => {
+    if (filePath.includes('Core/Sync') || filePath === 'Sync') {
+      return 'sync';
+    } else if (filePath.includes('Core/Shared') || filePath === 'Shared') {
+      return 'shared';
+    }
+    return 'files';
+  };
 
-  const { isLoading, fileRows } = newUseFileData(
+  const currentContext = getCurrentContext();
+
+  const { isLoading, fileRows } = useAllFileData(
     username,
     filePath,
     filePathDevice,
+    currentContext,
     setFirstname,
     setLastname,
     files,
     sync_files,
-    devices,
-    setDevices,
+    devices || [],
+    setDevices
   );
-
-  useEffect(() => {
-
-  }, [files]);
 
   useEffect(() => {
     const fetchAndUpdateDevices = async () => {
@@ -174,8 +186,14 @@ export default function Files() {
     };
 
     fetchAndUpdateDevices();
-
   }, []);
+
+  useEffect(() => {
+    setSelected([]);
+    setSelectedFileNames([]);
+    setSelectedDeviceNames([]);
+    setSelectedFileInfo([]);
+  }, [filePath]);
 
   const handleRequestSort = (_event: React.MouseEvent<unknown>, property: keyof DatabaseData) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -192,42 +210,45 @@ export default function Files() {
     setSelected([]);
   };
 
-  const handleFileNameClick = async (id: number) => {
+  const handleFileNameClick = async (id: string | number) => {
     const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly number[] = [];
+    let _newSelected: readonly (string | number)[] = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
+      _newSelected = _newSelected.concat(selected, id);
     } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
+      _newSelected = _newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
+      _newSelected = _newSelected.concat(selected.slice(0, -1));
     } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
+      _newSelected = _newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
-    const file_name = fileRows.find((file) => file.id === id)?.file_name;
-    const newSelectedFilePaths = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.file_path)
-      .filter((name) => name !== undefined) as string[];
+    
+    const file = fileRows.find((file) => file.id === id);
+    if (!file) return;
+    
+    const file_name = file.file_name;
+    const file_path = file.file_path;
+    
     let fileFound = false;
     let folderFound = false;
+    
     try {
-      const fileStat = await stat(newSelectedFilePaths[0]);
-      if (fileStat.isFile()) {
-        fileFound = true;
+      if (file_path) {
+        const fileStat = await stat(file_path);
+        if (fileStat.isFile()) {
+          fileFound = true;
+        }
+        if (fileStat.isDirectory()) {
+          folderFound = true;
+          setFilePath(file_path);
+        }
       }
-      if (fileStat.isDirectory()) {
-        folderFound = true;
-        setFilePath(newSelectedFilePaths[0]);
-      }
+      
       if (fileFound) {
-        // Send an IPC message to the main process to handle opening the file
-        shell.openPath(newSelectedFilePaths[0]);
+        shell.openPath(file_path);
       }
-      if (folderFound) {
-        // Send an IPC message to the main process to handle opening the file
-        // shell.openPath(newSelectedFilePaths[0]);
-      }
+      
       if (!fileFound && !folderFound) {
         console.error(`File '${file_name}' not found in directory, searching other devices`);
 
@@ -242,6 +263,7 @@ export default function Files() {
           taskInfo,
           websocket as unknown as WebSocket,
         );
+        
         if (response === 'No file selected') {
           await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
           showAlert('No file selected', ['Please select a file to download'], 'warning');
@@ -281,10 +303,11 @@ export default function Files() {
       showAlert('Error', ['An error occurred while accessing the file.'], 'error');
     }
   };
-  const handleClick = (event: React.MouseEvent<unknown> | React.ChangeEvent<HTMLInputElement>, id: number) => {
+  
+  const handleClick = (event: React.MouseEvent<unknown> | React.ChangeEvent<HTMLInputElement>, id: string | number) => {
     event.stopPropagation();
     const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly number[] = [];
+    let newSelected: readonly (string | number)[] = [];
 
     if (selectedIndex === -1) {
       newSelected = newSelected.concat(selected, id);
@@ -321,7 +344,7 @@ export default function Files() {
     setPage(0);
   };
 
-  const isSelected = (id: number) => selected.indexOf(id) !== -1;
+  const isSelected = (id: string | number) => selected.indexOf(id) !== -1;
 
   const handlePriorityChange = async (row: any, newValue: number | null) => {
     if (newValue === null) return;
@@ -340,7 +363,8 @@ export default function Files() {
     }
   };
 
-  const isCloudSync = filePath?.includes('Cloud Sync') ?? false;
+  const isCloudSync = filePath?.includes('Core/Sync') ?? false;
+  const isShared = filePath?.includes('Core/Shared') ?? false;
 
   const handleShareModalOpen = () => {
     setIsShareModalOpen(true);
@@ -357,18 +381,26 @@ export default function Files() {
     }));
   };
 
-  // Get column options for the toggle button
   const getColumnOptions = () => {
     return [
       { id: 'file_name', label: 'Name', visible: columnVisibility.file_name },
       { id: 'file_size', label: 'Size', visible: columnVisibility.file_size },
       { id: 'kind', label: 'Kind', visible: columnVisibility.kind },
       { id: 'device_name', label: 'Location', visible: columnVisibility.device_name },
-      { id: 'available', label: 'Status', visible: columnVisibility.available },
       { id: 'file_priority', label: 'Priority', visible: columnVisibility.file_priority },
+      { id: 'available', label: 'Status', visible: columnVisibility.available },
       { id: 'date_uploaded', label: 'Date Uploaded', visible: columnVisibility.date_uploaded },
-      { id: 'is_public', label: 'Visibility', visible: columnVisibility.is_public },
+      //{ id: 'is_public', label: 'Visibility', visible: columnVisibility.is_public },
+      // { id: 'original_device', label: 'Original Device', visible: columnVisibility.original_device },
+      // { id: 'owner', label: 'Owner', visible: columnVisibility.owner },
+      // { id: 'date_modified', label: 'Last Modified', visible: columnVisibility.date_modified }
     ];
+  };
+  
+  const handleFinish = () => {
+    setSelected([]);
+    setSelectedFileNames([]);
+    setUpdates(updates + 1);
   };
 
   return (
@@ -381,7 +413,7 @@ export default function Files() {
       <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
         <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
           <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
-            <Grid container justifyContent="flex-start" alignItems="flex-start">
+            <Grid container alignItems="center">
               <Grid item>
                 <NavigateBackButton
                   backHistory={_backHistory}
@@ -401,72 +433,83 @@ export default function Files() {
                   setFilePath={setFilePath}
                 />
               </Grid>
+
+              <Grid item paddingRight={1} paddingLeft={1}>
+                <Tooltip title="Upload">
+                  <NewInputFileUploadButton />
+                </Tooltip>
+              </Grid>
+              <Grid item paddingRight={1}>
+                <DownloadFileButton
+                  selectedFileNames={selectedFileNames}
+                  selectedFileInfo={selectedFileInfo}
+                  selectedDeviceNames={selectedDeviceNames}
+                  setSelectedFiles={setSelectedFileNames}
+                  setSelected={setSelected}
+                  setTaskbox_expanded={setTaskbox_expanded}
+                  tasks={tasks || []}
+                  setTasks={setTasks}
+                  websocket={websocket as WebSocket}
+                />
+              </Grid>
+              <Grid item paddingRight={1}>
+                <DeleteFileButton
+                  selectedFileNames={selectedFileNames}
+                  filePath={filePath}
+                  setSelectedFileNames={setSelectedFileNames}
+                  updates={updates}
+                  setUpdates={setUpdates}
+                  setSelected={setSelected}
+                  setTaskbox_expanded={setTaskbox_expanded}
+                  tasks={tasks || []}
+                  setTasks={setTasks}
+                />
+              </Grid>
+              
+              {!isShared && (
+                <Grid item paddingRight={1}>
+                  <Tooltip title="Add to Sync">
+                    <AddFileToSyncButton selectedFileNames={selectedFileNames} />
+                  </Tooltip>
+                </Grid>
+              )}
+              
+              {isCloudSync && (
+                <Grid item paddingRight={1}>
+                  <RemoveFileFromSyncButton
+                    selectedFileNames={selectedFileNames}
+                    onFinish={handleFinish}
+                  />
+                </Grid>
+              )}
+              
+              <Grid item paddingRight={1}>
+                <SyncButton />
+              </Grid>
+              <Grid item paddingRight={1}>
+                <ShareFileButton
+                  selectedFileNames={selectedFileNames}
+                  selectedFileInfo={selectedFileInfo}
+                  onShare={() => handleShareModalOpen()}
+                />
+              </Grid>
+              <Grid item paddingRight={1}>
+                <ToggleColumnsButton
+                  columnOptions={getColumnOptions()}
+                  onColumnVisibilityChange={handleColumnVisibilityChange}
+                />
+              </Grid>
               <Grid item>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-                  <Grid item paddingRight={1}>
-                    <Tooltip title="Upload">
-                      <NewInputFileUploadButton />
-                    </Tooltip>
-                  </Grid>
-                  <Grid item paddingRight={1}>
-                    <DownloadFileButton
-                      selectedFileNames={selectedFileNames}
-                      selectedFileInfo={selectedFileInfo}
-                      selectedDeviceNames={selectedDeviceNames}
-                      setSelectedFiles={setSelectedFileNames}
-                      setSelected={setSelected}
-                      setTaskbox_expanded={setTaskbox_expanded}
-                      tasks={tasks || []}
-                      setTasks={setTasks}
-                      websocket={websocket as WebSocket}
-                    />
-                  </Grid>
-                  <Grid item paddingRight={1}>
-                    <DeleteFileButton
-                      selectedFileNames={selectedFileNames}
-                      filePath={filePath}
-                      setSelectedFileNames={setSelectedFileNames}
-                      updates={updates}
-                      setUpdates={setUpdates}
-                      setSelected={setSelected}
-                      setTaskbox_expanded={setTaskbox_expanded}
-                      tasks={tasks || []}
-                      setTasks={setTasks}
-                    />
-                  </Grid>
-                  <Grid item paddingRight={1} paddingLeft={0}>
-                    <Tooltip title="Add to Sync">
-                      <AddFileToSyncButton selectedFileNames={selectedFileNames} />
-                    </Tooltip>
-                  </Grid>
-                  <Grid item paddingRight={1}>
-                    <SyncButton />
-                  </Grid>
-                  <Grid item paddingRight={1}>
-                    <ShareFileButton
-                      selectedFileNames={selectedFileNames}
-                      selectedFileInfo={selectedFileInfo}
-                      onShare={() => handleShareModalOpen()}
-                    />
-                  </Grid>
-                  <Grid item paddingRight={1}>
-                    <ToggleColumnsButton
-                      columnOptions={getColumnOptions()}
-                      onColumnVisibilityChange={handleColumnVisibilityChange}
-                    />
-                  </Grid>
-                  <Grid item>
-                    <ChangeViewButton
-                      currentView={viewType}
-                      onViewChange={setViewType}
-                    />
-                  </Grid>
-                </Box>
+                <ChangeViewButton
+                  currentView={viewType}
+                  onViewChange={setViewType}
+                />
               </Grid>
             </Grid>
           </Stack>
         </CardContent>
       </Card>
+      
       <Stack
         direction="row"
         spacing={0}
@@ -578,7 +621,9 @@ export default function Files() {
                       No files available.
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
-                      Please upload a file to get started.
+                      {isCloudSync ? "No files are currently synced." :
+                       isShared ? "No files have been shared with you." :
+                       "Please upload a file to get started."}
                     </Typography>
                   </Box>
                 ) : (
@@ -595,7 +640,7 @@ export default function Files() {
                       }}>
                         <Grid container spacing={2} sx={{ p: 1.5 }}>
                           {fileRows.map((row) => {
-                            const isItemSelected = isSelected(row.id as number);
+                            const isItemSelected = isSelected(row.id);
                             return (
                               <Grid item xs={viewType === 'grid' ? 1.5 : 3} key={row.id}>
                                 <Card
@@ -617,7 +662,7 @@ export default function Files() {
                                     border: isItemSelected ? '2px solid' : '1px solid',
                                     borderColor: isItemSelected ? 'primary.main' : 'divider'
                                   }}
-                                  onClick={(event) => handleClick(event, row.id as number)}
+                                  onClick={(event) => handleClick(event, row.id)}
                                 >
                                   <Box
                                     className="selection-checkbox"
@@ -633,7 +678,7 @@ export default function Files() {
                                   >
                                     <Checkbox
                                       checked={isItemSelected}
-                                      onChange={(event) => handleClick(event, row.id as number)}
+                                      onChange={(event) => handleClick(event, row.id)}
                                       size="small"
                                     />
                                   </Box>
@@ -696,7 +741,7 @@ export default function Files() {
                         rowsPerPage={rowsPerPage}
                         isCloudSync={isCloudSync}
                         hoveredRowId={hoveredRowId}
-                        devices={devices || []}
+                        _devices={devices || []}
                         onRequestSort={handleRequestSort}
                         onSelectAllClick={handleSelectAllClick}
                         handleClick={handleClick}
@@ -705,6 +750,7 @@ export default function Files() {
                         setHoveredRowId={setHoveredRowId}
                         handlePriorityChange={handlePriorityChange}
                         columnVisibility={columnVisibility}
+                        currentView={currentContext}
                       />
                     )}
                   </>

@@ -24,7 +24,10 @@ export const handleNodeSelect = (
     }
     return null;
   };
+  
   const selectedNode = findNodeById(fileRows, nodeId);
+  console.info("Selected node:", selectedNode);
+  
   if (selectedNode) {
     let newFilePath = '';
     // Don't set path for root core node
@@ -32,8 +35,9 @@ export const handleNodeSelect = (
       newFilePath = selectedNode.id;
       setFilePathDevice('');
     }
-    // Don't set path for main Devices or Cloud Sync nodes
-    else if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync') {
+    // Don't set path for main Devices, Sync, or Shared nodes
+    else if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync' || 
+            selectedNode.id === 'Sync' || selectedNode.id === 'Shared') {
       newFilePath = `Core/${selectedNode.id}`;
       setFilePathDevice('');
     }
@@ -41,10 +45,30 @@ export const handleNodeSelect = (
     else if (selectedNode.file_parent === 'Devices') {
       newFilePath = `Core/Devices/${selectedNode.file_name}`;
     }
+    // If it's a file/folder under Sync
+    else if (selectedNode.file_parent === 'Sync' || selectedNode.file_path?.includes('Core/Sync/')) {
+      // Construct the path correctly depending on whether we have a full path
+      if (selectedNode.file_path && selectedNode.file_path.includes('Core/Sync/')) {
+        newFilePath = selectedNode.file_path;
+      } else {
+        newFilePath = `Core/Sync/${selectedNode.file_name}`;
+      }
+    }
+    // If it's a file/folder under Shared
+    else if (selectedNode.file_parent === 'Shared' || selectedNode.file_path?.includes('Core/Shared/')) {
+      // Construct the path correctly depending on whether we have a full path
+      if (selectedNode.file_path && selectedNode.file_path.includes('Core/Shared/')) {
+        newFilePath = selectedNode.file_path;
+      } else {
+        newFilePath = `Core/Shared/${selectedNode.file_name}`;
+      }
+    }
     // For files and folders under devices
     else if (selectedNode.file_path) {
       newFilePath = `Core/Devices/${selectedNode.device_name}${selectedNode.file_path}`;
     }
+
+    console.info("Setting new file path:", newFilePath);
 
     // Update navigation history
     if (currentPath) {
@@ -54,8 +78,6 @@ export const handleNodeSelect = (
 
     // Set the global file path and device
     setFilePath(newFilePath);
-    setFilePathDevice(selectedNode.device_name);
-    // Log the node information
-
+    setFilePathDevice(selectedNode.device_name || '');
   }
 };
