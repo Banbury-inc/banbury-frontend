@@ -1,6 +1,5 @@
-import { Box, CssBaseline, ThemeProvider } from "@mui/material";
-import React  from "react";
-import theme from "../../renderer/themes/theme";
+import { Box, CssBaseline, ThemeProvider as MuiThemeProvider } from "@mui/material";
+import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import Login from "./Login/Login";
 import { AuthProvider } from "../../renderer/context/AuthContext";
@@ -9,6 +8,7 @@ import '../../renderer/index.css';
 import { AlertProvider } from '../../renderer/context/AlertContext';
 import { Alert } from '../../components/template/alert';
 import { useAlert } from '../../renderer/context/AlertContext';
+import { ThemeProvider, useTheme } from "../../renderer/context/ThemeContext";
 
 function AlertWrapper() {
   const { alert } = useAlert();
@@ -72,7 +72,8 @@ declare module 'react' {
   }
 }
 
-export default function App(): JSX.Element {
+function ThemedApp(): JSX.Element {
+  const { theme } = useTheme();
   const handleClose = () => {
     ipcRenderer.send('close-window');
   };
@@ -86,7 +87,7 @@ export default function App(): JSX.Element {
   };
 
   return (
-    <ThemeProvider theme={theme}>
+    <MuiThemeProvider theme={theme}>
       <AlertProvider>
         <CustomTitleBar
           onClose={handleClose}
@@ -109,6 +110,14 @@ export default function App(): JSX.Element {
           </AuthProvider>
         </BrowserRouter>
       </AlertProvider>
+    </MuiThemeProvider>
+  );
+}
+
+export default function App(): JSX.Element {
+  return (
+    <ThemeProvider>
+      <ThemedApp />
     </ThemeProvider>
   );
 }

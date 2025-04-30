@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Grid, Stack, Typography, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Button, Card, Grid, Stack, Typography, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import { ipcRenderer } from 'electron';
 import { Alert } from '../../template/alert';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
+import { useTheme, ThemeName } from '../../../renderer/context/ThemeContext';
 
 export default function App() {
     const [updateStatus, setUpdateStatus] = useState<{ title: string; messages: string[] } | null>(null);
@@ -12,6 +13,7 @@ export default function App() {
     const [openDialog, setOpenDialog] = useState(false);
     const [deleteInProgress, setDeleteInProgress] = useState(false);
     const { username, logout } = useAuth();
+    const { themeName, setTheme } = useTheme();
 
     useEffect(() => {
         // Listen for update status messages
@@ -70,6 +72,16 @@ export default function App() {
 
     const handleCloseDeleteDialog = () => {
         setOpenDialog(false);
+    };
+
+    const handleThemeChange = (event: SelectChangeEvent) => {
+        setTheme(event.target.value as ThemeName);
+        
+        setUpdateStatus({
+            title: 'Theme Updated',
+            messages: ['Your theme has been updated.']
+        });
+        setShowAlert(true);
     };
 
     const handleDeleteAccount = async () => {
@@ -140,6 +152,40 @@ export default function App() {
                                     </Box>
                                 </Box>
                             </Stack>
+                        </Grid>
+                    </Grid>
+                </Card>
+
+                {/* Theme Selector Card */}
+                <Card variant='outlined' sx={{ p: 3 }}>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <Stack spacing={2}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <Box sx={{ pr: 3 }}>
+                                        <Typography variant="h6" gutterBottom>App Theme</Typography>
+                                        <Typography color="textSecondary" variant="caption">Change the appearance of the application</Typography>
+                                    </Box>
+                                </Box>
+                            </Stack>
+                        </Grid>
+                        <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+                                <Select<ThemeName>
+                                    data-testid="theme-selector"
+                                    value={themeName}
+                                    onChange={handleThemeChange}
+                                    displayEmpty
+                                    sx={{ fontSize: '14px', height: '32px' }}
+                                >
+                                    <MenuItem value="default">Default</MenuItem>
+                                    <MenuItem value="spotify">Spotify</MenuItem>
+                                    <MenuItem value="materialui">Material UI</MenuItem>
+                                    <MenuItem value="theme2">Orange</MenuItem>
+                                    <MenuItem value="theme3">Alternate</MenuItem>
+                                    <MenuItem value="theme4">Dark Monochrome</MenuItem>
+                                </Select>
+                            </FormControl>
                         </Grid>
                     </Grid>
                 </Card>
