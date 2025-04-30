@@ -10,9 +10,7 @@ import {
   Box,
   Checkbox,
   ButtonBase,
-  Typography,
   Rating,
-  LinearProgress,
   Skeleton
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';

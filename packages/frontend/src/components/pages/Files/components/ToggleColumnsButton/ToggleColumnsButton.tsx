@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Tooltip, Typography, Popover, Box, Stack, Checkbox, FormControlLabel } from "@mui/material";
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
-import { styled } from '@mui/material/styles';
 
 interface ColumnOption {
   id: string;
@@ -14,15 +13,6 @@ interface ToggleColumnsButtonProps {
   onColumnVisibilityChange: (columnId: string, isVisible: boolean) => void;
 }
 
-const StyledButton = styled(Button)(() => ({
-  width: '100%',
-  justifyContent: 'flex-start',
-  padding: '12px 16px',
-  borderRadius: '8px',
-  '&:hover': {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-}));
 
 export default function ToggleColumnsButton({ columnOptions, onColumnVisibilityChange }: ToggleColumnsButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
