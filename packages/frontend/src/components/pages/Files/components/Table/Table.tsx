@@ -317,7 +317,7 @@ const FileTable: React.FC<FileTableProps> = ({
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
-                {columnVisibility.available && !isCloudSync && (
+                {columnVisibility.available && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
