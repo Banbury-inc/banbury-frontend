@@ -165,10 +165,6 @@ export default function Files() {
   };
 
   const currentContext = getCurrentContext();
-  
-  // Add debug logs
-  console.info("Current file path:", filePath);
-  console.info("Current context:", currentContext);
 
   const { isLoading, fileRows } = useAllFileData(
     username,
