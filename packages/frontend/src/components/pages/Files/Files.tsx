@@ -34,6 +34,7 @@ import { styled } from '@mui/material/styles';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
+import ToggleColumnsButton from './components/ToggleColumnsButton/ToggleColumnsButton';
 import { formatFileSize } from './utils/formatFileSize';
 import FileTable from './components/Table/Table';
 import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
@@ -107,6 +108,16 @@ export default function Files() {
   const [filePath, setFilePath] = useState<string>('');
   const [_backHistory, setBackHistory] = useState<string[]>([]);
   const [_forwardHistory, setForwardHistory] = useState<string[]>([]);
+  const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>({
+    file_name: true,
+    file_size: true,
+    kind: true,
+    device_name: true,
+    available: true,
+    file_priority: true,
+    date_uploaded: true,
+    is_public: true
+  });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -339,6 +350,27 @@ export default function Files() {
     setIsShareModalOpen(false);
   };
 
+  const handleColumnVisibilityChange = (columnId: string, isVisible: boolean) => {
+    setColumnVisibility(prev => ({
+      ...prev,
+      [columnId]: isVisible
+    }));
+  };
+
+  // Get column options for the toggle button
+  const getColumnOptions = () => {
+    return [
+      { id: 'file_name', label: 'Name', visible: columnVisibility.file_name },
+      { id: 'file_size', label: 'Size', visible: columnVisibility.file_size },
+      { id: 'kind', label: 'Kind', visible: columnVisibility.kind },
+      { id: 'device_name', label: 'Location', visible: columnVisibility.device_name },
+      { id: 'available', label: 'Status', visible: columnVisibility.available },
+      { id: 'file_priority', label: 'Priority', visible: columnVisibility.file_priority },
+      { id: 'date_uploaded', label: 'Date Uploaded', visible: columnVisibility.date_uploaded },
+      { id: 'is_public', label: 'Visibility', visible: columnVisibility.is_public },
+    ];
+  };
+
   return (
     <Box sx={{
       width: '100%',
@@ -415,6 +447,12 @@ export default function Files() {
                       selectedFileNames={selectedFileNames}
                       selectedFileInfo={selectedFileInfo}
                       onShare={() => handleShareModalOpen()}
+                    />
+                  </Grid>
+                  <Grid item paddingRight={1}>
+                    <ToggleColumnsButton
+                      columnOptions={getColumnOptions()}
+                      onColumnVisibilityChange={handleColumnVisibilityChange}
                     />
                   </Grid>
                   <Grid item>
@@ -666,6 +704,7 @@ export default function Files() {
                         isSelected={isSelected}
                         setHoveredRowId={setHoveredRowId}
                         handlePriorityChange={handlePriorityChange}
+                        columnVisibility={columnVisibility}
                       />
                     )}
                   </>
