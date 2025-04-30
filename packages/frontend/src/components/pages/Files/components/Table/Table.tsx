@@ -13,7 +13,7 @@ import {
   Rating,
   Skeleton,
   useMediaQuery,
-  Typography
+  Typography as _Typography
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import { DatabaseData, Order, HeadCell, EnhancedTableProps } from '../../types';
@@ -117,7 +117,7 @@ interface EnhancedTableHeadProps extends EnhancedTableProps {
 }
 
 function EnhancedTableHead(props: EnhancedTableHeadProps) {
-  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort, columnVisibility, currentView } = props;
+  const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort, currentView } = props;
   const isSmallScreen = useMediaQuery('(max-width:960px)');
   const headCells = getHeadCells();
   const createSortHandler = (property: keyof DatabaseData) => (event: React.MouseEvent<unknown>) => {
@@ -224,7 +224,7 @@ interface FileTableProps {
   rowsPerPage: number;
   isCloudSync: boolean;
   hoveredRowId: string | number | null;
-  devices: any[];
+  _devices: any[];
   onRequestSort: (event: React.MouseEvent<unknown>, property: keyof DatabaseData) => void;
   onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleClick: (event: React.MouseEvent<unknown> | React.ChangeEvent<HTMLInputElement>, id: string | number) => void;
@@ -246,7 +246,7 @@ const FileTable: React.FC<FileTableProps> = ({
   rowsPerPage,
   isCloudSync,
   hoveredRowId,
-  devices,
+  _devices,
   onRequestSort,
   onSelectAllClick,
   handleClick,
@@ -286,7 +286,6 @@ const FileTable: React.FC<FileTableProps> = ({
           onSelectAllClick={onSelectAllClick}
           onRequestSort={onRequestSort}
           rowCount={fileRows.length}
-          columnVisibility={columnVisibility}
           currentView={currentView}
         />
         <TableBody>

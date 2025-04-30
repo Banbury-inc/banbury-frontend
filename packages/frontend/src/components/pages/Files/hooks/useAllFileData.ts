@@ -31,7 +31,7 @@ export const useAllFileData = (
         setDevices(Array.isArray(deviceData) ? deviceData : []);
       }
       
-      console.log(`Fetching data for ${currentView} view at path "${filePath}"`);
+      console.info(`Fetching data for ${currentView} view at path "${filePath}"`);
       
       // Fetch files based on current view
       const newFiles = await fetchAllData(
@@ -41,7 +41,7 @@ export const useAllFileData = (
         fetchedFiles
       );
       
-      console.log(`Received ${newFiles?.length || 0} files for ${currentView} view`);
+      console.info(`Received ${newFiles?.length || 0} files for ${currentView} view`);
       
       // If we actually have files OR we're explicitly switching contexts
       // This prevents clearing the view when API returns empty results temporarily

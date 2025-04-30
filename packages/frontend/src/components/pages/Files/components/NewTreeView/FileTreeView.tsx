@@ -67,7 +67,7 @@ export default function FileTreeView({
   const disableFetch = false;
   const cache = new Map<string, DatabaseData[]>();
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedNodes, setExpandedNodes] = useState<string[]>(['Core']);
+  const [_expandedNodes, _setExpandedNodes] = useState<string[]>(['Core']);
 
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {

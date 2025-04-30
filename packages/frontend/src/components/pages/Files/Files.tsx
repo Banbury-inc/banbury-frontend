@@ -38,7 +38,7 @@ import { formatFileSize } from './utils/formatFileSize';
 import FileTable from './components/Table/Table';
 import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
 import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
-import ViewSelector from './components/ViewSelector/ViewSelector';
+import _ViewSelector from './components/ViewSelector/ViewSelector';
 import { useAllFileData } from './hooks/useAllFileData';
 import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 
@@ -167,8 +167,8 @@ export default function Files() {
   const currentContext = getCurrentContext();
   
   // Add debug logs
-  console.log("Current file path:", filePath);
-  console.log("Current context:", currentContext);
+  console.info("Current file path:", filePath);
+  console.info("Current context:", currentContext);
 
   const { isLoading, fileRows } = useAllFileData(
     username,
@@ -216,16 +216,16 @@ export default function Files() {
 
   const handleFileNameClick = async (id: string | number) => {
     const selectedIndex = selected.indexOf(id);
-    let newSelected: readonly (string | number)[] = [];
+    let _newSelected: readonly (string | number)[] = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, id);
+      _newSelected = _newSelected.concat(selected, id);
     } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
+      _newSelected = _newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
+      _newSelected = _newSelected.concat(selected.slice(0, -1));
     } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
+      _newSelected = _newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
     
     const file = fileRows.find((file) => file.id === id);

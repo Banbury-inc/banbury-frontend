@@ -152,7 +152,7 @@ export const fetchAllData = async (
     adjustedPath = filePath;
   }
   
-  console.log(`Fetching ${currentView} data with path: ${adjustedPath}`);
+  console.info(`Fetching ${currentView} data with path: ${adjustedPath}`);
   
   switch (currentView) {
     case 'files':
