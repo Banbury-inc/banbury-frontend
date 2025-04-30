@@ -173,7 +173,7 @@ export const fetchSharedData = async (
 export const fetchAllData = async (
   username: string,
   filePath: string,
-  currentView: 'files' | 'sync' | 'shared',
+  currentView: 'files' | 'sync' | 'shared' | 'cloud',
   existingFiles: DatabaseData[] = []
 ) => {
   // When accessing Sync or Shared nodes directly, transform the path

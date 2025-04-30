@@ -21,7 +21,7 @@ export default function DownloadFileButton({
   selectedFileInfo: any[],
   selectedDeviceNames: string[],
   setSelectedFiles: (files: any[]) => void,
-  setSelected: (selected: readonly number[]) => void,
+  setSelected: (selected: readonly (string | number)[]) => void,
   setTaskbox_expanded: (expanded: boolean) => void,
   tasks: any[],
   setTasks: (tasks: any[]) => void,
@@ -33,12 +33,6 @@ export default function DownloadFileButton({
   const handleDownloadClick = async () => {
     if (selectedFileNames.length === 0) {
       showAlert('No file selected', ['Please select one or more files to download'], 'warning');
-      return;
-    }
-
-    // Check if websocket is connected
-    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-      showAlert('Connection Error', ['Not connected to server. Please try again.'], 'error');
       return;
     }
 
@@ -60,6 +54,57 @@ export default function DownloadFileButton({
       const task_description = 'Downloading ' + selectedFileNames.join(', ');
       const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
       setTaskbox_expanded(true);
+
+      // Check if any selected file is an S3 file
+      const hasS3Files = selectedFileInfo.some(file => file.is_s3 === true);
+
+      if (hasS3Files) {
+        // Handle S3 files download
+        try {
+          for (const file of selectedFileInfo) {
+            if (file.is_s3) {
+              // Use the new function that saves directly to BCloud directory
+              await banbury.files.saveS3FileToBCloud(
+                username ?? '',
+                file.id.toString(),
+                file.file_name
+              );
+            }
+          }
+          
+          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+
+          // Update download status to 'completed' for all selected files
+          const completedDownloadsUpdate = selectedFileInfo.map(fileInfo => ({
+            filename: fileInfo.file_name,
+            fileType: fileInfo.kind || 'Unknown',
+            progress: 100,
+            status: 'completed' as const,
+            totalSize: fileInfo.file_size || 0,
+            downloadedSize: fileInfo.file_size || 0,
+            timeRemaining: undefined
+          }));
+          addDownloadsInfo(completedDownloadsUpdate); // Update the core download info
+          
+
+          showAlert('Download completed successfully', ['Your Cloud file has been downloaded successfully'], 'success');
+          setSelected([]);
+          return;
+        } catch (error) {
+          console.error('Error downloading S3 files:', error);
+          await banbury.sessions.failTask(username ?? '', taskInfo, 'S3 download failed', tasks, setTasks);
+          showAlert('Download failed', ['Failed to download S3 files. Please try again.'], 'error');
+          setSelected([]);
+          return;
+        }
+      }
+
+      // Regular device files need websocket connection
+      if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+        showAlert('Connection Error', ['Not connected to server. Please try again.'], 'error');
+        await banbury.sessions.failTask(username ?? '', taskInfo, 'Connection Error', tasks, setTasks);
+        return;
+      }
 
       // Add timeout promise with a much longer timeout (5 minutes instead of 30 seconds)
       const timeoutPromise = new Promise((_, reject) => {
@@ -123,8 +168,11 @@ export default function DownloadFileButton({
     }
   };
 
-  // Disable button if websocket is not connected
-  const isDisabled = !websocket || websocket.readyState !== WebSocket.OPEN || selectedFileNames.length === 0;
+  // Check if any selected file is an S3 file
+  const hasS3Files = selectedFileInfo.some(file => file.is_s3 === true);
+  
+  // Disable button if websocket is not connected (for non-S3 files) or no files selected
+  const isDisabled = (!hasS3Files && (!websocket || websocket.readyState !== WebSocket.OPEN)) || selectedFileNames.length === 0;
 
   return (
     <Tooltip title={isDisabled ? (selectedFileNames.length === 0 ? "Select files to download" : "Not connected") : "Download"}>

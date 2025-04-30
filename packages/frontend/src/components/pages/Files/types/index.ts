@@ -2,23 +2,27 @@ export interface DatabaseData {
   _id?: string;
   id: number | string;
   file_name: string;
-  kind: string;
-  date_uploaded: string;
-  date_modified?: string;
-  file_size: string;
   file_path: string;
-  shared_with: string[];
-  is_public: boolean;
-  deviceID: string;
+  file_size: string | number;
+  kind: string;
   device_name: string;
-  helpers: number;
+  date_uploaded: string;
   available: string;
-  file_priority: string;
-  device_ids: string[];
+  file_priority?: number;
   original_device?: string;
+  file_type?: string;
+  file_parent?: string;
+  is_public?: boolean;
+  deviceID?: string;
+  children?: DatabaseData[];
+  helpers?: number;
+  shared_with?: string[];
+  source?: 'files' | 'sync' | 'shared' | 'cloud';
   owner?: string;
-  // Tracking file source
-  source?: 'files' | 'sync' | 'shared';
+  date_modified?: string;
+  is_s3?: boolean;
+  s3_url?: string;
+  device_ids?: string[];
 }
 
 export type Order = 'asc' | 'desc';
@@ -30,7 +34,7 @@ export interface HeadCell {
   numeric: boolean;
   isVisibleOnSmallScreen: boolean;
   isVisibleNotOnCloudSync: boolean;
-  visibleIn?: Array<'files' | 'sync' | 'shared'>;
+  visibleIn?: Array<'files' | 'sync' | 'shared' | 'cloud'>;
 }
 
 export interface EnhancedTableProps {
@@ -40,5 +44,5 @@ export interface EnhancedTableProps {
   order: Order;
   orderBy: keyof DatabaseData;
   rowCount: number;
-  currentView?: 'files' | 'sync' | 'shared';
-} 
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
+}

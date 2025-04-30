@@ -35,6 +35,11 @@ export const handleNodeSelect = (
       newFilePath = selectedNode.id;
       setFilePathDevice('');
     }
+    // Handle Cloud node specially
+    else if (selectedNode.id === 'Cloud') {
+      newFilePath = 'Core/Cloud';
+      setFilePathDevice('');
+    }
     // Don't set path for main Devices, Sync, or Shared nodes
     else if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync' || 
             selectedNode.id === 'Sync' || selectedNode.id === 'Shared') {

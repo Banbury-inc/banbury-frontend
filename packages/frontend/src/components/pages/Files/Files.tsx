@@ -41,6 +41,7 @@ import NavigateForwardButton from './components/NavigateForwardButton/NavigateFo
 import _ViewSelector from './components/ViewSelector/ViewSelector';
 import { useAllFileData } from './hooks/useAllFileData';
 import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
+import S3UploadButton from './components/S3UploadButton';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -155,11 +156,13 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
-  const getCurrentContext = (): 'files' | 'sync' | 'shared' => {
+  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' => {
     if (filePath.includes('Core/Sync') || filePath === 'Sync') {
       return 'sync';
     } else if (filePath.includes('Core/Shared') || filePath === 'Shared') {
       return 'shared';
+    } else if (filePath.includes('Core/Cloud') || filePath === 'Cloud') {
+      return 'cloud';
     }
     return 'files';
   };
@@ -229,6 +232,31 @@ export default function Files() {
     
     const file_name = file.file_name;
     const file_path = file.file_path;
+    
+    // Special handling for S3 files
+    if (file.is_s3) {
+      try {
+        const task_description = 'Downloading ' + file_name;
+        const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        setTaskbox_expanded(true);
+        
+        // Use the direct save function instead of browser download
+        await banbury.files.saveS3FileToBCloud(
+          username ?? '',
+          file.id.toString(),
+          file_name
+        );
+        
+        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        
+        showAlert('Download completed successfully', [`The file "${file_name}" has been downloaded successfully`], 'success');
+        return;
+      } catch (error) {
+        console.error('Error downloading S3 file:', error);
+        showAlert('Download failed', [`Failed to download "${file_name}". Please try again.`], 'error');
+        return;
+      }
+    }
     
     let fileFound = false;
     let folderFound = false;
@@ -453,6 +481,12 @@ export default function Files() {
                 />
               </Grid>
               <Grid item paddingRight={1}>
+                <S3UploadButton 
+                  filePath={filePath}
+                  onUploadComplete={() => setUpdates(updates + 1)}
+                />
+              </Grid>
+              <Grid item paddingRight={1}>
                 <DeleteFileButton
                   selectedFileNames={selectedFileNames}
                   filePath={filePath}
@@ -623,6 +657,7 @@ export default function Files() {
                     <Typography variant="body2" color="textSecondary">
                       {isCloudSync ? "No files are currently synced." :
                        isShared ? "No files have been shared with you." :
+                       currentContext === 'cloud' ? "No files found in Cloud storage." :
                        "Please upload a file to get started."}
                     </Typography>
                   </Box>

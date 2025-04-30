@@ -7,8 +7,9 @@ import FolderIcon from '@mui/icons-material/Folder';
 import ImageIcon from '@mui/icons-material/Image';
 import VideocamIcon from '@mui/icons-material/Videocam'; import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import DescriptionIcon from '@mui/icons-material/Description';
-import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
+import SyncIcon from '@mui/icons-material/Sync';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../../renderer/context/AuthContext';
 import { buildTree } from './utils/buildTree';
@@ -16,7 +17,6 @@ import { fetchFileData } from '../../utils/fetchFileData'
 import { DatabaseData } from './types';
 import { handleNodeSelect } from './handleNodeSelect';
 import { fileWatcherEmitter } from '@banbury/core/src/device/watchdog';
-
 
 function getIconForKind(kind: string) {
   switch (kind) {
@@ -27,9 +27,11 @@ function getIconForKind(kind: string) {
     case 'DevicesFolder':
       return <DevicesIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'SyncFolder':
-      return <CloudOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
+      return <SyncIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'SharedFolder':
       return <FolderSharedOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
+    case 'Cloud':
+      return <CloudDoneIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Folder':
       return <FolderIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Image':
@@ -45,7 +47,48 @@ function getIconForKind(kind: string) {
   }
 }
 
-
+// Add the S3 Files node to the tree data
+const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
+  // Find the Core node
+  const coreNodeIndex = fileRows.findIndex(node => node.id === 'Core');
+  
+  if (coreNodeIndex >= 0) {
+    // Create a copy of the fileRows
+    const updatedFileRows = [...fileRows];
+    
+    // Create the S3 Files node if Core node exists
+    if (!updatedFileRows[coreNodeIndex].children?.some(child => child.id === 'Cloud')) {
+      // Ensure the children array exists
+      if (!updatedFileRows[coreNodeIndex].children) {
+        updatedFileRows[coreNodeIndex].children = [];
+      }
+      
+      // Add the S3 Files node as a child of Core
+      updatedFileRows[coreNodeIndex].children.push({
+        id: 'Cloud',
+        _id: 'Cloud',
+        file_name: 'Cloud',
+        file_parent: 'Core',
+        kind: 'Cloud',
+        device_name: '',
+        date_uploaded: '',
+        file_path: 'Core/Cloud',
+        file_size: '0',
+        file_type: '',
+        shared_with: [],
+        is_public: false,
+        deviceID: '',
+        helpers: 0,
+        available: '',
+        original_device: ''
+      });
+    }
+    
+    return updatedFileRows;
+  }
+  
+  return fileRows;
+};
 
 export default function FileTreeView({ 
   filePath, 
@@ -84,8 +127,6 @@ export default function FileTreeView({
         },
       );
 
-
-
       if (new_files) {
         // Create a Map to store unique files
         const uniqueFilesMap = new Map<string, DatabaseData>();
@@ -102,12 +143,15 @@ export default function FileTreeView({
           uniqueFilesMap.set(uniqueKey, file);
         });
 
-
         // Convert Map back to array
         const updatedFiles = Array.from(uniqueFilesMap.values());
 
         setFetchedFiles(updatedFiles);
-        const treeData = buildTree(updatedFiles);
+        let treeData = buildTree(updatedFiles);
+        
+        // Add S3 Files node to the tree
+        treeData = addS3FilesNode(treeData);
+        
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
@@ -137,7 +181,11 @@ export default function FileTreeView({
         updatedFiles = [...fetchedFiles, ...new_files];
         setFetchedFiles(updatedFiles);
 
-        const treeData = buildTree(updatedFiles);
+        let treeData = buildTree(updatedFiles);
+        
+        // Add S3 Files node to the tree
+        treeData = addS3FilesNode(treeData);
+        
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
@@ -166,7 +214,11 @@ export default function FileTreeView({
         const updatedFiles = [...fetchedFiles, ...new_files];
         setFetchedFiles(updatedFiles);
 
-        const treeData = buildTree(updatedFiles);
+        let treeData = buildTree(updatedFiles);
+        
+        // Add S3 Files node to the tree
+        treeData = addS3FilesNode(treeData);
+        
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
@@ -238,7 +290,6 @@ export default function FileTreeView({
       )}
     </Box>
   )
-
 }
 
 
