@@ -18,7 +18,7 @@ export interface DatabaseData {
   original_device?: string;
   owner?: string;
   // Tracking file source
-  source?: 'files' | 'sync' | 'shared';
+  source?: 'files' | 'sync' | 'shared' | 's3files';
 }
 
 export type Order = 'asc' | 'desc';
@@ -30,7 +30,7 @@ export interface HeadCell {
   numeric: boolean;
   isVisibleOnSmallScreen: boolean;
   isVisibleNotOnCloudSync: boolean;
-  visibleIn?: Array<'files' | 'sync' | 'shared'>;
+  visibleIn?: Array<'files' | 'sync' | 'shared' | 's3files'>;
 }
 
 export interface EnhancedTableProps {
@@ -40,5 +40,5 @@ export interface EnhancedTableProps {
   order: Order;
   orderBy: keyof DatabaseData;
   rowCount: number;
-  currentView?: 'files' | 'sync' | 'shared';
+  currentView?: 'files' | 'sync' | 'shared' | 's3files';
 } 

@@ -113,7 +113,7 @@ const getHeadCells = (): HeadCell[] => [
 
 interface EnhancedTableHeadProps extends EnhancedTableProps {
   columnVisibility?: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared';
+  currentView?: 'files' | 'sync' | 'shared' | 's3files';
 }
 
 function EnhancedTableHead(props: EnhancedTableHeadProps) {
@@ -233,7 +233,7 @@ interface FileTableProps {
   setHoveredRowId: (id: string | number | null) => void;
   handlePriorityChange: (row: any, newValue: number | null) => void;
   columnVisibility: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared';
+  currentView?: 'files' | 'sync' | 'shared' | 's3files';
 }
 
 const FileTable: React.FC<FileTableProps> = ({

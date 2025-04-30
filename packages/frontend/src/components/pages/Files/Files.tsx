@@ -32,6 +32,11 @@ import DeleteFileButton from '../../../components/common/DeleteFileBtton/DeleteF
 import { styled } from '@mui/material/styles';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FolderIcon from '@mui/icons-material/Folder';
+import CloudIcon from '@mui/icons-material/Cloud';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
 import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
 import ToggleColumnsButton from './components/ToggleColumnsButton/ToggleColumnsButton';
 import { formatFileSize } from './utils/formatFileSize';
@@ -42,6 +47,7 @@ import _ViewSelector from './components/ViewSelector/ViewSelector';
 import { useAllFileData } from './hooks/useAllFileData';
 import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 import S3UploadButton from './components/S3UploadButton';
+import S3FilesView from './components/S3FilesView';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -124,6 +130,7 @@ export default function Files() {
     owner: true,
     date_modified: true
   });
+  const [isS3FilesDialogOpen, setIsS3FilesDialogOpen] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -156,11 +163,13 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
-  const getCurrentContext = (): 'files' | 'sync' | 'shared' => {
+  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 's3files' => {
     if (filePath.includes('Core/Sync') || filePath === 'Sync') {
       return 'sync';
     } else if (filePath.includes('Core/Shared') || filePath === 'Shared') {
       return 'shared';
+    } else if (filePath.includes('Core/S3Files') || filePath === 'S3Files') {
+      return 's3files';
     }
     return 'files';
   };
@@ -171,7 +180,7 @@ export default function Files() {
     username,
     filePath,
     filePathDevice,
-    currentContext,
+    currentContext === 's3files' ? 'files' : currentContext,
     setFirstname,
     setLastname,
     files,
@@ -404,6 +413,15 @@ export default function Files() {
     setUpdates(updates + 1);
   };
 
+  // S3 Files Dialog Handlers
+  const handleOpenS3FilesDialog = () => {
+    setIsS3FilesDialogOpen(true);
+  };
+
+  const handleCloseS3FilesDialog = () => {
+    setIsS3FilesDialogOpen(false);
+  };
+
   return (
     <Box sx={{
       width: '100%',
@@ -458,6 +476,16 @@ export default function Files() {
                   filePath={filePath}
                   onUploadComplete={() => setUpdates(updates + 1)}
                 />
+              </Grid>
+              <Grid item paddingRight={1}>
+                <Tooltip title="View S3 Files">
+                  <IconButton
+                    onClick={handleOpenS3FilesDialog}
+                    sx={{ minWidth: 'auto', padding: '6px' }}
+                  >
+                    <CloudIcon />
+                  </IconButton>
+                </Tooltip>
               </Grid>
               <Grid item paddingRight={1}>
                 <DeleteFileButton
@@ -621,7 +649,9 @@ export default function Files() {
                 flexDirection: 'column',
                 transition: 'all 0.2s ease-in-out' // Smooth transition for view changes
               }}>
-                {fileRows.length === 0 ? (
+                {currentContext === 's3files' ? (
+                  <S3FilesView />
+                ) : fileRows.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 5 }}>
                     <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h5" color="textSecondary">
@@ -782,6 +812,35 @@ export default function Files() {
         maxWidth="sm"
         fullWidth
       >
+      </Dialog>
+      
+      {/* S3 Files Dialog */}
+      <Dialog
+        open={isS3FilesDialogOpen}
+        onClose={handleCloseS3FilesDialog}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { height: '80vh' }
+        }}
+      >
+        <DialogTitle>
+          S3 Cloud Storage Files
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseS3FilesDialog}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          <S3FilesView />
+        </DialogContent>
       </Dialog>
     </Box>
   );
