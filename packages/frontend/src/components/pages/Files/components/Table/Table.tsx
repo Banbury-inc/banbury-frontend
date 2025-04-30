@@ -244,7 +244,6 @@ const FileTable: React.FC<FileTableProps> = ({
   selected,
   page,
   rowsPerPage,
-  isCloudSync,
   hoveredRowId,
   _devices,
   onRequestSort,
