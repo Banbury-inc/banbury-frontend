@@ -16,7 +16,6 @@ import Typography from '@mui/material/Typography';
 import { visuallyHidden } from '@mui/utils';
 import React, {useState } from 'react';
 import { useAuth } from '../../../renderer/context/AuthContext';
-import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
 
 
@@ -160,18 +159,13 @@ export default function Logs() {
     <Box sx={{
       width: '100%',
       height: '100vh',
+      paddingTop: '4px',
       display: 'flex',
       flexDirection: 'column'
     }}>
       <Stack direction="row" spacing={0} sx={{ width: '100%', height: 'calc(100vh - 40px)', overflow: 'hidden' }}>
-        <Stack>
-          <Box display="flex" flexDirection="column" height="100%">
-
-          </Box>
-        </Stack>
-        <Card variant="outlined" sx={{ flexGrow: 1, height: '100%', width: '100%', overflow: 'hidden' }}>
-          <CardContent sx={{ height: '100%', width: '100%', overflow: 'hidden', padding: 0 }}>
-            <FileBreadcrumbs />
+        <Card variant="outlined" sx={{ height: '100%', width: '100%', overflow: 'hidden', borderLeft: '0px' }}>
+          <CardContent sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
             {logs.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 5 }}>
                 <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
