@@ -427,7 +427,7 @@ const FileTable: React.FC<FileTableProps> = ({
                       </TableCell>
                     )}
 
-                    {columnVisibility.available && !isCloudSync && (
+                    {columnVisibility.available && (
                       <TableCell
                         align="left"
                         padding="normal"
@@ -445,21 +445,6 @@ const FileTable: React.FC<FileTableProps> = ({
                         }}
                       >
                         {row.available}
-                      </TableCell>
-                    )}
-
-                    {columnVisibility.is_public && currentView === 'files' && (
-                      <TableCell
-                        align="left"
-                        padding="normal"
-                        sx={{
-                          borderBottomColor: '#424242',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {row.is_public ? 'Public' : 'Private'}
                       </TableCell>
                     )}
 
@@ -507,6 +492,20 @@ const FileTable: React.FC<FileTableProps> = ({
                         }}
                       >
                         {row.date_uploaded}
+                      </TableCell>
+                    )}
+                    {columnVisibility.is_public && (
+                      <TableCell
+                        padding="normal"
+                        align="right"
+                        sx={{
+                          borderBottomColor: '#424242',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {row.is_public}
                       </TableCell>
                     )}
 
