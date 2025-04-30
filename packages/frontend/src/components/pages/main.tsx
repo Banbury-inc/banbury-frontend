@@ -299,51 +299,48 @@ export default function PermanentDrawerLeft() {
                     <>
                       <Button
                         onClick={() => ipcRenderer.send('minimize-window')}
+                        size="small"
                         className="titlebar-button"
                         sx={{
-                          width: '46px',
-                          height: '100%',
-                          minwidth: '46px',
-                          border: 'none',
-                          bgcolor: 'transparent',
+                          width: '10px',
+                          height: '34px',
+                          borderRadius: 0,
                           color: '#fff',
-                          fontSize: '18px',
-                          p: 0,
-                          ':hover': {
-                            bgcolor: 'rgba(255, 255, 255, 0.1)',
-                          },
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
                         }}
                       >
                         &#8211;
                       </Button>
                       <Button
                         onClick={() => ipcRenderer.send('maximize-window')}
+                        size="small"
                         className="titlebar-button"
                         sx={{
                           width: '10px',
-                          border: 'none',
-                          bgcolor: 'transparent',
+                          height: '34px',
+                          borderRadius: 0,
                           color: '#fff',
-                          p: 0,
-                          ':hover': {
-                            bgcolor: 'rgba(255, 255, 255, 0.1)',
-                          },
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          }
                         }}
                       >
                         &#9633;
                       </Button>
                       <Button
                         onClick={() => ipcRenderer.send('close-window')}
+                        size="small"
                         className="titlebar-button"
                         sx={{
                           width: '10px',
-                          border: 'none',
-                          bgcolor: 'transparent',
+                          height: '34px',
+                          borderRadius: 0,
                           color: '#fff',
-                          p: 0,
-                          ':hover': {
-                            bgcolor: '#ff0000',
-                          },
+                          '&:hover': {
+                            backgroundColor: '#ff0000',
+                          }
                         }}
                       >
                         &#10005;
