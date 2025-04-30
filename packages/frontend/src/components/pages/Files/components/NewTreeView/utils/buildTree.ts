@@ -45,9 +45,52 @@ export function buildTree(files: DatabaseData[]): DatabaseData[] {
     original_device: '',
   };
 
+  // Create "Sync" node
+  const syncNode: DatabaseData = {
+    _id: '',
+    id: 'Sync',
+    file_type: 'directory',
+    file_name: 'Sync',
+    file_size: '',
+    file_path: '',
+    shared_with: [],
+    is_public: false,
+    kind: 'SyncFolder',
+    file_parent: 'Core',
+    date_uploaded: '',
+    helpers: 0,
+    available: '',
+    deviceID: '',
+    device_name: '',
+    children: [],
+    original_device: '',
+  };
 
-  // Add the new nodes to core's children
+  // Create "Shared" node
+  const sharedNode: DatabaseData = {
+    _id: '',
+    id: 'Shared',
+    file_type: 'directory',
+    file_name: 'Shared',
+    file_size: '',
+    file_path: '',
+    shared_with: [],
+    is_public: false,
+    kind: 'SharedFolder',
+    file_parent: 'Core',
+    date_uploaded: '',
+    helpers: 0,
+    available: '',
+    deviceID: '',
+    device_name: '',
+    children: [],
+    original_device: '',
+  };
+
+  // Add the nodes to core's children
   coreNode.children!.push(devicesNode);
+  coreNode.children!.push(syncNode);
+  coreNode.children!.push(sharedNode);
 
 
   // Group files by a unique device identifier based on the device name

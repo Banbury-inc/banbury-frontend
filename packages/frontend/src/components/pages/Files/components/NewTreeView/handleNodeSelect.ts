@@ -32,14 +32,23 @@ export const handleNodeSelect = (
       newFilePath = selectedNode.id;
       setFilePathDevice('');
     }
-    // Don't set path for main Devices or Cloud Sync nodes
-    else if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync') {
+    // Don't set path for main Devices, Sync, or Shared nodes
+    else if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync' || 
+            selectedNode.id === 'Sync' || selectedNode.id === 'Shared') {
       newFilePath = `Core/${selectedNode.id}`;
       setFilePathDevice('');
     }
     // If it's a device node (direct child of 'Devices')
     else if (selectedNode.file_parent === 'Devices') {
       newFilePath = `Core/Devices/${selectedNode.file_name}`;
+    }
+    // If it's a file/folder under Sync
+    else if (selectedNode.file_parent === 'Sync' || selectedNode.file_path?.includes('Core/Sync/')) {
+      newFilePath = `Core/Sync/${selectedNode.file_name}`;
+    }
+    // If it's a file/folder under Shared
+    else if (selectedNode.file_parent === 'Shared' || selectedNode.file_path?.includes('Core/Shared/')) {
+      newFilePath = `Core/Shared/${selectedNode.file_name}`;
     }
     // For files and folders under devices
     else if (selectedNode.file_path) {

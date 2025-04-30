@@ -198,14 +198,37 @@ export default function PermanentDrawerLeft() {
 
   // Update when sidebar selection changes
   const handleSidebarChange = (newView: string) => {
-    // Update the current tab's view and label
-    setTabs(currentTabs =>
-      currentTabs.map(tab =>
-        tab.id === currentTabId
-          ? { ...tab, view: newView, label: newView }
-          : tab
-      )
-    );
+    // If sync or shared is selected, redirect to Files with view parameter
+    if (newView === 'Sync' || newView === 'Shared') {
+      // Update Files tab to show appropriate view
+      setTabs(currentTabs =>
+        currentTabs.map(tab =>
+          tab.id === currentTabId
+            ? { ...tab, view: 'Files', label: newView }
+            : tab
+        )
+      );
+      
+      // Add the view parameter to URL
+      const viewParam = newView.toLowerCase();
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', viewParam);
+      window.history.pushState({}, '', url);
+    } else {
+      // Normal behavior for other views
+      setTabs(currentTabs =>
+        currentTabs.map(tab =>
+          tab.id === currentTabId
+            ? { ...tab, view: newView, label: newView }
+            : tab
+        )
+      );
+      
+      // Clear view parameter from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('view');
+      window.history.pushState({}, '', url);
+    }
   };
 
   const handleContextMenuClose = () => {
@@ -370,8 +393,6 @@ export default function PermanentDrawerLeft() {
             >
               <List>
                 {['Files',
-                  'Sync',
-                  'Shared',
                   'AI',
                   'Devices',
                   'Friends'].map((text) => (
@@ -387,8 +408,6 @@ export default function PermanentDrawerLeft() {
                           }}
                         >
                           {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
-                          {text === 'Sync' && <CloudOutlinedIcon fontSize='inherit' />}
-                          {text === 'Shared' && <FolderSharedOutlinedIcon fontSize='inherit' />}
                           {text === 'AI' && < AutoAwesomeIcon fontSize='inherit' />}
                           {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
                           {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
@@ -428,9 +447,9 @@ export default function PermanentDrawerLeft() {
                         case 'Files':
                           return <Files />;
                         case 'Sync':
-                          return <Sync />;
                         case 'Shared':
-                          return <Shared />;
+                          // Redirect to Files component
+                          return <Files />;
                         case 'AI':
                           return <AI />;
                         case 'Devices':
