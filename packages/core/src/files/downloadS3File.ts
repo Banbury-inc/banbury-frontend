@@ -1,5 +1,8 @@
 import axios from 'axios';
 import { config } from '../config/config';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 /**
  * Downloads a file from S3
@@ -57,6 +60,47 @@ export const downloadAndSaveS3File = async (
     window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error downloading and saving S3 file:', error);
+    throw error;
+  }
+};
+
+/**
+ * Downloads an S3 file and saves it directly to the BCloud directory
+ * 
+ * @param username - The username requesting the download
+ * @param fileId - The ID of the file to download
+ * @param fileName - The name to save the file as
+ * @returns The path where the file was saved
+ */
+export const saveS3FileToBCloud = async (
+  username: string,
+  fileId: string,
+  fileName: string
+): Promise<string> => {
+  try {
+    const blob = await downloadS3File(username, fileId);
+    
+    // Ensure BCloud directory exists
+    const directory_name: string = 'BCloud';
+    const directory_path: string = path.join(os.homedir(), directory_name);
+    
+    if (!fs.existsSync(directory_path)) {
+      fs.mkdirSync(directory_path, { recursive: true });
+    }
+    
+    // Save file path
+    const file_save_path: string = path.join(directory_path, fileName);
+    
+    // Convert blob to buffer
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Write file to disk
+    fs.writeFileSync(file_save_path, buffer);
+    
+    return file_save_path;
+  } catch (error) {
+    console.error('Error saving S3 file to BCloud directory:', error);
     throw error;
   }
 }; 

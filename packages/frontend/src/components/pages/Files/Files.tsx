@@ -239,6 +239,31 @@ export default function Files() {
     const file_name = file.file_name;
     const file_path = file.file_path;
     
+    // Special handling for S3 files
+    if (file.is_s3) {
+      try {
+        const task_description = 'Downloading ' + file_name;
+        const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        setTaskbox_expanded(true);
+        
+        // Use the direct save function instead of browser download
+        const filePath = await banbury.files.saveS3FileToBCloud(
+          username ?? '',
+          file.id.toString(),
+          file_name
+        );
+        
+        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        
+        showAlert('Download completed successfully', [`The file "${file_name}" has been downloaded successfully`], 'success');
+        return;
+      } catch (error) {
+        console.error('Error downloading S3 file:', error);
+        showAlert('Download failed', [`Failed to download "${file_name}". Please try again.`], 'error');
+        return;
+      }
+    }
+    
     let fileFound = false;
     let folderFound = false;
     
@@ -466,6 +491,16 @@ export default function Files() {
                   filePath={filePath}
                   onUploadComplete={() => setUpdates(updates + 1)}
                 />
+              </Grid>
+              <Grid item paddingRight={1}>
+                <Tooltip title="View S3 Files">
+                  <IconButton
+                    onClick={() => setFilePath('S3Files')}
+                    sx={{ minWidth: 'auto', padding: '6px' }}
+                  >
+                    <CloudIcon />
+                  </IconButton>
+                </Tooltip>
               </Grid>
               <Grid item paddingRight={1}>
                 <DeleteFileButton
