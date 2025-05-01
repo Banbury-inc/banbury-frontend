@@ -15,7 +15,8 @@ export const useAllFileData = (
   files: any,
   sync_files: any,
   devices: any[],
-  setDevices: (devices: any[]) => void
+  setDevices: (devices: any[]) => void,
+  updates?: number
 ) => {
   const [isLoading, setIsLoading] = useState(true);
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
@@ -131,7 +132,7 @@ export const useAllFileData = (
     };
 
     fetchAndUpdateData();
-  }, [username, filePath, currentView]);
+  }, [username, filePath, currentView, updates]);
 
   // Apply filtering based on filePathDevice or filePath
   useEffect(() => {

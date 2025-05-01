@@ -13,7 +13,7 @@ interface S3UploadButtonProps {
 const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUploadComplete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const { username, devices } = useAuth();
+  const { username, devices, setUpdates } = useAuth();
   const { showAlert } = useAlert();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,12 +29,16 @@ const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUpload
       }
 
       const fileArray = Array.from(files);
+      console.log('Uploading files to S3:', fileArray.map(f => f.name));
+      
       const results = await banbury.files.uploadMultipleToS3(
         username || '', 
         fileArray, 
         deviceName, 
         filePath
       );
+      
+      console.log('Upload results:', results);
       
       // Check if any uploads failed
       const failedUploads = results.filter(result => result.error);
@@ -43,7 +47,13 @@ const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUpload
         showAlert('Upload Failed', ['Some files failed to upload to the Cloud.'], 'error');
       } else {
         showAlert('Upload Complete', ['Files successfully uploaded to the Cloud.'], 'success');
+        
+        // Force a refresh of the files list
+        setUpdates(Date.now());
+        
+        // Call the onUploadComplete callback if provided
         if (onUploadComplete) {
+          console.log('Triggering upload complete callback');
           onUploadComplete();
         }
       }

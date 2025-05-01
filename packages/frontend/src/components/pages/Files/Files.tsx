@@ -179,7 +179,8 @@ export default function Files() {
     files,
     sync_files,
     devices || [],
-    setDevices
+    setDevices,
+    updates
   );
 
   useEffect(() => {
@@ -500,7 +501,20 @@ export default function Files() {
               <Grid item paddingRight={1}>
                 <S3UploadButton 
                   filePath={filePath}
-                  onUploadComplete={() => setUpdates(updates + 1)}
+                  onUploadComplete={() => {
+                    // Force refresh by updating the updates counter
+                    setUpdates(Date.now());
+                    // If we're in Cloud view, directly fetch cloud files
+                    if (filePath === 'Core/Cloud' && username) {
+                      banbury.files.listS3Files(username)
+                        .then((result) => {
+                          console.log('Refreshed cloud files after upload:', result);
+                        })
+                        .catch((error) => {
+                          console.error('Error refreshing cloud files after upload:', error);
+                        });
+                    }
+                  }}
                 />
               </Grid>
               <Grid item paddingRight={1}>
