@@ -167,15 +167,10 @@ export default function DownloadFileButton({
       setSelected([]);
     }
   };
-
-  // Check if any selected file is an S3 file
-  const hasS3Files = selectedFileInfo.some(file => file.is_s3 === true);
   
-  // Disable button if websocket is not connected (for non-S3 files) or no files selected
-  const isDisabled = (!hasS3Files && (!websocket || websocket.readyState !== WebSocket.OPEN)) || selectedFileNames.length === 0;
 
   return (
-    <Tooltip title={isDisabled ? (selectedFileNames.length === 0 ? "Select files to download" : "Not connected") : "Download"}>
+    <Tooltip title={"Download"}>
       <span>
         <Button
           data-testid="download-button"
