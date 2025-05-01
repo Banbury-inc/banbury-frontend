@@ -10,7 +10,7 @@ import { config } from '../config/config';
 export const listS3Files = async (username: string): Promise<any> => {
   try {
     const response = await axios.get(`${config.url}/files/get_s3_files/${username}/`);
-    return response.data;
+    return response;
   } catch (error) {
     console.error('Error listing S3 files:', error);
     throw error;

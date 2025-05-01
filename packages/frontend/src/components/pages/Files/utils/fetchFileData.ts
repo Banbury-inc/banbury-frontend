@@ -7,14 +7,14 @@ export const fetchFileData = async (
     global_file_path: string,
     {
         setIsLoading,
-        existingFiles,
+        existingFiles = [],
     }: {
         setFirstname: (name: string) => void;
         setLastname: (name: string) => void;
         setFileRows: (rows: DatabaseData[]) => void;
         setIsLoading: (loading: boolean) => void;
         cache: Map<string, DatabaseData[]>;
-        existingFiles: DatabaseData[];
+        existingFiles?: DatabaseData[];
     }
 ) => {
     try {
@@ -24,6 +24,11 @@ export const fetchFileData = async (
                 global_file_path: global_file_path
             }
         );
+
+        // Ensure we have a valid array before creating the Set
+        if (!Array.isArray(existingFiles)) {
+            return fileInfoResponse.data.files || [];
+        }
 
         // Filter out files that already exist before returning
         const existingFileKeys = new Set(

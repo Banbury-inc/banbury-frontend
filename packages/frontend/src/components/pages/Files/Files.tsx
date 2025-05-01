@@ -431,6 +431,23 @@ export default function Files() {
     setUpdates(updates + 1);
   };
 
+  // Add effect to fetch cloud files specifically when Cloud node is selected
+  useEffect(() => {
+    const fetchCloudFiles = async () => {
+      if (filePath === 'Core/Cloud' && username) {
+        console.log('Directly fetching cloud files for user:', username);
+        try {
+          const s3Result = await banbury.files.listS3Files(username);
+          console.log('Cloud files API response:', s3Result);
+        } catch (error) {
+          console.error('Error directly fetching cloud files:', error);
+        }
+      }
+    };
+    
+    fetchCloudFiles();
+  }, [filePath, username]);
+
   return (
     <Box sx={{
       width: '100%',

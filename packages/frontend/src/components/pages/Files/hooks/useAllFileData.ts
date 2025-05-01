@@ -20,6 +20,7 @@ export const useAllFileData = (
   const [isLoading, setIsLoading] = useState(true);
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
+  const [filteredFiles, setFilteredFiles] = useState<DatabaseData[]>([]);
 
   // Initial data fetch when component mounts or when view, path, or updates change
   useEffect(() => {
@@ -34,11 +35,14 @@ export const useAllFileData = (
       
       let newFiles: DatabaseData[] = [];
       
-      // Special handling for S3 files
-      if (currentView === 'cloud') {
+      // Special handling for Cloud files
+      if (filePath === 'Core/Cloud') {
         try {
+          console.log('Fetching cloud files for user:', username);
           const s3Result = await banbury.files.listS3Files(username || '');
-          if (s3Result && s3Result.files) {
+          console.log('s3Result', s3Result);
+          
+          if (s3Result && Array.isArray(s3Result.files)) {
             // Convert S3 files to DatabaseData format
             newFiles = s3Result.files.map((s3File: any, index: number) => ({
               id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
@@ -51,9 +55,18 @@ export const useAllFileData = (
               date_uploaded: s3File.date_uploaded,
               date_modified: s3File.date_modified,
               s3_url: s3File.s3_url,
-              source: 's3files',
+              source: 'cloud',
               is_s3: true
             }));
+            
+            console.log('Processed cloud files:', newFiles.length);
+            
+            // Immediately set cloud files
+            if (newFiles.length > 0) {
+              setFileRows(newFiles);
+            }
+          } else {
+            console.warn('No cloud files found or invalid response format:', s3Result);
           }
         } catch (error) {
           console.error('Error fetching S3 files:', error);
@@ -112,9 +125,6 @@ export const useAllFileData = (
           const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
           return [...otherViewFiles, ...updatedFiles];
         });
-        
-        // Set the current view's files to fileRows
-        setFileRows(updatedFiles);
       }
       
       setIsLoading(false);
@@ -123,25 +133,123 @@ export const useAllFileData = (
     fetchAndUpdateData();
   }, [username, filePath, currentView]);
 
+  // Apply filtering based on filePathDevice or filePath
+  useEffect(() => {
+    try {
+      console.log('Filtering files with path:', filePath, 'device:', filePathDevice, 'view:', currentView);
+      console.log('Total fetched files:', fetchedFiles?.length || 0);
+      
+      // Special direct fetch for cloud files to troubleshoot
+      if (filePath === 'Core/Cloud' && username) {
+        console.log('Trying direct fetch of cloud files in filter effect');
+        banbury.files.listS3Files(username)
+          .then((result) => {
+            console.log('Direct cloud files fetch result:', result);
+            if (result && Array.isArray(result.files) && result.files.length > 0) {
+              const cloudFiles = result.files.map((s3File: any, index: number) => ({
+                id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
+                file_name: s3File.file_name,
+                file_path: `Core/Cloud/${s3File.file_name}`,
+                file_size: s3File.file_size,
+                kind: s3File.file_type || 'File',
+                device_name: 'Cloud',
+                available: 'Available',
+                date_uploaded: s3File.date_uploaded,
+                date_modified: s3File.date_modified,
+                s3_url: s3File.s3_url,
+                source: 'cloud',
+                is_s3: true
+              }));
+              console.log('Setting direct cloud files:', cloudFiles.length);
+              setFileRows(cloudFiles);
+              return;
+            }
+          })
+          .catch(error => {
+            console.error('Error in direct cloud files fetch:', error);
+          });
+      }
+      
+      if (!fetchedFiles || fetchedFiles.length === 0) {
+        console.log('No files to filter');
+        return;
+      }
+      
+      // Log some information about the available files
+      const sourcesAvailable = [...new Set(fetchedFiles.map(file => file.source))];
+      console.log('Sources available:', sourcesAvailable);
+      
+      // Different filtering logic based on path
+      if (filePath === 'Core/Cloud') {
+        console.log('Applying Cloud files filter');
+        // Find cloud files - either by source, path or device name
+        const cloudFiles = fetchedFiles.filter(file => 
+          file.source === 'cloud' || 
+          file.file_path?.includes('Core/Cloud/') ||
+          file.device_name === 'Cloud'
+        );
+        
+        console.log('Filtered cloud files:', cloudFiles.length);
+        if (cloudFiles.length > 0) {
+          console.log('Sample cloud file:', cloudFiles[0]);
+        } else {
+          console.log('No cloud files found after filtering');
+        }
+        
+        setFileRows(cloudFiles);
+        return;
+      }
+      
+      // For other views, filter by source first
+      let filtered = fetchedFiles.filter(file => file.source === currentView);
+      
+      // Filter by device if filePathDevice is set
+      if (filePathDevice) {
+        filtered = filtered.filter(file => file.device_name === filePathDevice);
+      }
+      
+      // If in 'files' view with a path, filter by path
+      if (currentView === 'files' && filePath && filePath !== 'Core' && filePath !== 'Core/Devices') {
+        if (filePath.startsWith('Core/Devices/') && filePath.split('/').length > 3) {
+          // For paths like Core/Devices/DeviceName/some/path
+          const devicePathParts = filePath.split('/');
+          const deviceName = devicePathParts[2];
+          const remainingPath = '/' + devicePathParts.slice(3).join('/');
+          
+          filtered = filtered.filter(file => {
+            return file.device_name === deviceName && 
+                   file.file_path === remainingPath;
+          });
+        }
+      }
+      
+      setFileRows(filtered);
+    } catch (error) {
+      console.error('Error in filtering effect:', error);
+    }
+  }, [fetchedFiles, filePathDevice, filePath, currentView]);
+
   // Listen for file changes
   useEffect(() => {
     const handleFileChange = async () => {
       // Re-fetch files when changes are detected
       let newFiles: DatabaseData[] = [];
       
-      // Special handling for S3 files
-      if (currentView === 'cloud') {
+      // Special handling for Cloud files
+      if (filePath === 'Core/Cloud') {
         try {
+          console.log('Refreshing cloud files for user:', username);
           const s3Result = await banbury.files.listS3Files(username || '');
-          if (s3Result && s3Result.files) {
+          
+          if (s3Result && Array.isArray(s3Result.files)) {
             // Convert S3 files to DatabaseData format
             newFiles = s3Result.files.map((s3File: any, index: number) => ({
               id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
               file_name: s3File.file_name,
-              file_path: `Core/S3Files/${s3File.file_name}`,
+              file_path: `Core/Cloud/${s3File.file_name}`,
               file_size: s3File.file_size,
               kind: s3File.file_type || 'File',
-              device_name: s3File.device_name || 'S3 Storage',
+              device_name: 'Cloud',
               available: 'Available',
               date_uploaded: s3File.date_uploaded,
               date_modified: s3File.date_modified,
@@ -149,19 +257,31 @@ export const useAllFileData = (
               source: 'cloud',
               is_s3: true
             }));
+            
+            // Immediately update the file rows for cloud view
+            if (newFiles.length > 0) {
+              setFileRows(newFiles);
+              
+              // Also update fetchedFiles for consistency
+              setFetchedFiles(prevFiles => {
+                const nonCloudFiles = prevFiles.filter(file => file.source !== 'cloud');
+                return [...nonCloudFiles, ...newFiles];
+              });
+            }
           }
         } catch (error) {
-          console.error('Error fetching S3 files:', error);
-          newFiles = [];
+          console.error('Error refreshing cloud files:', error);
         }
-      } else {
-        newFiles = await fetchAllData(
-          username || '',
-          filePath,
-          currentView,
-          fetchedFiles
-        );
+        return; // Exit early as we've already updated the state
       }
+      
+      // For non-cloud views, continue with regular file fetching
+      newFiles = await fetchAllData(
+        username || '',
+        filePath,
+        currentView,
+        fetchedFiles
+      );
       
       if (newFiles && newFiles.length > 0) {
         // Update files using same logic as above
@@ -203,8 +323,6 @@ export const useAllFileData = (
             const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
             return [...otherViewFiles, ...updatedFiles];
           });
-          
-          setFileRows(updatedFiles);
         }
       }
     };
