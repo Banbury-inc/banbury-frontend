@@ -159,7 +159,8 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
           .filter((headCell: HeadCell) => {
             const isVisibleOnCurrentScreen = !isSmallScreen || headCell.isVisibleOnSmallScreen;
             const isVisibleInCurrentView = !headCell.visibleIn || headCell.visibleIn.includes(currentView || 'files');
-            return isVisibleOnCurrentScreen && isVisibleInCurrentView;
+            const isColumnVisible = !props.columnVisibility || props.columnVisibility[headCell.id];
+            return isVisibleOnCurrentScreen && isVisibleInCurrentView && isColumnVisible;
           })
           .map((headCell: HeadCell, index: number) => (
             <TableCell
@@ -296,6 +297,7 @@ const FileTable: React.FC<FileTableProps> = ({
           onRequestSort={onRequestSort}
           rowCount={fileRows.length}
           currentView={currentView}
+          columnVisibility={columnVisibility}
         />
         <TableBody>
           {isLoading
