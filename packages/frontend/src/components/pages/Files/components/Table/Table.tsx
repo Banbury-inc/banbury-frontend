@@ -18,6 +18,7 @@ import {
 import { visuallyHidden } from '@mui/utils';
 import { DatabaseData, Order, HeadCell, EnhancedTableProps } from '../../types';
 import { formatFileSize } from '../../utils/formatFileSize';
+import { formatDate } from '../../utils/formatDate';
 
 // Import the head cells function
 const getHeadCells = (): HeadCell[] => [
@@ -499,7 +500,7 @@ const FileTable: React.FC<FileTableProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {row.date_uploaded}
+                        {formatDate(row.date_uploaded)}
                       </TableCell>
                     )}
                     {columnVisibility.is_public && (
@@ -558,7 +559,7 @@ const FileTable: React.FC<FileTableProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {row.date_modified}
+                        {formatDate(row.date_modified)}
                       </TableCell>
                     )}
                   </TableRow>
