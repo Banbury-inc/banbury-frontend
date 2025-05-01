@@ -217,10 +217,30 @@ export const useAllFileData = (
           const deviceName = devicePathParts[2];
           const remainingPath = '/' + devicePathParts.slice(3).join('/');
           
+          console.log('Filtering by device path:', { deviceName, remainingPath });
+          
           filtered = filtered.filter(file => {
-            return file.device_name === deviceName && 
-                   file.file_path === remainingPath;
+            if (file.device_name !== deviceName) {
+              return false;
+            }
+            
+            // Files directly in this directory
+            if (file.file_path === remainingPath) {
+              return true;
+            }
+            
+            // Files in subdirectories - display only direct children
+            if (file.file_path.startsWith(remainingPath + '/')) {
+              // Count segments to ensure we only show immediate children
+              const fileDirSegments = file.file_path.split('/').filter(Boolean).length;
+              const currentDirSegments = remainingPath.split('/').filter(Boolean).length;
+              return fileDirSegments === currentDirSegments + 1;
+            }
+            
+            return false;
           });
+          
+          console.log(`Filtered files for ${deviceName}${remainingPath}:`, filtered.length);
         }
       }
       
