@@ -38,7 +38,7 @@ import NotificationsButton from '../common/NotificationsButton/NotificationsButt
 import AccountMenuIcon from '../common/AccountMenuIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { getDownloadsInfo } from '@banbury/core/src/device/add_downloads_info';
+import { getDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
 import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
 import { ipcRenderer } from 'electron';
 import AI from './AI/AI';
@@ -108,15 +108,7 @@ export default function PermanentDrawerLeft() {
     mouseY: number;
     tabId: string;
   } | null>(null);
-  const [downloads, setDownloads] = useState<{
-    filename: string;
-    fileType: string;
-    progress: number;
-    status: 'downloading' | 'completed' | 'failed' | 'skipped';
-    totalSize: number;
-    downloadedSize: number;
-    timeRemaining?: number;
-  }[]>([]);
+  const [downloads, setDownloads] = useState<DownloadInfo[]>([]);
   const [uploads, setUploads] = useState<{
     filename: string;
     fileType: string;

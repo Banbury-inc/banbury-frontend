@@ -18,6 +18,7 @@ import {
 import { visuallyHidden } from '@mui/utils';
 import { DatabaseData, Order, HeadCell, EnhancedTableProps } from '../../types';
 import { formatFileSize } from '../../utils/formatFileSize';
+import { formatDate } from '../../utils/formatDate';
 
 // Import the head cells function
 const getHeadCells = (): HeadCell[] => [
@@ -27,7 +28,8 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Name', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud']
+    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    width: '30%'
   },
   { 
     id: 'file_size', 
@@ -35,7 +37,8 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Size', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud']
+    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    width: '10%'
   },
   { 
     id: 'kind', 
@@ -43,7 +46,8 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Kind', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud']
+    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    width: '15%'
   },
   { 
     id: 'device_name', 
@@ -51,7 +55,8 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Location', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud']
+    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    width: '15%'
   },
   { 
     id: 'available', 
@@ -59,7 +64,8 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Status', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud']
+    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    width: '10%'
   },
   { 
     id: 'file_priority', 
@@ -67,7 +73,8 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Priority', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync']
+    visibleIn: ['files', 'sync'],
+    width: '10%'
   },
   { 
     id: 'date_uploaded', 
@@ -75,7 +82,8 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Date Uploaded', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud']
+    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    width: '10%'
   },
   // { 
   //   id: 'is_public', 
@@ -151,7 +159,8 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
           .filter((headCell: HeadCell) => {
             const isVisibleOnCurrentScreen = !isSmallScreen || headCell.isVisibleOnSmallScreen;
             const isVisibleInCurrentView = !headCell.visibleIn || headCell.visibleIn.includes(currentView || 'files');
-            return isVisibleOnCurrentScreen && isVisibleInCurrentView;
+            const isColumnVisible = !props.columnVisibility || props.columnVisibility[headCell.id];
+            return isVisibleOnCurrentScreen && isVisibleInCurrentView && isColumnVisible;
           })
           .map((headCell: HeadCell, index: number) => (
             <TableCell
@@ -160,6 +169,7 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
               sortDirection={orderBy === headCell.id ? order : false}
               sx={{
                 backgroundColor: 'background.paper',
+                width: headCell.width || 'auto',
               }}
             >
               <TableSortLabel
@@ -275,7 +285,8 @@ const FileTable: React.FC<FileTableProps> = ({
         size="small" 
         stickyHeader
         sx={{
-          tableLayout: 'fixed'
+          tableLayout: 'fixed',
+          width: '100%'
         }}
       >
         <EnhancedTableHead
@@ -286,6 +297,7 @@ const FileTable: React.FC<FileTableProps> = ({
           onRequestSort={onRequestSort}
           rowCount={fileRows.length}
           currentView={currentView}
+          columnVisibility={columnVisibility}
         />
         <TableBody>
           {isLoading
@@ -490,7 +502,7 @@ const FileTable: React.FC<FileTableProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {row.date_uploaded}
+                        {formatDate(row.date_uploaded)}
                       </TableCell>
                     )}
                     {columnVisibility.is_public && (
@@ -549,7 +561,7 @@ const FileTable: React.FC<FileTableProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {row.date_modified}
+                        {formatDate(row.date_modified)}
                       </TableCell>
                     )}
                   </TableRow>

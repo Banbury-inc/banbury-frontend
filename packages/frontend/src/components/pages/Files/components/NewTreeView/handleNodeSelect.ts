@@ -26,7 +26,6 @@ export const handleNodeSelect = (
   };
   
   const selectedNode = findNodeById(fileRows, nodeId);
-  console.info("Selected node:", selectedNode);
   
   if (selectedNode) {
     let newFilePath = '';
@@ -72,8 +71,6 @@ export const handleNodeSelect = (
     else if (selectedNode.file_path) {
       newFilePath = `Core/Devices/${selectedNode.device_name}${selectedNode.file_path}`;
     }
-
-    console.info("Setting new file path:", newFilePath);
 
     // Update navigation history
     if (currentPath) {

@@ -179,7 +179,8 @@ export default function Files() {
     files,
     sync_files,
     devices || [],
-    setDevices
+    setDevices,
+    updates
   );
 
   useEffect(() => {
@@ -435,10 +436,8 @@ export default function Files() {
   useEffect(() => {
     const fetchCloudFiles = async () => {
       if (filePath === 'Core/Cloud' && username) {
-        console.log('Directly fetching cloud files for user:', username);
         try {
-          const s3Result = await banbury.files.listS3Files(username);
-          console.log('Cloud files API response:', s3Result);
+          await banbury.files.listS3Files(username);
         } catch (error) {
           console.error('Error directly fetching cloud files:', error);
         }
@@ -500,7 +499,17 @@ export default function Files() {
               <Grid item paddingRight={1}>
                 <S3UploadButton 
                   filePath={filePath}
-                  onUploadComplete={() => setUpdates(updates + 1)}
+                  onUploadComplete={() => {
+                    // Force refresh by updating the updates counter
+                    setUpdates(Date.now());
+                    // If we're in Cloud view, directly fetch cloud files
+                    if (filePath === 'Core/Cloud' && username) {
+                      banbury.files.listS3Files(username)
+                        .catch((error) => {
+                          console.error('Error refreshing cloud files after upload:', error);
+                        });
+                    }
+                  }}
                 />
               </Grid>
               <Grid item paddingRight={1}>

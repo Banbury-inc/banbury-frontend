@@ -1,4 +1,5 @@
 import { fileReceiver } from './file_receiver';
+import { addDownloadsInfo, getDownloadsInfo, DownloadInfo } from '../../device/add_downloads_info';
 
 type BinaryData = ArrayBuffer | Blob | Buffer;
 
@@ -89,6 +90,26 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
         case 'file_transfer_complete':
           try {
             const savedPath = await fileReceiver.handleFileComplete();
+            
+            // Find the download for this transfer room and explicitly mark it as completed
+            const downloads = getDownloadsInfo();
+            const downloadToUpdate = downloads.find((d: DownloadInfo) => d.transfer_room === transfer_room);
+            
+            if (downloadToUpdate) {
+              // Explicitly force the download to completed status with 100% progress
+              // This is critical to prevent it being marked as skipped later
+              addDownloadsInfo([{ 
+                ...downloadToUpdate, 
+                status: 'completed',
+                progress: 100,
+                downloadedSize: downloadToUpdate.totalSize
+              }]);
+              
+              // Verify the status was updated
+              const updatedDownloads = getDownloadsInfo();
+              updatedDownloads.find((d: DownloadInfo) => d.transfer_room === transfer_room);
+            }
+            
             // Send completion acknowledgment
             socket.send(JSON.stringify({
               message_type: 'file_transfer_complete_ack',
@@ -97,7 +118,8 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
               saved_path: savedPath,
               transfer_room: data.transfer_room
             }));
-            // Leave the transfer room after a short delay
+            
+            // Leave the transfer room after a longer delay to ensure status updates are processed
             if (transfer_room && activeTransferRooms.has(transfer_room)) {
               setTimeout(() => {
                 activeTransferRooms.delete(transfer_room);
@@ -106,7 +128,7 @@ export async function handleFileTransferMessage(event: MessageEvent<BinaryData |
                   transfer_room: data.transfer_room,
                   timestamp: Date.now()
                 }));
-              }, 1000); // Leave room after 1 second
+              }, 3000); // Increased delay to 3 seconds to ensure status updates are processed
             }
           } catch (error) {
             socket.send(JSON.stringify({

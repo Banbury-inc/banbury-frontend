@@ -15,12 +15,12 @@ export const useAllFileData = (
   files: any,
   sync_files: any,
   devices: any[],
-  setDevices: (devices: any[]) => void
+  setDevices: (devices: any[]) => void,
+  updates?: number
 ) => {
   const [isLoading, setIsLoading] = useState(true);
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
-  const [filteredFiles, setFilteredFiles] = useState<DatabaseData[]>([]);
 
   // Initial data fetch when component mounts or when view, path, or updates change
   useEffect(() => {
@@ -38,9 +38,7 @@ export const useAllFileData = (
       // Special handling for Cloud files
       if (filePath === 'Core/Cloud') {
         try {
-          console.log('Fetching cloud files for user:', username);
           const s3Result = await banbury.files.listS3Files(username || '');
-          console.log('s3Result', s3Result);
           
           if (s3Result && Array.isArray(s3Result.files)) {
             // Convert S3 files to DatabaseData format
@@ -58,8 +56,6 @@ export const useAllFileData = (
               source: 'cloud',
               is_s3: true
             }));
-            
-            console.log('Processed cloud files:', newFiles.length);
             
             // Immediately set cloud files
             if (newFiles.length > 0) {
@@ -131,20 +127,16 @@ export const useAllFileData = (
     };
 
     fetchAndUpdateData();
-  }, [username, filePath, currentView]);
+  }, [username, filePath, currentView, updates]);
 
   // Apply filtering based on filePathDevice or filePath
   useEffect(() => {
     try {
-      console.log('Filtering files with path:', filePath, 'device:', filePathDevice, 'view:', currentView);
-      console.log('Total fetched files:', fetchedFiles?.length || 0);
       
       // Special direct fetch for cloud files to troubleshoot
       if (filePath === 'Core/Cloud' && username) {
-        console.log('Trying direct fetch of cloud files in filter effect');
         banbury.files.listS3Files(username)
           .then((result) => {
-            console.log('Direct cloud files fetch result:', result);
             if (result && Array.isArray(result.files) && result.files.length > 0) {
               const cloudFiles = result.files.map((s3File: any, index: number) => ({
                 id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
@@ -160,7 +152,6 @@ export const useAllFileData = (
                 source: 'cloud',
                 is_s3: true
               }));
-              console.log('Setting direct cloud files:', cloudFiles.length);
               setFileRows(cloudFiles);
               return;
             }
@@ -171,30 +162,17 @@ export const useAllFileData = (
       }
       
       if (!fetchedFiles || fetchedFiles.length === 0) {
-        console.log('No files to filter');
         return;
       }
       
-      // Log some information about the available files
-      const sourcesAvailable = [...new Set(fetchedFiles.map(file => file.source))];
-      console.log('Sources available:', sourcesAvailable);
-      
       // Different filtering logic based on path
       if (filePath === 'Core/Cloud') {
-        console.log('Applying Cloud files filter');
         // Find cloud files - either by source, path or device name
         const cloudFiles = fetchedFiles.filter(file => 
           file.source === 'cloud' || 
           file.file_path?.includes('Core/Cloud/') ||
           file.device_name === 'Cloud'
         );
-        
-        console.log('Filtered cloud files:', cloudFiles.length);
-        if (cloudFiles.length > 0) {
-          console.log('Sample cloud file:', cloudFiles[0]);
-        } else {
-          console.log('No cloud files found after filtering');
-        }
         
         setFileRows(cloudFiles);
         return;
@@ -217,8 +195,24 @@ export const useAllFileData = (
           const remainingPath = '/' + devicePathParts.slice(3).join('/');
           
           filtered = filtered.filter(file => {
-            return file.device_name === deviceName && 
-                   file.file_path === remainingPath;
+            if (file.device_name !== deviceName) {
+              return false;
+            }
+            
+            // Files directly in this directory
+            if (file.file_path === remainingPath) {
+              return true;
+            }
+            
+            // Files in subdirectories - display only direct children
+            if (file.file_path.startsWith(remainingPath + '/')) {
+              // Count segments to ensure we only show immediate children
+              const fileDirSegments = file.file_path.split('/').filter(Boolean).length;
+              const currentDirSegments = remainingPath.split('/').filter(Boolean).length;
+              return fileDirSegments === currentDirSegments + 1;
+            }
+            
+            return false;
           });
         }
       }
@@ -238,7 +232,6 @@ export const useAllFileData = (
       // Special handling for Cloud files
       if (filePath === 'Core/Cloud') {
         try {
-          console.log('Refreshing cloud files for user:', username);
           const s3Result = await banbury.files.listS3Files(username || '');
           
           if (s3Result && Array.isArray(s3Result.files)) {

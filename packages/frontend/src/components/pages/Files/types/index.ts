@@ -35,6 +35,7 @@ export interface HeadCell {
   isVisibleOnSmallScreen: boolean;
   isVisibleNotOnCloudSync: boolean;
   visibleIn?: Array<'files' | 'sync' | 'shared' | 'cloud'>;
+  width?: string;
 }
 
 export interface EnhancedTableProps {
