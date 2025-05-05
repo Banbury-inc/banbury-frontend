@@ -13,11 +13,16 @@ export async function download_request(username: string, file_name: string, file
     kind: fileInfo[0]?.kind || 'Unknown'
   }];
 
-  const requesting_device_id = await get_device_id(username);
+  const requesting_device_id_obj = await get_device_id(username);
   const sending_device_id = fileInfo[0]?.device_id;
 
-  // Create unique transfer room name
-  const transfer_room = `transfer_${sending_device_id}_${requesting_device_id}`;
+  // Extract the actual device ID from the response object
+  const requesting_device_id_str = requesting_device_id_obj.result === 'success' ? 
+    requesting_device_id_obj.message : 
+    `unknown_${Date.now()}`;
+
+  // Create unique transfer room name using the extracted device ID string
+  const transfer_room = `transfer_${sending_device_id}_${requesting_device_id_str}`;
 
   // First join the transfer room
   await new Promise<void>((resolve, reject) => {
@@ -76,7 +81,7 @@ export async function download_request(username: string, file_name: string, file
     file_path: file_path,
     file_info: fileInfo,
     requesting_device_name: os.hostname(),
-    requesting_device_id: requesting_device_id,
+    requesting_device_id: requesting_device_id_str,
     sending_device_id: sending_device_id,
     transfer_room: transfer_room
   };
@@ -185,26 +190,32 @@ export async function cancel_download_request(socket: WebSocket, username: strin
   }
 
   try {
-    const requesting_device_id = await get_device_id(username);
+    // Immediately update the UI to show canceled status
+    addDownloadsInfo([{ 
+      ...downloadInfo, 
+      status: 'canceled',
+      timeRemaining: undefined 
+    }]);
+    
+    const requesting_device_id_obj = await get_device_id(username);
+    // Extract the actual device ID string
+    const requesting_device_id_str = requesting_device_id_obj.result === 'success' ? 
+      requesting_device_id_obj.message : 
+      `unknown_${Date.now()}`;
+      
     const message = {
       message_type: "cancel_download_request",
       username: username,
       filename: downloadInfo.filename,
-      requesting_device_id: requesting_device_id,
+      requesting_device_id: requesting_device_id_str,
       // Add the required fields for the backend handler
       sending_device_id: downloadInfo.sending_device_id,
       transfer_room: downloadInfo.transfer_room,
     };
     socket.send(JSON.stringify(message));
 
-    // Note: This only sends the request. We might need logic here or elsewhere
-    // to handle confirmation or update UI state immediately to 'cancelling'.
-    // For now, rely on addDownloadsInfo being called separately.
-
   } catch (error) {
     console.error('Error sending cancel download request:', error);
-    // Optionally send an error message back via websocket if appropriate
-    // socket.send(JSON.stringify({ 'error': 'Failed to send cancel request', 'details': error }));
     // Update status to failed locally on error
     addDownloadsInfo([{ ...downloadInfo, status: 'failed' }]); 
   }

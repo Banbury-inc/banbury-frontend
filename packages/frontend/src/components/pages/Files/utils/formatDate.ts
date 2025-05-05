@@ -52,6 +52,7 @@ export const formatDate = (dateStr: string | undefined): string => {
     }).format(date);
   } catch (error) {
     // If there's any error in parsing, return the original string
+    console.warn(`Error formatting date: ${error}`);
     return dateStr;
   }
 }; 

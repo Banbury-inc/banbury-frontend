@@ -11,7 +11,7 @@ export interface DownloadInfo {
   filename: string;
   fileType: string;
   progress: number;
-  status: 'downloading' | 'completed' | 'failed' | 'skipped';
+  status: 'downloading' | 'completed' | 'failed' | 'skipped' | 'canceled';
   totalSize: number;
   downloadedSize: number;
   timeRemaining?: number;
@@ -58,6 +58,23 @@ export function addDownloadsInfo(newDownloads: DownloadInfo[]): DownloadInfo[] {
       const timeRemaining = calculateTimeRemaining(newDownload);
 
       if (existingDownloadIndex !== -1) {
+        // Log status transitions for debugging
+        const currentStatus = activeDownloads[existingDownloadIndex].status;
+        const newStatus = newDownload.status;
+        
+        // Special handling: NEVER downgrade a completed status to skipped
+        if (currentStatus === 'completed' && newStatus === 'skipped') {
+          // Keep the completed status but apply other updates
+          activeDownloads[existingDownloadIndex] = {
+            ...activeDownloads[existingDownloadIndex],
+            ...newDownload,
+            status: 'completed', // Preserve completed status
+            progress: 100,       // Ensure progress is 100%
+            timeRemaining
+          };
+          return; // Skip normal update
+        }
+        
         activeDownloads[existingDownloadIndex] = {
           ...activeDownloads[existingDownloadIndex],
           ...newDownload,

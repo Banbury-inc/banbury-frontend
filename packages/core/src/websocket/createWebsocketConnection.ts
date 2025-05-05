@@ -219,14 +219,17 @@ export async function createWebSocketConnection(
                   // Stop the receiver from writing more data for this transfer
                   fileReceiver.stopCurrentTransfer();
 
-                  // Find the download and update status to skipped if it was still downloading
+                  // Find the download for this room
                   const downloads = getDownloadsInfo();
                   const downloadToUpdate = downloads.find(d => d.transfer_room === transfer_room);
                   
-                  if (downloadToUpdate && downloadToUpdate.status === 'downloading') {
+                  // CRITICAL: Only mark as skipped if it's currently downloading
+                  // and NEVER mark as skipped if it's already completed
+                  if (downloadToUpdate && 
+                      downloadToUpdate.status === 'downloading' && 
+                      downloadToUpdate.progress < 100) {
+                    // Only mark as skipped if it's still downloading and not complete
                     addDownloadsInfo([{ ...downloadToUpdate, status: 'skipped' }]);
-                  } else {
-                    console.warn(`[WebSocket] Download for room ${transfer_room} not found or already finished/failed.`);
                   }
                 }
                 return; // Message handled
@@ -240,6 +243,33 @@ export async function createWebSocketConnection(
                 data.message_type === 'file_transfer_start'
               )) {
                 await handleFileTransferMessage(event, socket);
+                return;
+              }
+
+              // Explicitly handle file_transfer_complete_ack to ensure download is marked as completed
+              if (data.message_type === 'file_transfer_complete_ack' && data.status === 'success') {
+                const downloads = getDownloadsInfo();
+                
+                // Try to find download by transfer_room first, then by filename
+                let downloadToUpdate = downloads.find(d => d.transfer_room === data.transfer_room);
+                if (!downloadToUpdate) {
+                  downloadToUpdate = downloads.find(d => d.filename === data.file_name);
+                }
+                
+                if (downloadToUpdate) {
+                  // Explicitly mark as completed with 100% progress - this ensures the UI shows the correct status
+                  
+                  const completedDownload = { 
+                    ...downloadToUpdate, 
+                    status: 'completed' as const,  // Force correct type
+                    progress: 100,
+                    downloadedSize: downloadToUpdate.totalSize 
+                  };
+                  
+                  // Update the download info
+                  addDownloadsInfo([completedDownload]);
+                }
+                
                 return;
               }
 

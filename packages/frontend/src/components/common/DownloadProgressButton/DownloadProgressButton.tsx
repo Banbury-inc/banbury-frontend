@@ -14,16 +14,17 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
-import { addDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
+import { DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
 
 interface DownloadProgressProps {
   downloads: DownloadInfo[];
 }
 
 export default function DownloadProgress({ downloads }: DownloadProgressProps) {
-  const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'skipped' | 'failed'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'skipped' | 'failed' | 'canceled'>('all');
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const { username, websocket } = useAuth();
 
@@ -49,16 +50,7 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
         return;
     }
 
-    await banbury.files.cancel_download_request(websocket, username, downloadToCancel);
-
-    addDownloadsInfo([
-      {
-        ...downloadToCancel,
-        status: 'failed',
-        progress: downloadToCancel.progress,
-        timeRemaining: undefined,
-      },
-    ]);
+    await banbury.files.cancel_download_request(websocket, username, downloadToCancel as any);
   };
 
   const open = Boolean(anchorEl);
@@ -67,9 +59,23 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
   const activeDownloads = downloads.filter(download => download.status === 'downloading').length;
 
   const filteredDownloads = downloads.filter(download => {
-    if (selectedTab === 'all') return true;
+    if (selectedTab === 'all') {
+      return true;
+    }
+    if (selectedTab === 'failed' && download.status === 'canceled') {
+      return true;
+    }
     return download.status === selectedTab;
   });
+
+  // Count the number of downloads in each category for the tab labels
+  const downloadCounts = {
+    all: downloads.length,
+    completed: downloads.filter(d => d.status === 'completed').length,
+    skipped: downloads.filter(d => d.status === 'skipped').length,
+    failed: downloads.filter(d => d.status === 'failed').length,
+    canceled: downloads.filter(d => d.status === 'canceled').length,
+  };
 
   return (
     <>
@@ -141,25 +147,38 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
             </IconButton>
           </Box>
 
-          <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-            {['All downloads', 'Completed', 'Skipped', 'Failed'].map((tab) => (
-              <Button
-                key={tab}
-                variant={selectedTab === tab.toLowerCase() ? 'contained' : 'text'}
-                sx={{
-                  bgcolor: selectedTab === tab.toLowerCase() ? 'white' : 'rgba(255,255,255,0.1)',
-                  fontSize: '12px',
-                  color: selectedTab === tab.toLowerCase() ? 'black' : 'white',
-                  borderRadius: '20px',
-                  '&:hover': {
-                    bgcolor: selectedTab === tab.toLowerCase() ? 'white' : 'rgba(255,255,255,0.2)',
+          <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
+            {['All downloads', 'Completed', 'Skipped', 'Failed', 'Canceled'].map((tab) => {
+              // Convert tab label to match our state values
+              const tabValue = tab === 'All downloads' ? 'all' : tab.toLowerCase();
+              
+              // Skip tabs with no downloads except for "All downloads"
+              if (tabValue !== 'all' && downloadCounts[tabValue as keyof typeof downloadCounts] === 0) {
+                return null;
+              }
+              
+              return (
+                <Button
+                  key={tab}
+                  variant={selectedTab === tabValue ? 'contained' : 'text'}
+                  sx={{
+                    bgcolor: selectedTab === tabValue ? 'white' : 'rgba(255,255,255,0.1)',
+                    fontSize: '12px',
+                    color: selectedTab === tabValue ? 'black' : 'white',
+                    borderRadius: '20px',
+                    '&:hover': {
+                      bgcolor: selectedTab === tabValue ? 'white' : 'rgba(255,255,255,0.2)',
+                    },
+                    mb: 1 // Add margin bottom for flex wrap
+                  }}
+                  onClick={() => setSelectedTab(tabValue as any)}
+                >
+                  {tab} {tabValue !== 'all' && downloadCounts[tabValue as keyof typeof downloadCounts] > 0 && 
+                    `(${downloadCounts[tabValue as keyof typeof downloadCounts]})`
                   }
-                }}
-                onClick={() => setSelectedTab(tab.toLowerCase() as any)}
-              >
-                {tab}
-              </Button>
-            ))}
+                </Button>
+              );
+            })}
           </Stack>
 
           <Stack spacing={2}>
@@ -186,6 +205,8 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                     <ErrorIcon color="error" />
                   ) : download.status === 'skipped' ? (
                     <WarningIcon sx={{ color: 'warning.main' }} />
+                  ) : download.status === 'canceled' ? (
+                    <CancelIcon sx={{ color: 'error.main' }} />
                   ) : null}
 
                   <Box sx={{ flex: 1 }}>
@@ -196,6 +217,7 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                         : download.status === 'completed' ? `Downloaded to Files`
                         : download.status === 'failed' ? 'Download failed'
                         : download.status === 'skipped' ? 'Download skipped'
+                        : download.status === 'canceled' ? 'Download canceled'
                         : 'Status unknown'
                       }
                     </Typography>
