@@ -24,7 +24,7 @@ interface DownloadProgressProps {
 }
 
 export default function DownloadProgress({ downloads }: DownloadProgressProps) {
-  const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'skipped' | 'failed' | 'canceled'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'skipped' | 'failed'>('all');
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const { username, websocket } = useAuth();
 
@@ -74,7 +74,6 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
     completed: downloads.filter(d => d.status === 'completed').length,
     skipped: downloads.filter(d => d.status === 'skipped').length,
     failed: downloads.filter(d => d.status === 'failed').length,
-    canceled: downloads.filter(d => d.status === 'canceled').length,
   };
 
   return (
@@ -148,15 +147,11 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
           </Box>
 
           <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
-            {['All downloads', 'Completed', 'Skipped', 'Failed', 'Canceled'].map((tab) => {
+            {['All downloads', 'Completed', 'Skipped', 'Failed'].map((tab) => {
               // Convert tab label to match our state values
               const tabValue = tab === 'All downloads' ? 'all' : tab.toLowerCase();
               
-              // Skip tabs with no downloads except for "All downloads"
-              if (tabValue !== 'all' && downloadCounts[tabValue as keyof typeof downloadCounts] === 0) {
-                return null;
-              }
-              
+              // Display all tabs regardless of download counts
               return (
                 <Button
                   key={tab}
@@ -205,8 +200,6 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                     <ErrorIcon color="error" />
                   ) : download.status === 'skipped' ? (
                     <WarningIcon sx={{ color: 'warning.main' }} />
-                  ) : download.status === 'canceled' ? (
-                    <CancelIcon sx={{ color: 'error.main' }} />
                   ) : null}
 
                   <Box sx={{ flex: 1 }}>
@@ -217,7 +210,6 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
                         : download.status === 'completed' ? `Downloaded to Files`
                         : download.status === 'failed' ? 'Download failed'
                         : download.status === 'skipped' ? 'Download skipped'
-                        : download.status === 'canceled' ? 'Download canceled'
                         : 'Status unknown'
                       }
                     </Typography>
