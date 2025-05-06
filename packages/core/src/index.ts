@@ -7,6 +7,7 @@ import * as files from './files';
 import * as settings from './settings';
 import * as notifications from './notifications';
 import * as analytics from './analytics';
+import * as auth from './authentication';
 import { config } from './config';
 /**
  * The main entry point for the neuranet library.
@@ -21,6 +22,7 @@ export const banbury = {
   settings,
   notifications,
   analytics,
+  auth,
   config,
 };
 

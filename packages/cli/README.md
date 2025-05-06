@@ -4,15 +4,58 @@ The Banbury CLI is a command-line interface for interacting with the Banbury pla
 
 ## Installation
 
-```bash
-# Install globally
-npm install -g @banbury/cli
+### Easy Installation
 
-# Or run directly with npx
-npx @banbury/cli [command]
+```bash
+# Clone the repository if you haven't already
+git clone https://github.com/your-org/banbury-frontend.git
+cd banbury-frontend/packages/cli
+
+# Run the installation script
+./install.sh
+```
+
+This will install the `banbury` command in your `~/.local/bin` directory and make it available in your PATH.
+
+### Manual Installation
+
+```bash
+# Install dependencies and build
+npm install
+npm run build
+
+# Option 1: Link globally with npm (may require sudo)
+npm link
+
+# Option 2: Add to your local bin
+mkdir -p ~/.local/bin
+echo '#!/bin/bash' > ~/.local/bin/banbury
+echo "node $(pwd)/dist/index.js \"\$@\"" >> ~/.local/bin/banbury
+chmod +x ~/.local/bin/banbury
+
+# Ensure ~/.local/bin is in your PATH
+export PATH=$PATH:~/.local/bin
 ```
 
 ## Available Commands
+
+### Authentication
+
+```bash
+# Login to Banbury (interactive prompt)
+banbury auth login
+
+# Check login status
+banbury auth status
+
+# Logout from Banbury
+banbury auth logout
+```
+
+The authentication system:
+- Uses JWT tokens for secure API authentication
+- Automatically refreshes tokens when they expire
+- Stores credentials securely in ~/.banbury/auth.json
 
 ### Greeting
 

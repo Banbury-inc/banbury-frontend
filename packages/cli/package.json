@@ -1,7 +1,7 @@
 {
     "name": "@banbury/cli",
     "version": "3.4.22",
-    "private": true,
+    "private": false,
     "description": "Banbury CLI package",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -14,10 +14,12 @@
         "clean": "rimraf dist",
         "test": "jest --config jest.config.js --passWithNoTests --coverage",
         "lint": "eslint .",
-        "link": "npm run build && npm link"
+        "link": "npm run build && npm link",
+        "postbuild": "chmod +x ./dist/index.js"
     },
     "dependencies": {
         "@banbury/core": "3.4.22",
+        "axios": "^1.6.7",
         "commander": "^13.1.0",
         "inquirer": "^9.2.14",
         "chalk": "^4.1.2"

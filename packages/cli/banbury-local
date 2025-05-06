@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Get the directory of this script
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Run the node script directly
+node "$DIR/dist/index.js" "$@" 
