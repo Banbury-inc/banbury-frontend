@@ -85,7 +85,7 @@ export default function Friends() {
   useEffect(() => {
     if (selectedFriend) {
       setIsLoadingFriendInfo(true);
-      handlers.users.getUserInfo(selectedFriend?.username || '')
+      handlers.users.getFriendUserInfo(selectedFriend?.username || '')
         .then(response => {
           if (response && response) {
             setFriendInfo(response);

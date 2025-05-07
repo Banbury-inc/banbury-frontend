@@ -197,7 +197,6 @@ export default function FileTreeView({
   useEffect(() => {
     const handleFileChange = async () => {
       const new_files = await fetchFileData(
-        username || '',
         filePath || '',
         {
           setFirstname,

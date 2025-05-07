@@ -226,7 +226,7 @@ export default function Devices() {
 
 
   useEffect(() => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   }, [username, updates]);
 
@@ -309,7 +309,7 @@ export default function Devices() {
   const isSelected = (deviceName: string) => selectedDeviceNames.indexOf(deviceName) !== -1;
 
   const handleFoldersUpdate = () => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   };
 
@@ -323,7 +323,7 @@ export default function Devices() {
 
       if (result === 'success') {
         setUpdates(updates + 1);
-        const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+        const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
         fetchDevicesFunc();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
@@ -447,7 +447,7 @@ export default function Devices() {
                   </Button>
                 </Tooltip>
               </Grid>
-              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username)} />
+              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading)} />
             </Grid>
           </Stack>
         </CardContent>
