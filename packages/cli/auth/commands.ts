@@ -11,7 +11,7 @@ export function addAuthCommands(program: Command): void {
     .description('Login to the Banbury server')
     .argument('[username]', 'username to login to', 'User')
     .argument('[password]', 'password to login to', 'Password')
-    .action(async (username: string, password: string) => {
+    .action(async () => {
       const response = await login();
       // eslint-disable-next-line no-console
       console.log(response);

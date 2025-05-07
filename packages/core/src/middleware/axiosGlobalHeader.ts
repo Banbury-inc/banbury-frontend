@@ -33,6 +33,6 @@ export function loadGlobalAxiosAuthToken() {
       }
     }
   } catch (err) {
-    // Ignore if file doesn't exist or can't be read
+    return err
   }
 } 

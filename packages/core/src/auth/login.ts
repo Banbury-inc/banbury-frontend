@@ -1,6 +1,5 @@
 
 import axios from 'axios';
-import { CONFIG } from '../config';
 import banbury from '..';
 import { setGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
