@@ -39,9 +39,9 @@ import FileTable from './components/Table/Table';
 import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
 import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
 import _ViewSelector from './components/ViewSelector/ViewSelector';
-import { useAllFileData } from './hooks/useAllFileData';
 import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 import S3UploadButton from './components/S3UploadButton';
+import { useAllFileData } from './hooks/useAllFileData';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
