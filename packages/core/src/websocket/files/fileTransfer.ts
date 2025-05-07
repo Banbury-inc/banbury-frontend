@@ -132,9 +132,6 @@ export interface FileSyncRequest {
   }[];
 }
 
-// Re-export the error handler functions
-export { handleTransferError, handleFileSyncError } from '../error_handler';
-
 // Add a function to leave a transfer room
 export async function leaveTransferRoom(socket: WebSocket, transfer_room: string): Promise<void> {
   try {

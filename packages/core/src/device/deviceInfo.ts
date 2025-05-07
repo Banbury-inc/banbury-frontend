@@ -557,7 +557,7 @@ export async function directory_info() {
 
 }
 
-export async function getDeviceId(username: string): Promise<string> {
+export async function getLocalDeviceId(username: string): Promise<string> {
 
   return `${username}_${os.hostname()}`;
 }

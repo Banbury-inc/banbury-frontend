@@ -45,7 +45,7 @@ export function downloadFile(files: string[], devices: string[], fileInfo: any, 
       if (!fs.existsSync(CONFIG.download_destination)) {
         try {
           fs.mkdirSync(CONFIG.download_destination, { recursive: true });
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Error creating download directory:', error);
           reject('Failed to create download directory');
           return;
@@ -112,7 +112,7 @@ export function downloadFile(files: string[], devices: string[], fileInfo: any, 
         }
         resolve('success');
         return;
-      } catch (error) {
+      } catch (error: unknown) {
         // Update progress to failed
         addDownloadsInfo([{
           filename: fileName,
@@ -186,7 +186,7 @@ export function downloadFile(files: string[], devices: string[], fileInfo: any, 
           if (data.message === 'File transaction complete' && data.file_name === files[0]) {
             try {
               banbury.analytics.addFileRequestSuccess();
-            } catch (error) {
+            } catch (error: unknown) {
               console.error('Error adding file request success:', error);
             }
             cleanup();
@@ -256,7 +256,7 @@ export function downloadFile(files: string[], devices: string[], fileInfo: any, 
             cleanup();
             reject(data.message || data.error || 'File transfer failed');
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Error parsing message:', error);
         }
       }
@@ -264,11 +264,11 @@ export function downloadFile(files: string[], devices: string[], fileInfo: any, 
 
     websocket.addEventListener('message', messageHandler);
 
-    banbury.device.downloadRequest(files[0], files[0], fileInfo, websocket, taskInfo)
-      .then(room => {
+    banbury.device.download_request(files[0], files[0], fileInfo, websocket, taskInfo)
+      .then((room: string) => {
         currentTransferRoom = room;
       })
-      .catch(error => {
+      .catch((error: unknown) => {
         console.error('Error sending download request:', error);
         // Update progress to failed for remote downloads
         addDownloadsInfo([{

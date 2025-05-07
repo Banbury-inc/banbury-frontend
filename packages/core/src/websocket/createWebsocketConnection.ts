@@ -4,11 +4,12 @@ import banbury from '..';
 import { ConnectionManager } from './connectionManager';
 import { WS_OPTIONS, RECONNECT_CONFIG } from './connectionCleanup';
 import { recordFailure } from './circuitBreaker';
-import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/fileTransfer';
+import { download_request, FileSyncRequest} from './files/fileTransfer';
 import { handleFileRequest, cancelFileSend } from './files/fileSender';
 import { handleFileTransferMessage } from './files/fileTransferHandler';
 import { fileReceiver } from './files/fileReceiver';
 import { addDownloadsInfo, getDownloadsInfo } from '../device/addDownloadsInfo';
+import { handleFileSyncError, handleTransferError } from './errorHandler';
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
