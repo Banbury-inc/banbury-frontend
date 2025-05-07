@@ -427,7 +427,7 @@ export default function Devices() {
                 <Tooltip title="Add Device">
                   <Button
                     data-testid="AddDeviceButton"
-                    onClick={handleAddDeviceClick(selectedDevice, setTaskbox_expanded, setTasks, showAlert, tasks, setLastname, setFirstname, setIsLoading, setAllDevices, setSelectedDevice, username)}
+                    onClick={handleAddDeviceClick(selectedDevice, setTaskbox_expanded, setTasks, showAlert, tasks, setIsLoading, setAllDevices, setSelectedDevice, username)}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >
                     <AddToQueueIcon fontSize="inherit" />
@@ -440,7 +440,7 @@ export default function Devices() {
                 <Tooltip title="Delete Device">
                   <Button
                     data-testid="DeleteDeviceButton"
-                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setAllDevices, setFirstname, setIsLoading, setLastname, username, setSelectedDevice)}
+                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setIsLoading, setLastname, setSelectedDevice)}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >
                     <DeleteIcon fontSize="inherit" />

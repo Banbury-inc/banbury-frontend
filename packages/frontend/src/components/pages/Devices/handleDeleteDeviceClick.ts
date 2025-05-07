@@ -9,10 +9,7 @@ export function handleDeleteDeviceClick(
   showAlert: any,
   tasks: any,
   setAllDevices: any,
-  setFirstname: any,
   setIsLoading: any,
-  setLastname: any,
-  username: string | null,
   setSelectedDevice?: any
 ) {
   const handleDeleteDevice = async () => {
@@ -33,7 +30,7 @@ export function handleDeleteDeviceClick(
           setSelectedDevice(null);
         }
         
-        const fetchDevicesFn = handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+        const fetchDevicesFn = handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setIsLoading);
         await fetchDevicesFn();
         
         await banbury.sessions.completeTask(taskInfo, tasks, setTasks);

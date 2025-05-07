@@ -11,8 +11,6 @@ export function handleAddDeviceClick(
   setTasks: any,
   showAlert: any,
   tasks: any,
-  setLastname: any,
-  setFirstname: any,
   setIsLoading: any,
   setAllDevices: any,
   setSelectedDevice: any,
@@ -38,7 +36,7 @@ export function handleAddDeviceClick(
           await banbury.device.addScannedFolder(defaultDirectory);
           
           // Call fetchDevices function and await its result to ensure it completes before proceeding
-          const fetchDevicesFn = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+          const fetchDevicesFn = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
           await fetchDevicesFn();
           
           await banbury.sessions.completeTask(taskInfo, tasks, setTasks);

@@ -15,7 +15,7 @@ export const UseLogData = (
       if (!username || disableFetch) return;
 
       try {
-        const logs_data = await fetchLogData(username, {
+        const logs_data = await fetchLogData( {
           setLogs,
           setIsLoading,
         });
