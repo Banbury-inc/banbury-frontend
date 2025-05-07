@@ -23,10 +23,10 @@ export function handleDeleteDeviceClick(
 
     try {
       const task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const result = await banbury.device.delete_device(username ?? '', selectedDeviceNames);
+      const result = await banbury.device.deleteDevice(selectedDeviceNames);
 
       if (Array.isArray(result) && result.every(r => r === 'success')) {
         if (setSelectedDevice) {
@@ -36,12 +36,11 @@ export function handleDeleteDeviceClick(
         const fetchDevicesFn = handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setFirstname, setIsLoading, setLastname, username);
         await fetchDevicesFn();
         
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         setSelectedDeviceNames([]);
         showAlert('Success', ['Device(s) deleted successfully'], 'success');
       } else {
         await banbury.sessions.failTask(
-          username ?? '',
           taskInfo,
           'Failed to delete device',
           tasks,
@@ -53,13 +52,11 @@ export function handleDeleteDeviceClick(
       console.error('Error deleting device:', error);
       try {
         const errorTaskInfo = await banbury.sessions.addTask(
-          username ?? '',
           'Error deleting device',
           tasks,
           setTasks
         );
         await banbury.sessions.failTask(
-          username ?? '',
           errorTaskInfo,
           error instanceof Error ? error.message : 'Unknown error occurred',
           tasks,

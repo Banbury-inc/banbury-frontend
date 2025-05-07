@@ -90,7 +90,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       }
       const device_name = banbury.device.name();
       const task_description = 'Adding device ' + device_name;
-      taskInfo = await banbury.sessions.addTask(username, task_description, tasks, setTasks);
+      taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
       try {
         // Make sure we're using the correct endpoint
@@ -99,13 +99,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
         if (result === 'success') {
           setDeviceAdded(true);
-          await banbury.sessions.completeTask(username, taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           handleNext();
         } else if (result === 'error' && response.message === 'Device already exists.') {
           // If device already exists, we can consider that a success
           setDeviceAdded(true);
           setDeviceExistsAlert(true);
-          await banbury.sessions.completeTask(username, taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         } else {
           throw new Error('Failed to add device: ' + result);
         }
@@ -131,7 +131,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       // Update task status if we have a taskInfo
       if (taskInfo) {
         await banbury.sessions.failTask(
-          username ?? '',
           taskInfo,
           errorMessage,
           tasks,
@@ -161,22 +160,22 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       }
       
       const task_description = 'Setting up default sync directory';
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
-      await banbury.device.add_scanned_folder(defaultDirectory, username ?? '');
-      await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      await banbury.device.addScannedFolder(defaultDirectory);
+      await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
       
       // Start a new task for scanning
       const scanTaskDescription = 'Scanning files in the default sync directory';
-      const scanTaskInfo = await banbury.sessions.addTask(username ?? '', scanTaskDescription, tasks, setTasks);
+      const scanTaskInfo = await banbury.sessions.addTask(scanTaskDescription, tasks, setTasks);
       
       // Call scanFolder with progress callback
-      await banbury.device.scanFolder(username ?? '', defaultDirectory, (progress, speed) => {
+      await banbury.device.scanFolder(defaultDirectory, (progress, speed) => {
         if (scanTaskInfo) {
           // Update task progress
           scanTaskInfo.task_progress = progress;
           scanTaskInfo.task_message = `Scanning: ${speed}`;
-          banbury.sessions.updateTask(username ?? '', scanTaskInfo);
+          banbury.sessions.updateTask(scanTaskInfo);
         }
       });
       
@@ -184,7 +183,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       if (scanTaskInfo) {
         scanTaskInfo.task_progress = 100;
         scanTaskInfo.task_status = 'complete';
-        await banbury.sessions.updateTask(username ?? '', scanTaskInfo);
+        await banbury.sessions.updateTask(scanTaskInfo);
       }
       
       setDeviceScanned(true);

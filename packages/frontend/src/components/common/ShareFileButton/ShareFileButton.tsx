@@ -154,7 +154,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
       await Promise.all(
         selectedUsers.flatMap(user =>
           selectedFileNames.map(file =>
-            banbury.files.shareFile(file, username, user.username)
+            banbury.files.shareFile(file, user.username)
           )
         )
       );
@@ -190,7 +190,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
     try {
       await Promise.all(
         selectedFileNames.map(file =>
-          banbury.files.makeFilePublic(username, file, device_name)
+          banbury.files.makeFilePublic(file, device_name)
         )
       );
 
@@ -220,7 +220,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
     try {
       await Promise.all(
         selectedFileNames.map(file =>
-          banbury.files.makeFilePrivate(username, file, device_name)
+          banbury.files.makeFilePrivate(file, device_name)
         )
       );
 

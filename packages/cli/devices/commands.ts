@@ -21,8 +21,8 @@ export function addDeviceCommands(program: Command): void {
     .command('get-device-id')
     .description('Get device ID for a user')
     .argument('[username]', 'username to get device ID for', 'User')
-    .action(async (username: string) => {
-      const response = await getDeviceId(username);
+    .action(async () => {
+      const response = await getDeviceId();
       // eslint-disable-next-line no-console
       console.log(response);
       process.exit(0);

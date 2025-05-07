@@ -8,8 +8,8 @@ export async function getScannedFolders(): Promise<{ result: string } | 'failed'
 } 
 
 
-export async function getDeviceId(username: string) {
-    const response = await banbury.device.getDeviceId(username);
+export async function getDeviceId() {
+    const response = await banbury.device.getDeviceId();
     return response;
 } 
 

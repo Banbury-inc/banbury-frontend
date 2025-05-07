@@ -316,10 +316,10 @@ export default function Devices() {
   const handleSyncStorageChange = async (value: string) => {
     try {
       const task_description = 'Updating Sync Storage Capacity';
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const result = await handlers.devices.updateSyncStorage(username ?? '', value);
+      const result = await handlers.devices.updateSyncStorage(value);
 
       if (result === 'success') {
         setUpdates(updates + 1);
@@ -327,7 +327,7 @@ export default function Devices() {
         fetchDevicesFunc();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
-        await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
         showAlert('Error', ['Failed to update sync storage capacity'], 'error');
       }
     } catch (error) {
@@ -344,15 +344,14 @@ export default function Devices() {
     usePredictedUploadSpeed: boolean,
     useFilesNeeded: boolean,
     useFilesAvailableForDownload: boolean,
-    useDeviceinFileSync: boolean
+    useDeviceinFileSync: boolean,
   ) => {
     try {
       const task_description = 'Updating prediction preferences';
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const result = await handlers.devices.updateScorePreferences(
-        username ?? '',
         usePredictedCPUUsage,
         usePredictedRAMUsage,
         usePredictedGPUUsage,
@@ -367,7 +366,7 @@ export default function Devices() {
       if (result === 'success') {
         showAlert('Success', ['Prediction preferences updated successfully'], 'success');
       } else {
-        await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update prediction preferences', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Failed to update prediction preferences', tasks, setTasks);
         showAlert('Error', ['Failed to update prediction preferences'], 'error');
       }
     } catch (error) {

@@ -46,13 +46,13 @@ export async function update_database_files(username: string) {
 
     // Add files to the database if available
     if (files_to_add.length > 0) {
-      result = await banbury.files.addFiles(username, files_to_add);
+      result = await banbury.files.addFiles(files_to_add);
     }
 
     // Remove files if available
     if (files_to_remove.length > 0) {
       const device_name = os.hostname();
-      result = await banbury.files.removeFiles(username, device_name, files_to_remove);
+      result = await banbury.files.removeFiles(device_name, files_to_remove);
     }
     return 'success';
 

@@ -4,12 +4,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useAuth } from '../../../../../renderer/context/AuthContext';
 import banbury from '@banbury/core';
-import { remove_file_from_sync } from '@banbury/core/src/device/remove_file_from_sync';
+import { removeFileFromSync } from '@banbury/core/src/device/removeFileFromSync';
 
 
 export default function RemoveFileFromSyncButton({ selectedFileNames, onFinish }: { selectedFileNames: string[], onFinish: () => void }) {
   const [loading, setLoading] = useState(false);
-  const { username, tasks, setTasks, setTaskbox_expanded, updates, setUpdates } = useAuth();
+  const {tasks, setTasks, setTaskbox_expanded, updates, setUpdates } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -23,14 +23,14 @@ export default function RemoveFileFromSyncButton({ selectedFileNames, onFinish }
 
         // Add the selected folder as a scanned folder
         const task_description = `Removing file from sync: ${file}`;
-        const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
 
-        const removeResult = await remove_file_from_sync(file, username ?? '');
+        const removeResult = await removeFileFromSync(file);
 
 
         if (removeResult === 'success') {
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           setUpdates(updates + 1);
         }
       } catch (error) {

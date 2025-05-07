@@ -1,5 +1,5 @@
-import { update_sync_storage_capacity } from '@banbury/core/dist/device';
+import { updateSyncStorageCapacity } from '@banbury/core/dist/device';
 
-export const updateSyncStorage = async (username: string, value: string) => {
-    return update_sync_storage_capacity(username, value);
+export const updateSyncStorage = async (value: string) => {
+    return updateSyncStorageCapacity(value);
 }; 

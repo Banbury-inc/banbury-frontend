@@ -3,6 +3,7 @@ import { CONFIG } from '../config';
 
 
 export async function addNotification(
+    friend_username: string,
     notification: {
         type: string;
         title: string;
@@ -13,6 +14,7 @@ export async function addNotification(
 ) {
     const url = `${CONFIG.url}/notifications/add_notification/`;
     const response = await axios.post<{ result: string }>(url, {
+        friend_username: friend_username,
         notification: notification,
     });
     const result = response.data.result;

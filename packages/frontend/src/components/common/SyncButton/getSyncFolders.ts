@@ -1,9 +1,9 @@
 import banbury from '@banbury/core';
 
-export const getSyncFolders = async (devices: any[], username: string) => {
+export const getSyncFolders = async (devices: any[]) => {
   try {
 
-    const result = await banbury.device.get_device_id(username || 'default');
+    const result = await banbury.device.getDeviceId();
     const deviceId = result.message;
     const device = devices.find((device) => device._id === deviceId);
     // Check if device is not found

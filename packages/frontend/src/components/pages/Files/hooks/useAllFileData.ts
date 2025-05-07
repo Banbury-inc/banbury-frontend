@@ -29,7 +29,7 @@ export const useAllFileData = (
       
       // Fetch device data if needed
       if (!devices || devices.length === 0) {
-        const deviceData = await fetchDeviceData(username || '');
+        const deviceData = await fetchDeviceData();
         setDevices(Array.isArray(deviceData) ? deviceData : []);
       }
       
@@ -38,7 +38,7 @@ export const useAllFileData = (
       // Special handling for Cloud files
       if (filePath === 'Core/Cloud') {
         try {
-          const s3Result = await banbury.files.listS3Files(username || '');
+          const s3Result = await banbury.files.listS3Files();
           
           if (s3Result && Array.isArray(s3Result.files)) {
             // Convert S3 files to DatabaseData format
@@ -135,7 +135,7 @@ export const useAllFileData = (
       
       // Special direct fetch for cloud files to troubleshoot
       if (filePath === 'Core/Cloud' && username) {
-        banbury.files.listS3Files(username)
+        banbury.files.listS3Files()
           .then((result) => {
             if (result && Array.isArray(result.files) && result.files.length > 0) {
               const cloudFiles = result.files.map((s3File: any, index: number) => ({
@@ -232,7 +232,7 @@ export const useAllFileData = (
       // Special handling for Cloud files
       if (filePath === 'Core/Cloud') {
         try {
-          const s3Result = await banbury.files.listS3Files(username || '');
+          const s3Result = await banbury.files.listS3Files();
           
           if (s3Result && Array.isArray(s3Result.files)) {
             // Convert S3 files to DatabaseData format

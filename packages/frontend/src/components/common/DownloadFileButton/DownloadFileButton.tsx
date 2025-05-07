@@ -5,7 +5,7 @@ import { Button, Tooltip } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
 import React from "react";
 import { handlers } from "../../../renderer/handlers";
-import { addDownloadsInfo } from "@banbury/core/src/device/add_downloads_info";
+import { addDownloadsInfo } from "@banbury/core/src/device/addDownloadsInfo";
 
 export default function DownloadFileButton({
   selectedFileNames,
@@ -52,7 +52,7 @@ export default function DownloadFileButton({
       addDownloadsInfo(initialDownloads);
 
       const task_description = 'Downloading ' + selectedFileNames.join(', ');
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       // Check if any selected file is an S3 file
@@ -65,14 +65,13 @@ export default function DownloadFileButton({
             if (file.is_s3) {
               // Use the new function that saves directly to BCloud directory
               await banbury.files.saveS3FileToBCloud(
-                username ?? '',
                 file.id.toString(),
                 file.file_name
               );
             }
           }
           
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
 
           // Update download status to 'completed' for all selected files
           const completedDownloadsUpdate = selectedFileInfo.map(fileInfo => ({
@@ -92,7 +91,7 @@ export default function DownloadFileButton({
           return;
         } catch (error) {
           console.error('Error downloading S3 files:', error);
-          await banbury.sessions.failTask(username ?? '', taskInfo, 'S3 download failed', tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, 'S3 download failed', tasks, setTasks);
           showAlert('Download failed', ['Failed to download S3 files. Please try again.'], 'error');
           setSelected([]);
           return;
@@ -102,7 +101,7 @@ export default function DownloadFileButton({
       // Regular device files need websocket connection
       if (!websocket || websocket.readyState !== WebSocket.OPEN) {
         showAlert('Connection Error', ['Not connected to server. Please try again.'], 'error');
-        await banbury.sessions.failTask(username ?? '', taskInfo, 'Connection Error', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Connection Error', tasks, setTasks);
         return;
       }
 
@@ -114,7 +113,6 @@ export default function DownloadFileButton({
       // Race between the download and timeout
       const response = await Promise.race([
         handlers.files.downloadFile(
-          username ?? '',
           selectedFileNames,
           selectedDeviceNames,
           selectedFileInfo,
@@ -125,13 +123,13 @@ export default function DownloadFileButton({
       ]);
 
       if (response === 'No file selected') {
-        await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
         showAlert('No file selected', ['Please select a file to download'], 'warning');
       } else if (response === 'file_not_found') {
-        await banbury.sessions.failTask(username ?? '', taskInfo, 'File not found', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'File not found', tasks, setTasks);
         showAlert('File not found', [`The file "${selectedFileNames[0]}" could not be found on the selected device.`], 'error');
       } else if (response === 'success') {
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         showAlert('Download completed successfully', ['Your file has been downloaded successfully'], 'success');
       }
 

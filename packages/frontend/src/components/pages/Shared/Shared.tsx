@@ -243,10 +243,9 @@ export default function Shared() {
         console.error(`File '${file_name}' not found in directory, searhing other devices`);
 
         const task_description = 'Opening ' + selectedFileNames.join(', ');
-        const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
         const response = await handlers.files.downloadFile(
-          username ?? '',
           selectedFileNames,
           selectedDeviceNames,
           selectedFileInfo,

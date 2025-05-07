@@ -16,7 +16,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
-import { DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
+import { DownloadInfo } from '@banbury/core/src/device/addDownloadsInfo';
 
 interface DownloadProgressProps {
   downloads: DownloadInfo[];

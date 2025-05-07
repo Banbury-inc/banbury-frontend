@@ -6,7 +6,7 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 
 export default function CloudSync() {
 
-    const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
+    const {tasks, setTasks, setTaskbox_expanded } = useAuth();
     const [predicted_cpu_usage_weighting, setPredictedCpuUsageWeighting] = useState(10);
     const [predicted_ram_usage_weighting, setPredictedRamUsageWeighting] = useState(10);
     const [predicted_gpu_usage_weighting, setPredictedGpuUsageWeighting] = useState(10);
@@ -23,11 +23,10 @@ export default function CloudSync() {
 
         try {
             const task_description = 'Updating Settings';
-            const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+            const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
             setTaskbox_expanded(true);
 
             const response = await banbury.settings.updatePerformanceScoreWeightings(
-                username,
                 predicted_cpu_usage_weighting,
                 predicted_ram_usage_weighting,
                 predicted_gpu_usage_weighting,
@@ -36,10 +35,10 @@ export default function CloudSync() {
             );
 
             if (response === 'success') {
-                await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+                await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
                 showAlert('Success', ['Performance score weightings updated successfully'], 'success');
             } else {
-                await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update performance score weightings', tasks, setTasks);
+                await banbury.sessions.failTask(taskInfo, 'Failed to update performance score weightings', tasks, setTasks);
                 showAlert('Error', ['Failed to update performance score weightings'], 'error');
             }
         } catch (error) {

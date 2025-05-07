@@ -35,7 +35,7 @@ export default function SyncButton() {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     // Fetch folders to display, but don't start scanning
-    const syncFolders = await getSyncFolders(devices || [], username || '');
+    const syncFolders = await getSyncFolders(devices || []);
     if (syncFolders.error && syncFolders.error === 'Failed to get device ID') {
       // set syncData to empty
       setSyncData({ syncingFiles: [], recentlyChanged: [] });
@@ -77,17 +77,17 @@ export default function SyncButton() {
 
       // Add the selected folder as a scanned folder
       const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
       const addResult = await add_scanned_folder(absoluteFolderPath, username ?? '');
 
       if (addResult === 'success') {
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         // Get fresh devices data first
-        const updatedDevices = await fetchDeviceData(username ?? '');
+        const updatedDevices = await fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
+        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : []);
 
 
         // Initialize folders while preserving existing progress
@@ -135,7 +135,7 @@ export default function SyncButton() {
       if (file.progress === 100) continue;
 
       const task_description = 'Scanning folder';
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
       // Update local state to show scanning started
       setSyncData(prev => ({
@@ -149,7 +149,6 @@ export default function SyncButton() {
 
       try {
         const result = await scanFolder(
-          username ?? '',
           file.filename,
           (progress: number, speed: string) => {
             setSyncData(prev => ({
@@ -164,15 +163,15 @@ export default function SyncButton() {
         );
 
         if (result === 'success') {
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         } else if (result === 'device_not_found') {
           // Handle device not found error
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           showAlert('Device Not Found', ['Current device not added. Please add device before scanning.'], 'error');
           break; // Stop scanning remaining folders
         } else if (result === 'unauthorized') {
           // Handle unauthorized error
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           showAlert('Authentication Error', ['You are not authorized to access this resource. Please log in again.'], 'error');
           break; // Stop scanning remaining folders
         }
@@ -196,17 +195,17 @@ export default function SyncButton() {
   const handleRemoveFolder = async (folderPath: string) => {
     try {
       const task_description = `Removing folder: ${folderPath}`;
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
       const removeResult = await remove_scanned_folder(folderPath, username ?? '');
 
       if (removeResult === 'success') {
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         // Get fresh devices data first
-        const updatedDevices = await fetchDeviceData(username ?? '');
+        const updatedDevices = await fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
+        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : []);
         setSyncData(updatedFolders);
       }
     } catch (error) {

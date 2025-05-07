@@ -11,7 +11,7 @@ export const fetchFilesData = async (
 ) => {
   try {
     // Fetch device information to check online status
-    const deviceData = await fetchDeviceData(username);
+    const deviceData = await fetchDeviceData();
     const deviceOnlineMap = new Map();
     
     if (Array.isArray(deviceData)) {
@@ -59,7 +59,7 @@ export const fetchSyncData = async (
 ) => {
   try {
     // Fetch device information to check online status
-    const deviceData = await fetchDeviceData(username);
+    const deviceData = await fetchDeviceData();
     const deviceOnlineMap = new Map();
     
     if (Array.isArray(deviceData)) {
@@ -109,7 +109,7 @@ export const fetchSharedData = async (
 ) => {
   try {
     // Fetch device information to check online status
-    const deviceData = await fetchDeviceData(username);
+    const deviceData = await fetchDeviceData();
     const deviceOnlineMap = new Map();
     
     if (Array.isArray(deviceData)) {

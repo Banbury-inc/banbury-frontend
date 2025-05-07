@@ -38,8 +38,8 @@ import NotificationsButton from '../common/NotificationsButton/NotificationsButt
 import AccountMenuIcon from '../common/AccountMenuIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { getDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
-import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
+import { getDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/addDownloadsInfo';
+import { getUploadsInfo } from '@banbury/core/src/device/addUploadsInfo';
 import { ipcRenderer } from 'electron';
 import AI from './AI/AI';
 
@@ -136,7 +136,7 @@ export default function PermanentDrawerLeft() {
           );
           if (isSubscribed) {
             setSocket(websocket);
-            detectFileChanges(username, bcloudDirectoryPath);
+            detectFileChanges(bcloudDirectoryPath);
           }
         }
       } catch (error) {

@@ -89,7 +89,7 @@ export default function App() {
         
         setDeleteInProgress(true);
         try {
-            const result = await banbury.settings.deleteAccount(username);
+            const result = await banbury.settings.deleteAccount();
             
             if (result === 'success') {
                 setUpdateStatus({

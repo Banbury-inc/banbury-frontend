@@ -1,8 +1,8 @@
 import { banbury } from "@banbury/core";
 
-export async function fetchNotifications(username: string, setNotifications: (notifications: any[]) => void) {
+export async function fetchNotifications(setNotifications: (notifications: any[]) => void) {
     try {
-        const response = await banbury.notifications.getNotifications(username);
+        const response = await banbury.notifications.getNotifications();
         // Ensure we're setting an array, even if response.notifications is undefined
         setNotifications(Array.isArray(response?.notifications) ? response.notifications : []);
     } catch (error) {

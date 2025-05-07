@@ -26,7 +26,7 @@ export function handleAddDeviceClick(
     try {
       const device_name = banbury.device.name();
       const task_description = 'Adding device ' + device_name;
-      const taskInfo = await banbury.sessions.addTask(username, task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const response = await handlers.devices.addDevice(username);
@@ -35,18 +35,17 @@ export function handleAddDeviceClick(
         // Add default directory and refresh device list
         try {
           const defaultDirectory = path.join(os.homedir(), 'BCloud');
-          await banbury.device.add_scanned_folder(defaultDirectory, username);
+          await banbury.device.addScannedFolder(defaultDirectory);
           
           // Call fetchDevices function and await its result to ensure it completes before proceeding
           const fetchDevicesFn = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
           await fetchDevicesFn();
           
-          await banbury.sessions.completeTask(username, taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           showAlert('Success', ['Device added successfully'], 'success');
         } catch (folderError) {
           console.error('Error setting up default directory:', folderError);
           await banbury.sessions.failTask(
-            username,
             taskInfo,
             'Failed to set up default directory',
             tasks,
@@ -57,7 +56,6 @@ export function handleAddDeviceClick(
       } else if (response?.result === 'error') {
         const errorMessage = response.message || 'Failed to add device';
         await banbury.sessions.failTask(
-          username,
           taskInfo,
           errorMessage,
           tasks,
@@ -66,7 +64,6 @@ export function handleAddDeviceClick(
         showAlert('Error', [errorMessage], 'error');
       } else {
         await banbury.sessions.failTask(
-          username,
           taskInfo,
           'Invalid response from server',
           tasks,
@@ -80,13 +77,11 @@ export function handleAddDeviceClick(
         if (!username) return;
         
         const errorTaskInfo = await banbury.sessions.addTask(
-          username,
           'Error adding device',
           tasks,
           setTasks
         );
         await banbury.sessions.failTask(
-          username,
           errorTaskInfo,
           error instanceof Error ? error.message : 'Unknown error occurred',
           tasks,

@@ -243,10 +243,9 @@ export default function Sync() {
         console.error(`File '${file_name}' not found in directory, searhing other devices`);
 
         const task_description = 'Opening ' + selectedFileNames.join(', ');
-        const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
         const response = await handlers.files.downloadFile(
-          username ?? '',
           selectedFileNames,
           selectedDeviceNames,
           selectedFileInfo,
@@ -254,10 +253,10 @@ export default function Sync() {
           websocket as unknown as WebSocket,
         );
         if (response === 'No file selected') {
-          await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
         }
         if (response === 'File not available') {
-          await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
         }
         if (response === 'success') {
           const directory_name: string = 'BCloud';
@@ -362,7 +361,7 @@ export default function Sync() {
 
     const newPriority = newValue;
 
-    const result = await banbury.files.updateFilePriority(row._id, username ?? '', newPriority);
+    const result = await banbury.files.updateFilePriority(row._id, newPriority);
 
     if (result === 'success') {
       setUpdates(updates + 1);
@@ -399,7 +398,6 @@ export default function Sync() {
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
-
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {

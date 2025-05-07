@@ -255,7 +255,7 @@ export default function Friends() {
   // Update the send friend request handler
   const handleSendFriendRequest = async (requestUsername: string) => {
     try {
-      await handlers.users.sendFriendRequest(username || '', requestUsername);
+      await handlers.users.sendFriendRequest(requestUsername);
       setUpdates(prevUpdates => [...prevUpdates, 'friend_request_sent']);
       showAlert('Success', ['Friend request sent'], 'success');
     } catch (error) {

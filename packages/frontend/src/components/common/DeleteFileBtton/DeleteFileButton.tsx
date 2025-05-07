@@ -40,7 +40,7 @@ export default function DeleteFileButton({
       }
 
       const task_description = 'Deleting ' + selectedFileNames.join(', ');
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const response = await handlers.files.deleteFile(
@@ -52,10 +52,10 @@ export default function DeleteFileButton({
       ) as string;
 
       if (response === 'No file selected' || response === 'file_not_found') {
-        await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
         showAlert(`Delete failed: ${response}`, ['error']);
       } else if (response === 'success') {
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         showAlert('Delete completed successfully', ['success']);
       }
 
