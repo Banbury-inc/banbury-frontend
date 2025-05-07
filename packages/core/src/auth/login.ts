@@ -2,6 +2,7 @@
 import axios from 'axios';
 import banbury from '..';
 import { setGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
+import os from 'os';
 
 /**
  *
@@ -14,12 +15,17 @@ export async function login(username: string, password: string) {
       
       const response = await axios.get<any>(url);
       
-      const result = response.data.result;
+      const loginSuccess = response.data.result;
       const token = response.data.token;
-      if (result === 'success') {
+      const deviceId = `${username}-${os.hostname()}`;
+      if (loginSuccess === 'success') {
         setGlobalAxiosAuthToken(token);
         return {
-          response,
+          success: true,
+          token,
+          deviceId,
+          userInfo: response.data.user_info,
+          message: response.data.message,
         };
       }
       return { success: false };

@@ -31,10 +31,14 @@ interface Message {
 }
 
 interface LoginResponse {
-  result: string;
+  success: boolean;
   token: string;
-  username: string;
   deviceId?: string;
+  userInfo?: {
+    username: string;
+    email: string;
+  };
+  message?: string;
 }
 
 process.on('uncaughtException', (err: Error & { code?: string }) => {
@@ -107,8 +111,9 @@ export default function SignIn() {
       const password = data.get('password') as string;
 
       if (email && password) {
-        const result = await send_login_request(email, password);
-        if (result?.success && result.deviceId) {
+        const result = await banbury.auth.login(email, password);
+        console.log('Login result:', result);
+        if (result.success && result.deviceId) {
           // Check if this is the user's first login
           const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
           
@@ -136,36 +141,6 @@ export default function SignIn() {
     }
   };
 
-  async function send_login_request(username: string, password: string) {
-    try {
-      const url = `${banbury.config.url}/authentication/getuserinfo4/${username}/${password}`;
-      
-      const response = await axios.get<LoginResponse>(url);
-      
-      const result = response.data.result;
-      if (result === 'success') {
-        const deviceId = response.data.deviceId || `${username}-${os.hostname()}`;
-        return {
-          success: true,
-          deviceId
-        };
-      }
-      return { success: false };
-    } catch (error) {
-      console.error('Error during login:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Network error details:', {
-          message: error.message,
-          code: error.code,
-          response: error.response?.data,
-          status: error.response?.status,
-          url: error.config?.url
-        });
-        setserver_offline(true);
-      }
-      return { success: false };
-    }
-  }
 
   const handleGoogleLogin = async () => {
     setLoading(true);

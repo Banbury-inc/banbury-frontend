@@ -71,7 +71,6 @@ export const useAllFileData = (
       } else {
         // Fetch files based on current view
         newFiles = await fetchAllData(
-          username || '',
           filePath,
           currentView,
           fetchedFiles
@@ -270,7 +269,6 @@ export const useAllFileData = (
       
       // For non-cloud views, continue with regular file fetching
       newFiles = await fetchAllData(
-        username || '',
         filePath,
         currentView,
         fetchedFiles
