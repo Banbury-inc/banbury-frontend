@@ -1,4 +1,4 @@
-import { circuitState, CIRCUIT_BREAKER_CONFIG } from './connection_cleanup';
+import { circuitState, CIRCUIT_BREAKER_CONFIG } from './connectionCleanup';
 
 // Function to check if circuit breaker allows connection
 export function canAttemptConnection(): boolean {

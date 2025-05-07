@@ -1,4 +1,4 @@
-import { addDownloadsInfo, getDownloadsInfo, clearDownloadsInfo, cleanupDownloadTracker, DownloadInfo } from '../add_downloads_info';
+import { addDownloadsInfo, getDownloadsInfo, clearDownloadsInfo, cleanupDownloadTracker, DownloadInfo } from '../addDownloadsInfo';
 
 describe('add_downloads_info', () => {
   beforeEach(() => {

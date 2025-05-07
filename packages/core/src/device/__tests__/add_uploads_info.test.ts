@@ -3,7 +3,7 @@ import {
   getUploadsInfo,
   clearUploadsInfo,
   cleanupUploadTracker
-} from '../add_uploads_info';
+} from '../addUploadsInfo';
 
 describe('Upload Info Management', () => {
   beforeEach(() => {

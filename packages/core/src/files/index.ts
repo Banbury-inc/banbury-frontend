@@ -1,4 +1,4 @@
-import { cancel_download_request as cancelDownloadRequestInternal } from '../websocket/files/file_transfer';
+import { cancel_download_request as cancelDownloadRequestInternal } from '../websocket/files/fileTransfer';
 
 export * from './addFiles';
 export * from './removeFiles';

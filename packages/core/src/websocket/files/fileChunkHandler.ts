@@ -1,5 +1,5 @@
 import { addDownloadsInfo } from '../../device/addDownloadsInfo';
-import { calculateTimeRemaining } from '../time_calculator';
+import { calculateTimeRemaining } from '../timeCalculator';
 
 // Add state all file chunks with a reset function
 let accumulatedData: Buffer[] = [];

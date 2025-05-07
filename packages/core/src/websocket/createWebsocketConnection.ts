@@ -3,8 +3,8 @@ import { getDeviceId } from '../device/getDeviceId';
 import banbury from '..';
 import { ConnectionManager } from './connectionManager';
 import { WS_OPTIONS, RECONNECT_CONFIG } from './connectionCleanup';
-import { recordFailure } from './circuit_breaker';
-import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/file_transfer';
+import { recordFailure } from './circuitBreaker';
+import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/fileTransfer';
 import { handleFileRequest, cancelFileSend } from './files/fileSender';
 import { handleFileTransferMessage } from './files/fileTransferHandler';
 import { fileReceiver } from './files/fileReceiver';
@@ -302,7 +302,6 @@ export async function createWebSocketConnection(
                 for (const fileInfo of syncRequest.download_queue) {
                   try {
                     await download_request(
-                      username,
                       fileInfo.file_name,
                       fileInfo.file_path,
                       [fileInfo],

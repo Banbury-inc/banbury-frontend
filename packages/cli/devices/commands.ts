@@ -10,8 +10,8 @@ export function addDeviceCommands(program: Command): void {
     .command('get-scanned-folders')
     .description('Get scanned folders for a user')
     .argument('[username]', 'username to get scanned folders for', 'User')
-    .action(async (username: string) => {
-      const response = await getScannedFolders(username);
+    .action(async () => {
+      const response = await getScannedFolders();
       // eslint-disable-next-line no-console
       console.log(response);
       process.exit(0);

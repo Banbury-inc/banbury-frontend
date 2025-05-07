@@ -6,7 +6,7 @@ export * from './files/fileChunkHandler';
 export * from './timeCalculator';
 export * from './errorHandler';
 export * from './connectionCleanup';
-export * from './circuit_breaker';
+export * from './circuitBreaker';
 export * from './reconnection';
 export * from './files/fileTransfer';
 

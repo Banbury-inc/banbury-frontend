@@ -76,7 +76,6 @@ export async function download_request(file_name: string, file_path: string, fil
   // Now send the actual download request
   const message = {
     message_type: "download_request",
-    username: username,
     file_name: file_name,
     file_path: file_path,
     file_info: fileInfo,

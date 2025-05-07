@@ -15,7 +15,7 @@ import path from 'path';
 import { scanFilesystem } from '../scanFilesystem';
 import { banbury } from '../..';
 import { CONFIG } from '../../config';
-import { get_scanned_folders } from '../get_scanned_folders';
+import { getScannedFolders } from '../getScannedFolders';
 
 // Mock all external dependencies
 jest.mock('fs');
@@ -128,7 +128,7 @@ describe('scanFilesystem', () => {
       filePath?.includes('subfolder') ?? false
     );
     
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('success');
     expect(banbury.files.addFiles).toHaveBeenCalled();
@@ -141,7 +141,7 @@ describe('scanFilesystem', () => {
       filePath?.includes('subfolder') ?? false
     );
     
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('success');
     expect(banbury.files.addFiles).toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe('scanFilesystem', () => {
   });
 
   it('should skip dot files when skip_dot_files is true', async () => {
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('success');
     const addFilesCalls = (banbury.files.addFiles as jest.Mock).mock.calls;
@@ -171,10 +171,10 @@ describe('scanFilesystem', () => {
     // @ts-ignore - Mock implementation returns Promise<GetScannedFoldersResponse>
     (get_scanned_folders as jest.Mock).mockResolvedValue(mockResponse);
     
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('success');
-    expect(get_scanned_folders).toHaveBeenCalledWith(mockUsername);
+    expect(getScannedFolders).toHaveBeenCalledWith();
     mockSelectedFolders.forEach(folder => {
       expect(fs.readdirSync).toHaveBeenCalledWith(folder);
     });
@@ -183,7 +183,7 @@ describe('scanFilesystem', () => {
   it('should handle non-existent directories', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
     
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('success');
     expect(banbury.files.addFiles).not.toHaveBeenCalled();
@@ -194,7 +194,7 @@ describe('scanFilesystem', () => {
       throw new Error('Permission denied');
     });
     
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('failed, Error: Permission denied');
   });
@@ -220,7 +220,7 @@ describe('scanFilesystem', () => {
       path.toString() === mockLargeDir
     );
     
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('success');
     const addFilesCalls = (banbury.files.addFiles as jest.Mock).mock.calls;
@@ -268,7 +268,7 @@ describe('scanFilesystem', () => {
       return parts.length > 1 ? '.' + parts[parts.length - 1].toLowerCase() : '';
     });
     
-    const result = await scanFilesystem(mockUsername);
+    const result = await scanFilesystem();
     
     expect(result).toBe('success');
     const addFilesCalls = (banbury.files.addFiles as jest.Mock).mock.calls;
