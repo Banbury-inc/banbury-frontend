@@ -162,12 +162,3 @@ export function getDownloadsInfo(): DownloadInfo[] {
   return [...activeDownloads];
 }
 
-// Function to clear downloads
-export function clearDownloadsInfo(): void {
-  activeDownloads = [];
-}
-
-// Add cleanup function to remove completed downloads from tracker
-export function cleanupDownloadTracker(filename: string) {
-  downloadSpeedTracker.delete(filename);
-}

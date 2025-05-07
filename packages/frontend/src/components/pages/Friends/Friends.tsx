@@ -488,7 +488,7 @@ export default function Friends() {
                       <>
                         <Avatar sx={{ width: 64, height: 64 }}>{selectedFriend.first_name ? selectedFriend.first_name[0] : '?'}</Avatar>
                         <Stack>
-                          <Heading level={5}>{selectedFriend.first_name ? selectedFriend.first_name : '?'} {selectedFriend.last_name ? selectedFriend.last_name : '?'}</Heading>
+                          <Typography variant="h5">{selectedFriend.first_name ? selectedFriend.first_name : '?'} {selectedFriend.last_name ? selectedFriend.last_name : '?'}</Typography>
                           <Stack direction="row" spacing={1} alignItems="center">
                             <Typography variant="body2" color="text.secondary">
                               {selectedFriend.username}

@@ -103,15 +103,7 @@ function calculateTimeRemaining(upload: UploadInfo): number | undefined {
   return tracker.lastTimeRemaining || Math.ceil((upload.totalSize - upload.uploadedSize) / 1000000); // Fallback to rough estimate
 }
 
-// Add cleanup function to remove completed uploads from tracker
-export function cleanupUploadTracker(filename: string) {
-  uploadSpeedTracker.delete(filename);
-}
-
 export function getUploadsInfo(): UploadInfo[] {
   return [...uploadsInfo];
 }
 
-export function clearUploadsInfo() {
-  uploadsInfo = [];
-} 
