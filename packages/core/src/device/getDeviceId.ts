@@ -3,15 +3,12 @@ import { CONFIG } from "../config";
 import banbury from '..';
 
 // Function to get device ID with proper error handling
-export async function get_device_id(username: string | undefined): Promise<{ result: string, message: string }> {
-  if (!username) {
-    throw new Error('Username is required');
-  }
+export async function getDeviceId(): Promise<{ result: string, message: string }> {
 
   const device_name = banbury.device.name();
 
   try {
-    const response = await axios.get(`${CONFIG.url}/devices/get_single_device_info_with_device_name/${username}/${device_name}`);
+    const response = await axios.get(`${CONFIG.url}/devices/get_single_device_info_with_device_name/${device_name}`);
 
     if (response.data.result === 'error') {
       return { result: 'error', message: response.data.message };

@@ -26,11 +26,8 @@ export function setGlobalAxiosAuthToken(token: string) {
  */
 export function loadGlobalAxiosAuthToken() {
   try {
-    console.log('Loading token from disk');
     if (fs.existsSync(TOKEN_FILE)) {
-      console.log('Token file exists');
       const token = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
-      console.log('Token:', token);
       if (token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }

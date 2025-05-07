@@ -1,14 +1,13 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
 
-export async function add_downloaded_model(
+export async function addDownloadedModel(
   model_name: string,
-  username: string,
   device_id: number,
 ) {
-  const url = `${CONFIG.url}/devices/add_downloaded_model/${username}/`;
+  const url = `${CONFIG.url}/devices/add_downloaded_model/`;
 
-  const response = await axios.post<{ result: string; username: string; }>(url, {
+  const response = await axios.post<{ result: string }>(url, {
     device_id: device_id,
     model_name: model_name,
   });

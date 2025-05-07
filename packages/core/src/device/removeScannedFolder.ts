@@ -3,20 +3,25 @@ import { banbury } from '..'
 import { CONFIG } from '../config';
 
 
-export async function declare_offline(
-  username: string,
+export async function remove_scanned_folder(
+  scanned_folder: string,
 ) {
-
 
 
   const device_name = banbury.device.name();
 
+  let url = ''
+
   try {
-    const url = `${CONFIG.url}/devices/declare_offline/${username}/`;
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    url = `${CONFIG.url}/files/remove_scanned_folder/`;
+
+
+
+    const response = await axios.post<{ status: string; }>(url, {
       device_name: device_name,
+      scanned_folder: scanned_folder,
     });
-    const result = response.data.result;
+    const result = response.data.status;
 
     if (result === 'success') {
 
@@ -34,7 +39,7 @@ export async function declare_offline(
       return 'task_add failed';
     }
   } catch (error) {
-    console.error('Error fetching data:', error);
+    return error;
   }
 }
 

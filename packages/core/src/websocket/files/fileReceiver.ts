@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { CONFIG } from '../../config';
-import { handleReceivedFileChunk } from './file_chunk_handler';
-import { updateDownloadProgress } from './file_transfer';
+import { handleReceivedFileChunk } from './fileChunkHandler';
+import { updateDownloadProgress } from './fileTransfer';
 
 interface FileInfo {
   file_name: string;

@@ -6,9 +6,9 @@ import { CONFIG } from "../config";
 
 
 // Function to get total requests processed
-export async function getSingleDeviceInfoWithDeviceName(username: string | undefined, device_name: string | undefined): Promise<any | null> {
+export async function getSingleDeviceInfoWithDeviceName(device_name: string | undefined): Promise<any | null> {
   try {
-    const response = await axios.get(`http://${CONFIG.url}/devices/get_single_device_info_with_device_name/${username}/${device_name}`);
+    const response = await axios.get(`http://${CONFIG.url}/devices/get_single_device_info_with_device_name/${device_name}`);
 
     const deviceInfo = response.data.device_info;
     return deviceInfo;

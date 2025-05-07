@@ -2,16 +2,15 @@ import axios from 'axios';
 import { CONFIG } from '../config';
 
 
-export async function delete_device(
-  username: string,
+export async function deleteDevice(
   selectedDeviceNames: string[]
 ) {
-  const url = `${CONFIG.url}/devices/delete_device/${username}/`;
+  const url = `${CONFIG.url}/devices/delete_device/`;
   const results = [];
 
   for (const device_name of selectedDeviceNames) {
     try {
-      const response = await axios.post<{ result: string; user: string; }>(url, {
+      const response = await axios.post<{ result: string }>(url, {
         device_name: device_name,
       });
       const result = response.data.result;

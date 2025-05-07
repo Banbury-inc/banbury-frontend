@@ -4,15 +4,14 @@ import { banbury } from '..'
 import { CONFIG } from '../config';
 
 
-export async function add_device_id_to_file_sync_file(
+export async function addDeviceIdToFileSyncFile(
   file_name: string,
-  username: string,
 ) {
 
   const device_name = banbury.device.name();
-  const url = `${CONFIG.url}/predictions/add_device_id_to_file_sync_file/${username}/`;
+  const url = `${CONFIG.url}/predictions/add_device_id_to_file_sync_file/`;
 
-  const response = await axios.post<{ result: string; username: string; }>(url, {
+  const response = await axios.post<{ result: string }>(url, {
     device_name: device_name,
     file_name: file_name,
   });

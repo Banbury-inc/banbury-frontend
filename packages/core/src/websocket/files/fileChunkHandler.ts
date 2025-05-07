@@ -1,4 +1,4 @@
-import { addDownloadsInfo } from '../../device/add_downloads_info';
+import { addDownloadsInfo } from '../../device/addDownloadsInfo';
 import { calculateTimeRemaining } from '../time_calculator';
 
 // Add state all file chunks with a reset function

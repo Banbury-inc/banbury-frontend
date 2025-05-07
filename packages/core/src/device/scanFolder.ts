@@ -7,13 +7,12 @@ import { CONFIG } from '../config';
 import { fetchDeviceData } from './fetchDeviceData';
 
 export async function scanFolder(
-  username: string,
   folder: string,
   onProgress?: (progress: number, speed: string) => void
 ): Promise<string> {
   try {
     // Check if current device exists in database
-    const devices = await fetchDeviceData(username);
+    const devices = await fetchDeviceData();
     
     // Handle unauthorized error
     if (devices && typeof devices === 'object' && 'response' in devices && 
@@ -117,7 +116,7 @@ export async function scanFolder(
 
         // Send files to the server in batches of 1000
         if (filesInfo.length >= 1000) {
-          await banbury.files.addFiles(username, filesInfo);
+          await banbury.files.addFiles(filesInfo);
           filesInfo = [];
         }
 
@@ -129,7 +128,7 @@ export async function scanFolder(
 
       // Send any remaining files
       if (filesInfo.length > 0) {
-        await banbury.files.addFiles(username, filesInfo);
+        await banbury.files.addFiles(filesInfo);
       }
     }
 

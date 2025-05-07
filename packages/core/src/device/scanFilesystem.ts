@@ -4,9 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import { DateTime } from 'luxon';
 import { CONFIG } from '../config';
-import { get_scanned_folders } from './get_scanned_folders';
+import { getScannedFolders } from './getScannedFolders';
 
-export async function scanFilesystem(username: string): Promise<string> {
+export async function scanFilesystem(): Promise<string> {
   const fullDeviceSync = CONFIG.full_device_sync;
   const skipDotFiles = CONFIG.skip_dot_files;
   const scanSelectedFolders = CONFIG.scan_selected_folders;
@@ -91,7 +91,7 @@ export async function scanFilesystem(username: string): Promise<string> {
 
         // Send files to the server in batches of 1000
         if (filesInfo.length >= 1000) {
-          await banbury.files.addFiles(username, filesInfo);
+          await banbury.files.addFiles(filesInfo);
           filesInfo = [];
         }
 
@@ -107,7 +107,7 @@ export async function scanFilesystem(username: string): Promise<string> {
 
     // Send any remaining files
     if (filesInfo.length > 0) {
-      await banbury.files.addFiles(username, filesInfo);
+      await banbury.files.addFiles(filesInfo);
     }
   }
 
@@ -115,7 +115,7 @@ export async function scanFilesystem(username: string): Promise<string> {
 
   if (scanSelectedFolders) {
     // Get the array of scanned folders from get_scanned_folders
-    const response = await get_scanned_folders(username);
+    const response = await getScannedFolders();
     if (typeof response === 'object' && 'result' in response && response.result === 'success') {
       if ('scanned_folders' in response && Array.isArray(response.scanned_folders)) {
         directoriesToScan = response.scanned_folders;

@@ -9,7 +9,6 @@ import { CONFIG } from '../config';
  * @param setTasks
  */
 export async function failTask(
-  username: string,
   taskInfo: any,
   response: any,
   tasks: any,
@@ -19,8 +18,8 @@ export async function failTask(
   const task_response = response;
 
   try {
-    const url = `${CONFIG.url}/tasks/fail_task/${username}/`;
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    const url = `${CONFIG.url}/tasks/fail_task/`;
+    const response = await axios.post<{ result: string }>(url, {
       task_id: taskInfo.task_id,
       task_name: taskInfo.task_name,
       result: task_response,

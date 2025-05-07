@@ -4,7 +4,6 @@ import { CONFIG } from '../config';
 
 
 export async function makeFilePublic(
-    username: string | null,
     file_name: string,
     device_name: string,
 ) {
@@ -14,7 +13,6 @@ export async function makeFilePublic(
         url = `${CONFIG.url}/files/make_file_public/`;
         const response = await axios.post<{ status: string; message: string; }>(url, {
             file_name: file_name,
-            username: username,
             device_name: device_name,
         });
         const status = response.data.status;

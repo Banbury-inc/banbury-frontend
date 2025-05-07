@@ -4,14 +4,10 @@ import { CONFIG } from '../config';
 
 
 export async function addTask(
-  username: string,
   task_description: string,
   tasks: any[] | null,
   setTasks: (tasks: any[]) => void
 ) {
-
-
-  const user = username;
 
   // let device_name = neuranet.device.name();
   const device_name = os.hostname();
@@ -22,9 +18,8 @@ export async function addTask(
     task_progress: 0,
   };
   try {
-    const url = `${CONFIG.url}/tasks/add_task/${username}/`;
-    const response = await axios.post<{ result: string; username: string; task_id: string; }>(url, {
-      user: user,
+    const url = `${CONFIG.url}/tasks/add_task/`;
+    const response = await axios.post<{ result: string; task_id: string; }>(url, {
       task_name: task_description,
       task_device: device_name,
       task_progress: 0,

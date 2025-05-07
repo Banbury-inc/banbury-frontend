@@ -9,7 +9,6 @@ import { CONFIG } from '../config';
  * @param setTasks
  */
 export async function completeTask(
-  username: string,
   taskInfo: any,
   tasks: any,
   setTasks: any
@@ -18,8 +17,8 @@ export async function completeTask(
 
 
   try {
-    const url = `${CONFIG.url}/tasks/update_task/${username}/`;
-    const response = await axios.post<{ result: string; username: string; task_id: string; }>(url, {
+    const url = `${CONFIG.url}/tasks/update_task/`;
+    const response = await axios.post<{ result: string; task_id: string; }>(url, {
       task_id: taskInfo.task_id,
       task_name: taskInfo.task_name,
       task_progress: 100,

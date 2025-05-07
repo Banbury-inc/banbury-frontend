@@ -7,9 +7,9 @@ import { config } from '../config/config';
  * @param username - The username whose S3 files to retrieve
  * @returns A list of files stored in S3
  */
-export const listS3Files = async (username: string): Promise<any> => {
+export const listS3Files = async (): Promise<any> => {
   try {
-    const response = await axios.get(`${config.url}/files/get_s3_files/${username}/`);
+    const response = await axios.get(`${config.url}/files/get_s3_files/`);
     return response;
   } catch (error) {
     console.error('Error listing S3 files:', error);

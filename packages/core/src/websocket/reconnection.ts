@@ -1,6 +1,6 @@
-import { RECONNECT_CONFIG } from './connection_cleanup';
-import { canAttemptConnection } from './circuit_breaker';
-import { TaskInfo } from './files/file_transfer';
+import { RECONNECT_CONFIG } from './connectionCleanup';
+import { canAttemptConnection } from './circuitBreaker';
+import { TaskInfo } from './files/fileTransfer';
 // Add state for reconnection
 export let reconnectAttempt = 0;
 export let reconnectTimeout: NodeJS.Timeout | null = null;

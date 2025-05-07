@@ -1,5 +1,6 @@
-import { fileReceiver } from './file_receiver';
-import { addDownloadsInfo, getDownloadsInfo, DownloadInfo } from '../../device/add_downloads_info';
+import { fileReceiver } from './fileReceiver';
+import { addDownloadsInfo, getDownloadsInfo, DownloadInfo } from '../../device/addDownloadsInfo';
+
 
 type BinaryData = ArrayBuffer | Blob | Buffer;
 

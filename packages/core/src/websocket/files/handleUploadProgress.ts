@@ -1,4 +1,4 @@
-import { addUploadsInfo } from '../../device/add_uploads_info';
+import { addUploadsInfo } from '../../device/addUploadsInfo';
 
 // Add a map to track total bytes uploaded for each file
 const fileUploadProgress = new Map<string, number>();

@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
 
-export async function getNotifications(username: string) {
+export async function getNotifications() {
     try {
-        const url = `${CONFIG.url}/notifications/get_notifications/${username}/`;
+        const url = `${CONFIG.url}/notifications/get_notifications/`;
 
         const response = await axios.get(url);
 

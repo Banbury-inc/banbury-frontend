@@ -12,7 +12,6 @@ import { config } from '../config/config';
  * @returns Result of the upload operation
  */
 export const uploadToS3 = async (
-  username: string,
   file: File,
   deviceName: string,
   filePath: string = '',
@@ -26,7 +25,7 @@ export const uploadToS3 = async (
     formData.append('file_parent', fileParent);
 
     const response = await axios.post(
-      `${config.url}/files/upload_to_s3/${username}/`,
+      `${config.url}/files/upload_to_s3/`,
       formData,
       {
         headers: {
@@ -53,7 +52,6 @@ export const uploadToS3 = async (
  * @returns Results of the upload operations
  */
 export const uploadMultipleToS3 = async (
-  username: string,
   files: File[],
   deviceName: string,
   filePath: string = '',
@@ -61,7 +59,7 @@ export const uploadMultipleToS3 = async (
 ): Promise<any[]> => {
   try {
     const uploadPromises = files.map(file => 
-      uploadToS3(username, file, deviceName, filePath, fileParent)
+      uploadToS3( file, deviceName, filePath, fileParent)
     );
 
     return await Promise.all(uploadPromises);

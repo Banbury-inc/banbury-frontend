@@ -3,11 +3,9 @@ import { banbury } from '..'
 import { CONFIG } from '../config';
 
 
-export async function remove_scanned_folder(
-  scanned_folder: string,
-  username: string,
+export async function updateSyncStorageCapacity(
+  sync_storage_capacity_gb: string,
 ) {
-
 
   const device_name = banbury.device.name();
 
@@ -15,15 +13,15 @@ export async function remove_scanned_folder(
 
   try {
 
-    url = `${CONFIG.url}/files/remove_scanned_folder/${username}/`;
+    url = `${CONFIG.url}/predictions/update_sync_storage_capacity/`;
 
 
 
-    const response = await axios.post<{ status: string; username: string; }>(url, {
+    const response = await axios.post<{ result: string }>(url, {
       device_name: device_name,
-      scanned_folder: scanned_folder,
+      storage_capacity: sync_storage_capacity_gb,
     });
-    const result = response.data.status;
+    const result = response.data.result;
 
     if (result === 'success') {
 
@@ -41,7 +39,7 @@ export async function remove_scanned_folder(
       return 'task_add failed';
     }
   } catch (error) {
-    return error;
+    return error; // Ensure an error is returned if the request fails
   }
 }
 

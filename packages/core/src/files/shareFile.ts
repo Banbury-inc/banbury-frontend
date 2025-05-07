@@ -4,7 +4,6 @@ import { CONFIG } from '../config';
 
 export async function shareFile(
     file_name: string,
-    username: string | null,
     friend_username: string | null,
 ) {
 
@@ -17,7 +16,6 @@ export async function shareFile(
 
         const response = await axios.post<{ status: string; message: string; }>(url, {
             file_name: file_name,
-            username: username,
             friend_username: friend_username,
         });
         const status = response.data.status;

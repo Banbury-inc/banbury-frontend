@@ -1,10 +1,10 @@
 import os from 'os';
-import { get_device_id } from '../../device/get_device_id';
-import { addDownloadsInfo, DownloadInfo } from '../../device/add_downloads_info';
+import { getDeviceId } from '../../device/getDeviceId';
+import { addDownloadsInfo, DownloadInfo } from '../../device/addDownloadsInfo';
 
 
 // Function to send a download request using the provided socket
-export async function download_request(username: string, file_name: string, file_path: string, fileInfo: any, socket: WebSocket, taskInfo: TaskInfo) {
+export async function download_request(file_name: string, file_path: string, fileInfo: any, socket: WebSocket, taskInfo: TaskInfo) {
 
   // Update taskInfo with the file information
   taskInfo.fileInfo = [{
@@ -13,7 +13,7 @@ export async function download_request(username: string, file_name: string, file
     kind: fileInfo[0]?.kind || 'Unknown'
   }];
 
-  const requesting_device_id_obj = await get_device_id(username);
+  const requesting_device_id_obj = await getDeviceId();
   const sending_device_id = fileInfo[0]?.device_id;
 
   // Extract the actual device ID from the response object
@@ -197,7 +197,7 @@ export async function cancel_download_request(socket: WebSocket, username: strin
       timeRemaining: undefined 
     }]);
     
-    const requesting_device_id_obj = await get_device_id(username);
+    const requesting_device_id_obj = await getDeviceId();
     // Extract the actual device ID string
     const requesting_device_id_str = requesting_device_id_obj.result === 'success' ? 
       requesting_device_id_obj.message : 

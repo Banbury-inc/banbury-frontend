@@ -3,26 +3,15 @@ import { banbury } from '..'
 import { CONFIG } from '../config';
 
 
-export async function add_scanned_folder(
-  scanned_folder: string,
-  username: string,
+export async function declareOnline(
 ) {
-
-
 
   const device_name = banbury.device.name();
 
-  let url = ''
-
   try {
-
-    url = `${CONFIG.url}/files/add_scanned_folder/${username}/`;
-
-
-
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    const url = `${CONFIG.url}/devices/declare_online/`;
+    const response = await axios.post<{ result: string; }>(url, {
       device_name: device_name,
-      scanned_folder: scanned_folder,
     });
     const result = response.data.result;
 
@@ -31,9 +20,13 @@ export async function add_scanned_folder(
 
       return result;
     }
-    if (result === 'fail') {
-      return 'failed';
+    if (result === 'fail cant find user') {
+      return result;
     }
+    if (result === 'fail cant find device') {
+      return result;
+    }
+
     if (result === 'task_already_exists') {
       return 'exists';
     }

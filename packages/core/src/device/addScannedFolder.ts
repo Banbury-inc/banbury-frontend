@@ -3,10 +3,11 @@ import { banbury } from '..'
 import { CONFIG } from '../config';
 
 
-export async function update_sync_storage_capacity(
-  username: string,
-  sync_storage_capacity_gb: string,
+export async function addScannedFolder(
+  scanned_folder: string,
 ) {
+
+
 
   const device_name = banbury.device.name();
 
@@ -14,13 +15,13 @@ export async function update_sync_storage_capacity(
 
   try {
 
-    url = `${CONFIG.url}/predictions/update_sync_storage_capacity/${username}/`;
+    url = `${CONFIG.url}/files/add_scanned_folder/`;
 
 
 
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    const response = await axios.post<{ result: string; }>(url, {
       device_name: device_name,
-      storage_capacity: sync_storage_capacity_gb,
+      scanned_folder: scanned_folder,
     });
     const result = response.data.result;
 
@@ -40,7 +41,7 @@ export async function update_sync_storage_capacity(
       return 'task_add failed';
     }
   } catch (error) {
-    return error; // Ensure an error is returned if the request fails
+    return error;
   }
 }
 
