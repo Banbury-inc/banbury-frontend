@@ -3,7 +3,6 @@ import { DatabaseData } from '../components/NewTreeView/types';
 import banbury from '@banbury/core';
 
 export const fetchFileData = async (
-    username: string,
     global_file_path: string,
     {
         setIsLoading,
@@ -21,7 +20,7 @@ export const fetchFileData = async (
 ) => {
     try {
         const fileInfoResponse = await axios.post<{ files: DatabaseData[]; }>(
-            `${banbury.config.url}/files/get_files_from_filepath/${username}/`,
+            `${banbury.config.url}/files/get_files_from_filepath/`,
             {
                 global_file_path: global_file_path
             }

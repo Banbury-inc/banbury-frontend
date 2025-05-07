@@ -115,7 +115,6 @@ export default function FileTreeView({
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(
-        username || '',
         filePath || '',
         {
           setFirstname,
@@ -154,6 +153,7 @@ export default function FileTreeView({
         
         setFileRows(treeData);
         set_Files(updatedFiles);
+        setIsLoading(false);
       }
     };
 
@@ -164,7 +164,6 @@ export default function FileTreeView({
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(
-        username || '',
         filePath || '',
         {
           setFirstname,
