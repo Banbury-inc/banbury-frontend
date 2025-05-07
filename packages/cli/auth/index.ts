@@ -1,6 +1,8 @@
 import banbury from '@banbury/core';
 import inquirer from 'inquirer';
 
+export * from './commands';
+
 export async function login() {
     // ask for username and password
     const { username } = await inquirer.prompt([{ type: 'input', name: 'username', message: 'Enter your username:' }]);
