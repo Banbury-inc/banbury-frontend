@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { banbury } from '..'
 import { CONFIG } from '../config';
+import '../middleware/axiosGlobalHeader';
 
 
 export async function get_scanned_folders(
@@ -9,9 +10,10 @@ export async function get_scanned_folders(
 
   const device_name = banbury.device.name();
   const url = `${CONFIG.url}/files/get_scanned_folders/${username}/`;
-  const response = await axios.post<{ result: string; username: string; }>(url, {
-    device_name: device_name,
-  });
+  const response = await axios.post<{ result: string; username: string; }>(
+    url,
+    { device_name: device_name },
+  );
 
   if (response.data.result === 'success') {
     return response.data;
