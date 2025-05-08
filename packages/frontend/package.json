@@ -55,7 +55,7 @@
     "@mui/material": "^5.16.13",
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",
     "@mui/x-charts": "^7.23.2",
-    "@mui/x-data-grid": "^7.28.3",
+    "@mui/x-data-grid": "^8.3.0",
     "@mui/x-tree-view": "^7.0.0",
     "@types/luxon": "^3.6.2",
     "@typescript-eslint/eslint-plugin": "^8.23.0",
