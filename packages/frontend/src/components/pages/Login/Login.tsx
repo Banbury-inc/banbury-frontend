@@ -24,6 +24,9 @@ import banbury from '@banbury/core';
 import Onboarding from './components/Onboarding';
 import http from 'http';
 import os from 'os';
+import { loadGlobalAxiosAuthToken } from '@banbury/core/src/middleware/axiosGlobalHeader';
+import { refreshToken } from '@banbury/core/src/auth/login';
+import { initAuthState } from '@banbury/core/src/auth';
 
 interface Message {
   type: string;
@@ -73,12 +76,13 @@ export default function SignIn() {
   // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [redirect_to_register, setredirect_to_register] = useState(false);
-  const { setUsername } = useAuth(); // Only destructure what you need
+  const { setUsername, isTokenRefreshFailed, resetTokenRefreshStatus } = useAuth();
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
   const [showMain, setShowMain] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
 
   // Messages can be defined after hooks
   const incorrect_login_message: Message = {
@@ -89,21 +93,63 @@ export default function SignIn() {
     type: 'error',
     content: 'Server is offline. Please try again later.',
   };
+  const session_expired_message: Message = {
+    type: 'error',
+    content: 'Your session has expired. Please sign in again.',
+  };
 
-  // useEffect hook
+  // Add effect to handle token refresh failures
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token && !isAuthenticated) {
-      setUsername(token);
-      setIsAuthenticated(true);
-      setShowMain(true);
+    if (isTokenRefreshFailed) {
+      setTokenError(session_expired_message.content);
+      resetTokenRefreshStatus();
     }
+  }, [isTokenRefreshFailed, resetTokenRefreshStatus]);
+
+  // useEffect hook for auto-login
+  useEffect(() => {
+    const checkToken = async () => {
+      try {
+        setLoading(true);
+        
+        // Use the new initAuthState function
+        const authState = await initAuthState();
+        
+        if (authState.isAuthenticated && authState.username) {
+          // Token is valid, proceed with auto-login
+          setUsername(authState.username);
+          localStorage.setItem('authToken', authState.username);
+          localStorage.setItem('authUsername', authState.username);
+          
+          // Create deviceId if missing
+          const currentDeviceId = localStorage.getItem('deviceId');
+          if (!currentDeviceId) {
+            localStorage.setItem('deviceId', `${authState.username}-${os.hostname()}`);
+          }
+          
+          setIsAuthenticated(true);
+          setShowMain(true);
+        } else {
+          // Token validation failed
+          if (authState.message) {
+            setTokenError(authState.message);
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auto-login error:', error);
+        setLoading(false);
+      }
+    };
+
+    checkToken();
   }, [setUsername, isAuthenticated]);
 
   // Handle submit function
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    setTokenError(null); // Clear any token errors on new login attempt
 
     try {
       const data = new FormData(event.currentTarget);
@@ -120,12 +166,14 @@ export default function SignIn() {
           if (!hasCompletedOnboarding) {
             localStorage.setItem('pendingAuthEmail', email);
             localStorage.setItem('deviceId', result.deviceId);
+            localStorage.setItem('authUsername', email);
             setUsername(email);
             setShowOnboarding(true);
           } else {
             setUsername(email);
             localStorage.setItem('authToken', email);
             localStorage.setItem('deviceId', result.deviceId);
+            localStorage.setItem('authUsername', email);
             setIsAuthenticated(true);
             setShowMain(true);
           }
@@ -144,6 +192,7 @@ export default function SignIn() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setTokenError(null); // Clear any token errors on new login attempt
     try {
       // Create HTTP server before initiating OAuth flow
       const server = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -167,12 +216,14 @@ export default function SignIn() {
                 if (!hasCompletedOnboarding) {
                   localStorage.setItem('pendingAuthEmail', email);
                   localStorage.setItem('deviceId', deviceId);
+                  localStorage.setItem('authUsername', email);
                   setUsername(email);
                   setShowOnboarding(true);
                 } else {
                   setUsername(email);
                   localStorage.setItem('authToken', email);
                   localStorage.setItem('deviceId', deviceId);
+                  localStorage.setItem('authUsername', email);
                   setIsAuthenticated(true);
                   setShowMain(true);
                 }
@@ -213,6 +264,7 @@ export default function SignIn() {
       setUsername(email);
       localStorage.setItem('authToken', email);
       localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
+      localStorage.setItem('authUsername', email);
       localStorage.removeItem('pendingAuthEmail'); // Clean up the temporary storage
     }
     
@@ -377,7 +429,15 @@ export default function SignIn() {
                     </div>
                   </Grid>
                 </Grid>
-
+                {tokenError && (
+                  <Grid container justifyContent="center">
+                    <Grid item>
+                      <div style={{ color: "#E22134", opacity: 1, transition: 'opacity 0.5s' }}>
+                        <p>{tokenError}</p>
+                      </div>
+                    </Grid>
+                  </Grid>
+                )}
               </Grid>
             </Box>
           </Box>

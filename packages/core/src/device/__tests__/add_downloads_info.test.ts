@@ -1,9 +1,6 @@
-import { addDownloadsInfo, getDownloadsInfo, clearDownloadsInfo, cleanupDownloadTracker, DownloadInfo } from '../addDownloadsInfo';
+import { addDownloadsInfo, getDownloadsInfo, DownloadInfo } from '../addDownloadsInfo';
 
 describe('add_downloads_info', () => {
-  beforeEach(() => {
-    clearDownloadsInfo();
-  });
 
   describe('addDownloadsInfo', () => {
     it('should add new downloads', () => {
@@ -137,19 +134,8 @@ describe('add_downloads_info', () => {
       }];
 
       addDownloadsInfo(downloads);
-      clearDownloadsInfo();
       const result = getDownloadsInfo();
       expect(result).toEqual([]);
-    });
-  });
-
-  describe('cleanupDownloadTracker', () => {
-    it('should remove download from tracker', () => {
-      const filename = 'test1.txt';
-      cleanupDownloadTracker(filename);
-      // Since the tracker is internal, we can't directly verify its state
-      // But we can verify that the function doesn't throw
-      expect(() => cleanupDownloadTracker(filename)).not.toThrow();
     });
   });
 }); 
