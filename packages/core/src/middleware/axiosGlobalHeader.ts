@@ -6,9 +6,12 @@ import { refreshToken } from '../auth/login';
 
 const TOKEN_FILE = path.join(os.homedir(), '.banbury_token');
 const USERNAME_FILE = path.join(os.homedir(), '.banbury_username');
+const API_KEY_FILE = path.join(os.homedir(), '.banbury_api_key');
 
 // Set a default (empty) Authorization header
 axios.defaults.headers.common['Authorization'] = '';
+// Set a default (empty) API Key header
+axios.defaults.headers.common['X-API-Key'] = '';
 
 // Track if a token refresh is in progress
 let isRefreshing = false;
@@ -39,6 +42,19 @@ export function setGlobalAxiosAuthToken(token: string, username?: string) {
 }
 
 /**
+ * Sets a custom global API Key header for all axios requests and saves it to disk.
+ * @param apiKey - The API key for authentication
+ */
+export function setGlobalAxiosApiKey(apiKey: string) {
+  axios.defaults.headers.common['X-API-Key'] = apiKey;
+  try {
+    fs.writeFileSync(API_KEY_FILE, apiKey, { mode: 0o600 });
+  } catch (err) {
+    console.error('Failed to save API key:', err);
+  }
+}
+
+/**
  * Loads the token from disk and sets it as the global Authorization header.
  * @returns The username associated with the token if available
  */
@@ -63,6 +79,37 @@ export function loadGlobalAxiosAuthToken(): { token?: string, username?: string 
     console.error('Failed to load token:', err);
     return {};
   }
+}
+
+/**
+ * Loads the API key from disk and sets it as the global X-API-Key header.
+ * @returns The API key if available
+ */
+export function loadGlobalAxiosApiKey(): { apiKey?: string } {
+  try {
+    let apiKey: string | undefined;
+    
+    if (fs.existsSync(API_KEY_FILE)) {
+      apiKey = fs.readFileSync(API_KEY_FILE, 'utf8').trim();
+      if (apiKey) {
+        axios.defaults.headers.common['X-API-Key'] = apiKey;
+      }
+    }
+    
+    return { apiKey };
+  } catch (err) {
+    console.error('Failed to load API key:', err);
+    return {};
+  }
+}
+
+/**
+ * Loads both the auth token and API key from disk
+ */
+export function loadGlobalAxiosCredentials(): { token?: string, username?: string, apiKey?: string } {
+  const { token, username } = loadGlobalAxiosAuthToken();
+  const { apiKey } = loadGlobalAxiosApiKey();
+  return { token, username, apiKey };
 }
 
 /**
