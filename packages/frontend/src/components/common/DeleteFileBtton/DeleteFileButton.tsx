@@ -1,5 +1,4 @@
 import { banbury } from "@banbury/core";
-import { useAuth } from "../../../renderer/context/AuthContext";
 import { useAlert } from "../../../renderer/context/AlertContext";
 import { Button, Tooltip } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -29,7 +28,6 @@ export default function DeleteFileButton({
   tasks,
   setTasks,
 }: DeleteFileButtonProps) {
-  const { username } = useAuth();
   const { showAlert } = useAlert();
 
   const handleDeleteClick = async () => {

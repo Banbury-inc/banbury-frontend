@@ -17,7 +17,7 @@ declare module 'react' {
 
 export default function AddFileToSyncButton({ selectedFileNames }: { selectedFileNames: string[] }) {
   const [loading, setLoading] = useState(false);
-  const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
+  const { tasks, setTasks, setTaskbox_expanded } = useAuth();
   const { showAlert } = useAlert();
   const fileInputRef = useRef<HTMLInputElement>(null);
 

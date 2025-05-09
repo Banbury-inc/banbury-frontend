@@ -108,7 +108,7 @@ axios.interceptors.response.use(
           
           if (refreshResult.success && refreshResult.token) {
             // Use the new token for future requests
-            const username = localStorage.getItem('authUsername');
+            localStorage.getItem('authUsername');
             
             // Set the new token for future requests
             axios.defaults.headers.common['Authorization'] = `Bearer ${refreshResult.token}`;

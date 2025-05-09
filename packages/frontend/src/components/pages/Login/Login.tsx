@@ -24,24 +24,11 @@ import banbury from '@banbury/core';
 import Onboarding from './components/Onboarding';
 import http from 'http';
 import os from 'os';
-import { loadGlobalAxiosAuthToken } from '@banbury/core/src/middleware/axiosGlobalHeader';
-import { refreshToken } from '@banbury/core/src/auth/login';
 import { initAuthState } from '@banbury/core/src/auth';
 
 interface Message {
   type: string;
   content: string;
-}
-
-interface LoginResponse {
-  success: boolean;
-  token: string;
-  deviceId?: string;
-  userInfo?: {
-    username: string;
-    email: string;
-  };
-  message?: string;
 }
 
 process.on('uncaughtException', (err: Error & { code?: string }) => {
@@ -158,7 +145,6 @@ export default function SignIn() {
 
       if (email && password) {
         const result = await banbury.auth.login(email, password);
-        console.log('Login result:', result);
         if (result.success && result.deviceId) {
           // Check if this is the user's first login
           const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);

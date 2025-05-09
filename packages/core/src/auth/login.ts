@@ -61,7 +61,7 @@ export async function refreshToken() {
     }
 
     // Try to make a request that requires authentication to test the token
-    const response = await axios.get(`${banbury.config.url}/authentication/validate-token`);
+    await axios.get(`${banbury.config.url}/authentication/validate-token`);
     
     // If we get here, token is still valid
     return { 

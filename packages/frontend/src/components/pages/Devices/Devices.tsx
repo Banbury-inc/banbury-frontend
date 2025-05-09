@@ -173,7 +173,7 @@ export default function Devices() {
   const rowsPerPage = 10;
   const [allDevices, setAllDevices] = useState<DeviceData[]>([]);
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
-  const { updates, setUpdates, tasks, setTasks, username, setFirstname, setLastname, setTaskbox_expanded } = useAuth();
+  const { updates, setUpdates, tasks, setTasks, username, setLastname, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
   const { showAlert } = useAlert();

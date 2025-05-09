@@ -1,5 +1,4 @@
 import { banbury } from "@banbury/core";
-import { useAuth } from "../../../renderer/context/AuthContext";
 import { useAlert } from "../../../renderer/context/AlertContext";
 import { Button, Tooltip } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
@@ -27,7 +26,6 @@ export default function DownloadFileButton({
   setTasks: (tasks: any[]) => void,
   websocket: WebSocket
 }) {
-  const { username } = useAuth();
   const { showAlert } = useAlert();
 
   const handleDownloadClick = async () => {
