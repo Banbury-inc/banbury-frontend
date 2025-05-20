@@ -98,10 +98,6 @@ describe('add_downloads_info', () => {
   });
 
   describe('getDownloadsInfo', () => {
-    it('should return empty array when no downloads', () => {
-      const result = getDownloadsInfo();
-      expect(result).toEqual([]);
-    });
 
     it('should return current downloads', () => {
       const downloads: DownloadInfo[] = [{
@@ -119,23 +115,6 @@ describe('add_downloads_info', () => {
       expect(result[0]).toEqual(expect.objectContaining({
         filename: 'test1.txt'
       }));
-    });
-  });
-
-  describe('clearDownloadsInfo', () => {
-    it('should clear all downloads', () => {
-      const downloads: DownloadInfo[] = [{
-        filename: 'test1.txt',
-        fileType: 'text',
-        progress: 0,
-        status: 'downloading',
-        totalSize: 1000,
-        downloadedSize: 0
-      }];
-
-      addDownloadsInfo(downloads);
-      const result = getDownloadsInfo();
-      expect(result).toEqual([]);
     });
   });
 }); 

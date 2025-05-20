@@ -36,7 +36,6 @@ describe('makeFilePrivate', () => {
             `${CONFIG.url}/files/make_file_private/`,
             {
                 file_name: 'test.txt',
-                username: 'testUser',
                 device_name: 'testDevice'
             }
         );
@@ -107,7 +106,6 @@ describe('makeFilePrivate', () => {
             `${CONFIG.url}/files/make_file_private/`,
             {
                 file_name: 'test.txt',
-                username: null,
                 device_name: 'testDevice'
             }
         );

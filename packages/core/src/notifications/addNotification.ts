@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
-
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
 export async function addNotification(
     friend_username: string,
@@ -12,10 +12,15 @@ export async function addNotification(
         read: boolean;
     },
 ) {
-    const url = `${CONFIG.url}/notifications/add_notification/`;
+    const { token } = loadGlobalAxiosAuthToken();
+    const url = `${CONFIG.url}/notifications/add_notification/${friend_username}/`;
     const response = await axios.post<{ result: string }>(url, {
-        friend_username: friend_username,
-        notification: notification,
+        friend_username,
+        notification,
+    }, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
     });
     const result = response.data.result;
 
@@ -28,7 +33,6 @@ export async function addNotification(
     if (result === 'task_already_exists') {
         return 'exists';
     }
-
     else {
         return 'task_add failed';
     }

@@ -107,3 +107,8 @@ export function getUploadsInfo(): UploadInfo[] {
   return [...uploadsInfo];
 }
 
+export function clearUploadsInfo() {
+  uploadsInfo = [];
+  uploadSpeedTracker.clear();
+}
+

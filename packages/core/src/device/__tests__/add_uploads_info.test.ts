@@ -1,11 +1,13 @@
 import {
   addUploadsInfo,
   getUploadsInfo,
+  clearUploadsInfo,
 } from '../addUploadsInfo';
 
 describe('Upload Info Management', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    clearUploadsInfo();
   });
 
   afterEach(() => {
@@ -179,7 +181,7 @@ describe('Upload Info Management', () => {
     };
 
     addUploadsInfo([upload]);
-    
+    clearUploadsInfo();
     const result = getUploadsInfo();
     expect(result).toHaveLength(0);
   });
