@@ -5,6 +5,9 @@ import {
   createTestUserIfNeeded as _createTestUserIfNeeded
 } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 test.describe('Account creation tests', () => {
   let sharedContext;
@@ -13,6 +16,27 @@ test.describe('Account creation tests', () => {
     // Get or initialize the shared context
     sharedContext = getSharedContext();
     await sharedContext.initialize();
+  });
+
+  test.beforeEach(async () => {
+    const window = sharedContext.window;
+    if (window) {
+      await window.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    }
+    // Remove persisted auth files in ~/.banbury
+    const banburyDir = path.join(os.homedir(), '.banbury');
+    if (fs.existsSync(banburyDir)) {
+      for (const file of ['token', 'username', 'api_key']) {
+        const filePath = path.join(banburyDir, file);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+    }
+    // Reset global axios auth token (Node.js/global state)
+    const { setGlobalAxiosAuthToken } = require(process.cwd() + '/packages/core/src/middleware/axiosGlobalHeader');
+    setGlobalAxiosAuthToken('');
   });
 
   test('can create new account successfully', async () => {
@@ -27,8 +51,9 @@ test.describe('Account creation tests', () => {
         localStorage.clear();
       });
 
-      // Get the shared test user credentials
+      // Generate a unique username for this test run
       const credentials = getSharedTestUserCredentials();
+      const uniqueUsername = `testuser_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
       // Click on "Don't have an account? Sign Up" link
       const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
@@ -40,7 +65,7 @@ test.describe('Account creation tests', () => {
       // Fill in the registration form
       await window.fill('input[name="firstName"]', credentials.firstName);
       await window.fill('input[name="lastName"]', credentials.lastName);
-      await window.fill('input[name="username"]', credentials.username);
+      await window.fill('input[name="username"]', uniqueUsername);
       await window.fill('input[name="password"]', credentials.password);
 
       // Submit the registration form

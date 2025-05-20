@@ -17,7 +17,6 @@ export async function initAuthState() {
     if (!token || !username) {
       return {
         isAuthenticated: false,
-        message: 'No saved authentication found'
       };
     }
     

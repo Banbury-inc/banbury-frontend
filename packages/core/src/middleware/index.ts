@@ -1,7 +1,6 @@
 import { setGlobalAxiosAuthToken, loadGlobalAxiosAuthToken } from './axiosGlobalHeader';
 
-// Initialize token loading
-loadGlobalAxiosAuthToken();
+// Removed top-level call to loadGlobalAxiosAuthToken()
 
 export {
   setGlobalAxiosAuthToken,

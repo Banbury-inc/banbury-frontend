@@ -3,7 +3,7 @@ import { banbury } from '..'
 import { CONFIG } from '../config';
 
 
-export async function remove_scanned_folder(
+export async function removeScannedFolder(
   scanned_folder: string,
 ) {
 

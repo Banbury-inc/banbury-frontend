@@ -12,7 +12,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
-
+import { clearBanburyCredentials } from '@banbury/core/src/middleware/axiosGlobalHeader';
 export default function AccountMenuIcon() {
   const { username, logout } = useAuth();
   const navigate = useNavigate();
@@ -40,6 +40,15 @@ export default function AccountMenuIcon() {
   }, [username, navigate]);
 
   const handleLogout = () => {
+    // Remove tokens/credentials from storage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('refreshToken');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUsername');
+    localStorage.removeItem('deviceId');
+    clearBanburyCredentials();
     handleClose();
     logout();
   };
@@ -144,7 +153,7 @@ export default function AccountMenuIcon() {
           </ListItemIcon>
           Settings
         </MenuItem>
-        <MenuItem onClick={handleLogout}>
+        <MenuItem data-testid="logout-button" onClick={handleLogout}>
           <ListItemIcon>
             <LogoutIcon fontSize="inherit" />
           </ListItemIcon>

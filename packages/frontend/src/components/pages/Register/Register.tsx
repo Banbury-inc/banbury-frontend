@@ -13,6 +13,8 @@ import theme from "../../../renderer/themes/theme";
 import SignIn from '../Login/Login';
 import { handlers } from '../../../renderer/handlers';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
+import { useNavigate } from 'react-router-dom';
+
 function Copyright(props: any) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
@@ -31,12 +33,10 @@ interface Message {
   content: string;
 }
 
-
-
-
 export default function SignUp() {
   const [registration_success, setregistration_success] = useState(false);
   const [user_already_exists, setuser_already_exists] = useState(false);
+  const navigate = useNavigate();
   const userExistsMessage: Message = {
     type: 'error',
     content: 'User already exists. Please choose a different username.',
@@ -55,13 +55,13 @@ export default function SignUp() {
         data.get('picture') as string
       );
       if (result === 'success') {
-        setregistration_success(true)
+        setregistration_success(true);
+        navigate('/login');
+        return;
       }
       if (result === 'exists') {
-        setuser_already_exists(true)
+        setuser_already_exists(true);
       }
-
-
     } catch (error) {
       console.error('There was an error!', error);
     }
@@ -169,11 +169,7 @@ export default function SignUp() {
               </Button>
               <Grid container justifyContent="flex-end">
                 <Grid item>
-                  {/* <Link href="/login" variant="body2"> */}
-                  <Link variant="body2" onClick={() => {
-                    setregistration_success(true);
-                  }}>
-
+                  <Link variant="body2" onClick={() => navigate('/login')}>
                     Already have an account? Sign in
                   </Link>
                 </Grid>

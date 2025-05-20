@@ -4,9 +4,13 @@ import os from 'os';
 import path from 'path';
 import { refreshToken } from '../auth/login';
 
-const TOKEN_FILE = path.join(os.homedir(), '.banbury_token');
-const USERNAME_FILE = path.join(os.homedir(), '.banbury_username');
-const API_KEY_FILE = path.join(os.homedir(), '.banbury_api_key');
+const BANBURY_DIR = path.join(os.homedir(), '.banbury');
+if (!fs.existsSync(BANBURY_DIR)) {
+  fs.mkdirSync(BANBURY_DIR, { recursive: true, mode: 0o700 });
+}
+const TOKEN_FILE = path.join(BANBURY_DIR, 'token');
+const USERNAME_FILE = path.join(BANBURY_DIR, 'username');
+const API_KEY_FILE = path.join(BANBURY_DIR, 'api_key');
 
 // Set a default (empty) Authorization header
 axios.defaults.headers.common['Authorization'] = '';
@@ -204,4 +208,14 @@ axios.interceptors.response.use(
     // For all other errors, just reject the promise
     return Promise.reject(error);
   }
-); 
+);
+
+export function clearBanburyCredentials() {
+  try {
+    if (fs.existsSync(TOKEN_FILE)) fs.unlinkSync(TOKEN_FILE);
+    if (fs.existsSync(USERNAME_FILE)) fs.unlinkSync(USERNAME_FILE);
+    if (fs.existsSync(API_KEY_FILE)) fs.unlinkSync(API_KEY_FILE);
+  } catch (err) {
+    console.error('Failed to clear .banbury credentials:', err);
+  }
+} 

@@ -10,10 +10,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import { getSyncFolders } from './getSyncFolders';
 import path from 'path';
 import CloseIcon from '@mui/icons-material/Close';
-import { add_scanned_folder } from '@banbury/core/dist/device/add_scanned_folder';
-import { remove_scanned_folder } from '@banbury/core/dist/device/remove_scanned_folder';
-import { scanFolder } from '@banbury/core/dist/device/scanFolder';
-import { fetchDeviceData } from '@banbury/core/dist/device/fetchDeviceData';
 
 
 
@@ -35,7 +31,7 @@ export default function SyncButton() {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     // Fetch folders to display, but don't start scanning
-    const syncFolders = await getSyncFolders(devices || []);
+    const syncFolders = await getSyncFolders();
     if (syncFolders.error && syncFolders.error === 'Failed to get device ID') {
       // set syncData to empty
       setSyncData({ syncingFiles: [], recentlyChanged: [] });
@@ -79,15 +75,15 @@ export default function SyncButton() {
       const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
-      const addResult = await add_scanned_folder(absoluteFolderPath, username ?? '');
+      const addResult = await banbury.device.addScannedFolder(absoluteFolderPath);
 
       if (addResult === 'success') {
         await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         // Get fresh devices data first
-        const updatedDevices = await fetchDeviceData();
+        const updatedDevices = await banbury.device.fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : []);
+        const updatedFolders = await getSyncFolders();
 
 
         // Initialize folders while preserving existing progress
@@ -148,7 +144,7 @@ export default function SyncButton() {
       }));
 
       try {
-        const result = await scanFolder(
+        const result = await banbury.device.scanFolder(
           file.filename,
           (progress: number, speed: string) => {
             setSyncData(prev => ({
@@ -197,15 +193,15 @@ export default function SyncButton() {
       const task_description = `Removing folder: ${folderPath}`;
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
-      const removeResult = await remove_scanned_folder(folderPath, username ?? '');
+      const removeResult = await banbury.device.removeScannedFolder(folderPath);
 
       if (removeResult === 'success') {
         await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         // Get fresh devices data first
-        const updatedDevices = await fetchDeviceData();
+        const updatedDevices = await banbury.device.fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : []);
+        const updatedFolders = await getSyncFolders();
         setSyncData(updatedFolders);
       }
     } catch (error) {

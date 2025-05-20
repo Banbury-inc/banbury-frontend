@@ -14,10 +14,19 @@ export async function getDeviceId(): Promise<{ result: string, message: string }
       return { result: 'error', message: response.data.message };
     }
 
-    const deviceInfo = response.data.device_info;
+
+    // Try to access device_info from the correct path
+    const deviceInfo = response.data.device_info || (response.data.data && response.data.data.device_info);
+
+    if (!deviceInfo || !deviceInfo._id) {
+      console.error('Device info or device ID not found in response:', response.data);
+      return { result: 'error', message: 'Device info or device ID not found' };
+    }
+
+    const deviceId = deviceInfo._id;
 
     // Ensure we return a string
-    return { result: 'success', message: String(deviceInfo._id) };
+    return { result: 'success', message: String(deviceId) };
   } catch (error) {
     console.error('Error getting device ID:', error);
     return { result: 'error', message: 'Failed to get device ID' };

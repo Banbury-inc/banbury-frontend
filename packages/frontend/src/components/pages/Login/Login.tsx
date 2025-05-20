@@ -114,6 +114,14 @@ export default function SignIn() {
             localStorage.setItem('deviceId', `${authState.username}-${os.hostname()}`);
           }
           
+          const hasCompletedOnboarding = localStorage.getItem(`onboarding_${authState.username}`);
+          if (!hasCompletedOnboarding) {
+            localStorage.setItem('pendingAuthEmail', authState.username);
+            setShowOnboarding(true);
+            setLoading(false);
+            return; // Don't show main yet
+          }
+          
           setIsAuthenticated(true);
           setShowMain(true);
         } else {
