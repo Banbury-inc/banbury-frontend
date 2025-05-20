@@ -2,6 +2,7 @@ import banbury from '@banbury/core';
 import { handleFetchDevices } from './handleFetchDevices';
 
 export function handleDeleteDeviceClick(
+  selectedDevice: any,
   selectedDeviceNames: any,
   setSelectedDeviceNames: any,
   setTaskbox_expanded: any,
@@ -13,12 +14,12 @@ export function handleDeleteDeviceClick(
   setSelectedDevice?: any
 ) {
   const handleDeleteDevice = async () => {
-    if (!selectedDeviceNames.length) {
-      showAlert('Warning', ['Please select one or more devices to delete'], 'warning');
-      return;
-    }
-
     try {
+      if (!selectedDeviceNames.length) {
+        showAlert('Warning', ['Please select one or more devices to delete'], 'warning');
+        return;
+      }
+
       const task_description = 'Deleting device ' + selectedDeviceNames.join(', ');
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
@@ -30,12 +31,14 @@ export function handleDeleteDeviceClick(
           setSelectedDevice(null);
         }
         
-        const fetchDevicesFn = handleFetchDevices(selectedDeviceNames, setSelectedDeviceNames, setAllDevices, setIsLoading);
-        await fetchDevicesFn();
-        
         await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         setSelectedDeviceNames([]);
         showAlert('Success', ['Device(s) deleted successfully'], 'success');
+
+        // Call fetchDevices function and await its result to ensure it completes before proceeding
+        const fetchDevicesFn = handleFetchDevices(selectedDeviceNames[0], setSelectedDevice, setAllDevices, setIsLoading);
+        await fetchDevicesFn();
+
       } else {
         await banbury.sessions.failTask(
           taskInfo,

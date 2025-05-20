@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
 /**
  *
@@ -14,7 +15,7 @@ export async function completeTask(
   setTasks: any
 
 ) {
-
+  const { token } = loadGlobalAxiosAuthToken();
 
   try {
     const url = `${CONFIG.url}/tasks/update_task/`;
@@ -23,7 +24,13 @@ export async function completeTask(
       task_name: taskInfo.task_name,
       task_progress: 100,
       task_status: 'complete',
-    });
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+    );
     const result = response.data.result;
 
     if (result === 'success') {

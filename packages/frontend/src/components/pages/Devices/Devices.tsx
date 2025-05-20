@@ -440,7 +440,18 @@ export default function Devices() {
                 <Tooltip title="Delete Device">
                   <Button
                     data-testid="DeleteDeviceButton"
-                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setIsLoading, setLastname, setSelectedDevice)}
+                    onClick={handleDeleteDeviceClick(
+                      selectedDevice,
+                      selectedDeviceNames,
+                      setSelectedDeviceNames,
+                      setTaskbox_expanded,
+                      setTasks,
+                      showAlert,
+                      tasks,
+                      setAllDevices,
+                      setIsLoading,
+                      setSelectedDevice
+                    )}
                     sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
                   >
                     <DeleteIcon fontSize="inherit" />

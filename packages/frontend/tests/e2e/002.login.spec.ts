@@ -18,6 +18,7 @@ test('can login and shows onboarding for first-time user', async () => {
   // Clear localStorage to ensure we're testing first-time login
   await window.evaluate(() => {
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   let testUserCredentials: TestUserCredentials;

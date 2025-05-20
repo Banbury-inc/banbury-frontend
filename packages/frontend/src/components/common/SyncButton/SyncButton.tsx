@@ -25,13 +25,16 @@ export default function SyncButton() {
   const open = Boolean(anchorEl);
   const { username, devices, tasks, setTasks, setDevices } = useAuth();
   const { showAlert } = useAlert();
+  const [isLoading, setIsLoading] = useState(false);
 
 
   const handleClick = async (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
+    setIsLoading(true);
     // Fetch folders to display, but don't start scanning
     const syncFolders = await getSyncFolders();
+    setIsLoading(false);
     if (syncFolders.error && syncFolders.error === 'Failed to get device ID') {
       // set syncData to empty
       setSyncData({ syncingFiles: [], recentlyChanged: [] });
@@ -360,9 +363,11 @@ export default function SyncButton() {
                 mt: 1
               }}>
                 <Typography>
-                  {deviceNotFound 
-                    ? 'Device not added.' 
-                    : 'Loading...'}
+                  {deviceNotFound
+                    ? 'Device not added.'
+                    : isLoading
+                      ? 'Loading...'
+                      : 'No folders added.'}
                 </Typography>
               </Box>
             )}

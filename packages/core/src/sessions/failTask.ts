@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
 /**
  *
@@ -16,6 +17,7 @@ export async function failTask(
 
 ) {
   const task_response = response;
+  const { token } = loadGlobalAxiosAuthToken();
 
   try {
     const url = `${CONFIG.url}/tasks/fail_task/`;
@@ -26,7 +28,13 @@ export async function failTask(
       task_device: taskInfo.task_device,
       task_progress: taskInfo.task_progress,
       task_status: 'error',
-    });
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+    );
     const result = response.data.result;
 
     if (result === 'success') {
