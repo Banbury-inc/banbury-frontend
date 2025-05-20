@@ -44,7 +44,7 @@ test.describe('Account creation tests', () => {
       }
     }
     // Reset global axios auth token (Node.js/global state)
-    const { setGlobalAxiosAuthToken } = require(process.cwd() + '/packages/core/src/middleware/axiosGlobalHeader');
+    const { setGlobalAxiosAuthToken } = require('@banbury/core/dist/middleware');
     setGlobalAxiosAuthToken('');
   });
 
