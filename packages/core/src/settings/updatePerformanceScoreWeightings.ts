@@ -8,7 +8,6 @@ import { CONFIG } from '../config';
  * @param taskInfo
  */
 export async function updatePerformanceScoreWeightings(
-  username: string | null,
   predicted_cpu_usage_weighting: any,
   predicted_ram_usage_weighting: any,
   predicted_gpu_usage_weighting: any,
@@ -18,8 +17,8 @@ export async function updatePerformanceScoreWeightings(
 
   try {
 
-    const url = `${CONFIG.url}/settings/update_settings/${username}/`;
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    const url = `${CONFIG.url}/settings/update_settings/`;
+    const response = await axios.post<{ result: string }>(url, {
       predicted_cpu_usage_weighting: predicted_cpu_usage_weighting,
       predicted_ram_usage_weighting: predicted_ram_usage_weighting,
       predicted_gpu_usage_weighting: predicted_gpu_usage_weighting,

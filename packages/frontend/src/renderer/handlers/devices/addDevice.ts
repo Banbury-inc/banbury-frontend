@@ -35,13 +35,13 @@ export async function addDevice(username: string) {
     };
 
     // Use the correct URL format as shown in the Django URLconf
-    const url = `${banbury.config.url}/devices/add_device/${encodeURIComponent(username)}/${encodeURIComponent(device_name)}/`;
+    const url = `${banbury.config.url}/devices/add_device/${encodeURIComponent(device_name)}/`;
 
     try {
       const response = await axios.post(url, deviceData, {
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1],
+          'X-Username': username,
         },
         withCredentials: true
       });

@@ -3,12 +3,11 @@ import { CONFIG } from '../config';
 
 export async function deleteNotification(
     notification_id: string,
-    username: string,
 ) {
 
-    const url = `${CONFIG.url}/notifications/delete_notification/${username}/`;
+    const url = `${CONFIG.url}/notifications/delete_notification/`;
 
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    const response = await axios.post<{ result: string }>(url, {
         notification_id: notification_id,
     });
     const result = response.data.result;

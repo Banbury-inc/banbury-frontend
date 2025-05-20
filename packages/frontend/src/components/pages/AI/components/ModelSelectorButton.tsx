@@ -22,7 +22,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { ipcRenderer } from 'electron';
-import { add_downloaded_model } from '@banbury/core/src/ai/add_downloaded_model';
+import { addDownloadedModel } from '@banbury/core/src/ai/addDownloadedModel';
 import { useAuth } from '../../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 
@@ -227,7 +227,7 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
               const device = devices.find(d => d.device_name === banbury.device.name());
               if (device) {
                 const deviceId = device._id;
-                const addModelResult = await add_downloaded_model(modelName, username, deviceId);
+                const addModelResult = await addDownloadedModel(modelName, deviceId);
                 if (addModelResult === 'failed' || addModelResult === 'task_add failed') {
                   console.error('Failed to register downloaded model');
                 }

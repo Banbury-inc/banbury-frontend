@@ -5,6 +5,9 @@ import {
   createTestUserIfNeeded as _createTestUserIfNeeded
 } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 test.describe('Account creation tests', () => {
   let sharedContext;
@@ -13,6 +16,36 @@ test.describe('Account creation tests', () => {
     // Get or initialize the shared context
     sharedContext = getSharedContext();
     await sharedContext.initialize();
+
+    // Remove persisted auth files in ~/.banbury
+    const banburyDir = path.join(os.homedir(), '.banbury');
+    if (fs.existsSync(banburyDir)) {
+      for (const file of ['token', 'username', 'api_key']) {
+        const filePath = path.join(banburyDir, file);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+    }
+  });
+
+  test.beforeEach(async () => {
+    const window = sharedContext.window;
+    if (window) {
+      await window.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    }
+    // Remove persisted auth files in ~/.banbury
+    const banburyDir = path.join(os.homedir(), '.banbury');
+    if (fs.existsSync(banburyDir)) {
+      for (const file of ['token', 'username', 'api_key']) {
+        const filePath = path.join(banburyDir, file);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+    }
+    // Reset global axios auth token (Node.js/global state)
+    const { setGlobalAxiosAuthToken } = require('@banbury/core/dist/middleware');
+    setGlobalAxiosAuthToken('');
   });
 
   test('can create new account successfully', async () => {
@@ -22,32 +55,32 @@ test.describe('Account creation tests', () => {
         throw new Error('Window is not initialized');
       }
 
-      // Clear localStorage to ensure we're testing fresh
-      await window.evaluate(() => {
-        localStorage.clear();
-      });
+      // Generate a unique username for this test run
+      const credentials = {
+        firstName: 'Test',
+        lastName: 'User',
+        username: `testuser_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        password: 'testpassword123'
+      };
 
-      // Get the shared test user credentials
-      const credentials = getSharedTestUserCredentials();
-
-      // Click on "Don't have an account? Sign Up" link
+      // Go to sign up
       const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
       await signUpLink.click();
 
-      // Wait for the registration form to appear
       await window.waitForSelector('h1:has-text("Sign up")');
-      
-      // Fill in the registration form
       await window.fill('input[name="firstName"]', credentials.firstName);
       await window.fill('input[name="lastName"]', credentials.lastName);
       await window.fill('input[name="username"]', credentials.username);
       await window.fill('input[name="password"]', credentials.password);
 
-      // Submit the registration form
       await window.click('button[type="submit"]');
-
-      // Wait for registration success and redirection to login
       await window.waitForSelector('h1:has-text("Sign in")', { timeout: 10000 });
+
+      // Optionally, try logging in with the new credentials to verify
+      await window.fill('input[name="email"]', credentials.username);
+      await window.fill('input[name="password"]', credentials.password);
+      await window.click('button[type="submit"]');
+      // You can add assertions for successful login here if needed
 
     } catch (error) {
       console.error('Test failed:', error);

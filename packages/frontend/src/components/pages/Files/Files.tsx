@@ -39,9 +39,9 @@ import FileTable from './components/Table/Table';
 import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
 import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
 import _ViewSelector from './components/ViewSelector/ViewSelector';
-import { useAllFileData } from './hooks/useAllFileData';
 import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
 import S3UploadButton from './components/S3UploadButton';
+import { useAllFileData } from './hooks/useAllFileData';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -185,7 +185,7 @@ export default function Files() {
 
   useEffect(() => {
     const fetchAndUpdateDevices = async () => {
-      const new_devices = await fetchDeviceData(username || '');
+      const new_devices = await fetchDeviceData();
       setDevices(Array.isArray(new_devices) ? new_devices : []);
     };
 
@@ -238,17 +238,16 @@ export default function Files() {
     if (file.is_s3) {
       try {
         const task_description = 'Downloading ' + file_name;
-        const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
         
         // Use the direct save function instead of browser download
         await banbury.files.saveS3FileToBCloud(
-          username ?? '',
           file.id.toString(),
           file_name
         );
         
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         
         showAlert('Download completed successfully', [`The file "${file_name}" has been downloaded successfully`], 'success');
         return;
@@ -282,10 +281,9 @@ export default function Files() {
         console.error(`File '${file_name}' not found in directory, searching other devices`);
 
         const task_description = 'Opening ' + selectedFileNames.join(', ');
-        const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
         const response = await handlers.files.downloadFile(
-          username ?? '',
           selectedFileNames,
           selectedDeviceNames,
           selectedFileInfo,
@@ -294,19 +292,19 @@ export default function Files() {
         );
         
         if (response === 'No file selected') {
-          await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
           showAlert('No file selected', ['Please select a file to download'], 'warning');
         }
         if (response === 'file_not_found') {
-          await banbury.sessions.failTask(username ?? '', taskInfo, 'File not found', tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, 'File not found', tasks, setTasks);
           showAlert('File not found', [`The file "${file_name}" could not be found on the selected device.`], 'error');
         }
         if (response === 'File not available') {
-          await banbury.sessions.failTask(username ?? '', taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
           showAlert('File not available', ['The selected file is not currently available for download.'], 'error');
         }
         if (response === 'success') {
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
@@ -379,15 +377,15 @@ export default function Files() {
     if (newValue === null) return;
 
     const task_description = 'Updating File Priority';
-    const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+    const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
     setTaskbox_expanded(true);
 
     const newPriority = newValue;
 
-    const result = await banbury.files.updateFilePriority(row._id, username ?? '', newPriority);
+    const result = await banbury.files.updateFilePriority(row._id, newPriority);
 
     if (result === 'success') {
-      await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+      await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
       setUpdates(updates + 1);
     }
   };
@@ -437,7 +435,7 @@ export default function Files() {
     const fetchCloudFiles = async () => {
       if (filePath === 'Core/Cloud' && username) {
         try {
-          await banbury.files.listS3Files(username);
+          await banbury.files.listS3Files();
         } catch (error) {
           console.error('Error directly fetching cloud files:', error);
         }
@@ -504,7 +502,7 @@ export default function Files() {
                     setUpdates(Date.now());
                     // If we're in Cloud view, directly fetch cloud files
                     if (filePath === 'Core/Cloud' && username) {
-                      banbury.files.listS3Files(username)
+                      banbury.files.listS3Files()
                         .catch((error) => {
                           console.error('Error refreshing cloud files after upload:', error);
                         });

@@ -6,7 +6,7 @@ import { useAuth } from '../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import { useAlert } from '../../renderer/context/AlertContext';
-import { add_file_to_sync } from '@banbury/core/src/device/add_file_to_sync';
+import { addFileToSync } from '@banbury/core/src/device/addFileToSync';
 // Extend the InputHTMLAttributes interface to include webkitdirectory and directory
 declare module 'react' {
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -17,7 +17,7 @@ declare module 'react' {
 
 export default function AddFileToSyncButton({ selectedFileNames }: { selectedFileNames: string[] }) {
   const [loading, setLoading] = useState(false);
-  const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
+  const { tasks, setTasks, setTaskbox_expanded } = useAuth();
   const { showAlert } = useAlert();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,13 +38,13 @@ export default function AddFileToSyncButton({ selectedFileNames }: { selectedFil
       try {
         // Add the selected folder as a scanned folder
         const task_description = `Adding file to sync: ${file}`;
-        taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+        taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
 
-        const addResult = await add_file_to_sync(file, username ?? '');
+        const addResult = await addFileToSync(file);
 
         if (addResult === 'success') {
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         } else {
           throw new Error(`Failed to add file: ${addResult}`);
         }
@@ -53,7 +53,6 @@ export default function AddFileToSyncButton({ selectedFileNames }: { selectedFil
         // Update task status to failed if task was created
         if (taskInfo) {
           await banbury.sessions.failTask(
-            username ?? '',
             taskInfo,
             tasks,
             setTasks,

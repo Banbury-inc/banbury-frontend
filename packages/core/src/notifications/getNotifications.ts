@@ -1,11 +1,19 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
+import '../middleware/axiosGlobalHeader';
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
-export async function getNotifications(username: string) {
+export async function getNotifications() {
     try {
-        const url = `${CONFIG.url}/notifications/get_notifications/${username}/`;
+        const url = `${CONFIG.url}/notifications/get_notifications/`;
+        const { token } = loadGlobalAxiosAuthToken();
 
-        const response = await axios.get(url);
+        const response = await axios.get(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
 
         switch (response.data.result) {
             case 'success':

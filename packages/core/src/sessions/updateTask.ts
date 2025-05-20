@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
 /**
  *
@@ -7,18 +8,24 @@ import { CONFIG } from '../config';
  * @param taskInfo
  */
 export async function updateTask(
-  username: string | null,
   taskInfo: any
 ) {
+  const { token } = loadGlobalAxiosAuthToken();
 
   try {
-    const url = `${CONFIG.url}/tasks/update_task/${username}/`;
-    const response = await axios.post<{ result: string; username: string; task_id: string; }>(url, {
+    const url = `${CONFIG.url}/tasks/update_task/`;
+    const response = await axios.post<{ result: string; task_id: string; }>(url, {
       task_id: taskInfo.task_id,
       task_name: taskInfo.task_name,
       task_progress: taskInfo.task_progress,
       task_status: taskInfo.task_status,
-    });
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+    );
     const result = response.data.result;
 
     if (result === 'success') {

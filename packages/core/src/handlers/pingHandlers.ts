@@ -22,7 +22,7 @@ export async function small_ping_request(username: string, senderSocket: net.Soc
     date_added,
   };
 
-  await banbury.networking.send_small_device_info(senderSocket, device_info_json);
+  await banbury.networking.sendSmallDeviceInfo(senderSocket, device_info_json);
 
 }
 
@@ -90,6 +90,6 @@ export async function ping_request(username: string, senderSocket: net.Socket): 
     online
   };
 
-  await banbury.networking.send_device_info(senderSocket, device_info_json);
+  await banbury.networking.sendDeviceInfo(senderSocket, device_info_json);
 }
 

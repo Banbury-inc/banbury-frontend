@@ -16,7 +16,6 @@ import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from "../../../renderer/themes/theme";
 import Main from "../../pages/main";
-import Register from "../Register/Register";
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { shell } from 'electron';
@@ -24,17 +23,12 @@ import banbury from '@banbury/core';
 import Onboarding from './components/Onboarding';
 import http from 'http';
 import os from 'os';
+import { initAuthState } from '@banbury/core/src/auth';
+import { Link as RouterLink } from 'react-router-dom';
 
 interface Message {
   type: string;
   content: string;
-}
-
-interface LoginResponse {
-  result: string;
-  token: string;
-  username: string;
-  deviceId?: string;
 }
 
 process.on('uncaughtException', (err: Error & { code?: string }) => {
@@ -68,13 +62,13 @@ function Copyright(props: any) {
 export default function SignIn() {
   // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [redirect_to_register, setredirect_to_register] = useState(false);
-  const { setUsername } = useAuth(); // Only destructure what you need
+  const { setUsername, isTokenRefreshFailed, resetTokenRefreshStatus } = useAuth();
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
   const [showMain, setShowMain] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
 
   // Messages can be defined after hooks
   const incorrect_login_message: Message = {
@@ -85,21 +79,71 @@ export default function SignIn() {
     type: 'error',
     content: 'Server is offline. Please try again later.',
   };
+  const session_expired_message: Message = {
+    type: 'error',
+    content: 'Your session has expired. Please sign in again.',
+  };
 
-  // useEffect hook
+  // Add effect to handle token refresh failures
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token && !isAuthenticated) {
-      setUsername(token);
-      setIsAuthenticated(true);
-      setShowMain(true);
+    if (isTokenRefreshFailed) {
+      setTokenError(session_expired_message.content);
+      resetTokenRefreshStatus();
     }
+  }, [isTokenRefreshFailed, resetTokenRefreshStatus]);
+
+  // useEffect hook for auto-login
+  useEffect(() => {
+    const checkToken = async () => {
+      try {
+        setLoading(true);
+        
+        // Use the new initAuthState function
+        const authState = await initAuthState();
+        
+        if (authState.isAuthenticated && authState.username) {
+          // Token is valid, proceed with auto-login
+          setUsername(authState.username);
+          localStorage.setItem('authToken', authState.username);
+          localStorage.setItem('authUsername', authState.username);
+          
+          // Create deviceId if missing
+          const currentDeviceId = localStorage.getItem('deviceId');
+          if (!currentDeviceId) {
+            localStorage.setItem('deviceId', `${authState.username}-${os.hostname()}`);
+          }
+          
+          const hasCompletedOnboarding = localStorage.getItem(`onboarding_${authState.username}`);
+          if (!hasCompletedOnboarding) {
+            localStorage.setItem('pendingAuthEmail', authState.username);
+            setShowOnboarding(true);
+            setLoading(false);
+            return; // Don't show main yet
+          }
+          
+          setIsAuthenticated(true);
+          setShowMain(true);
+        } else {
+          // Token validation failed
+          if (authState.message) {
+            setTokenError(authState.message);
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auto-login error:', error);
+        setLoading(false);
+      }
+    };
+
+    checkToken();
   }, [setUsername, isAuthenticated]);
 
   // Handle submit function
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    setTokenError(null); // Clear any token errors on new login attempt
 
     try {
       const data = new FormData(event.currentTarget);
@@ -107,20 +151,22 @@ export default function SignIn() {
       const password = data.get('password') as string;
 
       if (email && password) {
-        const result = await send_login_request(email, password);
-        if (result?.success && result.deviceId) {
+        const result = await banbury.auth.login(email, password);
+        if (result.success && result.deviceId) {
           // Check if this is the user's first login
           const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
           
           if (!hasCompletedOnboarding) {
             localStorage.setItem('pendingAuthEmail', email);
             localStorage.setItem('deviceId', result.deviceId);
+            localStorage.setItem('authUsername', email);
             setUsername(email);
             setShowOnboarding(true);
           } else {
             setUsername(email);
             localStorage.setItem('authToken', email);
             localStorage.setItem('deviceId', result.deviceId);
+            localStorage.setItem('authUsername', email);
             setIsAuthenticated(true);
             setShowMain(true);
           }
@@ -136,39 +182,10 @@ export default function SignIn() {
     }
   };
 
-  async function send_login_request(username: string, password: string) {
-    try {
-      const url = `${banbury.config.url}/authentication/getuserinfo4/${username}/${password}`;
-      
-      const response = await axios.get<LoginResponse>(url);
-      
-      const result = response.data.result;
-      if (result === 'success') {
-        const deviceId = response.data.deviceId || `${username}-${os.hostname()}`;
-        return {
-          success: true,
-          deviceId
-        };
-      }
-      return { success: false };
-    } catch (error) {
-      console.error('Error during login:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Network error details:', {
-          message: error.message,
-          code: error.code,
-          response: error.response?.data,
-          status: error.response?.status,
-          url: error.config?.url
-        });
-        setserver_offline(true);
-      }
-      return { success: false };
-    }
-  }
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    setTokenError(null); // Clear any token errors on new login attempt
     try {
       // Create HTTP server before initiating OAuth flow
       const server = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -192,12 +209,14 @@ export default function SignIn() {
                 if (!hasCompletedOnboarding) {
                   localStorage.setItem('pendingAuthEmail', email);
                   localStorage.setItem('deviceId', deviceId);
+                  localStorage.setItem('authUsername', email);
                   setUsername(email);
                   setShowOnboarding(true);
                 } else {
                   setUsername(email);
                   localStorage.setItem('authToken', email);
                   localStorage.setItem('deviceId', deviceId);
+                  localStorage.setItem('authUsername', email);
                   setIsAuthenticated(true);
                   setShowMain(true);
                 }
@@ -238,6 +257,7 @@ export default function SignIn() {
       setUsername(email);
       localStorage.setItem('authToken', email);
       localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
+      localStorage.setItem('authUsername', email);
       localStorage.removeItem('pendingAuthEmail'); // Clean up the temporary storage
     }
     
@@ -255,10 +275,6 @@ export default function SignIn() {
 
   if (isAuthenticated || showMain) {
     return <Main />;
-  }
-
-  if (redirect_to_register) {
-    return <Register />;
   }
 
   // Main render
@@ -374,17 +390,13 @@ export default function SignIn() {
                 <Grid item xs>
                   {/* <Link href="/register" variant="body2"> */}
                   <Link variant="body2" onClick={() => {
-                    setredirect_to_register(true);
+                    // setredirect_to_register(true);
                   }}>
                     Forgot password?
                   </Link>
                 </Grid>
                 <Grid item>
-                  {/* <Link href="/register" variant="body2"> */}
-                  <Link variant="body2" onClick={() => {
-                    setredirect_to_register(true);
-                  }}>
-
+                  <Link component={RouterLink} to="/register" variant="body2">
                     {"Don't have an account? Sign Up"}
                   </Link>
                 </Grid>
@@ -402,7 +414,15 @@ export default function SignIn() {
                     </div>
                   </Grid>
                 </Grid>
-
+                {tokenError && (
+                  <Grid container justifyContent="center">
+                    <Grid item>
+                      <div style={{ color: "#E22134", opacity: 1, transition: 'opacity 0.5s' }}>
+                        <p>{tokenError}</p>
+                      </div>
+                    </Grid>
+                  </Grid>
+                )}
               </Grid>
             </Box>
           </Box>

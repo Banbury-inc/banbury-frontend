@@ -1,14 +1,15 @@
 import { CONFIG } from '../config';
-import { get_device_id } from '../device/get_device_id';
+import { getDeviceId } from '../device/getDeviceId';
 import banbury from '..';
-import { ConnectionManager } from './connection_manager';
-import { WS_OPTIONS, RECONNECT_CONFIG } from './connection_cleanup';
-import { recordFailure } from './circuit_breaker';
-import { download_request, handleFileSyncError, FileSyncRequest, handleTransferError } from './files/file_transfer';
-import { handleFileRequest, cancelFileSend } from './files/file_sender';
-import { handleFileTransferMessage } from './files/file_transfer_handler';
-import { fileReceiver } from './files/file_receiver';
-import { addDownloadsInfo, getDownloadsInfo } from '../device/add_downloads_info';
+import { ConnectionManager } from './connectionManager';
+import { WS_OPTIONS, RECONNECT_CONFIG } from './connectionCleanup';
+import { recordFailure } from './circuitBreaker';
+import { download_request, FileSyncRequest} from './files/fileTransfer';
+import { handleFileRequest, cancelFileSend } from './files/fileSender';
+import { handleFileTransferMessage } from './files/fileTransferHandler';
+import { fileReceiver } from './files/fileReceiver';
+import { addDownloadsInfo, getDownloadsInfo } from '../device/addDownloadsInfo';
+import { handleFileSyncError, handleTransferError } from './errorHandler';
 
 // Update connection management
 let activeConnection: WebSocket | null = null;
@@ -50,7 +51,7 @@ export async function createWebSocketConnection(
       // Initialize connection manager
       const connectionManager = ConnectionManager.getInstance();
       
-      const device_id = await get_device_id(username);
+      const device_id = await getDeviceId();
       
       // Check if device_id result is an error
       if (device_id.result === 'error') {
@@ -302,7 +303,6 @@ export async function createWebSocketConnection(
                 for (const fileInfo of syncRequest.download_queue) {
                   try {
                     await download_request(
-                      username,
                       fileInfo.file_name,
                       fileInfo.file_path,
                       [fileInfo],

@@ -1,6 +1,17 @@
 import banbury from '@banbury/core';
 
-export async function getScannedFolders(username: string): Promise<{ result: string; username: string; } | 'failed' | 'exists' | 'task_add failed'> {
-    const response = await banbury.device.get_scanned_folders(username);
+export * from './commands';
+
+export async function getScannedFolders(): Promise<{ result: string } | 'failed' | 'exists' | 'task_add failed'> {
+    const response = await banbury.device.getScannedFolders();
     return response;
 } 
+
+
+export async function getDeviceId() {
+    const response = await banbury.device.getDeviceId();
+    return response;
+} 
+
+
+

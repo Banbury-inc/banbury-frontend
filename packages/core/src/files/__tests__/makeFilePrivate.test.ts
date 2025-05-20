@@ -29,14 +29,13 @@ describe('makeFilePrivate', () => {
         mockedAxios.post.mockResolvedValue(mockResponse);
 
         // Act
-        const result = await makeFilePrivate('testUser', 'test.txt', 'testDevice');
+        const result = await makeFilePrivate('test.txt', 'testDevice');
 
         // Assert
         expect(mockedAxios.post).toHaveBeenCalledWith(
             `${CONFIG.url}/files/make_file_private/`,
             {
                 file_name: 'test.txt',
-                username: 'testUser',
                 device_name: 'testDevice'
             }
         );
@@ -54,7 +53,7 @@ describe('makeFilePrivate', () => {
         mockedAxios.post.mockResolvedValue(mockResponse);
 
         // Act
-        const result = await makeFilePrivate('testUser', 'test.txt', 'testDevice');
+        const result = await makeFilePrivate('test.txt', 'testDevice');
 
         // Assert
         expect(result).toBe('make_file_private failed');
@@ -71,7 +70,7 @@ describe('makeFilePrivate', () => {
         mockedAxios.post.mockResolvedValue(mockResponse);
 
         // Act
-        const result = await makeFilePrivate('testUser', 'test.txt', 'testDevice');
+        const result = await makeFilePrivate('test.txt', 'testDevice');
 
         // Assert
         expect(result).toBe('make_file_private failed');
@@ -82,7 +81,7 @@ describe('makeFilePrivate', () => {
         mockedAxios.post.mockRejectedValue(new Error('Network error'));
 
         // Act
-        const result = await makeFilePrivate('testUser', 'test.txt', 'testDevice');
+        const result = await makeFilePrivate('test.txt', 'testDevice');
 
         // Assert
         expect(result).toBe('error');
@@ -100,14 +99,13 @@ describe('makeFilePrivate', () => {
         mockedAxios.post.mockResolvedValue(mockResponse);
 
         // Act
-        const result = await makeFilePrivate(null, 'test.txt', 'testDevice');
+        const result = await makeFilePrivate('test.txt', 'testDevice');
 
         // Assert
         expect(mockedAxios.post).toHaveBeenCalledWith(
             `${CONFIG.url}/files/make_file_private/`,
             {
                 file_name: 'test.txt',
-                username: null,
                 device_name: 'testDevice'
             }
         );

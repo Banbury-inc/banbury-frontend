@@ -10,10 +10,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import { getSyncFolders } from './getSyncFolders';
 import path from 'path';
 import CloseIcon from '@mui/icons-material/Close';
-import { add_scanned_folder } from '@banbury/core/dist/device/add_scanned_folder';
-import { remove_scanned_folder } from '@banbury/core/dist/device/remove_scanned_folder';
-import { scanFolder } from '@banbury/core/dist/device/scanFolder';
-import { fetchDeviceData } from '@banbury/core/dist/device/fetchDeviceData';
 
 
 
@@ -27,15 +23,18 @@ export default function SyncButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { username, devices, tasks, setTasks, setDevices } = useAuth();
+  const { tasks, setTasks, setDevices } = useAuth();
   const { showAlert } = useAlert();
+  const [isLoading, setIsLoading] = useState(false);
 
 
   const handleClick = async (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
+    setIsLoading(true);
     // Fetch folders to display, but don't start scanning
-    const syncFolders = await getSyncFolders(devices || [], username || '');
+    const syncFolders = await getSyncFolders();
+    setIsLoading(false);
     if (syncFolders.error && syncFolders.error === 'Failed to get device ID') {
       // set syncData to empty
       setSyncData({ syncingFiles: [], recentlyChanged: [] });
@@ -77,17 +76,17 @@ export default function SyncButton() {
 
       // Add the selected folder as a scanned folder
       const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
-      const addResult = await add_scanned_folder(absoluteFolderPath, username ?? '');
+      const addResult = await banbury.device.addScannedFolder(absoluteFolderPath);
 
       if (addResult === 'success') {
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         // Get fresh devices data first
-        const updatedDevices = await fetchDeviceData(username ?? '');
+        const updatedDevices = await banbury.device.fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
+        const updatedFolders = await getSyncFolders();
 
 
         // Initialize folders while preserving existing progress
@@ -135,7 +134,7 @@ export default function SyncButton() {
       if (file.progress === 100) continue;
 
       const task_description = 'Scanning folder';
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
       // Update local state to show scanning started
       setSyncData(prev => ({
@@ -148,8 +147,7 @@ export default function SyncButton() {
       }));
 
       try {
-        const result = await scanFolder(
-          username ?? '',
+        const result = await banbury.device.scanFolder(
           file.filename,
           (progress: number, speed: string) => {
             setSyncData(prev => ({
@@ -164,15 +162,15 @@ export default function SyncButton() {
         );
 
         if (result === 'success') {
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         } else if (result === 'device_not_found') {
           // Handle device not found error
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           showAlert('Device Not Found', ['Current device not added. Please add device before scanning.'], 'error');
           break; // Stop scanning remaining folders
         } else if (result === 'unauthorized') {
           // Handle unauthorized error
-          await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           showAlert('Authentication Error', ['You are not authorized to access this resource. Please log in again.'], 'error');
           break; // Stop scanning remaining folders
         }
@@ -196,17 +194,17 @@ export default function SyncButton() {
   const handleRemoveFolder = async (folderPath: string) => {
     try {
       const task_description = `Removing folder: ${folderPath}`;
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
-      const removeResult = await remove_scanned_folder(folderPath, username ?? '');
+      const removeResult = await banbury.device.removeScannedFolder(folderPath);
 
       if (removeResult === 'success') {
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         // Get fresh devices data first
-        const updatedDevices = await fetchDeviceData(username ?? '');
+        const updatedDevices = await banbury.device.fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
         // Then get updated folders with fresh device data
-        const updatedFolders = await getSyncFolders(Array.isArray(updatedDevices) ? updatedDevices : [], username || '');
+        const updatedFolders = await getSyncFolders();
         setSyncData(updatedFolders);
       }
     } catch (error) {
@@ -365,9 +363,11 @@ export default function SyncButton() {
                 mt: 1
               }}>
                 <Typography>
-                  {deviceNotFound 
-                    ? 'Device not added.' 
-                    : 'Loading...'}
+                  {deviceNotFound
+                    ? 'Device not added.'
+                    : isLoading
+                      ? 'Loading...'
+                      : 'No folders added.'}
                 </Typography>
               </Box>
             )}

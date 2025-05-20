@@ -2,13 +2,11 @@ import axios from 'axios';
 import banbury from '@banbury/core';
 
 export async function sendFriendRequest(
-  username: string,
   friend_username: string
 ) {
     const response = await axios.post<{
       result: string;
     }>(`${banbury.config.url}/users/send_friend_request/`, {
-      username: username,
       friend_username: friend_username
     });
 
@@ -17,7 +15,7 @@ export async function sendFriendRequest(
       const notification = {
         type: 'friend_request',
         title: 'Friend Request',
-        description: 'You have a new friend request from ' + username,
+        description: 'You have a new friend request',
         timestamp: new Date(),
         read: false,
       };

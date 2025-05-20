@@ -6,7 +6,6 @@ import fs from 'fs';
 
 
 export async function downloadFileSyncFiles(
-  username: string,
   download_queue: {
     files: any[];
     files_available_for_download: number;
@@ -25,12 +24,12 @@ export async function downloadFileSyncFiles(
   if (download_queue.files_available_for_download === 0) {
     // Create a task to show completion
     const task_name = 'Checking for files to download';
-    const download_task = await banbury.sessions.addTask(username ?? '', task_name, tasks, setTasks);
+    const download_task = await banbury.sessions.addTask( task_name, tasks, setTasks);
 
     if (download_task && typeof download_task !== 'string') {
       download_task.task_progress = 100;
       download_task.task_status = 'complete';
-      await banbury.sessions.updateTask(username ?? '', download_task);
+      await banbury.sessions.updateTask(download_task);
     }
 
     return [];
@@ -46,7 +45,7 @@ export async function downloadFileSyncFiles(
     const task_name = `Downloading files`;
 
     if (i === 0) {
-      download_task = await banbury.sessions.addTask(username ?? '', task_name, tasks, setTasks);
+      download_task = await banbury.sessions.addTask( task_name, tasks, setTasks);
       if (!download_task) {
         return downloaded_files;
       }
@@ -72,7 +71,7 @@ export async function downloadFileSyncFiles(
 
       // Attempt to download file from source device
       try {
-        const result = await downloadFile(username, [file_name], [source_device], file, download_task, websocket as unknown as WebSocket);
+        const result = await downloadFile( [file_name], [source_device], file, download_task, websocket as unknown as WebSocket);
 
         if (result === 'success') {
           downloaded_files.push(file_name);
@@ -86,7 +85,6 @@ export async function downloadFileSyncFiles(
 
           // Call failTask with the specific error
           await banbury.sessions.failTask(
-            username ?? '',
             download_task,
             error, // Pass the specific error message
             tasks,

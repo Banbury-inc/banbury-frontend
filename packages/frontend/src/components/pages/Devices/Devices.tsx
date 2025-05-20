@@ -15,13 +15,10 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Checkbox from '@mui/material/Checkbox';
-import Tooltip from '@mui/material/Tooltip';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { visuallyHidden } from '@mui/utils';
 import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import ScannedFoldersChips from './components/ScannedFoldersChips';
-import AddToQueueIcon from '@mui/icons-material/AddToQueue';
 import { styled } from '@mui/material/styles';
 import AddScannedFolderButton from './components/ScannedFolderButton/AddScannedFolderButton';
 import { useAuth } from '../../../renderer/context/AuthContext';
@@ -35,12 +32,11 @@ import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { useAlert } from '../../../renderer/context/AlertContext';
-import { handleAddDeviceClick } from './handleAddDeviceClick';
-import { handleDeleteDeviceClick } from './handleDeleteDeviceClick';
+import { handleAddDeviceClick } from './components/AddDeviceButton/handleAddDeviceClick';
 import { handleFetchDevices } from './handleFetchDevices';
 import { DeviceData } from './types';
-
-
+import AddDeviceButton from './components/AddDeviceButton/AddDeviceButton';
+import DeleteDeviceButton from './components/DeleteDeviceButton/DeleteDeviceButton';
 
 const headCells: HeadCell[] = [
   { id: 'device_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true },
@@ -173,7 +169,7 @@ export default function Devices() {
   const rowsPerPage = 10;
   const [allDevices, setAllDevices] = useState<DeviceData[]>([]);
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
-  const { updates, setUpdates, tasks, setTasks, username, setFirstname, setLastname, setTaskbox_expanded } = useAuth();
+  const { updates, setUpdates, tasks, setTasks, username, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
   const { showAlert } = useAlert();
@@ -226,7 +222,7 @@ export default function Devices() {
 
 
   useEffect(() => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   }, [username, updates]);
 
@@ -309,25 +305,25 @@ export default function Devices() {
   const isSelected = (deviceName: string) => selectedDeviceNames.indexOf(deviceName) !== -1;
 
   const handleFoldersUpdate = () => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   };
 
   const handleSyncStorageChange = async (value: string) => {
     try {
       const task_description = 'Updating Sync Storage Capacity';
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const result = await handlers.devices.updateSyncStorage(username ?? '', value);
+      const result = await handlers.devices.updateSyncStorage(value);
 
       if (result === 'success') {
         setUpdates(updates + 1);
-        const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username);
+        const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
         fetchDevicesFunc();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
-        await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
         showAlert('Error', ['Failed to update sync storage capacity'], 'error');
       }
     } catch (error) {
@@ -344,15 +340,14 @@ export default function Devices() {
     usePredictedUploadSpeed: boolean,
     useFilesNeeded: boolean,
     useFilesAvailableForDownload: boolean,
-    useDeviceinFileSync: boolean
+    useDeviceinFileSync: boolean,
   ) => {
     try {
       const task_description = 'Updating prediction preferences';
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
       const result = await handlers.devices.updateScorePreferences(
-        username ?? '',
         usePredictedCPUUsage,
         usePredictedRAMUsage,
         usePredictedGPUUsage,
@@ -367,7 +362,7 @@ export default function Devices() {
       if (result === 'success') {
         showAlert('Success', ['Prediction preferences updated successfully'], 'success');
       } else {
-        await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update prediction preferences', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Failed to update prediction preferences', tasks, setTasks);
         showAlert('Error', ['Failed to update prediction preferences'], 'error');
       }
     } catch (error) {
@@ -425,30 +420,36 @@ export default function Devices() {
             <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
 
               <Grid item paddingRight={1}>
-                <Tooltip title="Add Device">
-                  <Button
-                    data-testid="AddDeviceButton"
-                    onClick={handleAddDeviceClick(selectedDevice, setTaskbox_expanded, setTasks, showAlert, tasks, setLastname, setFirstname, setIsLoading, setAllDevices, setSelectedDevice, username)}
-                    sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-                  >
-                    <AddToQueueIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
+                <AddDeviceButton
+                  selectedDevice={selectedDevice}
+                  setTaskbox_expanded={setTaskbox_expanded}
+                  setTasks={setTasks}
+                  showAlert={showAlert}
+                  tasks={tasks}
+                  setIsLoading={setIsLoading}
+                  setAllDevices={setAllDevices}
+                  setSelectedDevice={setSelectedDevice}
+                  username={username}
+                  handleAddDeviceClick={handleAddDeviceClick}
+                />
               </Grid>
 
 
               <Grid item paddingRight={1}>
-                <Tooltip title="Delete Device">
-                  <Button
-                    data-testid="DeleteDeviceButton"
-                    onClick={handleDeleteDeviceClick(selectedDeviceNames, setSelectedDeviceNames, setTaskbox_expanded, setTasks, showAlert, tasks, setAllDevices, setFirstname, setIsLoading, setLastname, username, setSelectedDevice)}
-                    sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-                  >
-                    <DeleteIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
+                <DeleteDeviceButton
+                  selectedDevice={selectedDevice}
+                  selectedDeviceNames={selectedDeviceNames}
+                  setSelectedDeviceNames={setSelectedDeviceNames}
+                  setTaskbox_expanded={setTaskbox_expanded}
+                  setTasks={setTasks}
+                  showAlert={showAlert}
+                  tasks={tasks}
+                  setAllDevices={setAllDevices}
+                  setIsLoading={setIsLoading}
+                  setSelectedDevice={setSelectedDevice}
+                />
               </Grid>
-              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setFirstname, setIsLoading, setLastname, username)} />
+              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading)} />
             </Grid>
           </Stack>
         </CardContent>

@@ -2,13 +2,12 @@ import {
   addUploadsInfo,
   getUploadsInfo,
   clearUploadsInfo,
-  cleanupUploadTracker
-} from '../add_uploads_info';
+} from '../addUploadsInfo';
 
 describe('Upload Info Management', () => {
   beforeEach(() => {
-    clearUploadsInfo();
     jest.useFakeTimers();
+    clearUploadsInfo();
   });
 
   afterEach(() => {
@@ -144,7 +143,6 @@ describe('Upload Info Management', () => {
     };
 
     addUploadsInfo([upload]);
-    cleanupUploadTracker(upload.filename);
 
     // Add the same upload again - should calculate new time remaining
     const result = addUploadsInfo([upload]);
@@ -184,7 +182,6 @@ describe('Upload Info Management', () => {
 
     addUploadsInfo([upload]);
     clearUploadsInfo();
-    
     const result = getUploadsInfo();
     expect(result).toHaveLength(0);
   });

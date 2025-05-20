@@ -18,7 +18,6 @@ import Settings from './Settings/Settings';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import DevicesIcon from '@mui/icons-material/Devices';
 import SettingsIcon from '@mui/icons-material/Settings';
-import _Sync from './Sync/Sync';
 import { useAuth } from '../../renderer/context/AuthContext';
 import Login from './Login/Login';
 import Tooltip from '@mui/material/Tooltip';
@@ -27,7 +26,6 @@ import path from 'path';
 import banbury from '@banbury/core';
 import { connect } from '@banbury/core/src/websocket/connect';
 import { detectFileChanges } from '@banbury/core/src/device/watchdog';
-import _Shared from './Shared/Shared';
 import _FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
 import Logs from './Logs/Logs';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
@@ -38,8 +36,8 @@ import NotificationsButton from '../common/NotificationsButton/NotificationsButt
 import AccountMenuIcon from '../common/AccountMenuIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { getDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/add_downloads_info';
-import { getUploadsInfo } from '@banbury/core/src/device/add_uploads_info';
+import { getDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/addDownloadsInfo';
+import { getUploadsInfo } from '@banbury/core/src/device/addUploadsInfo';
 import { ipcRenderer } from 'electron';
 import AI from './AI/AI';
 
@@ -136,7 +134,7 @@ export default function PermanentDrawerLeft() {
           );
           if (isSubscribed) {
             setSocket(websocket);
-            detectFileChanges(username, bcloudDirectoryPath);
+            detectFileChanges(bcloudDirectoryPath);
           }
         }
       } catch (error) {

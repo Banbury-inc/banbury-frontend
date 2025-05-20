@@ -5,15 +5,14 @@ import { CONFIG } from '../config';
 
 export async function updateFilePriority(
     file_id: string,
-    username: string,
     priority: number,
 ) {
     let url = ''
 
     try {
 
-        url = `${CONFIG.url}/predictions/update_file_priority/${username}/`;
-        const response = await axios.post<{ result: string; username: string; }>(url, {
+        url = `${CONFIG.url}/predictions/update_file_priority/`;
+        const response = await axios.post<{ result: string; }>(url, {
             file_id: file_id,
             priority: priority,
         });

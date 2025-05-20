@@ -4,11 +4,11 @@ import { CONFIG } from '../config';
 
 
 
-export async function searchFile(username: string, fileName: string) {
+export async function searchFile( fileName: string) {
 
   try {
     const deviceName = os.hostname();
-    const response = await axios.post(`${CONFIG.url}/files/search_file/${username}/`, {
+    const response = await axios.post(`${CONFIG.url}/files/search_file/`, {
       device_name: deviceName,
       file_name: fileName
     });

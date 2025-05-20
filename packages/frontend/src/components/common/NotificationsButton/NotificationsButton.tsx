@@ -27,14 +27,14 @@ export default function NotificationsButton() {
     if (!username || !websocket) return;
 
     // Initial fetch
-    fetchNotifications(username, setNotifications);
+    fetchNotifications(setNotifications);
 
     // Add websocket listener
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         if (data.type === 'notification_update') {
-          fetchNotifications(username, setNotifications);
+          fetchNotifications(setNotifications);
         }
       } catch (error) {
         console.error('Error parsing websocket message:', error);
@@ -91,7 +91,7 @@ export default function NotificationsButton() {
     if (!Array.isArray(notifications)) return;
     
     try {
-      await banbury.notifications.deleteNotification(notificationId, username as string);
+      await banbury.notifications.deleteNotification(notificationId);
       setNotifications(notifications.filter(n => n._id !== notificationId));
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -105,7 +105,7 @@ export default function NotificationsButton() {
     try {
       await Promise.all(
         notifications.map(notification =>
-          banbury.notifications.deleteNotification(notification._id, username as string)
+          banbury.notifications.deleteNotification(notification._id)
         )
       );
       setNotifications([]);

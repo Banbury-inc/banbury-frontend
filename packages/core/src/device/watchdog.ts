@@ -93,7 +93,7 @@ function getFileKind(filename: string) {
 
 
 // Function that gets triggered when a new file is added
-function onFileAdded(filePath: string, username: string) {
+function onFileAdded(filePath: string) {
 
   const stats = fs.statSync(filePath);
   let filesInfo: any[] = [];
@@ -142,7 +142,7 @@ function onFileAdded(filePath: string, username: string) {
     fileWatcherEmitter.emit('fileChanged');
 
     // Call the handler to add files
-    banbury.files.addFiles(username, filesInfo);
+    banbury.files.addFiles(filesInfo);
   } catch (error) {
     console.error('Error processing file addition:', error);
   }
@@ -151,7 +151,7 @@ function onFileAdded(filePath: string, username: string) {
 }
 
 // Function that gets triggered when a new file is added
-function onFileDeleted(filePath: string, username: string) {
+function onFileDeleted(filePath: string) {
 
   let filesInfo: any[] = [];
   const fileInfo = {
@@ -194,7 +194,7 @@ function onFileDeleted(filePath: string, username: string) {
     fileWatcherEmitter.emit('fileChanged');
 
     // Call the handler to remove files (adjust the neuranet logic as needed)
-    banbury.files.removeFiles(username, os.hostname(), filesInfo);
+    banbury.files.removeFiles(os.hostname(), filesInfo);
   } catch (error) {
     console.error('Error processing file deletion:', error);
   }
@@ -205,7 +205,7 @@ function onFileDeleted(filePath: string, username: string) {
 
 
 // Function to handle file change events
-export function detectFileChanges(directoryPath: string, username: string) {
+export function detectFileChanges(directoryPath: string) {
   // Ensure snapshot file exists before starting the watcher
   ensureSnapshotFileExists();
   
@@ -219,10 +219,10 @@ export function detectFileChanges(directoryPath: string, username: string) {
   // Event listeners
   watcher
     .on('add', (filePath) => {
-      onFileAdded(filePath, username); // Call the onFileAdded function
+      onFileAdded(filePath); // Call the onFileAdded function
     })
     .on('unlink', (filePath) => {
-      onFileDeleted(filePath, username); // Call the onFileAdded function
+      onFileDeleted(filePath); // Call the onFileAdded function
     })
     .on('change', () => {
       // Silently handle file changes
@@ -246,5 +246,5 @@ const fullDeviceSync = CONFIG.full_device_sync;
 const bcloudDirectoryPath = fullDeviceSync ? os.homedir() : path.join(os.homedir(), 'BCloud');
 
 // Start detecting file changes
-detectFileChanges(bcloudDirectoryPath, 'mmills');
+detectFileChanges(bcloudDirectoryPath);
 

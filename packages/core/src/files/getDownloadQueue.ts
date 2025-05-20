@@ -5,7 +5,6 @@ import { CONFIG } from '../config';
 
 
 export async function getDownloadQueue(
-  username: string,
 ) {
 
   const device_name = banbury.device.name();
@@ -13,9 +12,9 @@ export async function getDownloadQueue(
 
   try {
 
-    url = `${CONFIG.url}/predictions/get_download_queue/${username}/`;
+    url = `${CONFIG.url}/predictions/get_download_queue/`;
 
-    const response = await axios.post<{ result: string; username: string; }>(url, {
+    const response = await axios.post<{ result: string; }>(url, {
       device_name: device_name,
     });
     const result = response.data.result;

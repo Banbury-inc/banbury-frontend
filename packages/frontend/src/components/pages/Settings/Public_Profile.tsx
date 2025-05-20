@@ -31,7 +31,7 @@ export default function Public_Profile() {
 
         try {
             const task_description = 'Updating Settings';
-            const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+            const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
             setTaskbox_expanded(true);
 
             const pictureData = localPicture ? {
@@ -49,11 +49,11 @@ export default function Public_Profile() {
             );
 
             if (response === 'success') {
-                await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+                await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
                 setPicture(pictureData || null);
                 showAlert('Success', ['Profile settings updated successfully'], 'success');
             } else {
-                await banbury.sessions.failTask(username ?? '', taskInfo, 'Failed to update profile settings', tasks, setTasks);
+                await banbury.sessions.failTask(taskInfo, 'Failed to update profile settings', tasks, setTasks);
                 showAlert('Error', ['Failed to update profile settings'], 'error');
             }
         } catch (error) {

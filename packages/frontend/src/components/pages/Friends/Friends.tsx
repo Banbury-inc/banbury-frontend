@@ -14,7 +14,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, InputAdornment, Badge, Avatar, Tabs, Tab } from '@mui/material';
 import { handlers } from '../../../renderer/handlers';
 import { useAuth } from '../../../renderer/context/AuthContext';
-import { Heading } from '../../../components/template/heading'
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -85,7 +84,7 @@ export default function Friends() {
   useEffect(() => {
     if (selectedFriend) {
       setIsLoadingFriendInfo(true);
-      handlers.users.getUserInfo(selectedFriend?.username || '')
+      handlers.users.getFriendUserInfo(selectedFriend?.username || '')
         .then(response => {
           if (response && response) {
             setFriendInfo(response);
@@ -255,7 +254,7 @@ export default function Friends() {
   // Update the send friend request handler
   const handleSendFriendRequest = async (requestUsername: string) => {
     try {
-      await handlers.users.sendFriendRequest(username || '', requestUsername);
+      await handlers.users.sendFriendRequest(requestUsername);
       setUpdates(prevUpdates => [...prevUpdates, 'friend_request_sent']);
       showAlert('Success', ['Friend request sent'], 'success');
     } catch (error) {
@@ -312,6 +311,7 @@ export default function Friends() {
     <Box sx={{
       width: '100%',
       height: '100vh',
+      paddingTop: '4px',
       display: 'flex',
       flexDirection: 'column'
     }}>
@@ -489,7 +489,7 @@ export default function Friends() {
                       <>
                         <Avatar sx={{ width: 64, height: 64 }}>{selectedFriend.first_name ? selectedFriend.first_name[0] : '?'}</Avatar>
                         <Stack>
-                          <Heading level={5}>{selectedFriend.first_name ? selectedFriend.first_name : '?'} {selectedFriend.last_name ? selectedFriend.last_name : '?'}</Heading>
+                          <Typography variant="h5">{selectedFriend.first_name ? selectedFriend.first_name : '?'} {selectedFriend.last_name ? selectedFriend.last_name : '?'}</Typography>
                           <Stack direction="row" spacing={1} alignItems="center">
                             <Typography variant="body2" color="text.secondary">
                               {selectedFriend.username}

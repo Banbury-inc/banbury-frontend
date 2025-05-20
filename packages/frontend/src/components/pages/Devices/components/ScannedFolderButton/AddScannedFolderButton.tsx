@@ -8,7 +8,7 @@ import CreateNewFolderOutlinedIcon from '@mui/icons-material/CreateNewFolderOutl
 import LoadingButton from '@mui/lab/LoadingButton';
 import { useAuth } from '../../../../../renderer/context/AuthContext';
 import banbury from '@banbury/core';
-import { add_scanned_folder } from '@banbury/core/src/device/add_scanned_folder';
+import { addScannedFolder } from '@banbury/core/src/device/addScannedFolder';
 import path from 'path';
 // Extend the InputHTMLAttributes interface to include webkitdirectory and directory
 declare module 'react' {
@@ -20,7 +20,7 @@ declare module 'react' {
 
 export default function AddScannedFolderButton({ fetchDevices }: NewScannedFolderButtonProps) {
   const [loading, setLoading] = useState(false);
-  const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
+  const {tasks, setTasks, setTaskbox_expanded } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFolderSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,13 +35,13 @@ export default function AddScannedFolderButton({ fetchDevices }: NewScannedFolde
 
       // Add the selected folder as a scanned folder
       const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
-      const taskInfo = await banbury.sessions.addTask(username ?? '', task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const addResult = await add_scanned_folder(absoluteFolderPath, username ?? '');
+      const addResult = await addScannedFolder(absoluteFolderPath);
 
       if (addResult === 'success') {
-        await banbury.sessions.completeTask(username ?? '', taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
         // Trigger a refresh of the devices to reflect the new folder
         await fetchDevices(); // Use the passed fetchDevices function
       }

@@ -1,6 +1,6 @@
 import { DatabaseData } from '../types';
 
-export function buildTree(files: DatabaseData[]): DatabaseData[] {
+export function buildTree(files: DatabaseData[], allDevices: any[] = []): DatabaseData[] {
 
 
   // Create the root "Core" node
@@ -188,12 +188,46 @@ export function buildTree(files: DatabaseData[]): DatabaseData[] {
     });
   });
 
-  // Modify the device nodes to be children of the Devices node instead of Core
-  devicesMap.forEach(deviceNode => {
-    deviceNode.file_parent = 'Devices'; // Update parent reference
-    devicesNode.children!.push(deviceNode);
-  });
-
+  // Add device nodes for all devices, even those with no files
+  if (Array.isArray(allDevices)) {
+    allDevices.forEach((device, index) => {
+      const uniqueDeviceKey = device.device_name || `Unnamed-Device-${index}`;
+      if (!devicesMap.has(uniqueDeviceKey)) {
+        // Add a device node for devices with no files
+        const deviceNode: DatabaseData = {
+          _id: device._id || device.deviceID || device.device_name || '',
+          id: `device-${(device.device_name || '').replace(/\s+/g, '-')}`,
+          file_type: 'directory',
+          file_name: device.device_name || 'Unnamed Device',
+          date_uploaded: '',
+          file_size: '',
+          file_path: '',
+          shared_with: [],
+          is_public: false,
+          helpers: 0,
+          available: device.online ? 'Available' : 'Unavailable',
+          kind: 'Device',
+          file_parent: 'Devices',
+          deviceID: device.deviceID || '',
+          device_name: device.device_name || '',
+          children: [],
+          original_device: '',
+        };
+        devicesNode.children!.push(deviceNode);
+      } else {
+        // Already has files, add from map
+        const deviceNode = devicesMap.get(uniqueDeviceKey);
+        deviceNode!.file_parent = 'Devices';
+        devicesNode.children!.push(deviceNode!);
+      }
+    });
+  } else {
+    // Fallback: just add devices from files
+    devicesMap.forEach(deviceNode => {
+      deviceNode.file_parent = 'Devices'; // Update parent reference
+      devicesNode.children!.push(deviceNode);
+    });
+  }
 
   // Return the tree with "Core" as the root
   return [coreNode];

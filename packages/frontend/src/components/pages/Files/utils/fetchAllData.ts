@@ -5,13 +5,12 @@ import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 
 // Fetch regular files
 export const fetchFilesData = async (
-  username: string,
   filePath: string,
   existingFiles: DatabaseData[] = []
 ) => {
   try {
     // Fetch device information to check online status
-    const deviceData = await fetchDeviceData(username);
+    const deviceData = await fetchDeviceData();
     const deviceOnlineMap = new Map();
     
     if (Array.isArray(deviceData)) {
@@ -21,7 +20,7 @@ export const fetchFilesData = async (
     }
 
     const fileInfoResponse = await axios.post<{ files: any[] }>(
-      `${banbury.config.url}/files/get_files_from_filepath/${username}/`,
+      `${banbury.config.url}/files/get_files_from_filepath/`,
       {
         global_file_path: filePath
       }
@@ -54,12 +53,11 @@ export const fetchFilesData = async (
 
 // Fetch sync files
 export const fetchSyncData = async (
-  username: string,
   filePath: string
 ) => {
   try {
     // Fetch device information to check online status
-    const deviceData = await fetchDeviceData(username);
+    const deviceData = await fetchDeviceData();
     const deviceOnlineMap = new Map();
     
     if (Array.isArray(deviceData)) {
@@ -72,7 +70,7 @@ export const fetchSyncData = async (
     const includePath = filePath !== 'Core/Sync' && filePath.startsWith('Core/Sync/');
     
     const fileInfoResponse = await axios.post<{ files: any[] }>(
-      `${banbury.config.url}/predictions/get_files_to_sync/${username}/`,
+      `${banbury.config.url}/predictions/get_files_to_sync/`,
       {
         global_file_path: includePath ? filePath : undefined
       }
@@ -105,11 +103,10 @@ export const fetchSyncData = async (
 
 // Fetch shared files
 export const fetchSharedData = async (
-  username: string
 ) => {
   try {
     // Fetch device information to check online status
-    const deviceData = await fetchDeviceData(username);
+    const deviceData = await fetchDeviceData();
     const deviceOnlineMap = new Map();
     
     if (Array.isArray(deviceData)) {
@@ -120,9 +117,6 @@ export const fetchSharedData = async (
     
     const response = await axios.post<{ status: string; shared_files: { shared_files: any[] } }>(
       `${banbury.config.url}/files/get_shared_files/`,
-      {
-        username: username
-      }
     );
 
     // Handle the nested shared_files structure
@@ -171,7 +165,6 @@ export const fetchSharedData = async (
 
 // Fetch all data based on the current view
 export const fetchAllData = async (
-  username: string,
   filePath: string,
   currentView: 'files' | 'sync' | 'shared' | 'cloud',
   existingFiles: DatabaseData[] = []
@@ -194,11 +187,11 @@ export const fetchAllData = async (
   
   switch (currentView) {
     case 'files':
-      return fetchFilesData(username, adjustedPath, existingFiles);
+      return fetchFilesData(adjustedPath, existingFiles);
     case 'sync':
-      return fetchSyncData(username, adjustedPath);
+      return fetchSyncData(adjustedPath);
     case 'shared':
-      return fetchSharedData(username);
+      return fetchSharedData();
     default:
       return [];
   }

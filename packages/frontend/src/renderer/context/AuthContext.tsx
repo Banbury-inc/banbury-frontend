@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import axios from 'axios';
 
 interface ImageData {
   content_type: string;
@@ -38,15 +39,18 @@ interface AuthContextType {
   setSyncFiles: (sync_files: any[] | []) => void;
   setTasks: (tasks: any[] | null) => void;
   setSocket: (socket: WebSocket | null) => void;
-  isAuthenticated: boolean; // Change the type to boolean directly
+  isAuthenticated: boolean;
   redirect_to_login: boolean;
   setRedirectToLogin: (redirect_to_login: boolean) => void;
-  taskbox_expanded: boolean; setTaskbox_expanded: (taskbox_expanded: boolean) => void;
-  run_receiver: boolean
-  files_is_loading: boolean
+  taskbox_expanded: boolean;
+  setTaskbox_expanded: (taskbox_expanded: boolean) => void;
+  run_receiver: boolean;
+  files_is_loading: boolean;
   setrun_receiver: (run_receiver: boolean) => void;
   setFilesIsLoading: (files_is_loading: boolean) => void;
   logout: () => void;
+  isTokenRefreshFailed: boolean;
+  resetTokenRefreshStatus: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,6 +80,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [run_receiver, setrun_receiver] = useState<boolean>(false);
   const [files_is_loading, setFilesIsLoading] = useState<boolean>(false);
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+  const [isTokenRefreshFailed, setIsTokenRefreshFailed] = useState(false);
 
   const setUsername = (username: string | null) => {
     setUser(username);
@@ -125,6 +130,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = useCallback(() => {
     // Clear auth token
     localStorage.removeItem('authToken');
+    localStorage.removeItem('authUsername');
+    localStorage.removeItem('deviceId');
 
     // Clear all states
     setUsername(null);
@@ -138,11 +145,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       websocket.close();
     }
 
+    // Clear auth header
+    axios.defaults.headers.common['Authorization'] = '';
+
     // Force reload the application
     window.location.reload();
   }, [websocket]);
 
   const isAuthenticated = !!username;
+
+  // Set up a global interceptor for axios errors
+  useEffect(() => {
+    // Add a global error handler for token refresh errors
+    const interceptor = axios.interceptors.response.use(
+      response => response, 
+      error => {
+        // Check for token refresh errors
+        if (error.name === 'TokenRefreshError' || 
+            (error.response?.status === 401 && error.config.url?.includes('refresh-token'))) {
+          setIsTokenRefreshFailed(true);
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Clean up the interceptor on unmount
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
+  const resetTokenRefreshStatus = () => {
+    setIsTokenRefreshFailed(false);
+  };
 
   return (
     <AuthContext.Provider value={{
@@ -187,7 +223,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setTaskbox_expanded,
       run_receiver,
       setrun_receiver,
-      logout
+      logout,
+      isTokenRefreshFailed,
+      resetTokenRefreshStatus
     }}>
       {children}
     </AuthContext.Provider>

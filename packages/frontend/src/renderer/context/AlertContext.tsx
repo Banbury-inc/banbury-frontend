@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ipcRenderer } from 'electron';
 
-type AlertVariant = 'error' | 'warning' | 'success' | 'info';
+export type AlertVariant = 'error' | 'warning' | 'success' | 'info';
 
 type AlertState = {
   title: string;

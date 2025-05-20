@@ -6,31 +6,19 @@ export function handleFetchDevices(
   selectedDevice: any,
   setSelectedDevice: any,
   setAllDevices: any,
-  setFirstname: any,
   setIsLoading: any,
-  setLastname: any,
-  username: string | null,
 ): () => Promise<void> {
   return async () => {
+    // Set loading state to true at the beginning
+    setIsLoading(true);
+    
     try {
       const previousSelectedDeviceName = selectedDevice?.device_name; // Store the previously selected device name
-      setIsLoading(true);
-      // Fetch user information
-      const userInfoResponse = await axios.get<{
-        first_name: string;
-        last_name: string;
-        phone_number: string;
-        email: string;
-      }>(`${banbury.config.url}/users/getuserinfo/${username}/`);
-
-      const { first_name, last_name } = userInfoResponse.data;
-      setFirstname(first_name);
-      setLastname(last_name);
 
       // Fetch device information
       const deviceInfoResponse = await axios.get<{
         devices: any[];
-      }>(`${banbury.config.url}/devices/getdeviceinfo/${username}/`);
+      }>(`${banbury.config.url}/devices/getdeviceinfo/`);
 
       const devicePredictionsResponse = await axios.get<{
         data: {
@@ -59,7 +47,7 @@ export function handleFetchDevices(
           }>;
           result: string;
         };
-      }>(`${banbury.config.url}/predictions/get_device_prediction_data/${username}/`);
+      }>(`${banbury.config.url}/predictions/get_device_prediction_data/`);
 
       const { devices } = deviceInfoResponse.data;
       const { device_predictions } = devicePredictionsResponse.data.data;
@@ -147,7 +135,6 @@ export function handleFetchDevices(
       });
 
       setAllDevices(transformedDevices);
-
 
       // Restore the previously selected device if it exists in the new list
       const restoredDevice = transformedDevices.find(device => device.device_name === previousSelectedDeviceName);

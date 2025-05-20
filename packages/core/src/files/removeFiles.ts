@@ -2,7 +2,6 @@ import axios from 'axios';
 import { CONFIG } from '../config';
 
 export async function removeFiles(
-  username: string,
   device_name: string,
   filesInfo: any) {
 
@@ -10,7 +9,7 @@ export async function removeFiles(
   try {
     const response = await axios.post<{
       result: string;
-    }>(`${CONFIG.url}/files/delete_files/${username}/`, {
+    }>(`${CONFIG.url}/files/delete_files/`, {
       files: filesInfo,
       device_name: device_name,
     });

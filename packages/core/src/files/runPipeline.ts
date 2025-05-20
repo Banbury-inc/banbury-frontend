@@ -4,14 +4,12 @@ import { CONFIG } from '../config';
 
 
 export async function runPipeline(
-  username: string,
 ) {
-  const url = `${CONFIG.url}/predictions/run_pipeline/${username}/`;
+  const url = `${CONFIG.url}/predictions/run_pipeline/`;
 
   try {
-    const response = await axios.get<{ result: string; username: string; }>(url);
+    const response = await axios.get<{ result: string; }>(url);
     const result = response.data.result;
-
 
     if (result === 'success') {
       return response.data;

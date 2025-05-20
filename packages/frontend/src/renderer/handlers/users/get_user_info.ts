@@ -2,7 +2,7 @@ import axios from 'axios';
 import banbury from '@banbury/core';
 
 
-export async function getUserInfo(username: string) {
+export async function getFriendUserInfo(friend_username: string) {
   try {
     const response = await axios.get<{
       result: string;
@@ -16,7 +16,7 @@ export async function getUserInfo(username: string) {
       status: any;
       online: boolean;
     }>(
-      `${banbury.config.url}/users/getuserinfo/${username}`
+      `${banbury.config.url}/users/getfrienduserinfo/${friend_username}`
     );
 
     if (response.data.status === 'success') {

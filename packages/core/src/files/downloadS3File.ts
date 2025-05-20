@@ -11,10 +11,10 @@ import os from 'os';
  * @param fileId - The ID of the file to download
  * @returns The file content as a blob
  */
-export const downloadS3File = async (username: string, fileId: string): Promise<Blob> => {
+export const downloadS3File = async ( fileId: string): Promise<Blob> => {
   try {
     const response = await axios.get(
-      `${config.url}/files/download_s3_file/${username}/${fileId}/`, 
+      `${config.url}/files/download_s3_file/${fileId}/`, 
       { 
         responseType: 'blob' 
       }
@@ -34,12 +34,11 @@ export const downloadS3File = async (username: string, fileId: string): Promise<
  * @param fileName - The name to save the file as
  */
 export const downloadAndSaveS3File = async (
-  username: string, 
   fileId: string, 
   fileName: string
 ): Promise<void> => {
   try {
-    const blob = await downloadS3File(username, fileId);
+    const blob = await downloadS3File( fileId);
     
     // Create a URL for the blob
     const url = window.URL.createObjectURL(blob);
@@ -73,12 +72,11 @@ export const downloadAndSaveS3File = async (
  * @returns The path where the file was saved
  */
 export const saveS3FileToBCloud = async (
-  username: string,
   fileId: string,
   fileName: string
 ): Promise<string> => {
   try {
-    const blob = await downloadS3File(username, fileId);
+    const blob = await downloadS3File(fileId);
     
     // Ensure BCloud directory exists
     const directory_name: string = 'BCloud';

@@ -104,7 +104,7 @@ export default function FileTreeView({
   setBackHistory: React.Dispatch<React.SetStateAction<string[]>>,
   setForwardHistory: React.Dispatch<React.SetStateAction<string[]>>
 }) {
-  const { updates, set_Files, username, setFirstname, setLastname } = useAuth();
+  const { updates, set_Files, username, setFirstname, setLastname, devices } = useAuth();
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
   const disableFetch = false;
@@ -115,7 +115,6 @@ export default function FileTreeView({
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(
-        username || '',
         filePath || '',
         {
           setFirstname,
@@ -147,24 +146,21 @@ export default function FileTreeView({
         const updatedFiles = Array.from(uniqueFilesMap.values());
 
         setFetchedFiles(updatedFiles);
-        let treeData = buildTree(updatedFiles);
-        
+        let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
-        
         setFileRows(treeData);
         set_Files(updatedFiles);
+        setIsLoading(false);
       }
     };
 
     fetchAndUpdateFiles();
-  }, [username, disableFetch, updates, filePath]);
-
+  }, [username, disableFetch, updates, filePath, devices]);
 
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(
-        username || '',
         filePath || '',
         {
           setFirstname,
@@ -180,25 +176,20 @@ export default function FileTreeView({
         let updatedFiles: DatabaseData[] = [];
         updatedFiles = [...fetchedFiles, ...new_files];
         setFetchedFiles(updatedFiles);
-
-        let treeData = buildTree(updatedFiles);
-        
+        let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
-        
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
     };
 
     fetchAndUpdateFiles();
-  }, [username, disableFetch, updates, filePath]);
-
+  }, [username, disableFetch, updates, filePath, devices]);
 
   useEffect(() => {
     const handleFileChange = async () => {
       const new_files = await fetchFileData(
-        username || '',
         filePath || '',
         {
           setFirstname,
@@ -213,12 +204,9 @@ export default function FileTreeView({
       if (new_files) {
         const updatedFiles = [...fetchedFiles, ...new_files];
         setFetchedFiles(updatedFiles);
-
-        let treeData = buildTree(updatedFiles);
-        
+        let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
-        
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
@@ -228,7 +216,7 @@ export default function FileTreeView({
     return () => {
       fileWatcherEmitter.off('fileChanged', handleFileChange);
     };
-  }, [username, disableFetch]);
+  }, [username, disableFetch, devices]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => (

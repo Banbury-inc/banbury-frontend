@@ -13,7 +13,7 @@ interface S3UploadButtonProps {
 const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUploadComplete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const { username, devices, setUpdates } = useAuth();
+  const {devices, setUpdates } = useAuth();
   const { showAlert } = useAlert();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +31,6 @@ const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUpload
       const fileArray = Array.from(files);
       
       const results = await banbury.files.uploadMultipleToS3(
-        username || '', 
         fileArray, 
         deviceName, 
         filePath

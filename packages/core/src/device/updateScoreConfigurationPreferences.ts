@@ -8,7 +8,6 @@ import { CONFIG } from '../config';
  * @param taskInfo
  */
 export async function updateScoreConfigurationPreferences(
-  username: string | null,
   use_predicted_cpu_usage: any,
   use_predicted_ram_usage: any,
   use_predicted_gpu_usage: any,
@@ -23,7 +22,7 @@ export async function updateScoreConfigurationPreferences(
 
   try {
 
-    const url = `${CONFIG.url}/devices/update_device_configurations/${username}/`;
+    const url = `${CONFIG.url}/devices/update_device_configurations/`;
     const response = await axios.post<{ result: string; username: string; }>(url, {
       device_name: device_name,
       use_predicted_cpu_usage: use_predicted_cpu_usage,
