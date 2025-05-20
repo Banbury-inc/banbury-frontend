@@ -25,6 +25,7 @@ import Onboarding from './components/Onboarding';
 import http from 'http';
 import os from 'os';
 import { initAuthState } from '@banbury/core/src/auth';
+import { Link as RouterLink } from 'react-router-dom';
 
 interface Message {
   type: string;
@@ -62,7 +63,6 @@ function Copyright(props: any) {
 export default function SignIn() {
   // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [redirect_to_register, setredirect_to_register] = useState(false);
   const { setUsername, isTokenRefreshFailed, resetTokenRefreshStatus } = useAuth();
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
@@ -278,10 +278,6 @@ export default function SignIn() {
     return <Main />;
   }
 
-  if (redirect_to_register) {
-    return <Register />;
-  }
-
   // Main render
   return (
     <ThemeProvider theme={theme}>
@@ -395,17 +391,13 @@ export default function SignIn() {
                 <Grid item xs>
                   {/* <Link href="/register" variant="body2"> */}
                   <Link variant="body2" onClick={() => {
-                    setredirect_to_register(true);
+                    // setredirect_to_register(true);
                   }}>
                     Forgot password?
                   </Link>
                 </Grid>
                 <Grid item>
-                  {/* <Link href="/register" variant="body2"> */}
-                  <Link variant="body2" onClick={() => {
-                    setredirect_to_register(true);
-                  }}>
-
+                  <Link component={RouterLink} to="/register" variant="body2">
                     {"Don't have an account? Sign Up"}
                   </Link>
                 </Grid>

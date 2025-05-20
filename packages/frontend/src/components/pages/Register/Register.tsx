@@ -13,7 +13,8 @@ import theme from "../../../renderer/themes/theme";
 import SignIn from '../Login/Login';
 import { handlers } from '../../../renderer/handlers';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Link as MuiLink } from '@mui/material';
 
 function Copyright(props: any) {
   return (
@@ -169,9 +170,9 @@ export default function SignUp() {
               </Button>
               <Grid container justifyContent="flex-end">
                 <Grid item>
-                  <Link variant="body2" onClick={() => navigate('/login')}>
+                  <MuiLink component={RouterLink} to="/login" variant="body2">
                     Already have an account? Sign in
-                  </Link>
+                  </MuiLink>
                 </Grid>
               </Grid>
               <Grid container justifyContent="center">

@@ -1,6 +1,6 @@
 import { Box, CssBaseline, ThemeProvider as MuiThemeProvider } from "@mui/material";
 import React from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Login/Login";
 import { AuthProvider } from "../../renderer/context/AuthContext";
 import { ipcRenderer } from 'electron';
@@ -9,6 +9,7 @@ import { AlertProvider } from '../../renderer/context/AlertContext';
 import { Alert } from '../../components/template/alert';
 import { useAlert } from '../../renderer/context/AlertContext';
 import { ThemeProvider, useTheme } from "../../renderer/context/ThemeContext";
+import Register from "./Register/Register";
 
 function AlertWrapper() {
   const { alert } = useAlert();
@@ -98,13 +99,13 @@ function ThemedApp(): JSX.Element {
         <CssBaseline />
         <BrowserRouter>
           <AuthProvider>
-            <Box
-              sx={{
-                backgroundColor: (theme) => theme.palette.background.default,
-              }}
-            >
+            <Box sx={{ backgroundColor: (theme) => theme.palette.background.default }}>
               <main>
-                 <Login /> 
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="*" element={<Navigate to="/login" replace />} />
+                </Routes>
               </main>
             </Box>
           </AuthProvider>
