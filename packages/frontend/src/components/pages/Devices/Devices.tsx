@@ -35,12 +35,11 @@ import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { useAlert } from '../../../renderer/context/AlertContext';
-import { handleAddDeviceClick } from './handleAddDeviceClick';
-import { handleDeleteDeviceClick } from './handleDeleteDeviceClick';
+import { handleAddDeviceClick } from './components/AddDeviceButton/handleAddDeviceClick';
 import { handleFetchDevices } from './handleFetchDevices';
 import { DeviceData } from './types';
-
-
+import AddDeviceButton from './components/AddDeviceButton/AddDeviceButton';
+import DeleteDeviceButton from './components/DeleteDeviceButton/DeleteDeviceButton';
 
 const headCells: HeadCell[] = [
   { id: 'device_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true },
@@ -424,39 +423,34 @@ export default function Devices() {
             <Grid container spacing={0} sx={{ display: 'flex', flexWrap: 'nowrap', pt: 0 }}>
 
               <Grid item paddingRight={1}>
-                <Tooltip title="Add Device">
-                  <Button
-                    data-testid="AddDeviceButton"
-                    onClick={handleAddDeviceClick(selectedDevice, setTaskbox_expanded, setTasks, showAlert, tasks, setIsLoading, setAllDevices, setSelectedDevice, username)}
-                    sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-                  >
-                    <AddToQueueIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
+                <AddDeviceButton
+                  selectedDevice={selectedDevice}
+                  setTaskbox_expanded={setTaskbox_expanded}
+                  setTasks={setTasks}
+                  showAlert={showAlert}
+                  tasks={tasks}
+                  setIsLoading={setIsLoading}
+                  setAllDevices={setAllDevices}
+                  setSelectedDevice={setSelectedDevice}
+                  username={username}
+                  handleAddDeviceClick={handleAddDeviceClick}
+                />
               </Grid>
 
 
               <Grid item paddingRight={1}>
-                <Tooltip title="Delete Device">
-                  <Button
-                    data-testid="DeleteDeviceButton"
-                    onClick={handleDeleteDeviceClick(
-                      selectedDevice,
-                      selectedDeviceNames,
-                      setSelectedDeviceNames,
-                      setTaskbox_expanded,
-                      setTasks,
-                      showAlert,
-                      tasks,
-                      setAllDevices,
-                      setIsLoading,
-                      setSelectedDevice
-                    )}
-                    sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-                  >
-                    <DeleteIcon fontSize="inherit" />
-                  </Button>
-                </Tooltip>
+                <DeleteDeviceButton
+                  selectedDevice={selectedDevice}
+                  selectedDeviceNames={selectedDeviceNames}
+                  setSelectedDeviceNames={setSelectedDeviceNames}
+                  setTaskbox_expanded={setTaskbox_expanded}
+                  setTasks={setTasks}
+                  showAlert={showAlert}
+                  tasks={tasks}
+                  setAllDevices={setAllDevices}
+                  setIsLoading={setIsLoading}
+                  setSelectedDevice={setSelectedDevice}
+                />
               </Grid>
               <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading)} />
             </Grid>

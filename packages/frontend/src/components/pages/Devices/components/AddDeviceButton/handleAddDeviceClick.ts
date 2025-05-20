@@ -1,8 +1,8 @@
 import path from 'path';
 import os from 'os';
 import banbury from '@banbury/core';
-import { handlers } from '../../../renderer/handlers';
-import { handleFetchDevices } from './handleFetchDevices';
+import { handlers } from '../../../../../renderer/handlers';
+import { handleFetchDevices } from '../../handleFetchDevices';
 
 
 export function handleAddDeviceClick(
@@ -16,12 +16,13 @@ export function handleAddDeviceClick(
   setSelectedDevice: any,
   username: string | null) {
   const handleAddDeviceClick = async () => {
-    if (!username) {
-      showAlert('Error', ['No username provided'], 'error');
-      return;
-    }
-    
+    setIsLoading(true);
     try {
+      if (!username) {
+        showAlert('Error', ['No username provided'], 'error');
+        return;
+      }
+      
       const device_name = banbury.device.name();
       const task_description = 'Adding device ' + device_name;
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
@@ -90,6 +91,8 @@ export function handleAddDeviceClick(
         console.error('Failed to create error task:', taskError);
         showAlert('Error', ['Failed to create error task', taskError instanceof Error ? taskError.message : 'Unknown error'], 'error');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
   return handleAddDeviceClick;
