@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { createTestUserIfNeeded, loginWithTestUser as _loginWithTestUser, completeOnboarding as _completeOnboarding, TestUserCredentials, getSharedTestUserCredentials } from './utils/test-user'
+import { createTestUserIfNeeded, loginWithTestUser as _loginWithTestUser, completeOnboarding as _completeOnboarding, TestUserCredentials } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
 
 let sharedContext;

@@ -5,7 +5,6 @@ export const getSyncFolders = async () => {
     const device_name = banbury.device.name();
     const result = await banbury.device.getSingleDeviceInfoWithDeviceName(device_name);
     const device = result;
-    console.log(device);
     // Check if device is not found
     if (!device) {
       return {

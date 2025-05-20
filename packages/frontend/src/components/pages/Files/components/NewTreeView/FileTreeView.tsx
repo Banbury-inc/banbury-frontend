@@ -112,27 +112,6 @@ export default function FileTreeView({
   const [isLoading, setIsLoading] = useState(true);
   const [_expandedNodes, _setExpandedNodes] = useState<string[]>(['Core']);
 
-  // Helper to convert device info to DatabaseData node
-  const deviceToNode = (device: any): DatabaseData => ({
-    _id: device._id || device.deviceID || device.device_name || '',
-    id: `device-${(device.device_name || '').replace(/\s+/g, '-')}`,
-    file_type: 'directory',
-    file_name: device.device_name || 'Unnamed Device',
-    date_uploaded: '',
-    file_size: '',
-    file_path: '',
-    shared_with: [],
-    is_public: false,
-    helpers: 0,
-    available: device.online ? 'Available' : 'Unavailable',
-    kind: 'Device',
-    file_parent: 'Devices',
-    deviceID: device.deviceID || '',
-    device_name: device.device_name || '',
-    children: [],
-    original_device: '',
-  });
-
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(

@@ -23,7 +23,7 @@ export default function SyncButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { username, devices, tasks, setTasks, setDevices } = useAuth();
+  const { tasks, setTasks, setDevices } = useAuth();
   const { showAlert } = useAlert();
   const [isLoading, setIsLoading] = useState(false);
 
