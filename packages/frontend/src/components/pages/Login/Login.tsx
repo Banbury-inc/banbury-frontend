@@ -16,7 +16,6 @@ import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from "../../../renderer/themes/theme";
 import Main from "../../pages/main";
-import Register from "../Register/Register";
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { shell } from 'electron';
