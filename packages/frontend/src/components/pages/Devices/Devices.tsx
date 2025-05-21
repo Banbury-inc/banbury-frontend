@@ -131,6 +131,12 @@ function formatStorageCapacity(capacity: string | number): string {
   return capacity as string; // If it's not a number or valid numeric string, return as is (e.g., 'N/A')
 }
 
+// Add this utility function at the top of the file, outside of any component
+function formatTimeLabel(timestamp: string | number | Date): string {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
   right: -4,
@@ -1164,7 +1170,12 @@ export default function Devices() {
                             height: '100%'
                           }}
                           xAxis={[{
-                            data: timeseriesData.map((d, i) => i + 1)
+                            data: timeseriesData.map((d) => new Date(d.timestamp)),
+                            scaleType: 'time',
+                            valueFormatter: (date) =>
+                              date instanceof Date
+                                ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : '',
                           }]}
                           series={[{
                             data: getMetricSeries(selectedMetric),
