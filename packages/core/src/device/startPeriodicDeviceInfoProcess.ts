@@ -10,9 +10,7 @@ import { pipeline } from './predictions/pipeline';
  * @param requestingDeviceName The name of the device requesting the info (can be same as sending).
  */
 export function startPeriodicDeviceInfoProcess(
-  username: string,
   sendingDeviceName: string,
-  requestingDeviceName: string
 ) {
   async function sendDeviceInfo() {
     try {

@@ -13,6 +13,6 @@ export async function getTimeseriesData(deviceId: string): Promise<any[]> {
       return [];
     }
   } catch (e) {
-    return [];
+    return [e];
   }
 } 

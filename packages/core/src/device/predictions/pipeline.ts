@@ -143,22 +143,13 @@ export async function pipeline() {
                 loss: 'meanSquaredError'
             });
 
-            // Training progress callback
-            let epochCounter = 0;
             const totalEpochs = 25;
             
             // Fit the model
             await model.fit(xs, ys, { 
                 epochs: totalEpochs, 
                 batchSize: Math.min(32, inputs.length),
-                shuffle: true,
-                callbacks: {
-                    onEpochEnd: (epoch, logs) => {
-                        epochCounter++;
-                        if (epochCounter % 5 === 0 || epochCounter === totalEpochs) {
-                        }
-                    }
-                }
+                shuffle: true
             });
             
             // Initial sequence is the last SEQUENCE_LENGTH elements from normalized series
@@ -173,12 +164,8 @@ export async function pipeline() {
             const futurePreds: { timestamp: string, value: number | null }[] = [];
             
             // Show prediction progress in chunks
-            const progressChunkSize = Math.max(1, Math.floor(FUTURE_STEPS / 5));
-            
             for (let i = 0; i < FUTURE_STEPS; i++) {
                 // Show progress updates periodically
-                if (i % progressChunkSize === 0 || i === FUTURE_STEPS - 1) {
-                }
                 
                 // Reshape the sequence for the LSTM input [batch, timesteps, features]
                 const inputTensor = tf.tensor3d([sequence.map(val => [val])], [1, SEQUENCE_LENGTH, 1]);
@@ -262,10 +249,6 @@ export async function pipeline() {
         }
     }
 
-    
-    if (flatPredictions.length > 0) {
-    }
-
     // Send in batches of 1000, concurrently
     const predictionChunks = chunkArray(flatPredictions, 1000);
     
@@ -273,7 +256,7 @@ export async function pipeline() {
         await Promise.all(
             predictionChunks.map(async (chunk, index) => {
                 try {
-                    const response = await axios.post(`${CONFIG.url}/predictions/store_device_predictions/`, { predictions: chunk });
+                    await axios.post(`${CONFIG.url}/predictions/store_device_predictions/`, { predictions: chunk });
                 } catch (err) {
                     console.error(`  ❌ Failed to store batch ${index + 1}/${predictionChunks.length}:`, err);
                 }

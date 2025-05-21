@@ -11,6 +11,6 @@ export async function getTimeseriesPredictionData(deviceId: string): Promise<any
       return null;
     }
   } catch (e) {
-    return null;
+    return e;
   }
 } 

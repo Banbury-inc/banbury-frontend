@@ -36,7 +36,6 @@ import { handleAddDeviceClick } from './components/AddDeviceButton/handleAddDevi
 import { DeviceData } from './types';
 import AddDeviceButton from './components/AddDeviceButton/AddDeviceButton';
 import DeleteDeviceButton from './components/DeleteDeviceButton/DeleteDeviceButton';
-import { getTimeseriesPredictionData } from '@banbury/core/src/device/getTimeseriesPredictionData';
 
 const headCells: HeadCell[] = [
   { id: 'device_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true },
@@ -132,12 +131,6 @@ function formatStorageCapacity(capacity: string | number): string {
   return capacity as string; // If it's not a number or valid numeric string, return as is (e.g., 'N/A')
 }
 
-// Add this utility function at the top of the file, outside of any component
-function formatTimeLabel(timestamp: string | number | Date): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
   right: -4,
@@ -196,40 +189,6 @@ function getValueFormatter(metric: string) {
   };
 }
 
-// Add this utility function to extract predicted metric series
-function getPredictionMetricSeries(metric: string, timeseriesPredictionData: any[]): number[] {
-  if (!Array.isArray(timeseriesPredictionData) || !timeseriesPredictionData.length) return [];
-  switch (metric) {
-    case 'cpu':
-      return timeseriesPredictionData.map((d) => Number(d.cpu_usage));
-    case 'ram':
-      return timeseriesPredictionData.map((d) => Number(d.ram_usage));
-    case 'gpu':
-      return timeseriesPredictionData.map((d) => Number(d.gpu_usage));
-    case 'storage_capacity_gb':
-      return timeseriesPredictionData.map((d) => Number(d.storage_capacity_gb));
-    case 'battery_status':
-      return timeseriesPredictionData.map((d) => Number(d.battery_status));
-    case 'battery_time_remaining':
-      return timeseriesPredictionData.map((d) => Number(d.battery_time_remaining));
-    case 'ram_total':
-      return timeseriesPredictionData.map((d) => Number(d.ram_total));
-    case 'ram_free':
-      return timeseriesPredictionData.map((d) => Number(d.ram_free));
-    case 'upload_speed':
-      return timeseriesPredictionData.map((d) => Number(d.upload_speed));
-    case 'download_speed':
-      return timeseriesPredictionData.map((d) => Number(d.download_speed));
-    default:
-      return [];
-  }
-}
-
-// Add this utility function to extract predicted timestamps
-function getPredictionTimestamps(timeseriesPredictionData: any[]): Date[] {
-  if (!Array.isArray(timeseriesPredictionData) || !timeseriesPredictionData.length) return [];
-  return timeseriesPredictionData.map((d) => new Date(d.timestamp));
-}
 
 // Helper to get the value key for a metric
 function getMetricValueKey(metric: string): string {
@@ -272,7 +231,7 @@ function mapSeriesToTimeline(timeline: Date[], data: any[], valueKey: string) {
           }
         }
       } catch (e) {
-        console.error("Error parsing timestamp:", d.timestamp);
+        console.error("Error parsing timestamp:", d.timestamp, e);
       }
     }
   });
@@ -368,6 +327,7 @@ export default function Devices() {
         const res = await banbury.device.getTimeseriesData(selectedDevice._id);
         setTimeseriesData(res);
       } catch (e) {
+        showAlert('Error', ['Failed to fetch timeseries data', e instanceof Error ? e.message : 'Unknown error'], 'error');
         setTimeseriesData([]);
       } finally {
         setIsTimeseriesLoading(false);
@@ -388,34 +348,6 @@ export default function Devices() {
     { value: 'upload_speed', label: 'Upload Speed' },
     { value: 'download_speed', label: 'Download Speed' },
   ];
-
-  const getMetricSeries = (metric: string) => {
-    if (!timeseriesData.length) return [];
-    switch (metric) {
-      case 'cpu':
-        return timeseriesData.map((d) => Number(d.cpu_usage));
-      case 'ram':
-        return timeseriesData.map((d) => Number(d.ram_usage));
-      case 'gpu':
-        return timeseriesData.map((d) => Number(d.gpu_usage));
-      case 'storage_capacity_gb':
-        return timeseriesData.map((d) => Number(d.storage_capacity_gb));
-      case 'battery_status':
-        return timeseriesData.map((d) => Number(d.battery_status));
-      case 'battery_time_remaining':
-        return timeseriesData.map((d) => Number(d.battery_time_remaining));
-      case 'ram_total':
-        return timeseriesData.map((d) => Number(d.ram_total));
-      case 'ram_free':
-        return timeseriesData.map((d) => Number(d.ram_free));
-      case 'upload_speed':
-        return timeseriesData.map((d) => Number(d.upload_speed));
-      case 'download_speed':
-        return timeseriesData.map((d) => Number(d.download_speed));
-      default:
-        return [];
-    }
-  };
 
   useEffect(() => {
     const fetchDevicesFunc = banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
@@ -622,7 +554,6 @@ export default function Devices() {
       setIsTimeseriesPredictionLoading(true);
       try {
         const data = await banbury.device.getTimeseriesPredictionData(selectedDevice._id);
-        console.log('Prediction data:', data);
         // Ensure we always set an array
         if (Array.isArray(data)) {
           setTimeseriesPredictionData(data);
@@ -634,6 +565,7 @@ export default function Devices() {
           setTimeseriesPredictionData([]);
         }
       } catch (e) {
+        showAlert('Error', ['Failed to fetch timeseries prediction data', e instanceof Error ? e.message : 'Unknown error'], 'error');
         setTimeseriesPredictionData(null);
       } finally {
         setIsTimeseriesPredictionLoading(false);
@@ -1409,17 +1341,7 @@ export default function Devices() {
                             });
                             if (startPredictionIdx === -1) startPredictionIdx = 0;
                           }
-                          
-                          // Always include the first prediction after the last actual data point
                           const predictedDataToShow = predictedDataArray.slice(startPredictionIdx, startPredictionIdx + predictedLength);
-                          
-                          if (predictedDataToShow.length > 0) {
-                            console.log('First predicted timestamp shown:', predictedDataToShow[0].timestamp);
-                            console.log('Number of predictions shown:', predictedDataToShow.length);
-                          }
-                          
-                          // COMPLETELY NEW APPROACH: Instead of trying to map timestamps, create a unified series
-                          // with all actual data followed by prediction data
                           
                           // 1. Extract actual values and predictions for the selected metric
                           const actualValues = timeseriesData.map(d => Number(d[valueKey]) || null);
@@ -1436,8 +1358,6 @@ export default function Devices() {
                                          
                             return Number(value) || null;
                           });
-                          
-                          console.log('Extracted prediction values (first 10):', predictionValues.slice(0, 10));
                           
                           // 2. Create a unified timeline with evenly spaced points
                           const firstActualDate = actualTimestamps.length > 0 ? 
@@ -1479,27 +1399,8 @@ export default function Devices() {
                             }
                           }
                           
-                          // Log some diagnostics
-                          console.log('Total chart points:', allDates.length);
-                          console.log('Actual values in chart:', actualValues.length);
-                          console.log('Prediction values in chart:', predictionValues.length);
-                          console.log('First few predictions:', predictionValues.slice(0, 5));
 
                           // Debugging to verify we're accessing the correct values from the database
-                          console.log('Raw prediction data sample (first 3):', 
-                            predictedDataToShow.slice(0, 3).map(item => ({ 
-                              timestamp: item.timestamp, 
-                              ...Object.entries(item)
-                                .filter(([key]) => key !== 'timestamp' && key !== 'metadata')
-                                .reduce((obj, [key, val]) => ({ ...obj, [key]: val }), {})
-                            }))
-                          );
-                          console.log('Current valueKey being used:', valueKey);
-                          
-                          // Let's check if we're using the right property names for predictions
-                          const availableKeys = predictedDataToShow.length > 0 ? 
-                            Object.keys(predictedDataToShow[0]).filter(k => k !== 'timestamp' && k !== 'metadata') : [];
-                          console.log('Available metric keys in prediction data:', availableKeys);
 
                           return (
                             <LineChart
