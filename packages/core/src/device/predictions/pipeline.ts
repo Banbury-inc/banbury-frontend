@@ -27,10 +27,8 @@ function createSequences(data: number[], sequenceLength: number): { inputs: numb
 }
 
 export async function pipeline() {
-    console.log('🚀 Starting prediction pipeline...');
     // get every device id that is owned by the user
     const deviceData = await banbury.device.fetchDeviceData();
-    console.log(`📊 Found ${Array.isArray(deviceData) ? deviceData.length : 0} devices to process`);
 
     if (!Array.isArray(deviceData)) {
         console.error('Failed to fetch device data:', deviceData);
@@ -45,24 +43,19 @@ export async function pipeline() {
 
     for (let deviceIndex = 0; deviceIndex < deviceIds.length; deviceIndex++) {
         const deviceId = deviceIds[deviceIndex];
-        console.log(`\n⚙️ Processing device ${deviceIndex + 1}/${deviceIds.length}: ${deviceId}`);
         
         // for each device id, get the timeseries data
-        console.log(`  📈 Fetching timeseries data...`);
         const timeseriesData = await banbury.device.getTimeseriesData(deviceId);
-        console.log(`  ✅ Received ${timeseriesData.length} data points`);
         timeseriesResults.push({ deviceId, timeseriesData });
 
         // Assume timeseriesData is an array of objects with the same keys (metrics)
         if (!Array.isArray(timeseriesData) || timeseriesData.length < SEQUENCE_LENGTH + 1) {
-            console.log(`  ⚠️ Not enough data for prediction (need at least ${SEQUENCE_LENGTH + 1} points)`);
             predictions.push({ deviceId, prediction: null, error: 'Not enough data' });
             continue;
         }
 
         // Get all metric keys (excluding timestamp if present)
         const metricKeys = Object.keys(timeseriesData[0]).filter(k => k !== 'timestamp' && k !== 'metadata' && k !== '_id');
-        console.log(`  🔧 Processing ${metricKeys.length} metrics: ${metricKeys.slice(0, 3).join(', ')}${metricKeys.length > 3 ? '...' : ''}`);
         
         const devicePrediction: Record<string, { timestamp: string, value: number | null }[] | null> = {};
 
@@ -77,18 +70,15 @@ export async function pipeline() {
 
         for (let metricIndex = 0; metricIndex < metricKeys.length; metricIndex++) {
             const key = metricKeys[metricIndex];
-            console.log(`  🔄 [${metricIndex + 1}/${metricKeys.length}] Training model for metric: ${key}`);
             
             // Extract the series for this metric
             const series = timeseriesData.map((row: any) => Number(row[key])).filter(v => !isNaN(v));
             if (series.length < SEQUENCE_LENGTH + 1) {
-                console.log(`    ⚠️ Not enough valid data points for ${key}`);
                 devicePrediction[key] = null;
                 continue;
             }
 
             // Min-max normalization
-            console.log(`    🧮 Normalizing data...`);
             const min = Math.min(...series);
             const max = Math.max(...series);
             let normalizedSeries = series;
@@ -99,16 +89,13 @@ export async function pipeline() {
             }
 
             // Prepare data for LSTM using sequence format
-            console.log(`    🧩 Creating sequences for LSTM...`);
             const { inputs, outputs } = createSequences(normalizedSeries, SEQUENCE_LENGTH);
-            console.log(`    📋 Created ${inputs.length} training sequences`);
             
             // Convert to tensors - fix tensor shape typing
             const xs = tf.tensor3d(inputs.map(seq => seq.map(val => [val])), [inputs.length, SEQUENCE_LENGTH, 1]);
             const ys = tf.tensor2d(outputs.map(val => [val]), [outputs.length, 1]);
 
             // Build LSTM model
-            console.log(`    🧠 Building LSTM model...`);
             const model = tf.sequential();
             model.add(tf.layers.lstm({
                 units: 16,
@@ -128,7 +115,6 @@ export async function pipeline() {
             const totalEpochs = 25;
             
             // Fit the model
-            console.log(`    🏋️ Training model (${totalEpochs} epochs)...`);
             await model.fit(xs, ys, { 
                 epochs: totalEpochs, 
                 batchSize: Math.min(32, inputs.length),
@@ -137,15 +123,10 @@ export async function pipeline() {
                     onEpochEnd: (epoch, logs) => {
                         epochCounter++;
                         if (epochCounter % 5 === 0 || epochCounter === totalEpochs) {
-                            console.log(`      ⏳ Training progress: ${epochCounter}/${totalEpochs} epochs (loss: ${logs?.loss.toFixed(5)})`);
                         }
                     }
                 }
             });
-            console.log(`    ✅ Training complete!`);
-
-            // Predict multiple future values recursively, with timestamps
-            console.log(`    🔮 Generating ${FUTURE_STEPS} predictions...`);
             
             // Initial sequence is the last SEQUENCE_LENGTH elements from normalized series
             let sequence = normalizedSeries.slice(-SEQUENCE_LENGTH);
@@ -164,7 +145,6 @@ export async function pipeline() {
             for (let i = 0; i < FUTURE_STEPS; i++) {
                 // Show progress updates periodically
                 if (i % progressChunkSize === 0 || i === FUTURE_STEPS - 1) {
-                    console.log(`      📊 Prediction progress: ${i + 1}/${FUTURE_STEPS} (${Math.round((i + 1) / FUTURE_STEPS * 100)}%)`);
                 }
                 
                 // Reshape the sequence for the LSTM input [batch, timesteps, features]
@@ -197,7 +177,6 @@ export async function pipeline() {
             }
             
             devicePrediction[key] = futurePreds;
-            console.log(`    ✓ ${futurePreds.length} predictions generated for ${key}`);
 
             // Dispose tensors
             xs.dispose();
@@ -206,11 +185,9 @@ export async function pipeline() {
         }
 
         predictions.push({ deviceId, prediction: devicePrediction });
-        console.log(`  ✅ Device ${deviceIndex + 1}/${deviceIds.length} processing complete`);
     }
 
     // Flatten predictions for all devices as snapshots per timestamp
-    console.log(`\n📦 Formatting predictions for storage...`);
     const flatPredictions: any[] = [];
     for (const { deviceId, prediction } of predictions) {
         if (!prediction) continue;
@@ -252,29 +229,23 @@ export async function pipeline() {
         }
     }
 
-    console.log(`📊 Created ${flatPredictions.length} prediction snapshots`);
     
     if (flatPredictions.length > 0) {
-        console.log('📋 Earliest Prediction:', flatPredictions[0]);
     }
 
     // Send in batches of 1000, concurrently
     const predictionChunks = chunkArray(flatPredictions, 1000);
-    console.log(`📤 Sending ${predictionChunks.length} batches to backend...`);
     
     try {
         await Promise.all(
             predictionChunks.map(async (chunk, index) => {
                 try {
-                    console.log(`  🔄 Sending batch ${index + 1}/${predictionChunks.length} (${chunk.length} predictions)...`);
                     const response = await axios.post(`${CONFIG.url}/predictions/store_device_predictions/`, { predictions: chunk });
-                    console.log(`  ✅ Batch ${index + 1}/${predictionChunks.length} sent successfully`);
                 } catch (err) {
                     console.error(`  ❌ Failed to store batch ${index + 1}/${predictionChunks.length}:`, err);
                 }
             })
         );
-        console.log(`🎉 Pipeline completed successfully!`);
     } catch (err) {
         console.error('❌ Failed to store predictions in backend:', err);
     }
