@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import Stack from '@mui/material/Stack';
 import { Switch, useMediaQuery } from '@mui/material';
 import Box from '@mui/material/Box';
@@ -194,6 +194,107 @@ function getValueFormatter(metric: string) {
         return value.toString();
     }
   };
+}
+
+// Add this utility function to extract predicted metric series
+function getPredictionMetricSeries(metric: string, timeseriesPredictionData: any[]): number[] {
+  if (!Array.isArray(timeseriesPredictionData) || !timeseriesPredictionData.length) return [];
+  switch (metric) {
+    case 'cpu':
+      return timeseriesPredictionData.map((d) => Number(d.cpu_usage));
+    case 'ram':
+      return timeseriesPredictionData.map((d) => Number(d.ram_usage));
+    case 'gpu':
+      return timeseriesPredictionData.map((d) => Number(d.gpu_usage));
+    case 'storage_capacity_gb':
+      return timeseriesPredictionData.map((d) => Number(d.storage_capacity_gb));
+    case 'battery_status':
+      return timeseriesPredictionData.map((d) => Number(d.battery_status));
+    case 'battery_time_remaining':
+      return timeseriesPredictionData.map((d) => Number(d.battery_time_remaining));
+    case 'ram_total':
+      return timeseriesPredictionData.map((d) => Number(d.ram_total));
+    case 'ram_free':
+      return timeseriesPredictionData.map((d) => Number(d.ram_free));
+    case 'upload_speed':
+      return timeseriesPredictionData.map((d) => Number(d.upload_speed));
+    case 'download_speed':
+      return timeseriesPredictionData.map((d) => Number(d.download_speed));
+    default:
+      return [];
+  }
+}
+
+// Add this utility function to extract predicted timestamps
+function getPredictionTimestamps(timeseriesPredictionData: any[]): Date[] {
+  if (!Array.isArray(timeseriesPredictionData) || !timeseriesPredictionData.length) return [];
+  return timeseriesPredictionData.map((d) => new Date(d.timestamp));
+}
+
+// Helper to get the value key for a metric
+function getMetricValueKey(metric: string): string {
+  switch (metric) {
+    case 'cpu': return 'cpu_usage';
+    case 'ram': return 'ram_usage';
+    case 'gpu': return 'gpu_usage';
+    case 'storage_capacity_gb': return 'storage_capacity_gb';
+    case 'battery_status': return 'battery_status';
+    case 'battery_time_remaining': return 'battery_time_remaining';
+    case 'ram_total': return 'ram_total';
+    case 'ram_free': return 'ram_free';
+    case 'upload_speed': return 'upload_speed';
+    case 'download_speed': return 'download_speed';
+    default: return '';
+  }
+}
+
+// Helper to map series data to a unified timeline - keeping only essential logs
+function mapSeriesToTimeline(timeline: Date[], data: any[], valueKey: string) {
+  // Handle empty data case properly
+  if (!data || data.length === 0) return timeline.map(() => null);
+  
+  // FIX: Create a normalized timestamp mapping
+  const timeToValue = new Map();
+  
+  // FIX: Extract timestamps and normalize to milliseconds, removing timezone and formatting differences
+  data.forEach(d => {
+    if (d && d.timestamp && d[valueKey] !== undefined) {
+      try {
+        // Parse timestamp to Date and get milliseconds (handles different formats)
+        let dateObj = new Date(d.timestamp);
+        const timeMs = dateObj.getTime();
+        
+        // Make sure it's a valid date
+        if (!isNaN(timeMs)) {
+          const value = Number(d[valueKey]);
+          if (!isNaN(value)) {
+            timeToValue.set(timeMs, value);
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing timestamp:", d.timestamp);
+      }
+    }
+  });
+  
+  // FIX: Map using milliseconds for comparison
+  return timeline.map((date) => {
+    const timeMs = date.getTime();
+    
+    // Find closest timestamp if exact match not found (within 1s tolerance)
+    if (timeToValue.has(timeMs)) {
+      return timeToValue.get(timeMs);
+    } 
+    
+    // If no exact match, try nearby timestamps within 1 second (1000ms)
+    const tolerance = 1000; // 1 second tolerance
+    for (let offset = 1; offset <= tolerance; offset++) {
+      if (timeToValue.has(timeMs - offset)) return timeToValue.get(timeMs - offset);
+      if (timeToValue.has(timeMs + offset)) return timeToValue.get(timeMs + offset);
+    }
+    
+    return null;
+  });
 }
 
 export default function Devices() {
@@ -507,6 +608,11 @@ export default function Devices() {
   const [timeseriesPredictionData, setTimeseriesPredictionData] = useState<any>(null);
   const [isTimeseriesPredictionLoading, setIsTimeseriesPredictionLoading] = useState(false);
 
+  // Add memoization for prediction data to prevent recalculations on every render
+  const memoizedPredictionData = useMemo(() => {
+    return Array.isArray(timeseriesPredictionData) ? timeseriesPredictionData : [];
+  }, [timeseriesPredictionData]);
+
   useEffect(() => {
     const fetchPredictionData = async () => {
       if (!selectedDevice || !selectedDevice._id) {
@@ -516,7 +622,17 @@ export default function Devices() {
       setIsTimeseriesPredictionLoading(true);
       try {
         const data = await banbury.device.getTimeseriesPredictionData(selectedDevice._id);
-        setTimeseriesPredictionData(data);
+        console.log('Prediction data:', data);
+        // Ensure we always set an array
+        if (Array.isArray(data)) {
+          setTimeseriesPredictionData(data);
+        } else if (data && Array.isArray(data.predictions)) {
+          setTimeseriesPredictionData(data.predictions);
+        } else if (data && typeof data === 'object') {
+          setTimeseriesPredictionData([data]);
+        } else {
+          setTimeseriesPredictionData([]);
+        }
       } catch (e) {
         setTimeseriesPredictionData(null);
       } finally {
@@ -1256,35 +1372,176 @@ export default function Devices() {
                         </FormControl>
                       </Stack>
 
+                      {/* Legend */}
+                      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ width: 20, height: 3, bgcolor: selectedMetric === 'gpu' ? '#4CAF50' : selectedMetric === 'ram' ? '#2196F3' : selectedMetric === 'cpu' ? '#FF5722' : '#9C27B0', mr: 1 }} />
+                          <Typography variant="caption">Actual</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ width: 20, height: 0, borderTop: '3px dashed #673ab7', mr: 1 }} />
+                          <Typography variant="caption">Predicted</Typography>
+                        </Box>
+                      </Stack>
+
                       <Box sx={{ height: 300, width: '100%' }}>
-                        <LineChart
-                          sx={{
-                            width: '100%',
-                            height: '100%',
-                          }}
-                          xAxis={[{
-                            data: timeseriesData.map((d) => new Date(d.timestamp)),
-                            scaleType: 'time',
-                            valueFormatter: (date) =>
-                              date instanceof Date
-                                ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                : '',
-                          }]}
-                          yAxis={[{
-                            valueFormatter: getValueFormatter(selectedMetric),
-                          }]}
-                          series={[{
-                            data: getMetricSeries(selectedMetric),
-                            valueFormatter: getValueFormatter(selectedMetric),
-                            color: selectedMetric === 'gpu' ? '#4CAF50'
-                              : selectedMetric === 'ram' ? '#2196F3'
-                                : selectedMetric === 'cpu' ? '#FF5722'
-                                : '#9C27B0',
-                            showMark: false
-                          }]}
-                          margin={{ top: 10, bottom: 20, left: 70, right: 10 }}
-                          loading={isTimeseriesLoading}
-                        />
+                        {(() => {
+                          // Build unified timeline
+                          const actualTimestamps = timeseriesData.map((d) => new Date(d.timestamp).getTime());
+                          const valueKey = getMetricValueKey(selectedMetric);
+                          const actualSeries = mapSeriesToTimeline(
+                            actualTimestamps.map((t) => new Date(t)),
+                            timeseriesData,
+                            valueKey
+                          );
+
+                          // Only show a third of the actual data length for predictions
+                          const predictedDataArray = memoizedPredictionData;
+                          const predictedLength = Math.ceil(actualSeries.length / 3);
+                          // Find the timestamp of the last actual data point
+                          const lastActualTimestamp = actualTimestamps.length > 0 ? actualTimestamps[actualTimestamps.length - 1] : null;
+                          // Find the index in the prediction array where the timestamp is just after the last actual data point
+                          let startPredictionIdx = 0;
+                          if (lastActualTimestamp !== null) {
+                            startPredictionIdx = predictedDataArray.findIndex((d) => {
+                              const predTs = new Date(d.timestamp).getTime();
+                              return predTs > lastActualTimestamp;
+                            });
+                            if (startPredictionIdx === -1) startPredictionIdx = 0;
+                          }
+                          
+                          // Always include the first prediction after the last actual data point
+                          const predictedDataToShow = predictedDataArray.slice(startPredictionIdx, startPredictionIdx + predictedLength);
+                          
+                          if (predictedDataToShow.length > 0) {
+                            console.log('First predicted timestamp shown:', predictedDataToShow[0].timestamp);
+                            console.log('Number of predictions shown:', predictedDataToShow.length);
+                          }
+                          
+                          // COMPLETELY NEW APPROACH: Instead of trying to map timestamps, create a unified series
+                          // with all actual data followed by prediction data
+                          
+                          // 1. Extract actual values and predictions for the selected metric
+                          const actualValues = timeseriesData.map(d => Number(d[valueKey]) || null);
+                          const predictionValues = predictedDataToShow.map(d => {
+                            // Look for the exact value key or potential alternatives
+                            const exactMatch = d[valueKey];
+                            const alternateMatch = 
+                              d[valueKey.replace('_usage', '')] || // Try without _usage
+                              d[valueKey.replace('_', '')] ||      // Try without underscores
+                              d[Object.keys(d).find(k => k.toLowerCase().includes(valueKey.toLowerCase().replace('_usage', ''))) || ''];
+                            
+                            const value = exactMatch !== undefined ? exactMatch : 
+                                         alternateMatch !== undefined ? alternateMatch : null;
+                                         
+                            return Number(value) || null;
+                          });
+                          
+                          console.log('Extracted prediction values (first 10):', predictionValues.slice(0, 10));
+                          
+                          // 2. Create a unified timeline with evenly spaced points
+                          const firstActualDate = actualTimestamps.length > 0 ? 
+                            new Date(actualTimestamps[0]) : new Date();
+                          
+                          // Create sequential timestamps for chart display
+                          const allDates = [];
+                          const interval = 60000; // 1 minute interval
+                          
+                          // Add dates for actual values
+                          for (let i = 0; i < actualValues.length; i++) {
+                            allDates.push(new Date(firstActualDate.getTime() + i * interval));
+                          }
+                          
+                          // Add dates for prediction values (continuing from where actual values end)
+                          for (let i = 0; i < predictionValues.length; i++) {
+                            allDates.push(new Date(firstActualDate.getTime() + (actualValues.length + i) * interval));
+                          }
+                          
+                          // 3. Create series that align with our unified timeline
+                          const seriesActual = [];
+                          const seriesPredicted = [];
+                          
+                          // Fill actual values (null for prediction area)
+                          for (let i = 0; i < allDates.length; i++) {
+                            if (i < actualValues.length) {
+                              seriesActual.push(actualValues[i]);
+                            } else {
+                              seriesActual.push(null);
+                            }
+                          }
+                          
+                          // Fill prediction values (null for actual area)
+                          for (let i = 0; i < allDates.length; i++) {
+                            if (i >= actualValues.length && i < actualValues.length + predictionValues.length) {
+                              seriesPredicted.push(predictionValues[i - actualValues.length]);
+                            } else {
+                              seriesPredicted.push(null);
+                            }
+                          }
+                          
+                          // Log some diagnostics
+                          console.log('Total chart points:', allDates.length);
+                          console.log('Actual values in chart:', actualValues.length);
+                          console.log('Prediction values in chart:', predictionValues.length);
+                          console.log('First few predictions:', predictionValues.slice(0, 5));
+
+                          // Debugging to verify we're accessing the correct values from the database
+                          console.log('Raw prediction data sample (first 3):', 
+                            predictedDataToShow.slice(0, 3).map(item => ({ 
+                              timestamp: item.timestamp, 
+                              ...Object.entries(item)
+                                .filter(([key]) => key !== 'timestamp' && key !== 'metadata')
+                                .reduce((obj, [key, val]) => ({ ...obj, [key]: val }), {})
+                            }))
+                          );
+                          console.log('Current valueKey being used:', valueKey);
+                          
+                          // Let's check if we're using the right property names for predictions
+                          const availableKeys = predictedDataToShow.length > 0 ? 
+                            Object.keys(predictedDataToShow[0]).filter(k => k !== 'timestamp' && k !== 'metadata') : [];
+                          console.log('Available metric keys in prediction data:', availableKeys);
+
+                          return (
+                            <LineChart
+                              sx={{
+                                width: '100%',
+                                height: '100%',
+                              }}
+                              xAxis={[{
+                                data: allDates,
+                                scaleType: 'time',
+                                valueFormatter: (date) =>
+                                  date instanceof Date
+                                    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : '',
+                              }]}
+                              yAxis={[{
+                                valueFormatter: getValueFormatter(selectedMetric),
+                              }]}
+                              series={[
+                                {
+                                  data: seriesActual,
+                                  valueFormatter: getValueFormatter(selectedMetric),
+                                  color: selectedMetric === 'gpu' ? '#4CAF50'
+                                    : selectedMetric === 'ram' ? '#2196F3'
+                                      : selectedMetric === 'cpu' ? '#FF5722'
+                                      : '#9C27B0',
+                                  showMark: false,
+                                  label: 'Actual',
+                                },
+                                {
+                                  data: seriesPredicted,
+                                  valueFormatter: getValueFormatter(selectedMetric),
+                                  color: '#673ab7', // purple for prediction
+                                  showMark: false,
+                                  label: 'Predicted',
+                                }
+                              ]}
+                              margin={{ top: 10, bottom: 20, left: 70, right: 10 }}
+                              loading={isTimeseriesLoading}
+                            />
+                          );
+                        })()}
                       </Box>
                     </Card>
 

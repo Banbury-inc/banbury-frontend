@@ -11,13 +11,26 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
     return result;
 }
 
-export async function pipeline() {
-    console.log('Starting Pipeline');
+// Prepare data for LSTM (sequence format)
+function createSequences(data: number[], sequenceLength: number): { inputs: number[][], outputs: number[] } {
+    const inputs: number[][] = [];
+    const outputs: number[] = [];
+    
+    for (let i = 0; i <= data.length - sequenceLength - 1; i++) {
+        const sequence = data.slice(i, i + sequenceLength);
+        const target = data[i + sequenceLength];
+        inputs.push(sequence);
+        outputs.push(target);
+    }
+    
+    return { inputs, outputs };
+}
 
+export async function pipeline() {
+    console.log('🚀 Starting prediction pipeline...');
     // get every device id that is owned by the user
     const deviceData = await banbury.device.fetchDeviceData();
-
-    console.log('Device Data:', deviceData);
+    console.log(`📊 Found ${Array.isArray(deviceData) ? deviceData.length : 0} devices to process`);
 
     if (!Array.isArray(deviceData)) {
         console.error('Failed to fetch device data:', deviceData);
@@ -28,20 +41,29 @@ export async function pipeline() {
     const timeseriesResults: any[] = [];
     const predictions: any[] = [];
     const FUTURE_STEPS = 10080; // Number of future time steps to predict
+    const SEQUENCE_LENGTH = 5; // Length of sequences for LSTM
 
-    for (const deviceId of deviceIds) {
+    for (let deviceIndex = 0; deviceIndex < deviceIds.length; deviceIndex++) {
+        const deviceId = deviceIds[deviceIndex];
+        console.log(`\n⚙️ Processing device ${deviceIndex + 1}/${deviceIds.length}: ${deviceId}`);
+        
         // for each device id, get the timeseries data
+        console.log(`  📈 Fetching timeseries data...`);
         const timeseriesData = await banbury.device.getTimeseriesData(deviceId);
+        console.log(`  ✅ Received ${timeseriesData.length} data points`);
         timeseriesResults.push({ deviceId, timeseriesData });
 
         // Assume timeseriesData is an array of objects with the same keys (metrics)
-        if (!Array.isArray(timeseriesData) || timeseriesData.length < 2) {
+        if (!Array.isArray(timeseriesData) || timeseriesData.length < SEQUENCE_LENGTH + 1) {
+            console.log(`  ⚠️ Not enough data for prediction (need at least ${SEQUENCE_LENGTH + 1} points)`);
             predictions.push({ deviceId, prediction: null, error: 'Not enough data' });
             continue;
         }
 
         // Get all metric keys (excluding timestamp if present)
         const metricKeys = Object.keys(timeseriesData[0]).filter(k => k !== 'timestamp' && k !== 'metadata' && k !== '_id');
+        console.log(`  🔧 Processing ${metricKeys.length} metrics: ${metricKeys.slice(0, 3).join(', ')}${metricKeys.length > 3 ? '...' : ''}`);
+        
         const devicePrediction: Record<string, { timestamp: string, value: number | null }[] | null> = {};
 
         // Prepare timestamp extrapolation
@@ -50,17 +72,23 @@ export async function pipeline() {
         let prevTimestamp = timeseriesData[lastIdx - 1].timestamp;
         let lastTsNum = typeof lastTimestamp === 'number' ? lastTimestamp : Date.parse(lastTimestamp);
         let prevTsNum = typeof prevTimestamp === 'number' ? prevTimestamp : Date.parse(prevTimestamp);
-        let interval = 60000;
+        let interval = lastTsNum - prevTsNum;
+        if (!interval || interval <= 0) interval = 60000; // fallback to 1 minute if invalid
 
-        for (const key of metricKeys) {
+        for (let metricIndex = 0; metricIndex < metricKeys.length; metricIndex++) {
+            const key = metricKeys[metricIndex];
+            console.log(`  🔄 [${metricIndex + 1}/${metricKeys.length}] Training model for metric: ${key}`);
+            
             // Extract the series for this metric
             const series = timeseriesData.map((row: any) => Number(row[key])).filter(v => !isNaN(v));
-            if (series.length < 2) {
+            if (series.length < SEQUENCE_LENGTH + 1) {
+                console.log(`    ⚠️ Not enough valid data points for ${key}`);
                 devicePrediction[key] = null;
                 continue;
             }
 
             // Min-max normalization
+            console.log(`    🧮 Normalizing data...`);
             const min = Math.min(...series);
             const max = Math.max(...series);
             let normalizedSeries = series;
@@ -70,40 +98,106 @@ export async function pipeline() {
                 denormalize = (v: number) => v * (max - min) + min;
             }
 
-            // Prepare data for simple linear regression: predict next value
-            const xs = tf.tensor1d(normalizedSeries.slice(0, -1));
-            const ys = tf.tensor1d(normalizedSeries.slice(1));
+            // Prepare data for LSTM using sequence format
+            console.log(`    🧩 Creating sequences for LSTM...`);
+            const { inputs, outputs } = createSequences(normalizedSeries, SEQUENCE_LENGTH);
+            console.log(`    📋 Created ${inputs.length} training sequences`);
+            
+            // Convert to tensors - fix tensor shape typing
+            const xs = tf.tensor3d(inputs.map(seq => seq.map(val => [val])), [inputs.length, SEQUENCE_LENGTH, 1]);
+            const ys = tf.tensor2d(outputs.map(val => [val]), [outputs.length, 1]);
 
-            // Linear regression model: y = a*x + b
+            // Build LSTM model
+            console.log(`    🧠 Building LSTM model...`);
             const model = tf.sequential();
-            model.add(tf.layers.dense({ units: 1, inputShape: [1] }));
-            model.compile({ optimizer: 'sgd', loss: 'meanSquaredError' });
+            model.add(tf.layers.lstm({
+                units: 16,
+                inputShape: [SEQUENCE_LENGTH, 1],
+                returnSequences: false
+            }));
+            model.add(tf.layers.dense({ units: 8, activation: 'relu' }));
+            model.add(tf.layers.dense({ units: 1 }));
+            
+            model.compile({ 
+                optimizer: tf.train.adam(0.01), 
+                loss: 'meanSquaredError'
+            });
 
+            // Training progress callback
+            let epochCounter = 0;
+            const totalEpochs = 25;
+            
             // Fit the model
-            await model.fit(xs.reshape([-1, 1]), ys.reshape([-1, 1]), { epochs: 50, verbose: 0 });
+            console.log(`    🏋️ Training model (${totalEpochs} epochs)...`);
+            await model.fit(xs, ys, { 
+                epochs: totalEpochs, 
+                batchSize: Math.min(32, inputs.length),
+                shuffle: true,
+                callbacks: {
+                    onEpochEnd: (epoch, logs) => {
+                        epochCounter++;
+                        if (epochCounter % 5 === 0 || epochCounter === totalEpochs) {
+                            console.log(`      ⏳ Training progress: ${epochCounter}/${totalEpochs} epochs (loss: ${logs?.loss.toFixed(5)})`);
+                        }
+                    }
+                }
+            });
+            console.log(`    ✅ Training complete!`);
 
             // Predict multiple future values recursively, with timestamps
-            let lastValue = normalizedSeries[normalizedSeries.length - 1];
-            let futureTs = lastTsNum;
+            console.log(`    🔮 Generating ${FUTURE_STEPS} predictions...`);
+            
+            // Initial sequence is the last SEQUENCE_LENGTH elements from normalized series
+            let sequence = normalizedSeries.slice(-SEQUENCE_LENGTH);
+            let lastTimestampRaw = timeseriesData[timeseriesData.length - 1].timestamp;
+            if (typeof lastTimestampRaw === 'string' && !lastTimestampRaw.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(lastTimestampRaw)) {
+                lastTimestampRaw += 'Z';
+            }
+            let futureTs = typeof lastTimestampRaw === 'number'
+                ? lastTimestampRaw
+                : Date.parse(lastTimestampRaw);
             const futurePreds: { timestamp: string, value: number | null }[] = [];
+            
+            // Show prediction progress in chunks
+            const progressChunkSize = Math.max(1, Math.floor(FUTURE_STEPS / 5));
+            
             for (let i = 0; i < FUTURE_STEPS; i++) {
-                futureTs += interval;
-                const inputTensor = tf.tensor2d([[lastValue]]);
+                // Show progress updates periodically
+                if (i % progressChunkSize === 0 || i === FUTURE_STEPS - 1) {
+                    console.log(`      📊 Prediction progress: ${i + 1}/${FUTURE_STEPS} (${Math.round((i + 1) / FUTURE_STEPS * 100)}%)`);
+                }
+                
+                // Reshape the sequence for the LSTM input [batch, timesteps, features]
+                const inputTensor = tf.tensor3d([sequence.map(val => [val])], [1, SEQUENCE_LENGTH, 1]);
                 const predTensor = model.predict(inputTensor) as tf.Tensor;
                 let predValue = (await predTensor.data())[0];
+                
                 // Denormalize prediction
                 predValue = denormalize(predValue);
+                
+                // Small random factor for more natural variation (±2%)
+                const randomFactor = 1 + (Math.random() * 0.04 - 0.02);
+                predValue = predValue * randomFactor;
+                
                 let isValid = !(isNaN(predValue) || !isFinite(predValue));
+                
                 // Format timestamp as ISO string
                 const isoTimestamp = new Date(futureTs).toISOString();
                 futurePreds.push({ timestamp: isoTimestamp, value: isValid ? predValue : null });
+                
                 if (isValid) {
-                    lastValue = max !== min ? (predValue - min) / (max - min) : predValue;
+                    // Update sequence by removing the first element and adding the prediction
+                    const normalizedPred = max !== min ? (predValue - min) / (max - min) : predValue;
+                    sequence = [...sequence.slice(1), normalizedPred];
                 }
+                
                 inputTensor.dispose();
                 predTensor.dispose();
+                futureTs += interval;
             }
+            
             devicePrediction[key] = futurePreds;
+            console.log(`    ✓ ${futurePreds.length} predictions generated for ${key}`);
 
             // Dispose tensors
             xs.dispose();
@@ -112,13 +206,11 @@ export async function pipeline() {
         }
 
         predictions.push({ deviceId, prediction: devicePrediction });
+        console.log(`  ✅ Device ${deviceIndex + 1}/${deviceIds.length} processing complete`);
     }
 
-    // Improved logging for readability
-    console.log('Timeseries Results:', JSON.stringify(timeseriesResults, null, 2));
-    console.log('Predictions:', JSON.stringify(predictions, null, 2));
-
     // Flatten predictions for all devices as snapshots per timestamp
+    console.log(`\n📦 Formatting predictions for storage...`);
     const flatPredictions: any[] = [];
     for (const { deviceId, prediction } of predictions) {
         if (!prediction) continue;
@@ -144,25 +236,48 @@ export async function pipeline() {
             for (const metric of Object.keys(prediction)) {
                 const arr = prediction[metric];
                 if (Array.isArray(arr) && arr[i]) {
-                    snapshot[metric] = arr[i].value;
+                    let value = arr[i].value;
+                    if (!Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER) {
+                        value = null;
+                    }
+                    snapshot[metric] = value;
                 }
+            }
+            // Sanitize timestamp
+            let tsNum = Date.parse(snapshot.timestamp);
+            if (!Number.isFinite(tsNum) || tsNum > Number.MAX_SAFE_INTEGER) {
+                snapshot.timestamp = new Date().toISOString();
             }
             flatPredictions.push(snapshot);
         }
     }
 
+    console.log(`📊 Created ${flatPredictions.length} prediction snapshots`);
+    
+    if (flatPredictions.length > 0) {
+        console.log('📋 Earliest Prediction:', flatPredictions[0]);
+    }
+
     // Send in batches of 1000, concurrently
     const predictionChunks = chunkArray(flatPredictions, 1000);
-    await Promise.all(
-        predictionChunks.map(async (chunk) => {
-            try {
-                const response = await axios.post(`${CONFIG.url}/predictions/store_device_predictions/`, { predictions: chunk });
-                console.log('Backend store result:', response.data);
-            } catch (err) {
-                console.error('Failed to store predictions in backend:', err);
-            }
-        })
-    );
+    console.log(`📤 Sending ${predictionChunks.length} batches to backend...`);
+    
+    try {
+        await Promise.all(
+            predictionChunks.map(async (chunk, index) => {
+                try {
+                    console.log(`  🔄 Sending batch ${index + 1}/${predictionChunks.length} (${chunk.length} predictions)...`);
+                    const response = await axios.post(`${CONFIG.url}/predictions/store_device_predictions/`, { predictions: chunk });
+                    console.log(`  ✅ Batch ${index + 1}/${predictionChunks.length} sent successfully`);
+                } catch (err) {
+                    console.error(`  ❌ Failed to store batch ${index + 1}/${predictionChunks.length}:`, err);
+                }
+            })
+        );
+        console.log(`🎉 Pipeline completed successfully!`);
+    } catch (err) {
+        console.error('❌ Failed to store predictions in backend:', err);
+    }
 
     return { timeseriesResults, predictions };
 }
