@@ -1,8 +1,7 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
-import { DeviceData } from './types';
+import { CONFIG } from '../config';
 
-export function handleFetchDevices(
+export function getDeviceData(
   selectedDevice: any,
   setSelectedDevice: any,
   setAllDevices: any,
@@ -18,13 +17,24 @@ export function handleFetchDevices(
       // Fetch device information
       const deviceInfoResponse = await axios.get<{
         devices: any[];
-      }>(`${banbury.config.url}/devices/getdeviceinfo/`);
+      }>(`${CONFIG.url}/devices/getdeviceinfo/`);
 
       const devicePredictionsResponse = await axios.get<{
         data: {
           device_predictions: Array<{
             device_id: string;
             device_name: string;
+            device_manufacturer: string;
+            device_model: string;
+            device_version: string;
+            services: string;
+            cpu_info_brand: string;
+            cpu_info_cores: number;
+            cpu_info_processors: number;
+            cpu_info_physicalCores: number;
+            device_priority: number;
+            mac_address: string;
+            ip_address: string;
             files_available_for_download: number;
             files_needed: number;
             predicted_cpu_usage: number;
@@ -47,13 +57,13 @@ export function handleFetchDevices(
           }>;
           result: string;
         };
-      }>(`${banbury.config.url}/predictions/get_device_prediction_data/`);
+      }>(`${CONFIG.url}/predictions/get_device_prediction_data/`);
 
       const { devices } = deviceInfoResponse.data;
       const { device_predictions } = devicePredictionsResponse.data.data;
 
       // Transform device data
-      const transformedDevices: DeviceData[] = devices.map((device, index) => {
+      const transformedDevices: any[] = devices.map((device, index) => {
 
         // Find matching predictions for this device with default values
         const devicePrediction = device_predictions?.find(
@@ -79,6 +89,7 @@ export function handleFetchDevices(
         };
 
         return {
+          _id: device._id,
           id: index + 1,
           device_name: device.device_name,
           device_manufacturer: device.device_manufacturer,

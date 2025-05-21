@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { getScannedFolders, getDeviceId } from './index';
+import { getScannedFolders, getDeviceId, pipeline } from './index';
 
 export function addDeviceCommands(program: Command): void {
   const deviceCommand = program
@@ -23,6 +23,16 @@ export function addDeviceCommands(program: Command): void {
     .argument('[username]', 'username to get device ID for', 'User')
     .action(async () => {
       const response = await getDeviceId();
+      // eslint-disable-next-line no-console
+      console.log(response);
+      process.exit(0);
+    });
+
+  deviceCommand
+    .command('pipeline')
+    .description('Run the pipeline')
+    .action(async () => {
+      const response = await pipeline();
       // eslint-disable-next-line no-console
       console.log(response);
       process.exit(0);

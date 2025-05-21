@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import Stack from '@mui/material/Stack';
 import { Switch, useMediaQuery } from '@mui/material';
 import Box from '@mui/material/Box';
@@ -33,7 +33,6 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { handleAddDeviceClick } from './components/AddDeviceButton/handleAddDeviceClick';
-import { handleFetchDevices } from './handleFetchDevices';
 import { DeviceData } from './types';
 import AddDeviceButton from './components/AddDeviceButton/AddDeviceButton';
 import DeleteDeviceButton from './components/DeleteDeviceButton/DeleteDeviceButton';
@@ -161,6 +160,102 @@ const ResizeHandle = styled('div')(({ theme }) => ({
   }
 }));
 
+function getValueFormatter(metric: string) {
+  return (value: number | null) => {
+    if (value == null || isNaN(Number(value))) return 'N/A';
+    switch (metric) {
+      case 'cpu':
+      case 'ram':
+      case 'gpu':
+      case 'battery_status':
+        return `${Number(value).toFixed(2)}%`;
+      case 'storage_capacity_gb':
+        return `${Number(value).toFixed(2)} GB`;
+      case 'battery_time_remaining': {
+        // Assume value is in minutes
+        const hours = Math.floor(Number(value) / 60);
+        const minutes = Math.floor(Number(value) % 60);
+        return `${hours}h ${minutes}m`;
+      }
+      case 'ram_total':
+      case 'ram_free':
+        return formatRAM(Number(value));
+      case 'upload_speed':
+      case 'download_speed':
+        return formatSpeed(Number(value));
+      default:
+        return value.toString();
+    }
+  };
+}
+
+
+// Helper to get the value key for a metric
+function getMetricValueKey(metric: string): string {
+  switch (metric) {
+    case 'cpu': return 'cpu_usage';
+    case 'ram': return 'ram_usage';
+    case 'gpu': return 'gpu_usage';
+    case 'storage_capacity_gb': return 'storage_capacity_gb';
+    case 'battery_status': return 'battery_status';
+    case 'battery_time_remaining': return 'battery_time_remaining';
+    case 'ram_total': return 'ram_total';
+    case 'ram_free': return 'ram_free';
+    case 'upload_speed': return 'upload_speed';
+    case 'download_speed': return 'download_speed';
+    default: return '';
+  }
+}
+
+// Helper to map series data to a unified timeline - keeping only essential logs
+function mapSeriesToTimeline(timeline: Date[], data: any[], valueKey: string) {
+  // Handle empty data case properly
+  if (!data || data.length === 0) return timeline.map(() => null);
+  
+  // FIX: Create a normalized timestamp mapping
+  const timeToValue = new Map();
+  
+  // FIX: Extract timestamps and normalize to milliseconds, removing timezone and formatting differences
+  data.forEach(d => {
+    if (d && d.timestamp && d[valueKey] !== undefined) {
+      try {
+        // Parse timestamp to Date and get milliseconds (handles different formats)
+        let dateObj = new Date(d.timestamp);
+        const timeMs = dateObj.getTime();
+        
+        // Make sure it's a valid date
+        if (!isNaN(timeMs)) {
+          const value = Number(d[valueKey]);
+          if (!isNaN(value)) {
+            timeToValue.set(timeMs, value);
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing timestamp:", d.timestamp, e);
+      }
+    }
+  });
+  
+  // FIX: Map using milliseconds for comparison
+  return timeline.map((date) => {
+    const timeMs = date.getTime();
+    
+    // Find closest timestamp if exact match not found (within 1s tolerance)
+    if (timeToValue.has(timeMs)) {
+      return timeToValue.get(timeMs);
+    } 
+    
+    // If no exact match, try nearby timestamps within 1 second (1000ms)
+    const tolerance = 1000; // 1 second tolerance
+    for (let offset = 1; offset <= tolerance; offset++) {
+      if (timeToValue.has(timeMs - offset)) return timeToValue.get(timeMs - offset);
+      if (timeToValue.has(timeMs + offset)) return timeToValue.get(timeMs + offset);
+    }
+    
+    return null;
+  });
+}
+
 export default function Devices() {
   const order = 'asc';
   const orderBy = 'device_name';
@@ -171,7 +266,7 @@ export default function Devices() {
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const { updates, setUpdates, tasks, setTasks, username, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
-  const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
+  const [selectedMetric, setSelectedMetric] = useState<string>('cpu');
   const { showAlert } = useAlert();
 
   // Add this new state for managing tabs
@@ -218,11 +313,44 @@ export default function Devices() {
     dragStartWidth.current = deviceListWidth;
   };
 
-
-
+  const [timeseriesData, setTimeseriesData] = useState<any[]>([]);
+  const [isTimeseriesLoading, setIsTimeseriesLoading] = useState(false);
 
   useEffect(() => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
+    const fetchTimeseriesData = async () => {
+      if (!selectedDevice || !selectedDevice._id) {
+        setTimeseriesData([]);
+        return;
+      }
+      setIsTimeseriesLoading(true);
+      try {
+        const res = await banbury.device.getTimeseriesData(selectedDevice._id);
+        setTimeseriesData(res);
+      } catch (e) {
+        showAlert('Error', ['Failed to fetch timeseries data', e instanceof Error ? e.message : 'Unknown error'], 'error');
+        setTimeseriesData([]);
+      } finally {
+        setIsTimeseriesLoading(false);
+      }
+    };
+    fetchTimeseriesData();
+  }, [selectedDevice]);
+
+  const metricOptions = [
+    { value: 'gpu', label: 'GPU Usage' },
+    { value: 'ram', label: 'RAM Usage' },
+    { value: 'cpu', label: 'CPU Usage' },
+    { value: 'storage_capacity_gb', label: 'Storage Capacity (GB)' },
+    { value: 'battery_status', label: 'Battery Status' },
+    { value: 'battery_time_remaining', label: 'Battery Time Remaining' },
+    { value: 'ram_total', label: 'Total RAM' },
+    { value: 'ram_free', label: 'Free RAM' },
+    { value: 'upload_speed', label: 'Upload Speed' },
+    { value: 'download_speed', label: 'Download Speed' },
+  ];
+
+  useEffect(() => {
+    const fetchDevicesFunc = banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   }, [username, updates]);
 
@@ -305,7 +433,7 @@ export default function Devices() {
   const isSelected = (deviceName: string) => selectedDeviceNames.indexOf(deviceName) !== -1;
 
   const handleFoldersUpdate = () => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
+    const fetchDevicesFunc = banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   };
 
@@ -319,7 +447,7 @@ export default function Devices() {
 
       if (result === 'success') {
         setUpdates(updates + 1);
-        const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
+        const fetchDevicesFunc = banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
         fetchDevicesFunc();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
@@ -407,6 +535,49 @@ export default function Devices() {
     }
   }, [selectedDevice]);
 
+  const latestTimeseries = timeseriesData.length > 0 ? timeseriesData[timeseriesData.length - 1] : null;
+
+  const [timeseriesPredictionData, setTimeseriesPredictionData] = useState<any>(null);
+  const [isTimeseriesPredictionLoading, setIsTimeseriesPredictionLoading] = useState(false);
+
+  // Add memoization for prediction data to prevent recalculations on every render
+  const memoizedPredictionData = useMemo(() => {
+    return Array.isArray(timeseriesPredictionData) ? timeseriesPredictionData : [];
+  }, [timeseriesPredictionData]);
+
+  useEffect(() => {
+    const fetchPredictionData = async () => {
+      if (!selectedDevice || !selectedDevice._id) {
+        setTimeseriesPredictionData([]);
+        return;
+      }
+      setIsTimeseriesPredictionLoading(true);
+      try {
+        const data = await banbury.device.getTimeseriesPredictionData(selectedDevice._id);
+        // Ensure we always set an array
+        if (Array.isArray(data)) {
+          setTimeseriesPredictionData(data);
+        } else if (data && Array.isArray(data.predictions)) {
+          setTimeseriesPredictionData(data.predictions);
+        } else if (data && typeof data === 'object') {
+          setTimeseriesPredictionData([data]);
+        } else {
+          setTimeseriesPredictionData([]);
+        }
+      } catch (e) {
+        showAlert('Error', ['Failed to fetch timeseries prediction data', e instanceof Error ? e.message : 'Unknown error'], 'error');
+        setTimeseriesPredictionData(null);
+      } finally {
+        setIsTimeseriesPredictionLoading(false);
+      }
+    };
+    fetchPredictionData();
+  }, [selectedDevice]);
+
+  const latestPrediction = Array.isArray(timeseriesPredictionData) && timeseriesPredictionData.length > 0
+    ? timeseriesPredictionData[timeseriesPredictionData.length - 1]
+    : null;
+
   return (
     <Box sx={{
       width: '100%',
@@ -449,7 +620,7 @@ export default function Devices() {
                   setSelectedDevice={setSelectedDevice}
                 />
               </Grid>
-              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading)} />
+              <AddScannedFolderButton fetchDevices={banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading)} />
             </Grid>
           </Stack>
         </CardContent>
@@ -677,15 +848,27 @@ export default function Devices() {
                           <Stack spacing={2}>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted CPU Usage</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_cpu_usage || 0}%</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : (latestPrediction?.cpu_usage ?? 0).toFixed(2)}%
+                              </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted RAM Usage</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_ram_usage || 0}%</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : (latestPrediction?.ram_usage ?? 0).toFixed(2)}%
+                              </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted GPU Usage</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_gpu_usage || 0}%</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : (latestPrediction?.gpu_usage ?? 0).toFixed(2)}%
+                              </Typography>
                             </Box>
                           </Stack>
                         </Grid>
@@ -695,15 +878,20 @@ export default function Devices() {
                           <Stack spacing={2}>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted Download Speed</Typography>
-                              <Typography variant="body2">{formatSpeed(selectedDevice.predicted_download_speed || 0)}</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : formatSpeed(latestPrediction?.download_speed ?? 0)
+                                }
+                              </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted Upload Speed</Typography>
-                              <Typography variant="body2">{formatSpeed(selectedDevice.predicted_upload_speed || 0)}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography color="textSecondary" variant="caption">Score</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_performance_score || 0}</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : formatSpeed(latestPrediction?.upload_speed ?? 0)}
+                              </Typography>
                             </Box>
                           </Stack>
                         </Grid>
@@ -712,14 +900,6 @@ export default function Devices() {
                         <Grid item xs={12} md={4}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Files Needed</Typography>
-                              <Typography variant="body2">{selectedDevice.files_needed || 0}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography color="textSecondary" variant="caption">Files Available for Download</Typography>
-                              <Typography variant="body2">{selectedDevice.files_available_for_download || 0}</Typography>
-                            </Box>
-                            <Box>
                               <Stack spacing={4}>
                                 <Typography color="textSecondary" variant="caption">Sync Storage Capacity</Typography>
                               </Stack>
@@ -727,7 +907,6 @@ export default function Devices() {
                                 <TextField
                                   variant="outlined"
                                   size="small"
-                                  // type="number"
                                   value={syncStorageValue}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSyncStorageValue(e.target.value)}
                                   sx={{
@@ -1035,8 +1214,8 @@ export default function Devices() {
                               <Typography color="textSecondary" variant="caption">CPU Usage</Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
-                                  label={`${(parseFloat(selectedDevice.cpu_usage) || 0).toFixed(2)}%`}
-                                  color={parseFloat(selectedDevice.cpu_usage) > 80 ? 'error' : 'success'}
+                                  label={latestTimeseries ? `${(parseFloat(latestTimeseries.cpu_usage) || 0).toFixed(2)}%` : 'N/A'}
+                                  color={latestTimeseries && parseFloat(latestTimeseries.cpu_usage) > 80 ? 'error' : 'success'}
                                   size="small"
                                   sx={{ mr: 1, fontSize: '12px' }}
                                 />
@@ -1045,17 +1224,17 @@ export default function Devices() {
                             <Box>
                               <Typography color="textSecondary" variant="caption">CPU Model</Typography>
                               <Typography variant="body2">
-                                {selectedDevice.cpu_info_manufacturer} {selectedDevice.cpu_info_brand}
+                                {selectedDevice?.cpu_info_manufacturer} {selectedDevice?.cpu_info_brand}
                               </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">CPU Speed</Typography>
-                              <Typography variant="body2">{selectedDevice.cpu_info_speed}</Typography>
+                              <Typography variant="body2">{selectedDevice?.cpu_info_speed}</Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">CPU Cores</Typography>
                               <Typography variant="body2">
-                                {selectedDevice.cpu_info_cores} Cores (Physical: {selectedDevice.cpu_info_physical_cores})
+                                {selectedDevice?.cpu_info_cores} Cores (Physical: {selectedDevice?.cpu_info_physical_cores})
                               </Typography>
                             </Box>
                           </Stack>
@@ -1068,10 +1247,10 @@ export default function Devices() {
                               <Typography color="textSecondary" variant="caption">GPU Usage</Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
-                                  label={`${(parseFloat(selectedDevice.gpu_usage[0]) || 0).toFixed(0)}%`}
+                                  label={latestTimeseries ? `${(parseFloat(latestTimeseries.gpu_usage) || 0).toFixed(0)}%` : 'N/A'}
                                   size="small"
                                   sx={{ fontSize: '12px' }}
-                                  color={parseFloat(selectedDevice.gpu_usage[0]) > 80 ? 'error' : 'success'}
+                                  color={latestTimeseries && parseFloat(latestTimeseries.gpu_usage) > 80 ? 'error' : 'success'}
                                 />
                               </Box>
                             </Box>
@@ -1079,20 +1258,20 @@ export default function Devices() {
                               <Typography color="textSecondary" variant="caption">RAM Usage</Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
-                                  label={`${(parseFloat(selectedDevice.ram_usage[0]) || 0).toFixed(2)}%`}
+                                  label={latestTimeseries ? `${(parseFloat(latestTimeseries.ram_usage) || 0).toFixed(2)}%` : 'N/A'}
                                   size="small"
                                   sx={{ fontSize: '12px' }}
-                                  color={parseFloat(selectedDevice.ram_usage[0]) > 80 ? 'error' : 'success'}
+                                  color={latestTimeseries && parseFloat(latestTimeseries.ram_usage) > 80 ? 'error' : 'success'}
                                 />
                               </Box>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Total RAM</Typography>
-                              <Typography variant="body2">{formatRAM(selectedDevice.ram_total[0])}</Typography>
+                              <Typography variant="body2">{latestTimeseries ? formatRAM(latestTimeseries.ram_total) : 'N/A'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Free RAM</Typography>
-                              <Typography variant="body2">{formatRAM(selectedDevice.ram_free[0])}</Typography>
+                              <Typography variant="body2">{latestTimeseries ? formatRAM(latestTimeseries.ram_free) : 'N/A'}</Typography>
                             </Box>
                           </Stack>
                         </Grid>
@@ -1116,45 +1295,154 @@ export default function Devices() {
                             value={selectedMetric}
                             label="Select Metric"
                             sx={{ fontSize: '12px' }}
-                            onChange={(e) => setSelectedMetric(e.target.value as 'gpu' | 'ram' | 'cpu')}
+                            onChange={(e) => setSelectedMetric(e.target.value)}
                           >
-                            <MenuItem sx={{ fontSize: '12px' }} value="gpu">GPU Usage</MenuItem>
-                            <MenuItem sx={{ fontSize: '12px' }} value="ram">RAM Usage</MenuItem>
-                            <MenuItem sx={{ fontSize: '12px' }} value="cpu">CPU Usage</MenuItem>
+                            {metricOptions.map((option) => (
+                              <MenuItem sx={{ fontSize: '12px' }} key={option.value} value={option.value}>{option.label}</MenuItem>
+                            ))}
                           </Select>
                         </FormControl>
                       </Stack>
 
+                      {/* Legend */}
+                      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ width: 20, height: 3, bgcolor: selectedMetric === 'gpu' ? '#4CAF50' : selectedMetric === 'ram' ? '#2196F3' : selectedMetric === 'cpu' ? '#FF5722' : '#9C27B0', mr: 1 }} />
+                          <Typography variant="caption">Actual</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ width: 20, height: 0, borderTop: '3px dashed #673ab7', mr: 1 }} />
+                          <Typography variant="caption">Predicted</Typography>
+                        </Box>
+                      </Stack>
+
                       <Box sx={{ height: 300, width: '100%' }}>
-                        <LineChart
-                          sx={{
-                            width: '100%',
-                            height: '100%'
-                          }}
-                          xAxis={[{
-                            data: Array.from(
-                              {
-                                length: selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                                  selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'].length
-                              },
-                              (_, i) => i + 1
-                            )
-                          }]}
-                          series={[{
-                            data: Array.isArray(selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                              selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'])
-                              ? (selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                                selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'] as string[]).map(Number)
-                              : [Number(selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                                selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'] as string)],
-                            valueFormatter: (value) => (value == null ? 'NaN' : `${value}%`),
-                            color: selectedMetric === 'gpu' ? '#4CAF50'
-                              : selectedMetric === 'ram' ? '#2196F3'
-                                : '#FF5722',
-                            showMark: false
-                          }]}
-                          margin={{ top: 10, bottom: 20, left: 40, right: 10 }}
-                        />
+                        {(() => {
+                          // Build unified timeline
+                          const actualTimestamps = timeseriesData.map((d) => new Date(d.timestamp).getTime());
+                          const valueKey = getMetricValueKey(selectedMetric);
+                          const actualSeries = mapSeriesToTimeline(
+                            actualTimestamps.map((t) => new Date(t)),
+                            timeseriesData,
+                            valueKey
+                          );
+
+                          // Only show a third of the actual data length for predictions
+                          const predictedDataArray = memoizedPredictionData;
+                          const predictedLength = Math.ceil(actualSeries.length / 3);
+                          // Find the timestamp of the last actual data point
+                          const lastActualTimestamp = actualTimestamps.length > 0 ? actualTimestamps[actualTimestamps.length - 1] : null;
+                          // Find the index in the prediction array where the timestamp is just after the last actual data point
+                          let startPredictionIdx = 0;
+                          if (lastActualTimestamp !== null) {
+                            startPredictionIdx = predictedDataArray.findIndex((d) => {
+                              const predTs = new Date(d.timestamp).getTime();
+                              return predTs > lastActualTimestamp;
+                            });
+                            if (startPredictionIdx === -1) startPredictionIdx = 0;
+                          }
+                          const predictedDataToShow = predictedDataArray.slice(startPredictionIdx, startPredictionIdx + predictedLength);
+                          
+                          // 1. Extract actual values and predictions for the selected metric
+                          const actualValues = timeseriesData.map(d => Number(d[valueKey]) || null);
+                          const predictionValues = predictedDataToShow.map(d => {
+                            // Look for the exact value key or potential alternatives
+                            const exactMatch = d[valueKey];
+                            const alternateMatch = 
+                              d[valueKey.replace('_usage', '')] || // Try without _usage
+                              d[valueKey.replace('_', '')] ||      // Try without underscores
+                              d[Object.keys(d).find(k => k.toLowerCase().includes(valueKey.toLowerCase().replace('_usage', ''))) || ''];
+                            
+                            const value = exactMatch !== undefined ? exactMatch : 
+                                         alternateMatch !== undefined ? alternateMatch : null;
+                                         
+                            return Number(value) || null;
+                          });
+                          
+                          // 2. Create a unified timeline with evenly spaced points
+                          const firstActualDate = actualTimestamps.length > 0 ? 
+                            new Date(actualTimestamps[0]) : new Date();
+                          
+                          // Create sequential timestamps for chart display
+                          const allDates = [];
+                          const interval = 60000; // 1 minute interval
+                          
+                          // Add dates for actual values
+                          for (let i = 0; i < actualValues.length; i++) {
+                            allDates.push(new Date(firstActualDate.getTime() + i * interval));
+                          }
+                          
+                          // Add dates for prediction values (continuing from where actual values end)
+                          for (let i = 0; i < predictionValues.length; i++) {
+                            allDates.push(new Date(firstActualDate.getTime() + (actualValues.length + i) * interval));
+                          }
+                          
+                          // 3. Create series that align with our unified timeline
+                          const seriesActual = [];
+                          const seriesPredicted = [];
+                          
+                          // Fill actual values (null for prediction area)
+                          for (let i = 0; i < allDates.length; i++) {
+                            if (i < actualValues.length) {
+                              seriesActual.push(actualValues[i]);
+                            } else {
+                              seriesActual.push(null);
+                            }
+                          }
+                          
+                          // Fill prediction values (null for actual area)
+                          for (let i = 0; i < allDates.length; i++) {
+                            if (i >= actualValues.length && i < actualValues.length + predictionValues.length) {
+                              seriesPredicted.push(predictionValues[i - actualValues.length]);
+                            } else {
+                              seriesPredicted.push(null);
+                            }
+                          }
+                          
+
+                          // Debugging to verify we're accessing the correct values from the database
+
+                          return (
+                            <LineChart
+                              sx={{
+                                width: '100%',
+                                height: '100%',
+                              }}
+                              xAxis={[{
+                                data: allDates,
+                                scaleType: 'time',
+                                valueFormatter: (date) =>
+                                  date instanceof Date
+                                    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : '',
+                              }]}
+                              yAxis={[{
+                                valueFormatter: getValueFormatter(selectedMetric),
+                              }]}
+                              series={[
+                                {
+                                  data: seriesActual,
+                                  valueFormatter: getValueFormatter(selectedMetric),
+                                  color: selectedMetric === 'gpu' ? '#4CAF50'
+                                    : selectedMetric === 'ram' ? '#2196F3'
+                                      : selectedMetric === 'cpu' ? '#FF5722'
+                                      : '#9C27B0',
+                                  showMark: false,
+                                  label: 'Actual',
+                                },
+                                {
+                                  data: seriesPredicted,
+                                  valueFormatter: getValueFormatter(selectedMetric),
+                                  color: '#673ab7', // purple for prediction
+                                  showMark: false,
+                                  label: 'Predicted',
+                                }
+                              ]}
+                              margin={{ top: 10, bottom: 20, left: 70, right: 10 }}
+                              loading={isTimeseriesLoading}
+                            />
+                          );
+                        })()}
                       </Box>
                     </Card>
 

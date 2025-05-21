@@ -9,9 +9,8 @@ export function addSettingsCommands(program: Command): void {
   settingsCommand
     .command('delete-account')
     .description('Delete a user account')
-    .argument('[username]', 'username to delete', 'User')
-    .action(async (username: string) => {
-      const response = await deleteAccount(username);
+    .action(async () => {
+      const response = await deleteAccount();
       // eslint-disable-next-line no-console
       console.log(response);
       process.exit(0);

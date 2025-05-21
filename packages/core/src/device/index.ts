@@ -1,5 +1,5 @@
 
-
+export * from './addDevice'
 export * from './deviceInfo'
 export * from '../websocket/connect'
 export * from './scanFilesystem'
@@ -25,4 +25,7 @@ export * from '../websocket/connect'
 export * from './scanFilesystem'
 export * from './declareOnline'
 export * from './declareOffline'
-
+export * from './getDeviceData'
+export * from './getTimeseriesData'
+export * from './predictions/pipeline'
+export * from './getTimeseriesPredictionData'

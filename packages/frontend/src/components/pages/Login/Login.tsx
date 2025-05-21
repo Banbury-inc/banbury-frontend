@@ -25,6 +25,7 @@ import http from 'http';
 import os from 'os';
 import { initAuthState } from '@banbury/core/src/auth';
 import { Link as RouterLink } from 'react-router-dom';
+import { startPeriodicDeviceInfoProcess } from '@banbury/core/src/device/startPeriodicDeviceInfoProcess';
 
 interface Message {
   type: string;
@@ -58,6 +59,14 @@ function Copyright(props: any) {
   );
 }
 
+// Singleton pattern to prevent multiple intervals
+let deviceInfoProcessStarted = false;
+function maybeStartDeviceInfoProcess(username: string, deviceId: string) {
+  if (!deviceInfoProcessStarted && username && deviceId) {
+    startPeriodicDeviceInfoProcess(deviceId);
+    deviceInfoProcessStarted = true;
+  }
+}
 
 export default function SignIn() {
   // Move ALL hooks to the top of the component
@@ -123,6 +132,8 @@ export default function SignIn() {
           
           setIsAuthenticated(true);
           setShowMain(true);
+          const deviceName = os.hostname();
+          maybeStartDeviceInfoProcess(authState.username, deviceName);
         } else {
           // Token validation failed
           if (authState.message) {
@@ -169,6 +180,7 @@ export default function SignIn() {
             localStorage.setItem('authUsername', email);
             setIsAuthenticated(true);
             setShowMain(true);
+            maybeStartDeviceInfoProcess(email, result.deviceId);
           }
         } else {
           setincorrect_login(true);
@@ -219,6 +231,7 @@ export default function SignIn() {
                   localStorage.setItem('authUsername', email);
                   setIsAuthenticated(true);
                   setShowMain(true);
+                  maybeStartDeviceInfoProcess(email, deviceId);
                 }
               }
             } catch (error) {
@@ -264,6 +277,10 @@ export default function SignIn() {
     setShowOnboarding(false); // Explicitly hide onboarding
     setIsAuthenticated(true);
     setShowMain(true);
+    const deviceId = localStorage.getItem('deviceId');
+    if (typeof email === 'string' && typeof deviceId === 'string') {
+      maybeStartDeviceInfoProcess(email, deviceId);
+    }
   };
 
   // Render content based on state

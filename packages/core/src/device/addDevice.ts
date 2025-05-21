@@ -1,33 +1,39 @@
 import axios from 'axios';
-import * as DateUtils from '../../../../../core/src/utils/dateUtils';
-import banbury from '@banbury/core';
+import * as DateUtils from '../utils/dateUtils';
+import banbury from '..';
 
 export async function addDevice(username: string) {
 
     const device_name = banbury.device.name();
     const storage_capacity_GB = await banbury.device.storage_capacity();
     const ip_address = await banbury.device.ip_address();
-    const gpu_usage = await banbury.device.gpu_usage();
-    const cpu_usage = await banbury.device.cpu_usage();
-    const ram_usage = await banbury.device.ram_usage();
-    const ram_total = await banbury.device.ram_total();
-    const ram_free = await banbury.device.ram_free();
+    const device_manufacturer = await banbury.device.device_manufacturer();
+    const device_model = await banbury.device.device_model();
+    const device_version = await banbury.device.device_version();
+    const services = await banbury.device.services();
+    const cpu_info_brand = await banbury.device.cpu_info_brand();
+    const cpu_info_cores = await banbury.device.cpu_info_cores();
+    const cpu_info_processors = await banbury.device.cpu_info_processors();
+    const cpu_info_physicalCores = await banbury.device.cpu_info_physicalCores();
+    const mac_address = await banbury.device.mac_address();
 
     const deviceData = {
       user: username,
       device_number: 1,
       device_name: device_name,
       storageCapacityGB: storage_capacity_GB,
+      device_manufacturer: device_manufacturer,
+      device_model: device_model,
+      device_version: device_version,
+      services: services,
+      cpu_info_brand: cpu_info_brand,
+      cpu_info_cores: cpu_info_cores,
+      cpu_info_processors: cpu_info_processors,
+      cpu_info_physicalCores: cpu_info_physicalCores,
       maxStorageCapacityGB: 50,
       date_added: DateUtils.get_current_date_and_time(),
       ip_address: ip_address,
-      upload_network_speed: 0,
-      download_network_speed: 0,
-      gpu_usage: gpu_usage,
-      cpu_usage: cpu_usage,
-      ram_usage: ram_usage,
-      ram_total: ram_total,
-      ram_free: ram_free,
+      mac_address: mac_address,
       device_priority: 1,
       sync_status: false,
       optimization_status: false,

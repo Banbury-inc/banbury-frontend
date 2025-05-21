@@ -1,4 +1,4 @@
-export * from './addDevice'
+export * from '@banbury/core/src/device/addDevice'
 export * from './deleteDevice'
 export * from './updateDevice'
 export * from './connect'
