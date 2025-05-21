@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
 import { getDeviceInfo } from './getDeviceInfo';
+import { pipeline } from './predictions/pipeline';
 
 /**
  * Starts a process that collects device info every 10 minutes and sends it to the backend.
@@ -32,4 +33,19 @@ export function startPeriodicDeviceInfoProcess(
 
   // Repeat every 1 minute
   setInterval(sendDeviceInfo, 1 * 60 * 1000);
+
+  // --- Pipeline process ---
+  async function runPipeline() {
+    try {
+      await pipeline();
+    } catch (error) {
+      console.error('Failed to run pipeline:', error);
+    }
+  }
+
+  // Initial pipeline call
+  runPipeline();
+
+  // Repeat every 1 hour
+  setInterval(runPipeline, 60 * 60 * 1000);
 }
