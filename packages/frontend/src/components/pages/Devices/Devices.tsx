@@ -176,7 +176,7 @@ export default function Devices() {
   const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
   const { updates, setUpdates, tasks, setTasks, username, setTaskbox_expanded } = useAuth();
   const [selectedDevice, setSelectedDevice] = useState<DeviceData | null>(null);
-  const [selectedMetric, setSelectedMetric] = useState<'gpu' | 'ram' | 'cpu'>('cpu');
+  const [selectedMetric, setSelectedMetric] = useState<string>('cpu');
   const { showAlert } = useAlert();
 
   // Add this new state for managing tabs
@@ -245,7 +245,20 @@ export default function Devices() {
     fetchTimeseriesData();
   }, [selectedDevice]);
 
-  const getMetricSeries = (metric: 'cpu' | 'ram' | 'gpu') => {
+  const metricOptions = [
+    { value: 'gpu', label: 'GPU Usage' },
+    { value: 'ram', label: 'RAM Usage' },
+    { value: 'cpu', label: 'CPU Usage' },
+    { value: 'storage_capacity_gb', label: 'Storage Capacity (GB)' },
+    { value: 'battery_status', label: 'Battery Status' },
+    { value: 'battery_time_remaining', label: 'Battery Time Remaining' },
+    { value: 'ram_total', label: 'Total RAM' },
+    { value: 'ram_free', label: 'Free RAM' },
+    { value: 'upload_speed', label: 'Upload Speed' },
+    { value: 'download_speed', label: 'Download Speed' },
+  ];
+
+  const getMetricSeries = (metric: string) => {
     if (!timeseriesData.length) return [];
     switch (metric) {
       case 'cpu':
@@ -254,6 +267,20 @@ export default function Devices() {
         return timeseriesData.map((d) => Number(d.ram_usage));
       case 'gpu':
         return timeseriesData.map((d) => Number(d.gpu_usage));
+      case 'storage_capacity_gb':
+        return timeseriesData.map((d) => Number(d.storage_capacity_gb));
+      case 'battery_status':
+        return timeseriesData.map((d) => Number(d.battery_status));
+      case 'battery_time_remaining':
+        return timeseriesData.map((d) => Number(d.battery_time_remaining));
+      case 'ram_total':
+        return timeseriesData.map((d) => Number(d.ram_total));
+      case 'ram_free':
+        return timeseriesData.map((d) => Number(d.ram_free));
+      case 'upload_speed':
+        return timeseriesData.map((d) => Number(d.upload_speed));
+      case 'download_speed':
+        return timeseriesData.map((d) => Number(d.download_speed));
       default:
         return [];
     }
@@ -1154,11 +1181,11 @@ export default function Devices() {
                             value={selectedMetric}
                             label="Select Metric"
                             sx={{ fontSize: '12px' }}
-                            onChange={(e) => setSelectedMetric(e.target.value as 'gpu' | 'ram' | 'cpu')}
+                            onChange={(e) => setSelectedMetric(e.target.value)}
                           >
-                            <MenuItem sx={{ fontSize: '12px' }} value="gpu">GPU Usage</MenuItem>
-                            <MenuItem sx={{ fontSize: '12px' }} value="ram">RAM Usage</MenuItem>
-                            <MenuItem sx={{ fontSize: '12px' }} value="cpu">CPU Usage</MenuItem>
+                            {metricOptions.map((option) => (
+                              <MenuItem sx={{ fontSize: '12px' }} key={option.value} value={option.value}>{option.label}</MenuItem>
+                            ))}
                           </Select>
                         </FormControl>
                       </Stack>
