@@ -35,7 +35,40 @@ export async function pipeline() {
         return;
     }
 
+    // Get device IDs
     const deviceIds = deviceData.map((device: any) => device._id);
+
+    // Check if predictions were made recently (within the last 10 minutes)
+    try {
+        // Check if ANY device has recent predictions (less than 10 minutes old)
+        let hasRecentPredictions = false;
+        
+        for (const deviceId of deviceIds) {
+            const predictionData = await banbury.device.getTimeseriesPredictionData(deviceId);
+            
+            if (Array.isArray(predictionData) && predictionData.length > 0) {
+                // Find the most recent prediction timestamp
+                const timestamps = predictionData.map(p => new Date(p.timestamp).getTime());
+                const latestTimestamp = new Date(Math.max(...timestamps));
+                const currentTime = new Date();
+                const timeDiffMinutes = (currentTime.getTime() - latestTimestamp.getTime()) / (1000 * 60);
+                
+                if (timeDiffMinutes < 10) {
+                    hasRecentPredictions = true;
+                    break; // Exit the loop as soon as we find one device with recent predictions
+                }
+            }
+        }
+        
+        // Skip pipeline if any device has predictions less than 10 minutes old
+        if (hasRecentPredictions) {
+            return { skipped: true, reason: 'Recent predictions available' };
+        }
+    } catch (error) {
+        // If there's an error checking the last prediction time, continue with the pipeline
+        console.warn('⚠️ Error checking last prediction time, continuing with pipeline:', error);
+    }
+
     const timeseriesResults: any[] = [];
     const predictions: any[] = [];
     const FUTURE_STEPS = 10080; // Number of future time steps to predict
