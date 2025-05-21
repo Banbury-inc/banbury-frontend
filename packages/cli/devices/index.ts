@@ -13,5 +13,10 @@ export async function getDeviceId() {
     return response;
 } 
 
+export async function pipeline() {
+    const response = await banbury.device.pipeline();
+    return response;
+} 
+
 
 
