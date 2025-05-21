@@ -26,9 +26,20 @@ test('can login and shows onboarding for first-time user', async () => {
 
     const credentials = getSharedTestUserCredentials();
 
-    // Type in the username and password
+    // Wait for redirect to login
+    await window.waitForSelector('h1:has-text("Sign in")', { timeout: 10000 });
+
+    // Wait for login form inputs to be visible and enabled
+    await window.waitForSelector('input[name="email"]', { state: 'visible', timeout: 10000 });
+    await window.waitForSelector('input[name="password"]', { state: 'visible', timeout: 10000 });
+
+    // Optionally, wait a short moment for UI to stabilize (can help with flakiness)
+    await window.waitForTimeout(100);
+
+    // Login with the new user
     await window.fill('input[name="email"]', credentials.username);
     await window.fill('input[name="password"]', credentials.password);
+    await window.click('button[type="submit"]');
 
     // Wait for the welcome text to appear in any heading
     const welcomeHeading = await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
