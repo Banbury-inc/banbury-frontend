@@ -1,7 +1,6 @@
 import path from 'path';
 import os from 'os';
 import banbury from '@banbury/core';
-import { handlers } from '../../../../../renderer/handlers';
 
 
 export function handleAddDeviceClick(
@@ -27,7 +26,7 @@ export function handleAddDeviceClick(
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const response = await handlers.devices.addDevice(username);
+      const response = await banbury.device.addDevice(username);
       
       if (response?.result === 'success') {
         // Add default directory and refresh device list

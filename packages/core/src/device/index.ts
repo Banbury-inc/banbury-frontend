@@ -1,5 +1,5 @@
 
-
+export * from './addDevice'
 export * from './deviceInfo'
 export * from '../websocket/connect'
 export * from './scanFilesystem'

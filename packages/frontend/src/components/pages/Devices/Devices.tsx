@@ -166,6 +166,35 @@ const ResizeHandle = styled('div')(({ theme }) => ({
   }
 }));
 
+function getValueFormatter(metric: string) {
+  return (value: number | null) => {
+    if (value == null || isNaN(Number(value))) return 'N/A';
+    switch (metric) {
+      case 'cpu':
+      case 'ram':
+      case 'gpu':
+      case 'battery_status':
+        return `${Number(value).toFixed(2)}%`;
+      case 'storage_capacity_gb':
+        return `${Number(value).toFixed(2)} GB`;
+      case 'battery_time_remaining': {
+        // Assume value is in minutes
+        const hours = Math.floor(Number(value) / 60);
+        const minutes = Math.floor(Number(value) % 60);
+        return `${hours}h ${minutes}m`;
+      }
+      case 'ram_total':
+      case 'ram_free':
+        return formatRAM(Number(value));
+      case 'upload_speed':
+      case 'download_speed':
+        return formatSpeed(Number(value));
+      default:
+        return value.toString();
+    }
+  };
+}
+
 export default function Devices() {
   const order = 'asc';
   const orderBy = 'device_name';
@@ -471,6 +500,8 @@ export default function Devices() {
       setUseDeviceinFileSync(selectedDevice.use_device_in_file_sync);
     }
   }, [selectedDevice]);
+
+  const latestTimeseries = timeseriesData.length > 0 ? timeseriesData[timeseriesData.length - 1] : null;
 
   return (
     <Box sx={{
@@ -1100,8 +1131,8 @@ export default function Devices() {
                               <Typography color="textSecondary" variant="caption">CPU Usage</Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
-                                  label={`${(parseFloat(selectedDevice.cpu_usage) || 0).toFixed(2)}%`}
-                                  color={parseFloat(selectedDevice.cpu_usage) > 80 ? 'error' : 'success'}
+                                  label={latestTimeseries ? `${(parseFloat(latestTimeseries.cpu_usage) || 0).toFixed(2)}%` : 'N/A'}
+                                  color={latestTimeseries && parseFloat(latestTimeseries.cpu_usage) > 80 ? 'error' : 'success'}
                                   size="small"
                                   sx={{ mr: 1, fontSize: '12px' }}
                                 />
@@ -1110,17 +1141,17 @@ export default function Devices() {
                             <Box>
                               <Typography color="textSecondary" variant="caption">CPU Model</Typography>
                               <Typography variant="body2">
-                                {selectedDevice.cpu_info_manufacturer} {selectedDevice.cpu_info_brand}
+                                {selectedDevice?.cpu_info_manufacturer} {selectedDevice?.cpu_info_brand}
                               </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">CPU Speed</Typography>
-                              <Typography variant="body2">{selectedDevice.cpu_info_speed}</Typography>
+                              <Typography variant="body2">{selectedDevice?.cpu_info_speed}</Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">CPU Cores</Typography>
                               <Typography variant="body2">
-                                {selectedDevice.cpu_info_cores} Cores (Physical: {selectedDevice.cpu_info_physical_cores})
+                                {selectedDevice?.cpu_info_cores} Cores (Physical: {selectedDevice?.cpu_info_physical_cores})
                               </Typography>
                             </Box>
                           </Stack>
@@ -1133,10 +1164,10 @@ export default function Devices() {
                               <Typography color="textSecondary" variant="caption">GPU Usage</Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
-                                  label={`${(parseFloat(selectedDevice.gpu_usage[0]) || 0).toFixed(0)}%`}
+                                  label={latestTimeseries ? `${(parseFloat(latestTimeseries.gpu_usage) || 0).toFixed(0)}%` : 'N/A'}
                                   size="small"
                                   sx={{ fontSize: '12px' }}
-                                  color={parseFloat(selectedDevice.gpu_usage[0]) > 80 ? 'error' : 'success'}
+                                  color={latestTimeseries && parseFloat(latestTimeseries.gpu_usage) > 80 ? 'error' : 'success'}
                                 />
                               </Box>
                             </Box>
@@ -1144,20 +1175,20 @@ export default function Devices() {
                               <Typography color="textSecondary" variant="caption">RAM Usage</Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
-                                  label={`${(parseFloat(selectedDevice.ram_usage[0]) || 0).toFixed(2)}%`}
+                                  label={latestTimeseries ? `${(parseFloat(latestTimeseries.ram_usage) || 0).toFixed(2)}%` : 'N/A'}
                                   size="small"
                                   sx={{ fontSize: '12px' }}
-                                  color={parseFloat(selectedDevice.ram_usage[0]) > 80 ? 'error' : 'success'}
+                                  color={latestTimeseries && parseFloat(latestTimeseries.ram_usage) > 80 ? 'error' : 'success'}
                                 />
                               </Box>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Total RAM</Typography>
-                              <Typography variant="body2">{formatRAM(selectedDevice.ram_total[0])}</Typography>
+                              <Typography variant="body2">{latestTimeseries ? formatRAM(latestTimeseries.ram_total) : 'N/A'}</Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Free RAM</Typography>
-                              <Typography variant="body2">{formatRAM(selectedDevice.ram_free[0])}</Typography>
+                              <Typography variant="body2">{latestTimeseries ? formatRAM(latestTimeseries.ram_free) : 'N/A'}</Typography>
                             </Box>
                           </Stack>
                         </Grid>
@@ -1194,7 +1225,7 @@ export default function Devices() {
                         <LineChart
                           sx={{
                             width: '100%',
-                            height: '100%'
+                            height: '100%',
                           }}
                           xAxis={[{
                             data: timeseriesData.map((d) => new Date(d.timestamp)),
@@ -1204,15 +1235,19 @@ export default function Devices() {
                                 ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                 : '',
                           }]}
+                          yAxis={[{
+                            valueFormatter: getValueFormatter(selectedMetric),
+                          }]}
                           series={[{
                             data: getMetricSeries(selectedMetric),
-                            valueFormatter: (value) => (value == null ? 'NaN' : `${value}%`),
+                            valueFormatter: getValueFormatter(selectedMetric),
                             color: selectedMetric === 'gpu' ? '#4CAF50'
                               : selectedMetric === 'ram' ? '#2196F3'
-                                : '#FF5722',
+                                : selectedMetric === 'cpu' ? '#FF5722'
+                                : '#9C27B0',
                             showMark: false
                           }]}
-                          margin={{ top: 10, bottom: 20, left: 40, right: 10 }}
+                          margin={{ top: 10, bottom: 20, left: 70, right: 10 }}
                           loading={isTimeseriesLoading}
                         />
                       </Box>

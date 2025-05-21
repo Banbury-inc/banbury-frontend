@@ -24,6 +24,17 @@ export function getDeviceData(
           device_predictions: Array<{
             device_id: string;
             device_name: string;
+            device_manufacturer: string;
+            device_model: string;
+            device_version: string;
+            services: string;
+            cpu_info_brand: string;
+            cpu_info_cores: number;
+            cpu_info_processors: number;
+            cpu_info_physicalCores: number;
+            device_priority: number;
+            mac_address: string;
+            ip_address: string;
             files_available_for_download: number;
             files_needed: number;
             predicted_cpu_usage: number;
