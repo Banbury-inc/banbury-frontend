@@ -33,7 +33,6 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { handleAddDeviceClick } from './components/AddDeviceButton/handleAddDeviceClick';
-import { handleFetchDevices } from './handleFetchDevices';
 import { DeviceData } from './types';
 import AddDeviceButton from './components/AddDeviceButton/AddDeviceButton';
 import DeleteDeviceButton from './components/DeleteDeviceButton/DeleteDeviceButton';
@@ -218,11 +217,44 @@ export default function Devices() {
     dragStartWidth.current = deviceListWidth;
   };
 
-
-
+  const [timeseriesData, setTimeseriesData] = useState<any[]>([]);
+  const [isTimeseriesLoading, setIsTimeseriesLoading] = useState(false);
 
   useEffect(() => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
+    const fetchTimeseriesData = async () => {
+      if (!selectedDevice || !selectedDevice._id) {
+        setTimeseriesData([]);
+        return;
+      }
+      setIsTimeseriesLoading(true);
+      try {
+        const res = await banbury.device.getTimeseriesData(selectedDevice._id);
+        setTimeseriesData(res);
+      } catch (e) {
+        setTimeseriesData([]);
+      } finally {
+        setIsTimeseriesLoading(false);
+      }
+    };
+    fetchTimeseriesData();
+  }, [selectedDevice]);
+
+  const getMetricSeries = (metric: 'cpu' | 'ram' | 'gpu') => {
+    if (!timeseriesData.length) return [];
+    switch (metric) {
+      case 'cpu':
+        return timeseriesData.map((d) => Number(d.cpu_usage));
+      case 'ram':
+        return timeseriesData.map((d) => Number(d.ram_usage));
+      case 'gpu':
+        return timeseriesData.map((d) => Number(d.gpu_usage));
+      default:
+        return [];
+    }
+  };
+
+  useEffect(() => {
+    const fetchDevicesFunc = banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   }, [username, updates]);
 
@@ -305,7 +337,7 @@ export default function Devices() {
   const isSelected = (deviceName: string) => selectedDeviceNames.indexOf(deviceName) !== -1;
 
   const handleFoldersUpdate = () => {
-    const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
+    const fetchDevicesFunc = banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
     fetchDevicesFunc();
   };
 
@@ -319,7 +351,7 @@ export default function Devices() {
 
       if (result === 'success') {
         setUpdates(updates + 1);
-        const fetchDevicesFunc = handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
+        const fetchDevicesFunc = banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading);
         fetchDevicesFunc();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
@@ -449,7 +481,7 @@ export default function Devices() {
                   setSelectedDevice={setSelectedDevice}
                 />
               </Grid>
-              <AddScannedFolderButton fetchDevices={handleFetchDevices(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading)} />
+              <AddScannedFolderButton fetchDevices={banbury.device.getDeviceData(selectedDevice, setSelectedDevice, setAllDevices, setIsLoading)} />
             </Grid>
           </Stack>
         </CardContent>
@@ -1132,21 +1164,10 @@ export default function Devices() {
                             height: '100%'
                           }}
                           xAxis={[{
-                            data: Array.from(
-                              {
-                                length: selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                                  selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'].length
-                              },
-                              (_, i) => i + 1
-                            )
+                            data: timeseriesData.map((d, i) => i + 1)
                           }]}
                           series={[{
-                            data: Array.isArray(selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                              selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'])
-                              ? (selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                                selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'] as string[]).map(Number)
-                              : [Number(selectedDevice[selectedMetric === 'gpu' ? 'gpu_usage' :
-                                selectedMetric === 'ram' ? 'ram_usage' : 'cpu_usage'] as string)],
+                            data: getMetricSeries(selectedMetric),
                             valueFormatter: (value) => (value == null ? 'NaN' : `${value}%`),
                             color: selectedMetric === 'gpu' ? '#4CAF50'
                               : selectedMetric === 'ram' ? '#2196F3'
@@ -1154,6 +1175,7 @@ export default function Devices() {
                             showMark: false
                           }]}
                           margin={{ top: 10, bottom: 20, left: 40, right: 10 }}
+                          loading={isTimeseriesLoading}
                         />
                       </Box>
                     </Card>

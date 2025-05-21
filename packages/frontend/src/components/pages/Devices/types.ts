@@ -1,6 +1,6 @@
-
 // Update the interface to match device data
 export interface DeviceData {
+  _id: string;
   id: number;
   device_name: string;
   device_manufacturer: string;

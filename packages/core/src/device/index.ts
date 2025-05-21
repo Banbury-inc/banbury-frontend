@@ -25,4 +25,5 @@ export * from '../websocket/connect'
 export * from './scanFilesystem'
 export * from './declareOnline'
 export * from './declareOffline'
-
+export * from './getDeviceData'
+export * from './getTimeseriesData'

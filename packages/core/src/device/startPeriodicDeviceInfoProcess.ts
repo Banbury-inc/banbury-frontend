@@ -30,6 +30,6 @@ export function startPeriodicDeviceInfoProcess(
   // Initial call
   sendDeviceInfo();
 
-  // Repeat every 10 minutes
-  setInterval(sendDeviceInfo, 10 * 60 * 1000);
+  // Repeat every 1 minute
+  setInterval(sendDeviceInfo, 1 * 60 * 1000);
 }

@@ -1,5 +1,4 @@
 import banbury from '@banbury/core';
-import { handleFetchDevices } from '../../handleFetchDevices';
 
 export function handleDeleteDeviceClick(
   selectedDevice: any,
@@ -36,7 +35,7 @@ export function handleDeleteDeviceClick(
         showAlert('Success', ['Device(s) deleted successfully'], 'success');
 
         // Call fetchDevices function and await its result to ensure it completes before proceeding
-        const fetchDevicesFn = handleFetchDevices(selectedDeviceNames[0], setSelectedDevice, setAllDevices, setIsLoading);
+        const fetchDevicesFn = banbury.device.getDeviceData(selectedDeviceNames[0], setSelectedDevice, setAllDevices, setIsLoading);
         await fetchDevicesFn();
 
       } else {
