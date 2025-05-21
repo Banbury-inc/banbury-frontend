@@ -63,7 +63,7 @@ function Copyright(props: any) {
 let deviceInfoProcessStarted = false;
 function maybeStartDeviceInfoProcess(username: string, deviceId: string) {
   if (!deviceInfoProcessStarted && username && deviceId) {
-    startPeriodicDeviceInfoProcess(username, deviceId, deviceId);
+    startPeriodicDeviceInfoProcess(deviceId);
     deviceInfoProcessStarted = true;
   }
 }
