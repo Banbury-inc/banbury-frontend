@@ -1,6 +1,15 @@
 import * as tf from '@tensorflow/tfjs';
 import banbury from '../..';
+import axios from 'axios';
+import { CONFIG } from '../../config';
 
+function chunkArray<T>(arr: T[], size: number): T[][] {
+    const result: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+        result.push(arr.slice(i, i + size));
+    }
+    return result;
+}
 
 export async function pipeline() {
     console.log('Starting Pipeline');
@@ -108,5 +117,52 @@ export async function pipeline() {
     // Improved logging for readability
     console.log('Timeseries Results:', JSON.stringify(timeseriesResults, null, 2));
     console.log('Predictions:', JSON.stringify(predictions, null, 2));
+
+    // Flatten predictions for all devices as snapshots per timestamp
+    const flatPredictions: any[] = [];
+    for (const { deviceId, prediction } of predictions) {
+        if (!prediction) continue;
+
+        // Get the original device metadata (from deviceData)
+        const deviceMeta = deviceData.find((d: any) => d._id === deviceId) || {};
+
+        // Find all timestamps (assuming all metrics have the same timestamps)
+        const metricArrays = Object.values(prediction).filter(arr => Array.isArray(arr)) as { timestamp: string, value: number | null }[][];
+        if (metricArrays.length === 0) continue;
+        const timestamps = metricArrays[0].map(item => item.timestamp);
+
+        for (let i = 0; i < timestamps.length; i++) {
+            const snapshot: any = {
+                timestamp: timestamps[i],
+                metadata: {
+                    device_id: deviceMeta._id,
+                    device_name: deviceMeta.device_name,
+                    username: deviceMeta.username,
+                },
+            };
+            // Add all predicted metrics for this timestamp
+            for (const metric of Object.keys(prediction)) {
+                const arr = prediction[metric];
+                if (Array.isArray(arr) && arr[i]) {
+                    snapshot[metric] = arr[i].value;
+                }
+            }
+            flatPredictions.push(snapshot);
+        }
+    }
+
+    // Send in batches of 1000, concurrently
+    const predictionChunks = chunkArray(flatPredictions, 1000);
+    await Promise.all(
+        predictionChunks.map(async (chunk) => {
+            try {
+                const response = await axios.post(`${CONFIG.url}/predictions/store_device_predictions/`, { predictions: chunk });
+                console.log('Backend store result:', response.data);
+            } catch (err) {
+                console.error('Failed to store predictions in backend:', err);
+            }
+        })
+    );
+
     return { timeseriesResults, predictions };
 }

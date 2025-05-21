@@ -36,6 +36,7 @@ import { handleAddDeviceClick } from './components/AddDeviceButton/handleAddDevi
 import { DeviceData } from './types';
 import AddDeviceButton from './components/AddDeviceButton/AddDeviceButton';
 import DeleteDeviceButton from './components/DeleteDeviceButton/DeleteDeviceButton';
+import { getTimeseriesPredictionData } from '@banbury/core/src/device/getTimeseriesPredictionData';
 
 const headCells: HeadCell[] = [
   { id: 'device_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true },
@@ -503,6 +504,32 @@ export default function Devices() {
 
   const latestTimeseries = timeseriesData.length > 0 ? timeseriesData[timeseriesData.length - 1] : null;
 
+  const [timeseriesPredictionData, setTimeseriesPredictionData] = useState<any>(null);
+  const [isTimeseriesPredictionLoading, setIsTimeseriesPredictionLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchPredictionData = async () => {
+      if (!selectedDevice || !selectedDevice._id) {
+        setTimeseriesPredictionData([]);
+        return;
+      }
+      setIsTimeseriesPredictionLoading(true);
+      try {
+        const data = await banbury.device.getTimeseriesPredictionData(selectedDevice._id);
+        setTimeseriesPredictionData(data);
+      } catch (e) {
+        setTimeseriesPredictionData(null);
+      } finally {
+        setIsTimeseriesPredictionLoading(false);
+      }
+    };
+    fetchPredictionData();
+  }, [selectedDevice]);
+
+  const latestPrediction = Array.isArray(timeseriesPredictionData) && timeseriesPredictionData.length > 0
+    ? timeseriesPredictionData[timeseriesPredictionData.length - 1]
+    : null;
+
   return (
     <Box sx={{
       width: '100%',
@@ -773,15 +800,27 @@ export default function Devices() {
                           <Stack spacing={2}>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted CPU Usage</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_cpu_usage || 0}%</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : (latestPrediction?.cpu_usage ?? 0).toFixed(2)}%
+                              </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted RAM Usage</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_ram_usage || 0}%</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : (latestPrediction?.ram_usage ?? 0).toFixed(2)}%
+                              </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted GPU Usage</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_gpu_usage || 0}%</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : (latestPrediction?.gpu_usage ?? 0).toFixed(2)}%
+                              </Typography>
                             </Box>
                           </Stack>
                         </Grid>
@@ -791,15 +830,20 @@ export default function Devices() {
                           <Stack spacing={2}>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted Download Speed</Typography>
-                              <Typography variant="body2">{formatSpeed(selectedDevice.predicted_download_speed || 0)}</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : formatSpeed(latestPrediction?.download_speed ?? 0)
+                                }
+                              </Typography>
                             </Box>
                             <Box>
                               <Typography color="textSecondary" variant="caption">Predicted Upload Speed</Typography>
-                              <Typography variant="body2">{formatSpeed(selectedDevice.predicted_upload_speed || 0)}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography color="textSecondary" variant="caption">Score</Typography>
-                              <Typography variant="body2">{selectedDevice.predicted_performance_score || 0}</Typography>
+                              <Typography variant="body2">
+                                {isTimeseriesPredictionLoading
+                                  ? 'Loading...'
+                                  : formatSpeed(latestPrediction?.upload_speed ?? 0)}
+                              </Typography>
                             </Box>
                           </Stack>
                         </Grid>
@@ -808,14 +852,6 @@ export default function Devices() {
                         <Grid item xs={12} md={4}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Files Needed</Typography>
-                              <Typography variant="body2">{selectedDevice.files_needed || 0}</Typography>
-                            </Box>
-                            <Box>
-                              <Typography color="textSecondary" variant="caption">Files Available for Download</Typography>
-                              <Typography variant="body2">{selectedDevice.files_available_for_download || 0}</Typography>
-                            </Box>
-                            <Box>
                               <Stack spacing={4}>
                                 <Typography color="textSecondary" variant="caption">Sync Storage Capacity</Typography>
                               </Stack>
@@ -823,7 +859,6 @@ export default function Devices() {
                                 <TextField
                                   variant="outlined"
                                   size="small"
-                                  // type="number"
                                   value={syncStorageValue}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSyncStorageValue(e.target.value)}
                                   sx={{
