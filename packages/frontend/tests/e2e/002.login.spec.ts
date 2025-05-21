@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { createTestUserIfNeeded, loginWithTestUser as _loginWithTestUser, completeOnboarding as _completeOnboarding, TestUserCredentials } from './utils/test-user'
+import { createTestUserIfNeeded, loginWithTestUser as _loginWithTestUser, completeOnboarding as _completeOnboarding, TestUserCredentials, getSharedTestUserCredentials } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
 
 let sharedContext;
@@ -21,15 +21,14 @@ test('can login and shows onboarding for first-time user', async () => {
     sessionStorage.clear();
   });
 
-  let testUserCredentials: TestUserCredentials;
   
   try {
-    // Get or create a test user with the shared credentials
-    testUserCredentials = await createTestUserIfNeeded(window);
+
+    const credentials = getSharedTestUserCredentials();
 
     // Type in the username and password
-    await window.fill('input[name="email"]', testUserCredentials.username);
-    await window.fill('input[name="password"]', testUserCredentials.password);
+    await window.fill('input[name="email"]', credentials.username);
+    await window.fill('input[name="password"]', credentials.password);
 
     // Wait for the welcome text to appear in any heading
     const welcomeHeading = await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
