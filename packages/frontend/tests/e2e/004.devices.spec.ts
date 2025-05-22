@@ -234,7 +234,20 @@ test.describe('Devices tests', () => {
     await page.click('[data-testid="DeleteDeviceButton"]');
 
     // wait for the alert to appear
-    await page.waitForSelector('[data-testid="alert-success"]', { timeout: 50000 });
+    try {
+      await page.waitForSelector('[data-testid="alert-success"]', { timeout: 50000 });
+    } catch (e) {
+      // Debug: check for error alert
+      const errorAlert = await page.$('[data-testid="alert-error"]');
+      if (errorAlert) {
+        const errorMsg = await errorAlert.textContent();
+        console.error('Error alert:', errorMsg);
+      }
+      // Debug: take a screenshot and dump page content
+      await page.screenshot({ path: 'delete-device-failure-windows.png' });
+      console.log(await page.content());
+      throw e;
+    }
 
     // Confirm that there is a message in the alert that says "Device deleted successfully"
     const alertMessage = page.locator('[data-testid="alert-success"]');
