@@ -13,7 +13,7 @@ import theme from "../../../renderer/themes/theme";
 import SignIn from '../Login/Login';
 import { handlers } from '../../../renderer/handlers';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { Link as MuiLink } from '@mui/material';
 
 function Copyright(props: any) {
@@ -37,7 +37,6 @@ interface Message {
 export default function SignUp() {
   const [registration_success, setregistration_success] = useState(false);
   const [user_already_exists, setuser_already_exists] = useState(false);
-  const navigate = useNavigate();
   const userExistsMessage: Message = {
     type: 'error',
     content: 'User already exists. Please choose a different username.',
@@ -57,7 +56,6 @@ export default function SignUp() {
       );
       if (result === 'success') {
         setregistration_success(true);
-        navigate('/login');
         return;
       }
       if (result === 'exists') {
