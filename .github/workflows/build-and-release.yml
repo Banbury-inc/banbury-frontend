@@ -154,7 +154,7 @@ jobs:
           retention-days: 30
 
   build:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/prdd'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     needs: [lint, unit-tests, e2e-tests]
     runs-on: ${{ matrix.os }}
     strategy:
