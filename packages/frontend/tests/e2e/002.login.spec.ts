@@ -36,10 +36,14 @@ test('can login and shows onboarding for first-time user', async () => {
     // Optionally, wait a short moment for UI to stabilize (can help with flakiness)
     await window.waitForTimeout(100);
 
-    // Login with the new user
-    await window.fill('input[name="email"]', credentials.username);
-    await window.fill('input[name="password"]', credentials.password);
-    await window.click('button[type="submit"]');
+    // Login with the new user using locators (more resilient to re-renders)
+    const emailInput = window.locator('input[name="email"]');
+    const passwordInput = window.locator('input[name="password"]');
+
+    await emailInput.fill(credentials.username);
+    await passwordInput.fill(credentials.password);
+
+    await window.locator('button[type="submit"]').click();
 
     // Wait for the welcome text to appear in any heading
     const welcomeHeading = await window.waitForSelector('h4:has-text("Welcome to Banbury")', {
