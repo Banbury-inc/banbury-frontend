@@ -1,6 +1,6 @@
 {
   "name": "banbury-frontend",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "private": true,
   "description": "A decentralized cloud storage system.",
   "repository": {
