@@ -1,8 +1,8 @@
 import * as net from 'net';
 
 import * as DateUtils from '../utils/dateUtils';
-import { DeviceInfo as DeviceInfoType } from '../types/deviceTypes'; // Assuming DeviceInfoType is defined in a types file
-import { SmallDeviceInfo as SmallDeviceInfoType } from '../types/deviceTypes'; // Assuming DeviceInfoType is defined in a types file
+import { DeviceInfo as DeviceInfoType } from '../types'; // Assuming DeviceInfoType is defined in a types file
+import { SmallDeviceInfo as SmallDeviceInfoType } from '../types'; // Assuming DeviceInfoType is defined in a types file
 import { banbury } from '../index';
 
 export async function small_ping_request(username: string, senderSocket: net.Socket): Promise<void> {

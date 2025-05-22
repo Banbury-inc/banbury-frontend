@@ -51,3 +51,26 @@ export interface FileInfo {
   Original_Device: string;
   Kind: string;
 }
+
+export type DeviceData = {
+  user: string;
+  device_number: number;
+  device_name: string;
+  storageCapacityGB: number;
+  device_manufacturer: string;
+  device_model: string;
+  device_version: string;
+  services: any;
+  cpu_info_brand: string;
+  cpu_info_cores: number;
+  cpu_info_processors: number;
+  cpu_info_physicalCores: number;
+  maxStorageCapacityGB: number;
+  date_added: string;
+  ip_address: string;
+  mac_address: string;
+  device_priority: number;
+  sync_status: boolean;
+  optimization_status: boolean;
+  online: boolean;
+};

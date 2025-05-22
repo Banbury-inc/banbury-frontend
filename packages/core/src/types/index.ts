@@ -1,1 +1,1 @@
-export * from './deviceTypes'
+export * from './types'

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as DateUtils from '../utils/dateUtils';
 import banbury from '..';
+import { DeviceData } from '../types';
 
 export async function addDevice(username: string) {
 
@@ -17,7 +18,7 @@ export async function addDevice(username: string) {
     const cpu_info_physicalCores = await banbury.device.cpu_info_physicalCores();
     const mac_address = await banbury.device.mac_address();
 
-    const deviceData = {
+    const deviceData: DeviceData = {
       user: username,
       device_number: 1,
       device_name: device_name,
