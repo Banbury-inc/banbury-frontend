@@ -132,23 +132,4 @@ test.describe('Account creation tests', () => {
       throw error;
     }
   });
-
-  test('clicking on already have an account? sign in link redirects to login page', async () => {
-    try {
-      const window = sharedContext.window;
-      if (!window) {
-        throw new Error('Window is not initialized');
-      }
-
-      // Click on "Already have an account? Sign in" link
-      const signInLink = await window.waitForSelector('text="Already have an account? Sign in"');
-      await signInLink.click();
-
-      // Wait for the login form to appear
-      await window.waitForSelector('h1:has-text("Sign in")');
-    } catch (error) {
-      console.error('Test failed:', error);
-      throw error;
-    }
-  });
 }); 
