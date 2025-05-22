@@ -245,7 +245,7 @@ test.describe('Devices tests', () => {
       }
       // Debug: take a screenshot and dump page content
       await page.screenshot({ path: 'delete-device-failure-windows.png' });
-      console.log(await page.content());
+      console.error(await page.content());
       throw e;
     }
 
