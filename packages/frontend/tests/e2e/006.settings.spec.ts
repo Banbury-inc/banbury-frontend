@@ -34,7 +34,7 @@ test.describe('Settings tests', () => {
   });
 
   test('can edit phone number', async () => {
-    const phoneInput = page.locator('[data-testid="phone-number-input"] input');
+    const phoneInput = page.locator('[data-testid="phone-number-input"]');
 
     await expect(phoneInput).toBeVisible({ timeout: 5000 });
     await phoneInput.click();
@@ -55,7 +55,7 @@ test.describe('Settings tests', () => {
   });
 
   test('can edit email', async () => {
-    const emailInput = page.locator('[data-testid="email-input"] input');
+    const emailInput = page.locator('[data-testid="email-input"]');
 
     await expect(emailInput).toBeVisible({ timeout: 5000 });
     await emailInput.click();
@@ -93,7 +93,7 @@ test.describe('Settings tests', () => {
     await confirmButton.click();
     
     // Allow longer timeout as account deletion might take some processing time
-    const redirected = await page.waitForSelector('h1:has-text("Sign in"), h1:has-text("Login"), .login-screen', {
+    const redirected = await page.waitForSelector('text="Sign in"', {
       timeout: 30000
     }).then(() => true).catch(() => false);
     

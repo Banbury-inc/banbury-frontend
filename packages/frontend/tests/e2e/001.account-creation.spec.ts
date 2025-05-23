@@ -67,14 +67,14 @@ test.describe('Account creation tests', () => {
       const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
       await signUpLink.click();
 
-      await window.waitForSelector('h1:has-text("Sign up")');
+      await window.waitForSelector('text="Sign up"');
       await window.fill('input[name="firstName"]', credentials.firstName);
       await window.fill('input[name="lastName"]', credentials.lastName);
       await window.fill('input[name="username"]', credentials.username);
       await window.fill('input[name="password"]', credentials.password);
 
       await window.click('button[type="submit"]');
-      await window.waitForSelector('h1:has-text("Sign in")', { timeout: 10000 });
+      await window.waitForSelector('text="Sign in"', { timeout: 10000 });
 
       // Optionally, try logging in with the new credentials to verify
       await window.fill('input[name="email"]', credentials.username);
@@ -103,7 +103,7 @@ test.describe('Account creation tests', () => {
       await signUpLink.click();
 
       // Wait for the registration form to appear
-      await window.waitForSelector('h1:has-text("Sign up")');
+      await window.waitForSelector('text="Sign up"');
 
       // Fill in the registration form with existing user
       await window.fill('input[name="firstName"]', credentials.firstName);
@@ -125,7 +125,7 @@ test.describe('Account creation tests', () => {
       expect(isVisible).toBe(true);
 
       // Verify we're still on the registration page
-      const signUpHeading = await window.textContent('h1');
+      const signUpHeading = await window.textContent('text="Sign up"');
       expect(signUpHeading).toBe('Sign up');
     } catch (error) {
       console.error('Test failed:', error);
