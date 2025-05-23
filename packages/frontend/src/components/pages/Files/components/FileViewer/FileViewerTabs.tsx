@@ -16,7 +16,8 @@ import PDFViewer from '../PDFViewer/PDFViewer';
 import WordViewer from '../WordViewer/WordViewer';
 import ExcelViewer from '../ExcelViewer/ExcelViewer';
 import CodeViewer from '../CodeViewer/CodeViewer';
-import { isImageFile, isPdfFile, isWordFile, isExcelFile, isCsvFile, isCodeFile } from '../../utils/fileUtils';
+import VideoViewer from '../VideoViewer/VideoViewer';
+import { isImageFile, isPdfFile, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from '../../utils/fileUtils';
 
 interface FileTab {
   id: string;
@@ -146,6 +147,24 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
             fileName={tab.fileName}
             onError={() => {
               console.error('Failed to load code file:', tab.filePath);
+            }}
+          />
+        </Box>
+      );
+    }
+
+    if (isVideoFile(tab.fileName)) {
+      return (
+        <Box sx={{ 
+          width: '100%', 
+          height: '100%',
+          overflow: 'hidden'
+        }}>
+          <VideoViewer
+            src={tab.filePath}
+            fileName={tab.fileName}
+            onError={() => {
+              console.error('Failed to load video:', tab.filePath);
             }}
           />
         </Box>

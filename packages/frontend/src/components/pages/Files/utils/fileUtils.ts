@@ -18,10 +18,14 @@ export const isImageFile = (fileName: string): boolean => {
  * @param filename - The name of the file
  * @returns boolean indicating if the file is a video
  */
-export const isVideoFile = (filename: string): boolean => {
-  const videoExtensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.m4v', '.3gp'];
-  const ext = filename.toLowerCase().split('.').pop();
-  return ext ? videoExtensions.includes(`.${ext}`) : false;
+export const isVideoFile = (fileName: string): boolean => {
+  const videoExtensions = [
+    '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', 
+    '.m4v', '.3gp', '.3g2', '.ogv', '.ogg', '.qt', '.asf', 
+    '.rm', '.rmvb', '.vob', '.m2v', '.mpg', '.mpeg', '.mpe'
+  ];
+  const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  return videoExtensions.includes(extension);
 };
 
 /**
@@ -136,6 +140,7 @@ export const getFileTypeCategory = (filename: string): string => {
  */
 export const isViewableInApp = (fileName: string): boolean => {
   return isImageFile(fileName) || 
+         isVideoFile(fileName) ||
          isPdfFile(fileName) || 
          isWordFile(fileName) || 
          isExcelFile(fileName) || 
