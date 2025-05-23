@@ -1,9 +1,9 @@
 import { banbury } from "@banbury/core";
-import { useAlert } from "../../../renderer/context/AlertContext";
+import { useAlert } from "../../../../../../renderer/context/AlertContext";
 import { Button, Tooltip } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
 import React from "react";
-import { handlers } from "../../../renderer/handlers";
+import { handlers } from "../../../../../../renderer/handlers";
 import { addDownloadsInfo } from "@banbury/core/src/device/addDownloadsInfo";
 
 export default function DownloadFileButton({

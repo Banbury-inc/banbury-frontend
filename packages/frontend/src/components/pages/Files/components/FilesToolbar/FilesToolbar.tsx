@@ -7,16 +7,15 @@ import DownloadIcon from '@mui/icons-material/Download';
 import NavigateBackButton from '../../components/NavigateBackButton/NavigateBackButton';
 import NavigateForwardButton from '../../components/NavigateForwardButton/NavigateForwardButton';
 import NewInputFileUploadButton from '../../components/UploadFileButton';
-import DownloadFileButton from '../../../../common/DownloadFileButton/DownloadFileButton';
+import DownloadFileButton from './DownloadFileButton/DownloadFileButton';
 import S3UploadButton from '../../components/S3UploadButton';
-import DeleteFileButton from '../../../../common/DeleteFileBtton/DeleteFileButton';
-import AddFileToSyncButton from '../../../../common/AddFileToSyncButton';
+import DeleteFileButton from './DeleteFileBtton/DeleteFileButton';
+import AddFileToSyncButton from './AddFileToSyncButton/AddFileToSyncButton';
 import RemoveFileFromSyncButton from '../../../../pages/Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
-import SyncButton from '../../../../common/SyncButton/SyncButton';
-import ShareFileButton from '../../../../common/ShareFileButton/ShareFileButton';
-import ToggleColumnsButton from '../../components/ToggleColumnsButton/ToggleColumnsButton';
-import ChangeViewButton from '../../components/ChangeViewButton/ChangeViewButton';
-import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
+import SyncButton from './SyncButton/SyncButton';
+import ShareFileButton from './ShareFileButton/ShareFileButton';
+import ToggleColumnsButton from './ToggleColumnsButton/ToggleColumnsButton';
+import ChangeViewButton from './ChangeViewButton/ChangeViewButton';
 
 export default function FilesToolbar({
   _backHistory,

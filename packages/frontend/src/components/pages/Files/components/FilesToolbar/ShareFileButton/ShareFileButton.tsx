@@ -4,13 +4,13 @@ import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import { styled } from '@mui/material/styles';
-import { handlers } from '../../../renderer/handlers';
+import { handlers } from '../../../../../../renderer/handlers';
 import { banbury } from '@banbury/core';
-import { useAuth } from '../../../renderer/context/AuthContext';
+import { useAuth } from '../../../../../../renderer/context/AuthContext';
 import CheckIcon from '@mui/icons-material/Check';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LockIcon from '@mui/icons-material/Lock';
-import { useAlert } from '../../../renderer/context/AlertContext';
+import { useAlert } from '../../../../../../renderer/context/AlertContext';
 
 interface ShareFileButtonProps {
   selectedFileNames: string[];
