@@ -13,7 +13,9 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { shell } from 'electron';
 import ImageViewer from '../ImageViewer/ImageViewer';
 import PDFViewer from '../PDFViewer/PDFViewer';
-import { isImageFile, isPdfFile } from '../../utils/fileUtils';
+import WordViewer from '../WordViewer/WordViewer';
+import ExcelViewer from '../ExcelViewer/ExcelViewer';
+import { isImageFile, isPdfFile, isWordFile, isExcelFile, isCsvFile } from '../../utils/fileUtils';
 
 interface FileTab {
   id: string;
@@ -83,6 +85,48 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
             fileName={tab.fileName}
             onError={() => {
               console.error('Failed to load PDF:', tab.filePath);
+            }}
+          />
+        </Box>
+      );
+    }
+
+    if (isWordFile(tab.fileName)) {
+      return (
+        <Box sx={{ 
+          width: '100%', 
+          height: '100%',
+          overflow: 'hidden'
+        }}>
+          <WordViewer
+            src={tab.filePath}
+            fileName={tab.fileName}
+            onError={() => {
+              console.error('Failed to load Word document:', tab.filePath);
+            }}
+            onSave={(filePath) => {
+              console.log('Word document saved:', filePath);
+            }}
+          />
+        </Box>
+      );
+    }
+
+    if (isExcelFile(tab.fileName) || isCsvFile(tab.fileName)) {
+      return (
+        <Box sx={{ 
+          width: '100%', 
+          height: '100%',
+          overflow: 'hidden'
+        }}>
+          <ExcelViewer
+            src={tab.filePath}
+            fileName={tab.fileName}
+            onError={() => {
+              console.error('Failed to load spreadsheet:', tab.filePath);
+            }}
+            onSave={(filePath) => {
+              console.log('Spreadsheet saved:', filePath);
             }}
           />
         </Box>
