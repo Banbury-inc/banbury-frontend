@@ -26,7 +26,7 @@ import { initAuthState } from '@banbury/core/src/auth';
 import { Link as RouterLink } from 'react-router-dom';
 import { startPeriodicDeviceInfoProcess } from '@banbury/core/src/device/startPeriodicDeviceInfoProcess';
 import { Textbox } from '../../common/Textbox/Textbox';
-import { Text } from '../../common/Text/Text';
+import { Text, TextLink } from '../../common/Text/Text';
 import { Checkbox } from '../../common/Checkbox/Checkbox';
 
 interface Message {
@@ -372,9 +372,9 @@ export default function SignIn() {
                 {loading ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
 
-              <Typography variant="body2" align="center" sx={{ my: 1 }}>
+              <Text className="text-sm text-center mb-2 mt-2">
                 - OR -
-              </Typography>
+              </Text>
 
 
               <Button
@@ -382,7 +382,7 @@ export default function SignIn() {
                 variant="outlined"
                 startIcon={<GoogleIcon />}
                 onClick={handleGoogleLogin}
-                sx={{ mt: 3, mb: 2 }}
+                sx={{ mt: 1, mb: 2 }}
                 disabled={loading}
               >
                 Sign in with Google
@@ -390,16 +390,18 @@ export default function SignIn() {
               <Grid container>
                 <Grid item xs>
                   {/* <Link href="/register" variant="body2"> */}
-                  <Link variant="body2" onClick={() => {
+                  <TextLink href="/register" className="text-sm text-center mb-2 mt-2" onClick={() => {
                     // setredirect_to_register(true);
                   }}>
                     Forgot password?
-                  </Link>
+                  </TextLink>
                 </Grid>
                 <Grid item>
-                  <Link component={RouterLink} to="/register" variant="body2">
+                  <TextLink href="/register" className="text-sm text-center mb-2 mt-2" onClick={() => {
+                    // setredirect_to_register(true);
+                  }}>
                     {"Don't have an account? Sign Up"}
-                  </Link>
+                  </TextLink>
                 </Grid>
                 <Grid container justifyContent="center">
                   <Grid item>
