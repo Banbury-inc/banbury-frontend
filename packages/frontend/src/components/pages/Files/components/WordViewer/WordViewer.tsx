@@ -198,9 +198,9 @@ const WordViewer: React.FC<WordViewerProps> = ({
         .replace(/<[^>]*>/g, '') // Remove all XML tags
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
         .replace(/&quot;/g, '"')
         .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&')
         .replace(/\n{3,}/g, '\n\n') // Normalize multiple newlines
         .trim();
 
