@@ -351,7 +351,8 @@ const WordViewer: React.FC<WordViewerProps> = ({
     try {
       // Simple HTML to DOCX conversion
       // Remove HTML tags for basic text conversion
-      const textContent = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+      const sanitizeHtml = require('sanitize-html');
+      const textContent = sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} }).replace(/&nbsp;/g, ' ');
       
       // Split into paragraphs and filter out empty ones
       const paragraphs = textContent.split('\n').filter(line => line.trim() !== '');
