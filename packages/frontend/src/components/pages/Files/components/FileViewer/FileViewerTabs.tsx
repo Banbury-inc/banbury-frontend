@@ -15,7 +15,8 @@ import ImageViewer from '../ImageViewer/ImageViewer';
 import PDFViewer from '../PDFViewer/PDFViewer';
 import WordViewer from '../WordViewer/WordViewer';
 import ExcelViewer from '../ExcelViewer/ExcelViewer';
-import { isImageFile, isPdfFile, isWordFile, isExcelFile, isCsvFile } from '../../utils/fileUtils';
+import CodeViewer from '../CodeViewer/CodeViewer';
+import { isImageFile, isPdfFile, isWordFile, isExcelFile, isCsvFile, isCodeFile } from '../../utils/fileUtils';
 
 interface FileTab {
   id: string;
@@ -127,6 +128,24 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
             }}
             onSave={(filePath) => {
               console.log('Spreadsheet saved:', filePath);
+            }}
+          />
+        </Box>
+      );
+    }
+
+    if (isCodeFile(tab.fileName)) {
+      return (
+        <Box sx={{ 
+          width: '100%', 
+          height: '100%',
+          overflow: 'hidden'
+        }}>
+          <CodeViewer
+            src={tab.filePath}
+            fileName={tab.fileName}
+            onError={() => {
+              console.error('Failed to load code file:', tab.filePath);
             }}
           />
         </Box>

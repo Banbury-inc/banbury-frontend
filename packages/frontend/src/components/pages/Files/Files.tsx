@@ -30,7 +30,7 @@ import { FolderIcon, DocumentIcon } from '@heroicons/react/20/solid';
 import FileTable from './components/Table/Table';
 import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
 import FileViewerTabs from './components/FileViewer/FileViewerTabs';
-import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile } from './utils/fileUtils';
+import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile } from './utils/fileUtils';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -495,6 +495,7 @@ export default function Files() {
     if (isWordFile(fileName)) return 'Word Document';
     if (isExcelFile(fileName)) return 'Excel Spreadsheet';
     if (isCsvFile(fileName)) return 'CSV File';
+    if (isCodeFile(fileName)) return 'Code File';
     return 'Document';
   };
 

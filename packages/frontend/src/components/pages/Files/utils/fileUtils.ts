@@ -7,10 +7,10 @@
  * @param filename - The name of the file
  * @returns boolean indicating if the file is an image
  */
-export const isImageFile = (filename: string): boolean => {
-  const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'];
-  const ext = filename.toLowerCase().split('.').pop();
-  return ext ? imageExtensions.includes(`.${ext}`) : false;
+export const isImageFile = (fileName: string): boolean => {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.ico', '.tiff'];
+  const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  return imageExtensions.includes(extension);
 };
 
 /**
@@ -40,10 +40,8 @@ export const isDocumentFile = (filename: string): boolean => {
  * @param filename - The name of the file
  * @returns boolean indicating if the file is a PDF
  */
-export const isPdfFile = (filename: string): boolean => {
-  const pdfExtensions = ['.pdf'];
-  const ext = filename.toLowerCase().split('.').pop();
-  return ext ? pdfExtensions.includes(`.${ext}`) : false;
+export const isPdfFile = (fileName: string): boolean => {
+  return fileName.toLowerCase().endsWith('.pdf');
 };
 
 /**
@@ -51,10 +49,10 @@ export const isPdfFile = (filename: string): boolean => {
  * @param filename - The name of the file
  * @returns boolean indicating if the file is a Word document
  */
-export const isWordFile = (filename: string): boolean => {
+export const isWordFile = (fileName: string): boolean => {
   const wordExtensions = ['.doc', '.docx'];
-  const ext = filename.toLowerCase().split('.').pop();
-  return ext ? wordExtensions.includes(`.${ext}`) : false;
+  const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  return wordExtensions.includes(extension);
 };
 
 /**
@@ -62,10 +60,10 @@ export const isWordFile = (filename: string): boolean => {
  * @param filename - The name of the file
  * @returns boolean indicating if the file is an Excel spreadsheet
  */
-export const isExcelFile = (filename: string): boolean => {
+export const isExcelFile = (fileName: string): boolean => {
   const excelExtensions = ['.xls', '.xlsx'];
-  const ext = filename.toLowerCase().split('.').pop();
-  return ext ? excelExtensions.includes(`.${ext}`) : false;
+  const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  return excelExtensions.includes(extension);
 };
 
 /**
@@ -73,10 +71,8 @@ export const isExcelFile = (filename: string): boolean => {
  * @param filename - The name of the file
  * @returns boolean indicating if the file is a CSV file
  */
-export const isCsvFile = (filename: string): boolean => {
-  const csvExtensions = ['.csv'];
-  const ext = filename.toLowerCase().split('.').pop();
-  return ext ? csvExtensions.includes(`.${ext}`) : false;
+export const isCsvFile = (fileName: string): boolean => {
+  return fileName.toLowerCase().endsWith('.csv');
 };
 
 /**
@@ -86,6 +82,34 @@ export const isCsvFile = (filename: string): boolean => {
  */
 export const isSpreadsheetFile = (filename: string): boolean => {
   return isExcelFile(filename) || isCsvFile(filename);
+};
+
+/**
+ * Checks if a file is a code file based on its extension
+ * @param filename - The name of the file
+ * @returns boolean indicating if the file is a code file
+ */
+export const isCodeFile = (fileName: string): boolean => {
+  const codeExtensions = [
+    // Web technologies
+    '.js', '.jsx', '.ts', '.tsx', '.html', '.htm', '.css', '.scss', '.sass', '.less',
+    '.json', '.xml', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf',
+    
+    // Programming languages
+    '.py', '.java', '.c', '.cpp', '.cxx', '.cc', '.h', '.hpp', '.cs', '.php',
+    '.rb', '.go', '.rs', '.swift', '.kt', '.scala', '.r', '.m', '.mm',
+    '.pl', '.pm', '.lua', '.vim',
+    
+    // Shell scripting
+    '.sh', '.bash', '.zsh', '.fish', '.ps1', '.bat', '.cmd',
+    
+    // Configuration and documentation
+    '.md', '.markdown', '.txt', '.log', '.gitignore', '.env', '.dockerfile',
+    '.sql', '.graphql', '.proto'
+  ];
+  
+  const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  return codeExtensions.includes(extension);
 };
 
 /**
@@ -101,6 +125,7 @@ export const getFileTypeCategory = (filename: string): string => {
   if (isExcelFile(filename)) return 'Excel Spreadsheet';
   if (isCsvFile(filename)) return 'CSV File';
   if (isDocumentFile(filename)) return 'Document';
+  if (isCodeFile(filename)) return 'Code File';
   return 'Unknown';
 };
 
@@ -109,6 +134,11 @@ export const getFileTypeCategory = (filename: string): string => {
  * @param filename - The name of the file
  * @returns boolean indicating if the file is viewable in the app
  */
-export const isViewableInApp = (filename: string): boolean => {
-  return isImageFile(filename) || isPdfFile(filename) || isWordFile(filename) || isExcelFile(filename) || isCsvFile(filename);
+export const isViewableInApp = (fileName: string): boolean => {
+  return isImageFile(fileName) || 
+         isPdfFile(fileName) || 
+         isWordFile(fileName) || 
+         isExcelFile(fileName) || 
+         isCsvFile(fileName) ||
+         isCodeFile(fileName);
 }; 
