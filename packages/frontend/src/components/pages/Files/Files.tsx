@@ -30,7 +30,7 @@ import { FolderIcon, DocumentIcon } from '@heroicons/react/20/solid';
 import FileTable from './components/Table/Table';
 import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
 import FileViewerTabs from './components/FileViewer/FileViewerTabs';
-import { isImageFile } from './utils/fileUtils';
+import { isImageFile, isPdfFile, isViewableInApp } from './utils/fileUtils';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -273,11 +273,11 @@ export default function Files() {
       }
       
       if (fileFound) {
-        // Check if it's an image file and open in the in-app viewer
-        if (isImageFile(file_name)) {
-          openFileInTab(file_name, file_path, file.kind || 'Image');
+        // Check if it's a viewable file type and open in the in-app viewer
+        if (isViewableInApp(file_name)) {
+          openFileInTab(file_name, file_path, file.kind || getFileType(file_name));
         } else {
-          // For non-image files, use the system default application
+          // For non-viewable files, use the system default application
           shell.openPath(file_path);
         }
       }
@@ -314,9 +314,9 @@ export default function Files() {
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
           
-          // Check if the downloaded file is an image and open in the in-app viewer
-          if (isImageFile(file_name)) {
-            openFileInTab(file_name, file_save_path, file.kind || 'Image');
+          // Check if the downloaded file is viewable and open in the in-app viewer
+          if (isViewableInApp(file_name)) {
+            openFileInTab(file_name, file_save_path, file.kind || getFileType(file_name));
           } else {
             shell.openPath(file_save_path);
           }
@@ -487,6 +487,13 @@ export default function Files() {
     
     fetchCloudFiles();
   }, [filePath, username]);
+
+  // Helper function to get file type
+  const getFileType = (fileName: string): string => {
+    if (isImageFile(fileName)) return 'Image';
+    if (isPdfFile(fileName)) return 'PDF';
+    return 'Document';
+  };
 
   return (
     <Box sx={{

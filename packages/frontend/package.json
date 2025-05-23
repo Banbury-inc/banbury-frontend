@@ -82,10 +82,12 @@
     "notistack": "^3.0.1",
     "ollama": "^0.5.2",
     "p-queue": "^8.0.1",
+    "pdfjs-dist": "^3.11.174",
     "postcss-loader": "^8.1.1",
     "punycode": "^2.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-pdf": "^7.7.3",
     "react-router-dom": "^6.22.2",
     "style-loader": "^4.0.0",
     "styled-components": "^6.1.9"

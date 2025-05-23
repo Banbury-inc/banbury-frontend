@@ -12,7 +12,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { shell } from 'electron';
 import ImageViewer from '../ImageViewer/ImageViewer';
-import { isImageFile } from '../../utils/fileUtils';
+import PDFViewer from '../PDFViewer/PDFViewer';
+import { isImageFile, isPdfFile } from '../../utils/fileUtils';
 
 interface FileTab {
   id: string;
@@ -70,7 +71,25 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
       );
     }
 
-    // For non-image files, show a placeholder
+    if (isPdfFile(tab.fileName)) {
+      return (
+        <Box sx={{ 
+          width: '100%', 
+          height: '100%',
+          overflow: 'hidden'
+        }}>
+          <PDFViewer
+            src={tab.filePath}
+            fileName={tab.fileName}
+            onError={() => {
+              console.error('Failed to load PDF:', tab.filePath);
+            }}
+          />
+        </Box>
+      );
+    }
+
+    // For non-supported files, show a placeholder
     return (
       <Box sx={{ 
         p: 4, 

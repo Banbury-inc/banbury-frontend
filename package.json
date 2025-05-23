@@ -29,7 +29,9 @@
         "@tensorflow/tfjs-node": "^4.22.0",
         "@types/react-syntax-highlighter": "^15.5.13",
         "ollama": "^0.5.13",
+        "pdfjs-dist": "^3.11.174",
         "react-medium-image-zoom": "^5.2.14",
+        "react-pdf": "^7.5.1",
         "react-syntax-highlighter": "^15.6.1",
         "systeminformation": "^5.25.11",
         "ws": "^8.18.1"
