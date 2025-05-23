@@ -29,6 +29,8 @@ import { formatFileSize } from './utils/formatFileSize';
 import { FolderIcon, DocumentIcon } from '@heroicons/react/20/solid';
 import FileTable from './components/Table/Table';
 import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
+import FileViewerTabs from './components/FileViewer/FileViewerTabs';
+import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from './utils/fileUtils';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -111,6 +113,16 @@ export default function Files() {
     owner: true,
     date_modified: true
   });
+
+  // File viewer tabs state
+  const [openTabs, setOpenTabs] = useState<Array<{
+    id: string;
+    fileName: string;
+    filePath: string;
+    fileType: string;
+  }>>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [showFileViewer, setShowFileViewer] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -261,7 +273,13 @@ export default function Files() {
       }
       
       if (fileFound) {
-        shell.openPath(file_path);
+        // Check if it's a viewable file type and open in the in-app viewer
+        if (isViewableInApp(file_name)) {
+          openFileInTab(file_name, file_path, file.kind || getFileType(file_name));
+        } else {
+          // For non-viewable files, use the system default application
+          shell.openPath(file_path);
+        }
       }
       
       if (!fileFound && !folderFound) {
@@ -295,7 +313,13 @@ export default function Files() {
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
-          shell.openPath(file_save_path);
+          
+          // Check if the downloaded file is viewable and open in the in-app viewer
+          if (isViewableInApp(file_name)) {
+            openFileInTab(file_name, file_save_path, file.kind || getFileType(file_name));
+          } else {
+            shell.openPath(file_save_path);
+          }
 
           // Create a file watcher
           const watcher = fs.watch(file_save_path, (eventType: string) => {
@@ -417,6 +441,38 @@ export default function Files() {
     setUpdates(updates + 1);
   };
 
+  // Tab management functions
+  const openFileInTab = (fileName: string, filePath: string, fileType: string) => {
+    const tabId = `${filePath}_${Date.now()}`;
+    const newTab = {
+      id: tabId,
+      fileName,
+      filePath,
+      fileType
+    };
+    
+    setOpenTabs(prev => [...prev, newTab]);
+    setActiveTab(tabId);
+    setShowFileViewer(true);
+  };
+
+  const closeTab = (tabId: string) => {
+    setOpenTabs(prev => {
+      const newTabs = prev.filter(tab => tab.id !== tabId);
+      if (newTabs.length === 0) {
+        setShowFileViewer(false);
+        setActiveTab(null);
+      } else if (activeTab === tabId) {
+        setActiveTab(newTabs[newTabs.length - 1].id);
+      }
+      return newTabs;
+    });
+  };
+
+  const switchTab = (tabId: string) => {
+    setActiveTab(tabId);
+  };
+
   // Add effect to fetch cloud files specifically when Cloud node is selected
   useEffect(() => {
     const fetchCloudFiles = async () => {
@@ -431,6 +487,18 @@ export default function Files() {
     
     fetchCloudFiles();
   }, [filePath, username]);
+
+  // Helper function to get file type
+  const getFileType = (fileName: string): string => {
+    if (isImageFile(fileName)) return 'Image';
+    if (isPdfFile(fileName)) return 'PDF';
+    if (isWordFile(fileName)) return 'Word Document';
+    if (isExcelFile(fileName)) return 'Excel Spreadsheet';
+    if (isCsvFile(fileName)) return 'CSV File';
+    if (isCodeFile(fileName)) return 'Code File';
+    if (isVideoFile(fileName)) return 'Video File';
+    return 'Document';
+  };
 
   return (
     <Box sx={{
@@ -536,10 +604,11 @@ export default function Files() {
           sx={{
             flexGrow: 1,
             height: '100%',
-            width: '100%',
+            width: showFileViewer ? '60%' : '100%',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            transition: 'width 0.3s ease'
           }}
         >
           <CardContent
@@ -730,6 +799,38 @@ export default function Files() {
             />
           </CardContent>
         </Card>
+
+        {/* File Viewer Pane */}
+        {showFileViewer && (
+          <Card
+            variant="outlined"
+            sx={{
+              width: '40%',
+              height: '100%',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              borderLeft: 0
+            }}
+          >
+            <CardContent sx={{
+              height: '100%',
+              width: '100%',
+              overflow: 'hidden',
+              padding: 0,
+              '&:last-child': { pb: 0 },
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <FileViewerTabs
+                openTabs={openTabs}
+                activeTab={activeTab}
+                onCloseTab={closeTab}
+                onSwitchTab={switchTab}
+              />
+            </CardContent>
+          </Card>
+        )}
       </Stack>
       <Dialog
         open={isShareModalOpen}
