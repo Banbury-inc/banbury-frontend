@@ -2,8 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Tooltip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LoadingButton from '@mui/lab/LoadingButton';
-import { useAuth } from '../../../../../renderer/context/AuthContext';
-import { useAlert } from '../../../../../renderer/context/AlertContext';
+import { useAuth } from '../../../../../../renderer/context/AuthContext';
+import { useAlert } from '../../../../../../renderer/context/AlertContext';
 import banbury from '@banbury/core';
 import { removeFileFromSync } from '@banbury/core/src/device/removeFileFromSync';
 

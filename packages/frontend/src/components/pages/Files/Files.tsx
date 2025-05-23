@@ -24,12 +24,12 @@ import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
 import Dialog from '@mui/material/Dialog';
 import { styled } from '@mui/material/styles';
-import { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
 import { useAllFileData } from './hooks/useAllFileData';
 import FilesToolbar from './components/FilesToolbar/FilesToolbar';
 import { formatFileSize } from './utils/formatFileSize';
 import { FolderIcon, DocumentIcon } from '@heroicons/react/20/solid';
 import FileTable from './components/Table/Table';
+import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',

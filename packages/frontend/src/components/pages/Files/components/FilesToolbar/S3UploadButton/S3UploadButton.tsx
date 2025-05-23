@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Button, Tooltip } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { useAuth } from '../../../../renderer/context/AuthContext';
-import { useAlert } from '../../../../renderer/context/AlertContext';
+import { useAuth } from '../../../../../../renderer/context/AuthContext';
+import { useAlert } from '../../../../../../renderer/context/AlertContext';
 import banbury from '@banbury/core';
 
 interface S3UploadButtonProps {
