@@ -23,6 +23,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Textbox } from '../../common/Textbox/Textbox';
 import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
+import { Text } from '../../common/Text/Text';
+import MessageBubble from './components/MessageBubble/MessageBuuble';
 
 interface MessageBubbleProps {
   isUser: boolean;
@@ -51,28 +53,6 @@ const customizedTheme = {
     background: '#000000',
   },
 };
-
-const MessageBubble = styled(Paper, {
-  shouldForwardProp: (prop) => prop !== 'isUser'
-})<MessageBubbleProps>(({ theme, isUser }) => ({
-  padding: theme.spacing(2, 3),
-  marginBottom: theme.spacing(1.5),
-  maxWidth: 'min(80%, 800px)',
-  alignSelf: isUser ? 'flex-end' : 'flex-start',
-  backgroundColor: isUser ? theme.palette.primary.main : theme.palette.grey[900],
-  color: isUser ? theme.palette.primary.contrastText : theme.palette.text.primary,
-  borderRadius: theme.spacing(2.5),
-  '& pre': {
-    margin: theme.spacing(1, 0),
-    padding: theme.spacing(2),
-    borderRadius: theme.spacing(1.5),
-    backgroundColor: '#000000',
-  },
-  '& p, & span': {
-    lineHeight: 1.5,
-    margin: 0
-  }
-}));
 
 interface CodeBlockProps {
   language: string;
@@ -189,86 +169,6 @@ const ImagePreviewContainer = styled(Box)(({ theme }) => ({
 const HiddenInput = styled('input')({
   display: 'none',
 });
-
-const MessageContent: React.FC<{ content: string; thinking?: string; images?: string[] }> = ({ content, thinking, images }) => {
-  // Filter out the context section from display
-  const displayContent = content.replace(/<context>[\s\S]*?<\/context>\n?/g, '');
-  const parts = displayContent.split(/(```[\s\S]*?```)/);
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
-
-  return (
-    <>
-      {thinking && (
-        <ThinkingBlock elevation={0}>
-          <Stack spacing={1}>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{
-                cursor: 'pointer',
-                '&:hover': {
-                  opacity: 0.8
-                }
-              }}
-              onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
-            >
-              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span role="img" aria-label="thinking">💭</span>
-                Thinking Process
-              </Typography>
-              {isThinkingExpanded ? (
-                <ExpandLessIcon fontSize="small" sx={{ color: 'grey.500' }} />
-              ) : (
-                <ExpandMoreIcon fontSize="small" sx={{ color: 'grey.500' }} />
-              )}
-            </Stack>
-            <Box sx={{
-              maxHeight: isThinkingExpanded ? '1000px' : '0px',
-              overflow: 'hidden',
-              transition: 'all 0.3s ease-in-out',
-              opacity: isThinkingExpanded ? 1 : 0
-            }}>
-              <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
-                {thinking}
-              </Typography>
-            </Box>
-          </Stack>
-        </ThinkingBlock>
-      )}
-      {images && images.length > 0 && (
-        <ImagePreviewContainer>
-          {images.map((image, index) => (
-            <ImagePreview 
-              key={index} 
-              src={`data:image/jpeg;base64,${image}`} 
-              alt={`Uploaded image ${index + 1}`} 
-            />
-          ))}
-        </ImagePreviewContainer>
-      )}
-      {parts.map((part, index) => {
-        if (part.startsWith('```') && part.endsWith('```')) {
-          // Extract language and code
-          const match = part.match(/```(\w+)?\n([\s\S]+?)```/);
-          if (match) {
-            const [, language = 'text', code] = match;
-            return (
-              <Box key={index} sx={{ my: 1 }}>
-                <CodeBlock language={language} code={code} />
-              </Box>
-            );
-          }
-        }
-        return (
-          <Typography key={index} variant="inherit" component="span" sx={{ whiteSpace: 'pre-wrap' }}>
-            {part}
-          </Typography>
-        );
-      })}
-    </>
-  );
-};
 
 interface Conversation {
   id: string;
@@ -806,14 +706,39 @@ export default function AI() {
               flexDirection: 'column',
               flexGrow: 1
             }}>
+              {messages.length === 0 && !isLoading && !streamingMessage && !isStreaming && (
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 400,
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Text
+                    className="text-3xl sm:text-4xl font-bold text-primary-600 dark:text-primary-400 text-center mb-2"
+                    style={{ marginBottom: 8 }}
+                  >
+                    Welcome back, Michael.
+                  </Text>
+                  <Text
+                    className="text-lg sm:text-xl text-zinc-500 dark:text-zinc-400 text-center"
+                  >
+                    How can I help you today?
+                  </Text>
+                </Box>
+              )}
               {messages.map((message, index) => (
                 <React.Fragment key={index}>
                   <MessageBubble
                     isUser={message.role === 'user'}
                     elevation={1}
-                  >
-                    <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
-                  </MessageBubble>
+                    content={message.content}
+                    thinking={message.thinking}
+                    images={message.images}
+                  />
                   {message.searchInfo && message.role === 'user' && (
                     <SearchingIndicator
                       variant="caption"
@@ -868,9 +793,9 @@ export default function AI() {
                       <MessageBubble
                         isUser={false}
                         elevation={1}
-                      >
-                        <MessageContent content={streamingMessage} thinking={streamingThinking} />
-                      </MessageBubble>
+                        content={streamingMessage}
+                        thinking={streamingThinking}
+                      />
                     </>
                   )}
                   {!streamingMessage && isSearching && (
