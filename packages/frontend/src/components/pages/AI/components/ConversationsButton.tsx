@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Button, Popover, Box, Typography, Stack, List, ListItem, ListItemText,
-  IconButton, Tooltip, Divider, TextField, Menu, MenuItem, Dialog,
-  DialogTitle, DialogContent, DialogActions, InputAdornment
+   Tooltip, Divider, Menu, MenuItem, Dialog,
+  DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
-import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FolderIcon from '@mui/icons-material/Folder';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { useAlert } from '../../../../renderer/context/AlertContext';
 import { format } from 'date-fns';
+import { Textbox } from '../../../common/Textbox/Textbox';
+import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
+import AddIcon from '@mui/icons-material/Add';
 
 interface Conversation {
   id: string;
@@ -222,67 +224,76 @@ export default function ConversationsButton({ onSelectConversation, currentConve
       >
         <Box sx={{ p: 2 }}>
           <Stack spacing={1}>
-            <Stack direction="row" spacing={1}>
-              <Button
-                fullWidth
-                variant="contained"
+            <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+              <ToolbarButton
                 onClick={handleNewChat}
                 sx={{
+                  minWidth: 0,
+                  width: 36,
+                  height: 36,
                   borderRadius: 2,
-                  textTransform: 'none',
                 }}
               >
-                New Chat
-              </Button>
-              <IconButton
+                <AddIcon sx={{ fontSize: '1.1rem' }} />
+              </ToolbarButton>
+              <ToolbarButton
                 onClick={handleMenuOpen}
-                sx={{ color: 'grey.500' }}
+                sx={{
+                  minWidth: 0,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                }}
               >
-                <MoreVertIcon />
-              </IconButton>
+                <MoreVertIcon sx={{ fontSize: '1.1rem' }} />
+              </ToolbarButton>
             </Stack>
 
-            <TextField
-              size="small"
-              placeholder="Search conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'grey.500' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiInputBase-root': {
-                  color: 'white',
-                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                }
-              }}
-            />
+            <Box sx={{ position: 'relative', width: '100%' }}>
+              <Textbox
+                value={searchQuery}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                placeholder="Search conversations..."
+                className="w-full"
+                type="text"
+                style={{ marginBottom: 16 }}
+              />
+            </Box>
 
             {categories.length > 0 && (
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                <Button
-                  size="small"
-                  variant={selectedCategory === null ? "contained" : "outlined"}
+                <ToolbarButton
                   onClick={() => setSelectedCategory(null)}
-                  sx={{ borderRadius: 2, textTransform: 'none' }}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    backgroundColor: selectedCategory === null ? 'primary.main' : 'transparent',
+                    color: selectedCategory === null ? 'primary.contrastText' : 'inherit',
+                    border: selectedCategory === null ? 'none' : '1px solid',
+                    borderColor: selectedCategory === null ? 'transparent' : 'primary.main',
+                    minWidth: 0,
+                    px: 2,
+                  }}
                 >
                   All
-                </Button>
+                </ToolbarButton>
                 {categories.map(category => (
-                  <Button
+                  <ToolbarButton
                     key={category}
-                    size="small"
-                    variant={selectedCategory === category ? "contained" : "outlined"}
                     onClick={() => setSelectedCategory(category)}
-                    sx={{ borderRadius: 2, textTransform: 'none' }}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      backgroundColor: selectedCategory === category ? 'primary.main' : 'transparent',
+                      color: selectedCategory === category ? 'primary.contrastText' : 'inherit',
+                      border: selectedCategory === category ? 'none' : '1px solid',
+                      borderColor: selectedCategory === category ? 'transparent' : 'primary.main',
+                      minWidth: 0,
+                      px: 2,
+                    }}
                   >
                     {category}
-                  </Button>
+                  </ToolbarButton>
                 ))}
               </Stack>
             )}
@@ -307,25 +318,31 @@ export default function ConversationsButton({ onSelectConversation, currentConve
                   }}
                   secondaryAction={
                     <Stack direction="row" spacing={1}>
-                      <IconButton
-                        edge="end"
-                        size="small"
+                      <ToolbarButton
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEditClick(conversation);
                         }}
-                        sx={{ color: 'grey.500' }}
+                        sx={{
+                        minWidth: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
+                      }}
                       >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        edge="end"
-                        size="small"
+                        <EditIcon sx={{ fontSize: '1.1rem' }} />
+                      </ToolbarButton>
+                      <ToolbarButton
                         onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                        sx={{ color: 'grey.500' }}
+                        sx={{
+                          minWidth: 0,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 2,
+                        }}
                       >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
+                        <DeleteOutlineIcon sx={{ fontSize: '1.1rem' }} />
+                      </ToolbarButton>
                     </Stack>
                   }
                 >
@@ -413,59 +430,31 @@ export default function ConversationsButton({ onSelectConversation, currentConve
         <DialogTitle sx={{ color: 'white' }}>Edit Conversation</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Title"
+            <Textbox
               value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              fullWidth
-              sx={{
-                '& .MuiInputBase-root': {
-                  color: 'white',
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'grey.500',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.4)',
-                  },
-                },
-              }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTitle(e.target.value)}
+              placeholder="Title"
+              className="w-full"
+              type="text"
+              style={{ color: 'white', background: 'transparent' }}
             />
-            <TextField
-              label="Category"
+            <Textbox
               value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              fullWidth
-              sx={{
-                '& .MuiInputBase-root': {
-                  color: 'white',
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'grey.500',
-                },
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.4)',
-                  },
-                },
-              }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCategory(e.target.value)}
+              placeholder="Category"
+              className="w-full"
+              type="text"
+              style={{ color: 'white', background: 'transparent' }}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditingConversation(null)} sx={{ color: 'grey.500' }}>
+          <ToolbarButton onClick={() => setEditingConversation(null)} sx={{ color: 'grey.500' }}>
             Cancel
-          </Button>
-          <Button onClick={handleSaveEdit} variant="contained">
+          </ToolbarButton>
+          <ToolbarButton onClick={handleSaveEdit} sx={{ backgroundColor: 'primary.main', color: 'primary.contrastText', '&:hover': { backgroundColor: 'primary.dark' } }}>
             Save
-          </Button>
+          </ToolbarButton>
         </DialogActions>
       </Dialog>
     </>

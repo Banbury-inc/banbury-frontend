@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Button, Card, Grid, Stack, Typography, Box, Divider, TextField, Avatar, Menu, MenuItem } from '@mui/material';
+import { Card, Grid, Stack, Box, Divider, Avatar, Menu, MenuItem } from '@mui/material';
 import { banbury } from '@banbury/core';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { handlers } from '../../../renderer/handlers';
 import EditIcon from '@mui/icons-material/Edit';
 import { useAlert } from '../../../renderer/context/AlertContext';
+import { Text } from '../../common/Text/Text';
+import { Button } from '../../common/Button/Button';
+import { Textbox } from '../../common/Textbox/Textbox';
 
 
 export default function Public_Profile() {
@@ -110,9 +113,7 @@ export default function Public_Profile() {
 
     return (
         <>
-            <Typography id="public-profile" paddingBottom={2} variant="h4" gutterBottom>
-                Public Profile
-            </Typography>
+            <Text id="public-profile" className="text-2xl font-bold mb-2">Public Profile</Text>
 
 
             <Card variant='outlined' sx={{ p: 3 }}>
@@ -125,8 +126,8 @@ export default function Public_Profile() {
                                 <Stack spacing={2} sx={{ width: '100%' }}>
                                     <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Box sx={{ flex: '1' }}>
-                                            <Typography variant="h6" gutterBottom>Profile Picture</Typography>
-                                            <Typography color="textSecondary" variant="caption">Upload a profile picture</Typography>
+                                            <Text className="text-lg font-semibold mb-1">Profile Picture</Text>
+                                            <Text className="text-xs text-gray-500">Upload a profile picture</Text>
                                         </Box>
                                         <Box sx={{ width: '300px', display: 'flex', alignItems: 'center', gap: 2 }}>
                                             <Avatar
@@ -139,13 +140,9 @@ export default function Public_Profile() {
                                                 }
                                             />
                                             <Button
-                                                variant="outlined"
-                                                size="small"
                                                 onClick={handleClick}
-                                                startIcon={<EditIcon />}
-                                                sx={{ height: '24px', minWidth: 'unset', padding: '2px 8px' }}
                                             >
-                                                Edit
+                                                <EditIcon style={{ fontSize: 16 }} /> Edit
                                             </Button>
                                             <Menu
                                                 anchorEl={anchorEl}
@@ -176,15 +173,14 @@ export default function Public_Profile() {
                                 <Stack spacing={2} sx={{ width: '100%' }}>
                                     <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Box sx={{ flex: '1' }}>
-                                            <Typography variant="h6" gutterBottom>First Name</Typography>
-                                            <Typography color="textSecondary" variant="caption">The first name of the user</Typography>
+                                            <Text className="text-lg font-semibold mb-1">First Name</Text>
+                                            <Text className="text-xs text-gray-500">The first name of the user</Text>
                                         </Box>
                                         <Box sx={{ width: '300px' }}>
-                                            <TextField
-                                                size="small"
+                                            <Textbox
                                                 value={first_name ?? ''}
-                                                onChange={(e) => setFirstname(e.target.value)}
-                                                fullWidth
+                                                onChange={e => setFirstname(e.target.value)}
+                                                className="w-full"
                                             />
                                         </Box>
                                     </Stack>
@@ -198,15 +194,14 @@ export default function Public_Profile() {
                                 <Stack spacing={2} sx={{ width: '100%' }}>
                                     <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Box sx={{ flex: '1' }}>
-                                            <Typography variant="h6" gutterBottom>Last Name</Typography>
-                                            <Typography color="textSecondary" variant="caption">The last name of the user</Typography>
+                                            <Text className="text-lg font-semibold mb-1">Last Name</Text>
+                                            <Text className="text-xs text-gray-500">The last name of the user</Text>
                                         </Box>
                                         <Box sx={{ width: '300px' }}>
-                                            <TextField
-                                                size="small"
+                                            <Textbox
                                                 value={last_name ?? ''}
-                                                onChange={(e) => setLastname(e.target.value)}
-                                                fullWidth
+                                                onChange={e => setLastname(e.target.value)}
+                                                className="w-full"
                                             />
                                         </Box>
                                     </Stack>
@@ -220,16 +215,15 @@ export default function Public_Profile() {
                                 <Stack spacing={2} sx={{ width: '100%' }}>
                                     <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Box sx={{ flex: '1' }}>
-                                            <Typography variant="h6" gutterBottom>Phone Number</Typography>
-                                            <Typography color="textSecondary" variant="caption">The phone number of the user</Typography>
+                                            <Text className="text-lg font-semibold mb-1">Phone Number</Text>
+                                            <Text className="text-xs text-gray-500">The phone number of the user</Text>
                                         </Box>
                                         <Box sx={{ width: '300px' }}>
-                                            <TextField
+                                            <Textbox
                                                 data-testid="phone-number-input"
-                                                size="small"
                                                 value={phone_number ?? ''}
-                                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                                fullWidth
+                                                onChange={e => setPhoneNumber(e.target.value)}
+                                                className="w-full"
                                                 type="tel"
                                             />
                                         </Box>
@@ -246,16 +240,15 @@ export default function Public_Profile() {
                                 <Stack spacing={2} sx={{ width: '100%' }}>
                                     <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Box sx={{ flex: '1' }}>
-                                            <Typography variant="h6" gutterBottom>Email</Typography>
-                                            <Typography color="textSecondary" variant="caption">The email of the user</Typography>
+                                            <Text className="text-lg font-semibold mb-1">Email</Text>
+                                            <Text className="text-xs text-gray-500">The email of the user</Text>
                                         </Box>
                                         <Box sx={{ width: '300px' }}>
-                                            <TextField
+                                            <Textbox
                                                 data-testid="email-input"
-                                                size="small"
                                                 value={email ?? ''}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                fullWidth
+                                                onChange={e => setEmail(e.target.value)}
+                                                className="w-full"
                                                 type="email"
                                             />
                                         </Box>
@@ -269,17 +262,14 @@ export default function Public_Profile() {
                     <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <Button
                             data-testid="save-button"
-                            variant="outlined"
-                            size="small"
                             onClick={() => {
                                 handleSave(
                                     first_name ?? '',
                                     last_name ?? '',
                                     phone_number ?? '',
-                                    email ?? '',
+                                    email ?? ''
                                 )
                             }}
-                            sx={{ mt: 2, fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}
                         >
                             Save
                         </Button>

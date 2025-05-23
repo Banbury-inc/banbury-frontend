@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Grid, Stack, Typography, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Card, Grid, Stack, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, SelectChangeEvent } from '@mui/material';
 import { ipcRenderer } from 'electron';
 import { Alert } from '../../template/alert';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 import { useTheme, ThemeName } from '../../../renderer/context/ThemeContext';
+import { Text } from '../../common/Text/Text';
+import { Button } from '../../common/Button/Button';
+import { Dropdown, DropdownButton, DropdownMenu, DropdownItem } from '../../common/Dropdown/Dropdown';
 
 export default function App() {
     const [updateStatus, setUpdateStatus] = useState<{ title: string; messages: string[] } | null>(null);
@@ -136,9 +139,7 @@ export default function App() {
                 />
             )}
 
-            <Typography id="app" paddingBottom={2} variant="h4" gutterBottom>
-                App
-            </Typography>
+            <Text id="app" className="text-2xl font-bold mb-2">App</Text>
 
             <Stack direction="column" spacing={3}>
                 <Card variant='outlined' sx={{ p: 3 }}>
@@ -147,8 +148,8 @@ export default function App() {
                             <Stack spacing={2}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <Box sx={{ pr: 3 }}>
-                                        <Typography variant="h6" gutterBottom>Current Version</Typography>
-                                        <Typography color="textSecondary" variant="caption">{appVersion}</Typography>
+                                        <Text className="text-lg font-semibold mb-1">Current Version</Text>
+                                        <Text className="text-xs text-gray-500">{appVersion}</Text>
                                     </Box>
                                 </Box>
                             </Stack>
@@ -163,29 +164,26 @@ export default function App() {
                             <Stack spacing={2}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <Box sx={{ pr: 3 }}>
-                                        <Typography variant="h6" gutterBottom>App Theme</Typography>
-                                        <Typography color="textSecondary" variant="caption">Change the appearance of the application</Typography>
+                                        <Text className="text-lg font-semibold mb-1">App Theme</Text>
+                                        <Text className="text-xs text-gray-500">Change the appearance of the application</Text>
                                     </Box>
                                 </Box>
                             </Stack>
                         </Grid>
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
-                                <Select<ThemeName>
-                                    data-testid="theme-selector"
-                                    value={themeName}
-                                    onChange={handleThemeChange}
-                                    displayEmpty
-                                    sx={{ fontSize: '14px', height: '32px' }}
-                                >
-                                    <MenuItem value="default">Default</MenuItem>
-                                    <MenuItem value="spotify">Spotify</MenuItem>
-                                    <MenuItem value="materialui">Material UI</MenuItem>
-                                    <MenuItem value="theme2">Orange</MenuItem>
-                                    <MenuItem value="theme3">Alternate</MenuItem>
-                                    <MenuItem value="theme4">Dark Monochrome</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <Dropdown>
+                                <DropdownButton outline>
+                                    {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
+                                </DropdownButton>
+                                <DropdownMenu>
+                                    <DropdownItem onClick={() => handleThemeChange({ target: { value: 'default' } } as any)}>Default</DropdownItem>
+                                    <DropdownItem onClick={() => handleThemeChange({ target: { value: 'spotify' } } as any)}>Spotify</DropdownItem>
+                                    <DropdownItem onClick={() => handleThemeChange({ target: { value: 'materialui' } } as any)}>Material UI</DropdownItem>
+                                    <DropdownItem onClick={() => handleThemeChange({ target: { value: 'theme2' } } as any)}>Orange</DropdownItem>
+                                    <DropdownItem onClick={() => handleThemeChange({ target: { value: 'theme3' } } as any)}>Alternate</DropdownItem>
+                                    <DropdownItem onClick={() => handleThemeChange({ target: { value: 'theme4' } } as any)}>Dark Monochrome</DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
                         </Grid>
                     </Grid>
                 </Card>
@@ -196,18 +194,15 @@ export default function App() {
                             <Stack spacing={2}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <Box sx={{ pr: 3 }}>
-                                        <Typography variant="h6" gutterBottom>Check for Updates</Typography>
-                                        <Typography color="textSecondary" variant="caption">Check for updates to Banbury Cloud</Typography>
+                                        <Text className="text-lg font-semibold mb-1">Check for Updates</Text>
+                                        <Text className="text-xs text-gray-500">Check for updates to Banbury Cloud</Text>
                                     </Box>
                                 </Box>
                             </Stack>
                         </Grid>
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
-                                variant="outlined"
-                                size="small"
                                 onClick={handleCheckUpdate}
-                                sx={{ mt: 2, fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}
                             >
                                 Check
                             </Button>
@@ -221,8 +216,8 @@ export default function App() {
                             <Stack spacing={2}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <Box sx={{ pr: 3 }}>
-                                        <Typography variant="h6" gutterBottom>Delete Account</Typography>
-                                        <Typography color="textSecondary" variant="caption">Permanently delete your account and all associated data</Typography>
+                                        <Text className="text-lg font-semibold mb-1">Delete Account</Text>
+                                        <Text className="text-xs text-gray-500">Permanently delete your account and all associated data</Text>
                                     </Box>
                                 </Box>
                             </Stack>
@@ -230,11 +225,7 @@ export default function App() {
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
                                 data-testid="delete-account-button"
-                                variant="contained"
-                                color="error"
-                                size="small"
                                 onClick={handleOpenDeleteDialog}
-                                sx={{ mt: 2, fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}
                             >
                                 Delete
                             </Button>
@@ -248,17 +239,14 @@ export default function App() {
                             <Stack spacing={2}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <Box sx={{ pr: 3 }}>
-                                        <Typography variant="h6" gutterBottom>Help</Typography>
-                                        <Typography color="textSecondary" variant="caption">Learn how to use Banbury Cloud</Typography>
+                                        <Text className="text-lg font-semibold mb-1">Help</Text>
+                                        <Text className="text-xs text-gray-500">Learn how to use Banbury Cloud</Text>
                                     </Box>
                                 </Box>
                             </Stack>
                         </Grid>
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
-                                variant="outlined"
-                                size="small"
-                                sx={{ mt: 2, fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}
                             >
                                 Open
                             </Button>
@@ -285,7 +273,6 @@ export default function App() {
                 <DialogActions>
                     <Button onClick={handleCloseDeleteDialog} autoFocus>Cancel</Button>
                     <Button 
-                        color="error" 
                         onClick={handleDeleteAccount} 
                         disabled={deleteInProgress}
                     >

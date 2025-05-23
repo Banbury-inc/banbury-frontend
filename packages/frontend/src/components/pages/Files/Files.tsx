@@ -6,7 +6,6 @@ import Checkbox from '@mui/material/Checkbox';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import TablePagination from '@mui/material/TablePagination';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { shell } from 'electron';
 import fs from 'fs';
@@ -19,29 +18,17 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import { handlers } from '../../../renderer/handlers';
 import banbury from '@banbury/core';
 import FileTreeView from './components/NewTreeView/FileTreeView';
-import NewInputFileUploadButton from './components/UploadFileButton';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
-import ShareFileButton from '../../../components/common/ShareFileButton/ShareFileButton';
-import AddFileToSyncButton from '../../../components/common/AddFileToSyncButton';
 import Dialog from '@mui/material/Dialog';
-import SyncButton from '../../../components/common/SyncButton/SyncButton';
-import DownloadFileButton from '../../../components/common/DownloadFileButton/DownloadFileButton';
-import DeleteFileButton from '../../../components/common/DeleteFileBtton/DeleteFileButton';
 import { styled } from '@mui/material/styles';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import FolderIcon from '@mui/icons-material/Folder';
-import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
-import ToggleColumnsButton from './components/ToggleColumnsButton/ToggleColumnsButton';
-import { formatFileSize } from './utils/formatFileSize';
-import FileTable from './components/Table/Table';
-import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
-import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
-import _ViewSelector from './components/ViewSelector/ViewSelector';
-import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
-import S3UploadButton from './components/S3UploadButton';
 import { useAllFileData } from './hooks/useAllFileData';
+import FilesToolbar from './components/FilesToolbar/FilesToolbar';
+import { formatFileSize } from './utils/formatFileSize';
+import { FolderIcon, DocumentIcon } from '@heroicons/react/20/solid';
+import FileTable from './components/Table/Table';
+import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -453,119 +440,35 @@ export default function Files() {
       flexDirection: 'column'
     }}>
       <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
-          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
-            <Grid container alignItems="center">
-              <Grid item>
-                <NavigateBackButton
-                  backHistory={_backHistory}
-                  setBackHistory={setBackHistory}
-                  filePath={filePath}
-                  setFilePath={setFilePath}
-                  setForwardHistory={setForwardHistory}
-                />
-              </Grid>
-              <Grid item>
-                <NavigateForwardButton
-                  backHistory={_backHistory}
-                  setBackHistory={setBackHistory}
-                  forwardHistory={_forwardHistory}
-                  setForwardHistory={setForwardHistory}
-                  filePath={filePath}
-                  setFilePath={setFilePath}
-                />
-              </Grid>
-
-              <Grid item paddingRight={1} paddingLeft={1}>
-                <Tooltip title="Upload">
-                  <NewInputFileUploadButton />
-                </Tooltip>
-              </Grid>
-              <Grid item paddingRight={1}>
-                <DownloadFileButton
-                  selectedFileNames={selectedFileNames}
-                  selectedFileInfo={selectedFileInfo}
-                  selectedDeviceNames={selectedDeviceNames}
-                  setSelectedFiles={setSelectedFileNames}
-                  setSelected={setSelected}
-                  setTaskbox_expanded={setTaskbox_expanded}
-                  tasks={tasks || []}
-                  setTasks={setTasks}
-                  websocket={websocket as WebSocket}
-                />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <S3UploadButton 
-                  filePath={filePath}
-                  onUploadComplete={() => {
-                    // Force refresh by updating the updates counter
-                    setUpdates(Date.now());
-                    // If we're in Cloud view, directly fetch cloud files
-                    if (filePath === 'Core/Cloud' && username) {
-                      banbury.files.listS3Files()
-                        .catch((error) => {
-                          console.error('Error refreshing cloud files after upload:', error);
-                        });
-                    }
-                  }}
-                />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <DeleteFileButton
-                  selectedFileNames={selectedFileNames}
-                  filePath={filePath}
-                  setSelectedFileNames={setSelectedFileNames}
-                  updates={updates}
-                  setUpdates={setUpdates}
-                  setSelected={setSelected}
-                  setTaskbox_expanded={setTaskbox_expanded}
-                  tasks={tasks || []}
-                  setTasks={setTasks}
-                />
-              </Grid>
-              
-              {!isShared && (
-                <Grid item paddingRight={1}>
-                  <Tooltip title="Add to Sync">
-                    <AddFileToSyncButton selectedFileNames={selectedFileNames} />
-                  </Tooltip>
-                </Grid>
-              )}
-              
-              {isCloudSync && (
-                <Grid item paddingRight={1}>
-                  <RemoveFileFromSyncButton
-                    selectedFileNames={selectedFileNames}
-                    onFinish={handleFinish}
-                  />
-                </Grid>
-              )}
-              
-              <Grid item paddingRight={1}>
-                <SyncButton />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <ShareFileButton
-                  selectedFileNames={selectedFileNames}
-                  selectedFileInfo={selectedFileInfo}
-                  onShare={() => handleShareModalOpen()}
-                />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <ToggleColumnsButton
-                  columnOptions={getColumnOptions()}
-                  onColumnVisibilityChange={handleColumnVisibilityChange}
-                />
-              </Grid>
-              <Grid item>
-                <ChangeViewButton
-                  currentView={viewType}
-                  onViewChange={setViewType}
-                />
-              </Grid>
-            </Grid>
-          </Stack>
-        </CardContent>
+        <FilesToolbar
+          _backHistory={_backHistory}
+          setBackHistory={setBackHistory}
+          _forwardHistory={_forwardHistory}
+          setForwardHistory={setForwardHistory}
+          filePath={filePath}
+          setFilePath={setFilePath}
+          setTaskbox_expanded={setTaskbox_expanded}
+          selectedFileNames={selectedFileNames}
+          selectedFileInfo={selectedFileInfo}
+          selectedDeviceNames={selectedDeviceNames}
+          setSelectedFileNames={setSelectedFileNames}
+          setSelected={setSelected}
+          tasks={tasks}
+          setTasks={setTasks}
+          websocket={websocket as WebSocket}
+          updates={updates}
+          setUpdates={setUpdates}
+          isShared={isShared}
+          isCloudSync={isCloudSync}
+          handleFinish={handleFinish}
+          handleShareModalOpen={handleShareModalOpen}
+          getColumnOptions={getColumnOptions}
+          columnVisibility={columnVisibility}
+          handleColumnVisibilityChange={handleColumnVisibilityChange}
+          viewType={viewType}
+          setViewType={setViewType}
+          username={username}
+        />
       </Card>
       
       <Stack
@@ -756,9 +659,9 @@ export default function Files() {
                                     }}
                                   >
                                     {row.kind === 'Folder' ? (
-                                      <FolderIcon sx={{ fontSize: 30, color: 'primary.main' }} />
+                                      <FolderIcon className="w-6 h-6 text-primary-main" />
                                     ) : (
-                                      <InsertDriveFileIcon sx={{ fontSize: 30, color: 'text.secondary' }} />
+                                      <DocumentIcon className="w-6 h-6 text-text-secondary" />
                                     )}
                                   </Box>
                                   <CardContent sx={{ flexGrow: 1, pt: 0.5, px: 1.5, pb: 1 }}>

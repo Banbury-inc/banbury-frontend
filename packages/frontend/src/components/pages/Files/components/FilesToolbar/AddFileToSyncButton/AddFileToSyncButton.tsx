@@ -2,10 +2,10 @@ import React, { useState, useRef } from 'react';
 
 import { Tooltip } from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
-import { useAuth } from '../../renderer/context/AuthContext';
+import { useAuth } from '../../../../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import { useAlert } from '../../renderer/context/AlertContext';
+import { useAlert } from '../../../../../../renderer/context/AlertContext';
 import { addFileToSync } from '@banbury/core/src/device/addFileToSync';
 // Extend the InputHTMLAttributes interface to include webkitdirectory and directory
 declare module 'react' {

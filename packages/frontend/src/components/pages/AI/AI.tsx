@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import { CardContent, TextField, Typography, Paper, Tooltip } from "@mui/material";
+import { CardContent, Typography, Paper, Tooltip } from "@mui/material";
 import Card from '@mui/material/Card';
-import { Grid, IconButton } from '@mui/material';
+import { Grid } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CheckIcon from '@mui/icons-material/Check';
 import ImageIcon from '@mui/icons-material/Image';
 import CancelIcon from '@mui/icons-material/Cancel';
 import LanguageIcon from '@mui/icons-material/Language';
@@ -15,17 +13,13 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConversationsButton from './components/ConversationsButton';
 import ModelSelectorButton from './components/ModelSelectorButton';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { Textbox } from '../../common/Textbox/Textbox';
+import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
+import { Text } from '../../common/Text/Text';
+import MessageBubble from './components/MessageBubble/MessageBuuble';
 
-interface MessageBubbleProps {
-  isUser: boolean;
-  children: React.ReactNode;
-}
 
 interface ChatResponse {
   model: string;
@@ -37,113 +31,6 @@ interface ChatResponse {
   done: boolean;
 }
 
-// Customize the VSC Dark Plus theme
-const customizedTheme = {
-  ...vscDarkPlus,
-  'pre[class*="language-"]': {
-    ...vscDarkPlus['pre[class*="language-"]'],
-    background: '#000000',
-  },
-  'code[class*="language-"]': {
-    ...vscDarkPlus['code[class*="language-"]'],
-    background: '#000000',
-  },
-};
-
-const MessageBubble = styled(Paper, {
-  shouldForwardProp: (prop) => prop !== 'isUser'
-})<MessageBubbleProps>(({ theme, isUser }) => ({
-  padding: theme.spacing(2, 3),
-  marginBottom: theme.spacing(1.5),
-  maxWidth: 'min(80%, 800px)',
-  alignSelf: isUser ? 'flex-end' : 'flex-start',
-  backgroundColor: isUser ? theme.palette.primary.main : theme.palette.grey[900],
-  color: isUser ? theme.palette.primary.contrastText : theme.palette.text.primary,
-  borderRadius: theme.spacing(2.5),
-  '& pre': {
-    margin: theme.spacing(1, 0),
-    padding: theme.spacing(2),
-    borderRadius: theme.spacing(1.5),
-    backgroundColor: '#000000',
-  },
-  '& p, & span': {
-    lineHeight: 1.5,
-    margin: 0
-  }
-}));
-
-interface CodeBlockProps {
-  language: string;
-  code: string;
-}
-
-const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
-  const [copied, setCopied] = useState(false);
-  const copyTimeout = useRef<NodeJS.Timeout>();
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-
-      if (copyTimeout.current) {
-        clearTimeout(copyTimeout.current);
-      }
-
-      copyTimeout.current = setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy code:', err);
-    }
-  };
-
-  return (
-    <Box sx={{ position: 'relative' }}>
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          zIndex: 1,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          borderRadius: '4px',
-        }}
-      >
-        <Tooltip title={copied ? "Copied!" : "Copy code"}>
-          <IconButton
-            size="small"
-            onClick={handleCopy}
-            sx={{
-              color: copied ? 'success.main' : 'grey.400',
-              '&:hover': {
-                color: copied ? 'success.main' : 'grey.100',
-              }
-            }}
-          >
-            {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
-          </IconButton>
-        </Tooltip>
-      </Box>
-      <SyntaxHighlighter
-        language={language}
-        style={customizedTheme}
-        customStyle={{
-          margin: 0,
-          borderRadius: '8px',
-          backgroundColor: '#000000',
-          fontSize: '14px',
-        }}
-        showLineNumbers
-        wrapLines
-        wrapLongLines
-      >
-        {code.trim()}
-      </SyntaxHighlighter>
-    </Box>
-  );
-};
-
 interface ExtendedChatMessage extends CoreChatMessage {
   thinking?: string;
   images?: string[];
@@ -151,23 +38,6 @@ interface ExtendedChatMessage extends CoreChatMessage {
     duration: number;
   };
 }
-
-const ThinkingBlock = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
-  marginBottom: theme.spacing(1),
-  maxWidth: '100%',
-  backgroundColor: theme.palette.grey[900],
-  color: theme.palette.grey[400],
-  borderRadius: theme.spacing(1),
-  border: `1px solid ${theme.palette.grey[800]}`,
-  transition: 'all 0.2s ease-in-out',
-  '& pre': {
-    margin: 0,
-    padding: theme.spacing(1),
-    borderRadius: theme.spacing(1),
-    backgroundColor: '#000000',
-  }
-}));
 
 const ImagePreview = styled('img')({
   maxWidth: '200px',
@@ -187,86 +57,6 @@ const ImagePreviewContainer = styled(Box)(({ theme }) => ({
 const HiddenInput = styled('input')({
   display: 'none',
 });
-
-const MessageContent: React.FC<{ content: string; thinking?: string; images?: string[] }> = ({ content, thinking, images }) => {
-  // Filter out the context section from display
-  const displayContent = content.replace(/<context>[\s\S]*?<\/context>\n?/g, '');
-  const parts = displayContent.split(/(```[\s\S]*?```)/);
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
-
-  return (
-    <>
-      {thinking && (
-        <ThinkingBlock elevation={0}>
-          <Stack spacing={1}>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{
-                cursor: 'pointer',
-                '&:hover': {
-                  opacity: 0.8
-                }
-              }}
-              onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
-            >
-              <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span role="img" aria-label="thinking">💭</span>
-                Thinking Process
-              </Typography>
-              {isThinkingExpanded ? (
-                <ExpandLessIcon fontSize="small" sx={{ color: 'grey.500' }} />
-              ) : (
-                <ExpandMoreIcon fontSize="small" sx={{ color: 'grey.500' }} />
-              )}
-            </Stack>
-            <Box sx={{
-              maxHeight: isThinkingExpanded ? '1000px' : '0px',
-              overflow: 'hidden',
-              transition: 'all 0.3s ease-in-out',
-              opacity: isThinkingExpanded ? 1 : 0
-            }}>
-              <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
-                {thinking}
-              </Typography>
-            </Box>
-          </Stack>
-        </ThinkingBlock>
-      )}
-      {images && images.length > 0 && (
-        <ImagePreviewContainer>
-          {images.map((image, index) => (
-            <ImagePreview 
-              key={index} 
-              src={`data:image/jpeg;base64,${image}`} 
-              alt={`Uploaded image ${index + 1}`} 
-            />
-          ))}
-        </ImagePreviewContainer>
-      )}
-      {parts.map((part, index) => {
-        if (part.startsWith('```') && part.endsWith('```')) {
-          // Extract language and code
-          const match = part.match(/```(\w+)?\n([\s\S]+?)```/);
-          if (match) {
-            const [, language = 'text', code] = match;
-            return (
-              <Box key={index} sx={{ my: 1 }}>
-                <CodeBlock language={language} code={code} />
-              </Box>
-            );
-          }
-        }
-        return (
-          <Typography key={index} variant="inherit" component="span" sx={{ whiteSpace: 'pre-wrap' }}>
-            {part}
-          </Typography>
-        );
-      })}
-    </>
-  );
-};
 
 interface Conversation {
   id: string;
@@ -804,14 +594,39 @@ export default function AI() {
               flexDirection: 'column',
               flexGrow: 1
             }}>
+              {messages.length === 0 && !isLoading && !streamingMessage && !isStreaming && (
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 400,
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Text
+                    className="text-3xl sm:text-4xl font-bold text-primary-600 dark:text-primary-400 text-center mb-2"
+                    style={{ marginBottom: 8 }}
+                  >
+                    Welcome back, Michael.
+                  </Text>
+                  <Text
+                    className="text-lg sm:text-xl text-zinc-500 dark:text-zinc-400 text-center"
+                  >
+                    How can I help you today?
+                  </Text>
+                </Box>
+              )}
               {messages.map((message, index) => (
                 <React.Fragment key={index}>
                   <MessageBubble
                     isUser={message.role === 'user'}
                     elevation={1}
-                  >
-                    <MessageContent content={message.content} thinking={message.thinking} images={message.images} />
-                  </MessageBubble>
+                    content={message.content}
+                    thinking={message.thinking}
+                    images={message.images}
+                  />
                   {message.searchInfo && message.role === 'user' && (
                     <SearchingIndicator
                       variant="caption"
@@ -866,9 +681,9 @@ export default function AI() {
                       <MessageBubble
                         isUser={false}
                         elevation={1}
-                      >
-                        <MessageContent content={streamingMessage} thinking={streamingThinking} />
-                      </MessageBubble>
+                        content={streamingMessage}
+                        thinking={streamingThinking}
+                      />
                     </>
                   )}
                   {!streamingMessage && isSearching && (
@@ -899,7 +714,7 @@ export default function AI() {
             borderTop: 1,
             pl: 8,
             pr: 3,
-            borderColor: 'divider',
+            borderColor: 'transparent',
             backgroundColor: (theme) => theme.palette.background.paper,
             flexShrink: 0
           }}>
@@ -908,85 +723,60 @@ export default function AI() {
               margin: '0 auto',
               width: '100%'
             }}>
-              {selectedImages.length > 0 && (
-                <ImagePreviewContainer>
-                  {selectedImages.map((image, index) => (
-                    <Box key={index} sx={{ position: 'relative' }}>
-                      <ImagePreview 
-                        src={`data:image/jpeg;base64,${image}`} 
-                        alt={`Selected image ${index + 1}`} 
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveImage(index)}
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: -8,
-                          backgroundColor: 'background.paper',
-                          '&:hover': { backgroundColor: 'action.hover' }
-                        }}
-                      >
-                        <CancelIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </ImagePreviewContainer>
-              )}
-              <Box sx={{ position: 'relative' }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  maxRows={20}
-                  size="small"
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  backgroundColor: (theme) => theme.palette.background.default,
+                  boxShadow: (theme) => theme.shadows[2],
+                  maxWidth: 600,
+                  margin: '0 auto',
+                  mt: 2,
+                }}
+              >
+                {selectedImages.length > 0 && (
+                  <ImagePreviewContainer>
+                    {selectedImages.map((image, index) => (
+                      <Box key={index} sx={{ position: 'relative' }}>
+                        <ImagePreview 
+                          src={`data:image/jpeg;base64,${image}`} 
+                          alt={`Selected image ${index + 1}`} 
+                        />
+                        <ToolbarButton
+                          onClick={() => handleRemoveImage(index)}
+                          size="small"
+                          sx={{
+                            minWidth: 0,
+                            width: 28,
+                            height: 28,
+                            borderRadius: 2,
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            backgroundColor: 'background.paper',
+                            '&:hover': { backgroundColor: 'action.hover' },
+                          }}
+                        >
+                          <CancelIcon sx={{ fontSize: '1.1rem' }} />
+                        </ToolbarButton>
+                      </Box>
+                    ))}
+                  </ImagePreviewContainer>
+                )}
+                <Textbox
+                  ref={inputRef}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   placeholder="Type a message..."
                   disabled={isLoading}
-                  inputRef={inputRef}
                   autoFocus
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1,
-                      minHeight: '32px',
-                      backgroundColor: (theme) => theme.palette.background.default,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        backgroundColor: (theme) => theme.palette.action.hover,
-                      },
-                      '&.Mui-focused': {
-                        backgroundColor: (theme) => theme.palette.background.default,
-                        '& fieldset': {
-                          borderColor: (theme) => theme.palette.primary.main,
-                          borderWidth: '1px',
-                        },
-                      },
-                      '& fieldset': {
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                      },
-                    },
-                    '& .MuiOutlinedInput-input': {
-                      padding: '4px 14px',
-                      paddingRight: '84px',
-                      fontSize: '0.875rem',
-                      lineHeight: 1.3,
-                      minHeight: '10px',
-                      maxHeight: '600px',
-                      overflow: 'auto !important',
-                      '&::placeholder': {
-                        fontSize: '0.875rem',
-                        opacity: 0.7,
-                      },
-                    },
-                    '& textarea': {
-                      resize: 'none',
-                      marginTop: '0 !important',
-                      marginBottom: '0 !important',
-                    },
-                  }}
+                  className="w-full"
+                  type="text"
+                  style={{ marginBottom: 16 }}
                 />
-                <Stack direction="row" spacing={1} sx={{ position: 'absolute', right: '8px', bottom: '8px' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                   <HiddenInput
                     type="file"
                     accept="image/*"
@@ -995,53 +785,48 @@ export default function AI() {
                     onChange={handleImageUpload}
                   />
                   <Tooltip title="Web Search">
-                    <IconButton
+                    <ToolbarButton
                       onClick={() => setUseWebSearch(!useWebSearch)}
                       size="small"
                       sx={{
-                        width: '28px',
-                        height: '28px',
-                        backgroundColor: useWebSearch ? 'rgba(66, 133, 244, 0.1)' : (theme) => theme.palette.grey[800],
-                        color: useWebSearch ? 'rgb(66, 133, 244)' : (theme) => theme.palette.grey[100],
-                        border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.3)' : 'none',
+                        minWidth: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
+                        backgroundColor: useWebSearch ? 'rgba(66,133,244,0.15)' : 'background.paper',
                         '&:hover': {
-                          backgroundColor: useWebSearch 
-                            ? 'rgba(66, 133, 244, 0.15)' 
-                            : (theme) => theme.palette.grey[700],
-                          border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.4)' : 'none',
+                          backgroundColor: useWebSearch ? 'rgba(66,133,244,0.22)' : (theme) => theme.palette.action.hover,
                         },
                       }}
                     >
-                      <LanguageIcon sx={{ fontSize: '1.1rem' }} />
-                    </IconButton>
+                      <LanguageIcon sx={{ fontSize: '1.1rem', color: useWebSearch ? 'primary.main' : 'text.secondary' }} />
+                    </ToolbarButton>
                   </Tooltip>
                   <Tooltip title="Upload Image">
-                    <IconButton
+                    <ToolbarButton
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isLoading}
                       size="small"
-                    sx={{
-                      width: '28px',
-                      height: '28px',
-                      backgroundColor: (theme) => theme.palette.grey[800],
-                      color: (theme) => theme.palette.grey[100],
-                      '&:hover': {
-                        backgroundColor: (theme) => theme.palette.grey[700],
-                        },
+                      sx={{
+                        minWidth: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
                       }}
                     >
                       <ImageIcon sx={{ fontSize: '1.1rem' }} />
-                    </IconButton>
+                    </ToolbarButton>
                   </Tooltip>
-                  <IconButton
+                  <ToolbarButton
                     onClick={isStreaming ? handleStopGeneration : handleSendMessage}
                     disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
-                    color="primary"
                     size="small"
                     sx={{
-                      width: '28px',
-                      height: '28px',
-                      backgroundColor: (theme) => 
+                      minWidth: 0,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 2,
+                      backgroundColor: (theme) =>
                         (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
                           ? theme.palette.grey[800]
                           : theme.palette.primary.main,
@@ -1055,16 +840,12 @@ export default function AI() {
                             ? theme.palette.grey[700]
                             : theme.palette.primary.dark,
                       },
-                      '&.Mui-disabled': {
-                        backgroundColor: (theme) => theme.palette.grey[800],
-                        color: (theme) => theme.palette.grey[600],
-                      }
                     }}
                   >
                     {isStreaming ? <StopIcon sx={{ fontSize: '1.1rem' }} /> : <SendIcon sx={{ fontSize: '1.1rem' }} />}
-                  </IconButton>
-                </Stack>
-              </Box>
+                  </ToolbarButton>
+                </Box>
+              </Paper>
             </Box>
           </Box>
         </Card>

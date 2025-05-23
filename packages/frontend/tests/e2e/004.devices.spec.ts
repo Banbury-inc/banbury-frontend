@@ -159,15 +159,15 @@ test.describe('Devices tests', () => {
     await deviceRows.first().click();
     
     // Verify device details panel is visible
-    const deviceDetailsPanel = page.locator('h4').first();
+    const deviceDetailsPanel = page.locator('p.text-2xl.font-bold').first();
     await expect(deviceDetailsPanel).toBeVisible({ timeout: 10000 });
     
     // Verify the tabs for device details exist
-    const deviceTabs = page.locator('div[role="tablist"] button');
+    const deviceTabs = page.locator('nav button');
     await expect(deviceTabs).toHaveCount(3, { timeout: 5000 });
     
     // Verify specific device details sections are visible
-    const deviceInfoSection = page.locator('h6:has-text("Device Info")');
+    const deviceInfoSection = page.locator('p:has-text("Device Info")');
     await expect(deviceInfoSection).toBeVisible({ timeout: 5000 });
     
     // Test passes if we can view device details

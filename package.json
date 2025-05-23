@@ -24,6 +24,7 @@
         "concurrently": "^8.2.2"
     },
     "dependencies": {
+        "@heroicons/react": "^2.2.0",
         "@tensorflow/tfjs": "^4.22.0",
         "@tensorflow/tfjs-node": "^4.22.0",
         "@types/react-syntax-highlighter": "^15.5.13",

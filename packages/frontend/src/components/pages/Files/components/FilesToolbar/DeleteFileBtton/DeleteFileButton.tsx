@@ -1,9 +1,9 @@
 import { banbury } from "@banbury/core";
-import { useAlert } from "../../../renderer/context/AlertContext";
+import { useAlert } from "../../../../../../renderer/context/AlertContext";
 import { Button, Tooltip } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import React from "react";
-import { handlers } from "../../../renderer/handlers";
+import { handlers } from "../../../../../../renderer/handlers";
 
 interface DeleteFileButtonProps {
   selectedFileNames: string[];

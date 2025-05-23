@@ -12,30 +12,30 @@ import { Skeleton } from '@mui/material';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Checkbox from '@mui/material/Checkbox';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { visuallyHidden } from '@mui/utils';
-import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { CardContent } from "@mui/material";
 import ScannedFoldersChips from './components/ScannedFoldersChips';
 import { styled } from '@mui/material/styles';
 import AddScannedFolderButton from './components/ScannedFolderButton/AddScannedFolderButton';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import Card from '@mui/material/Card';
-import TextField from '@mui/material/TextField';
+import { Textbox } from '../../common/Textbox/Textbox';
 import { handlers } from '../../../renderer/handlers';
 import banbury from '@banbury/core';
 import { formatRAM } from '../../../../../core/src/utils';
 import Divider from '@mui/material/Divider';
-import Typography from '@mui/material/Typography';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
+import { Text } from '../../common/Text/Text';
+import { Navbar, NavbarItem } from '../../common/NavBar/Navbar';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { handleAddDeviceClick } from './components/AddDeviceButton/handleAddDeviceClick';
 import { DeviceData } from './types';
 import AddDeviceButton from './components/AddDeviceButton/AddDeviceButton';
 import DeleteDeviceButton from './components/DeleteDeviceButton/DeleteDeviceButton';
+import { Button } from '../../common/Button/Button';
+import { Dropdown, DropdownButton, DropdownMenu, DropdownItem } from '../../common/Dropdown/Dropdown';
 
 const headCells: HeadCell[] = [
   { id: 'device_name', numeric: false, label: 'Name', isVisibleOnSmallScreen: true },
@@ -271,11 +271,6 @@ export default function Devices() {
 
   // Add this new state for managing tabs
   const [selectedTab, setSelectedTab] = useState(0);
-
-  // Add this function to handle tab changes
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setSelectedTab(newValue);
-  };
 
   const [deviceListWidth, setDeviceListWidth] = useState(250);
   const [isDragging, setIsDragging] = useState(false);
@@ -670,9 +665,9 @@ export default function Devices() {
                     ) : allDevices.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={3} align="center">
-                          <Typography variant="body1" color="textSecondary">
+                          <Text className="text-base text-gray-500">
                             No devices available.
-                          </Typography>
+                          </Text>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -703,7 +698,9 @@ export default function Devices() {
                                 />
                               </TableCell>
                               <TableCell component="th" id={labelId} scope="row" padding="normal">
-                                {row.device_name}
+                                <Text className="text-base">
+                                  {row.device_name}
+                                </Text>
                               </TableCell>
                             </TableRow>
                           );
@@ -733,51 +730,43 @@ export default function Devices() {
               <Skeleton variant="rectangular" width="100%" height={400} />
             ) : selectedDevice ? (
               <>
-                <Typography variant="h4" gutterBottom>
+                <Text className="text-2xl font-bold mb-2">
                   {selectedDevice.device_name}
-                </Typography>
+                </Text>
 
-                <Tabs
-                  value={selectedTab}
-                  onChange={handleTabChange}
-                  aria-label="device details tabs"
-                  sx={{
-                    minHeight: '32px',
-                    '& .MuiTab-root': {
-                      minHeight: '32px',
-                      padding: '6px 12px',
-                      fontSize: '12px'
-                    }
-                  }}
-                >
-                  <Tab label="Device Info" />
-                  <Tab label="Cloud Sync" />
-                  <Tab label="Performance" />
-                </Tabs>
-
-                <Divider sx={{ my: 2 }} />
+                <Navbar className="mb-2">
+                  <NavbarItem current={selectedTab === 0} onClick={() => setSelectedTab(0)}>
+                    Device Info
+                  </NavbarItem>
+                  <NavbarItem current={selectedTab === 1} onClick={() => setSelectedTab(1)}>
+                    Cloud Sync
+                  </NavbarItem>
+                  <NavbarItem current={selectedTab === 2} onClick={() => setSelectedTab(2)}>
+                    Performance
+                  </NavbarItem>
+                </Navbar>
 
                 {/* Conditional rendering based on selected tab */}
                 {selectedTab === 0 ? (
                   <Stack direction="column" spacing={3}>
                     {/* Details Card */}
                     <Card variant='outlined' sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Device Info</Typography>
+                      <Text className="text-base font-semibold mb-1">Device Info</Text>
                       <Grid container spacing={3}>
                         {/* Left Column */}
                         <Grid item xs={12} md={6}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Device Status</Typography>
-                              <Typography variant="body2">{selectedDevice.available || 'N/A'}</Typography>
+                              <Text className="text-xs text-gray-500">Device Status</Text>
+                              <Text className="text-sm">{selectedDevice.available || 'N/A'}</Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Device Manufacturer</Typography>
-                              <Typography variant="body2">{selectedDevice.device_manufacturer || 'N/A'}</Typography>
+                              <Text className="text-xs text-gray-500">Device Manufacturer</Text>
+                              <Text className="text-sm">{selectedDevice.device_manufacturer || 'N/A'}</Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Device Model</Typography>
-                              <Typography variant="body2">{selectedDevice.device_model || 'N/A'}</Typography>
+                              <Text className="text-xs text-gray-500">Device Model</Text>
+                              <Text className="text-sm">{selectedDevice.device_model || 'N/A'}</Text>
                             </Box>
                           </Stack>
                         </Grid>
@@ -786,16 +775,16 @@ export default function Devices() {
                         <Grid item xs={12} md={6}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Upload Speed</Typography>
-                              <Typography variant="body2">{formatSpeed(selectedDevice.upload_speed || 0)}</Typography>
+                              <Text className="text-xs text-gray-500">Upload Speed</Text>
+                              <Text className="text-sm">{formatSpeed(selectedDevice.upload_speed || 0)}</Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Download Speed</Typography>
-                              <Typography variant="body2">{formatSpeed(selectedDevice.download_speed || 0)}</Typography>
+                              <Text className="text-xs text-gray-500">Download Speed</Text>
+                              <Text className="text-sm">{formatSpeed(selectedDevice.download_speed || 0)}</Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Storage Capacity</Typography>
-                              <Typography variant="body2">{formatStorageCapacity(selectedDevice.storage_capacity_gb)}</Typography>
+                              <Text className="text-xs text-gray-500">Storage Capacity</Text>
+                              <Text className="text-sm">{formatStorageCapacity(selectedDevice.storage_capacity_gb)}</Text>
                             </Box>
                           </Stack>
                         </Grid>
@@ -803,7 +792,7 @@ export default function Devices() {
                     </Card>
 
                     <Card variant='outlined' sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Scanned Folders</Typography>
+                      <Text className="text-base font-semibold mb-1">Scanned Folders</Text>
                       <Box>
                         <ScannedFoldersChips
                           scanned_folders={selectedDevice.scanned_folders}
@@ -814,7 +803,7 @@ export default function Devices() {
                     </Card>
 
                     <Card variant='outlined' sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Downloaded Models</Typography>
+                      <Text className="text-base font-semibold mb-1">Downloaded Models</Text>
                       <Box>
                         {selectedDevice.downloaded_models && selectedDevice.downloaded_models.length > 0 ? (
                           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 2 }}>
@@ -830,9 +819,9 @@ export default function Devices() {
                             ))}
                           </Stack>
                         ) : (
-                          <Typography variant="body2" color="textSecondary">
+                          <Text className="text-sm text-gray-500">
                             No models downloaded
-                          </Typography>
+                          </Text>
                         )}
                       </Box>
                     </Card>
@@ -841,34 +830,34 @@ export default function Devices() {
                   <Stack direction="column" spacing={2}>
                     {/* Details Card */}
                     <Card variant='outlined' sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Cloud Sync Details</Typography>
+                      <Text className="text-base font-semibold mb-1">Cloud Sync Details</Text>
                       <Grid container spacing={3}>
                         {/* Left Column */}
                         <Grid item xs={12} md={4}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Predicted CPU Usage</Typography>
-                              <Typography variant="body2">
+                              <Text className="text-xs text-gray-500">Predicted CPU Usage</Text>
+                              <Text className="text-sm">
                                 {isTimeseriesPredictionLoading
                                   ? 'Loading...'
                                   : (latestPrediction?.cpu_usage ?? 0).toFixed(2)}%
-                              </Typography>
+                              </Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Predicted RAM Usage</Typography>
-                              <Typography variant="body2">
+                              <Text className="text-xs text-gray-500">Predicted RAM Usage</Text>
+                              <Text className="text-sm">
                                 {isTimeseriesPredictionLoading
                                   ? 'Loading...'
                                   : (latestPrediction?.ram_usage ?? 0).toFixed(2)}%
-                              </Typography>
+                              </Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Predicted GPU Usage</Typography>
-                              <Typography variant="body2">
+                              <Text className="text-xs text-gray-500">Predicted GPU Usage</Text>
+                              <Text className="text-sm">
                                 {isTimeseriesPredictionLoading
                                   ? 'Loading...'
                                   : (latestPrediction?.gpu_usage ?? 0).toFixed(2)}%
-                              </Typography>
+                              </Text>
                             </Box>
                           </Stack>
                         </Grid>
@@ -877,21 +866,21 @@ export default function Devices() {
                         <Grid item xs={12} md={4}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Predicted Download Speed</Typography>
-                              <Typography variant="body2">
+                              <Text className="text-xs text-gray-500">Predicted Download Speed</Text>
+                              <Text className="text-sm">
                                 {isTimeseriesPredictionLoading
                                   ? 'Loading...'
                                   : formatSpeed(latestPrediction?.download_speed ?? 0)
                                 }
-                              </Typography>
+                              </Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Predicted Upload Speed</Typography>
-                              <Typography variant="body2">
+                              <Text className="text-xs text-gray-500">Predicted Upload Speed</Text>
+                              <Text className="text-sm">
                                 {isTimeseriesPredictionLoading
                                   ? 'Loading...'
                                   : formatSpeed(latestPrediction?.upload_speed ?? 0)}
-                              </Typography>
+                              </Text>
                             </Box>
                           </Stack>
                         </Grid>
@@ -901,37 +890,17 @@ export default function Devices() {
                           <Stack spacing={2}>
                             <Box>
                               <Stack spacing={4}>
-                                <Typography color="textSecondary" variant="caption">Sync Storage Capacity</Typography>
+                                <Text className="text-xs text-gray-500">Sync Storage Capacity</Text>
                               </Stack>
                               <Stack paddingTop={1} direction="row" spacing={1} alignItems="center">
-                                <TextField
-                                  variant="outlined"
-                                  size="small"
+                                <Textbox
                                   value={syncStorageValue}
                                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSyncStorageValue(e.target.value)}
-                                  sx={{
-                                    width: 60,
-                                    '& .MuiOutlinedInput-root': {
-                                      height: '24px',
-                                      fontSize: '12px',
-                                    },
-                                    '& .MuiOutlinedInput-input': {
-                                      padding: '2px 8px',
-                                      textAlign: 'right',
-                                    }
-                                  }}
+                                  className="w-16 text-right text-xs px-2 py-1 h-6"
                                 />
-                                <Typography variant="caption" noWrap>GB</Typography>
+                                <Text className="text-xs text-gray-500">GB</Text>
                                 <Button
-                                  variant="outlined"
-                                  size="small"
                                   onClick={() => handleSyncStorageChange(syncStorageValue)}
-                                  sx={{
-                                    fontSize: '12px',
-                                    padding: '2px 8px',
-                                    height: '24px',
-                                    minWidth: 'unset'
-                                  }}
                                 >
                                   Submit
                                 </Button>
@@ -948,11 +917,11 @@ export default function Devices() {
                           <Stack spacing={2}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                               <Box sx={{ pr: 3 }}>
-                                <Typography variant="h6" gutterBottom>Include in Cloud Sync</Typography>
-                                <Typography color="textSecondary" variant="caption">Include this device in Cloud Sync. This device will take part in downloading files from your other devices.
+                                <Text className="text-base font-semibold mb-1">Include in Cloud Sync</Text>
+                                <Text className="text-xs text-gray-500">Include this device in Cloud Sync. This device will take part in downloading files from your other devices.
                                   This device will also be able to upload files to your other devices. Banbury will predict device performance and allocate the highest priority files to the
                                   highest performing devices.
-                                </Typography>
+                                </Text>
                               </Box>
                               <Switch
                                 checked={useDeviceinFileSync}
@@ -976,8 +945,6 @@ export default function Devices() {
                         </Grid>
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <Button
-                            variant="outlined"
-                            size="small"
                             onClick={() => handleSavePredictionPreferences(
                               usePredictedCPUUsage,
                               usePredictedRAMUsage,
@@ -988,7 +955,6 @@ export default function Devices() {
                               useFilesAvailableForDownload,
                               useDeviceinFileSync
                             )}
-                            sx={{ mt: 2, fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}
                           >
                             Save
                           </Button>
@@ -999,15 +965,15 @@ export default function Devices() {
                     <Card variant='outlined' sx={{ p: 3 }}>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
-                          <Typography variant="h6" gutterBottom>Score Configuration</Typography>
-                          <Typography color="textSecondary" variant="caption">Include the following metrics in performance score calculation</Typography>
+                          <Text className="text-base font-semibold mb-1">Score Configuration</Text>
+                          <Text className="text-xs text-gray-500">Include the following metrics in performance score calculation</Text>
 
                         </Grid>
                         <Grid item xs={12}>
                           <Stack spacing={2}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box>
-                                <Typography variant="body2">Predicted CPU Usage</Typography>
+                                <Text className="text-sm">Predicted CPU Usage</Text>
                               </Box>
                               <Switch
                                 checked={usePredictedCPUUsage}
@@ -1030,7 +996,7 @@ export default function Devices() {
                             <Divider />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box>
-                                <Typography variant="body2">Predicted RAM Usage</Typography>
+                                <Text className="text-sm">Predicted RAM Usage</Text>
                               </Box>
                               <Switch
                                 checked={usePredictedRAMUsage}
@@ -1053,7 +1019,7 @@ export default function Devices() {
                             <Divider />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box>
-                                <Typography variant="body2">Predicted GPU Usage</Typography>
+                                <Text className="text-sm">Predicted GPU Usage</Text>
                               </Box>
                               <Switch
                                 checked={usePredictedGPUUsage}
@@ -1076,7 +1042,7 @@ export default function Devices() {
                             <Divider />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box>
-                                <Typography variant="body2">Predicted Download Speed</Typography>
+                                <Text className="text-sm">Predicted Download Speed</Text>
                               </Box>
                               <Switch
                                 checked={usePredictedDownloadSpeed}
@@ -1099,7 +1065,7 @@ export default function Devices() {
                             <Divider />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box>
-                                <Typography variant="body2">Predicted Upload Speed</Typography>
+                                <Text className="text-sm">Predicted Upload Speed</Text>
                               </Box>
                               <Switch
                                 checked={usePredictedUploadSpeed}
@@ -1122,7 +1088,7 @@ export default function Devices() {
                             <Divider />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box>
-                                <Typography variant="body2">Files Available for Download</Typography>
+                                <Text className="text-sm">Files Available for Download</Text>
                               </Box>
                               <Switch
                                 checked={useFilesAvailableForDownload}
@@ -1145,7 +1111,7 @@ export default function Devices() {
                             <Divider />
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <Box>
-                                <Typography variant="body2">Files Needed</Typography>
+                                <Text className="text-sm">Files Needed</Text>
                               </Box>
                               <Switch
                                 checked={useFilesNeeded}
@@ -1169,8 +1135,6 @@ export default function Devices() {
                         </Grid>
                         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <Button
-                            variant="outlined"
-                            size="small"
                             onClick={() => handleSavePredictionPreferences(
                               usePredictedCPUUsage,
                               usePredictedRAMUsage,
@@ -1181,7 +1145,6 @@ export default function Devices() {
                               useFilesAvailableForDownload,
                               useDeviceinFileSync
                             )}
-                            sx={{ mt: 2, fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}
                           >
                             Save
                           </Button>
@@ -1192,7 +1155,7 @@ export default function Devices() {
                     <Card variant='outlined' sx={{ p: 3 }}>
                       <Grid container spacing={4}>
                         <Grid item>
-                          <Button variant="outlined" size="small" sx={{ fontSize: '12px', padding: '2px 8px', height: '24px', minWidth: 'unset' }}>
+                          <Button>
                             Get Download Queue
                           </Button>
                         </Grid>
@@ -1205,13 +1168,13 @@ export default function Devices() {
                   <Stack direction="column" spacing={3}>
                     {/* Performance Card */}
                     <Card variant='outlined' sx={{ p: 3 }}>
-                      <Typography variant="h6" gutterBottom>Performance Metrics</Typography>
+                      <Text className="text-base font-semibold mb-1">Performance Metrics</Text>
                       <Grid container spacing={3}>
                         {/* Left Column */}
                         <Grid item xs={12} md={6}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">CPU Usage</Typography>
+                              <Text className="text-xs text-gray-500">CPU Usage</Text>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
                                   label={latestTimeseries ? `${(parseFloat(latestTimeseries.cpu_usage) || 0).toFixed(2)}%` : 'N/A'}
@@ -1222,20 +1185,20 @@ export default function Devices() {
                               </Box>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">CPU Model</Typography>
-                              <Typography variant="body2">
+                              <Text className="text-xs text-gray-500">CPU Model</Text>
+                              <Text className="text-sm">
                                 {selectedDevice?.cpu_info_manufacturer} {selectedDevice?.cpu_info_brand}
-                              </Typography>
+                              </Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">CPU Speed</Typography>
-                              <Typography variant="body2">{selectedDevice?.cpu_info_speed}</Typography>
+                              <Text className="text-xs text-gray-500">CPU Speed</Text>
+                              <Text className="text-sm">{selectedDevice?.cpu_info_speed}</Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">CPU Cores</Typography>
-                              <Typography variant="body2">
+                              <Text className="text-xs text-gray-500">CPU Cores</Text>
+                              <Text className="text-sm">
                                 {selectedDevice?.cpu_info_cores} Cores (Physical: {selectedDevice?.cpu_info_physical_cores})
-                              </Typography>
+                              </Text>
                             </Box>
                           </Stack>
                         </Grid>
@@ -1244,7 +1207,7 @@ export default function Devices() {
                         <Grid item xs={12} md={6}>
                           <Stack spacing={2}>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">GPU Usage</Typography>
+                              <Text className="text-xs text-gray-500">GPU Usage</Text>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
                                   label={latestTimeseries ? `${(parseFloat(latestTimeseries.gpu_usage) || 0).toFixed(0)}%` : 'N/A'}
@@ -1255,7 +1218,7 @@ export default function Devices() {
                               </Box>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">RAM Usage</Typography>
+                              <Text className="text-xs text-gray-500">RAM Usage</Text>
                               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                                 <Chip
                                   label={latestTimeseries ? `${(parseFloat(latestTimeseries.ram_usage) || 0).toFixed(2)}%` : 'N/A'}
@@ -1266,12 +1229,12 @@ export default function Devices() {
                               </Box>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Total RAM</Typography>
-                              <Typography variant="body2">{latestTimeseries ? formatRAM(latestTimeseries.ram_total) : 'N/A'}</Typography>
+                              <Text className="text-xs text-gray-500">Total RAM</Text>
+                              <Text className="text-sm">{latestTimeseries ? formatRAM(latestTimeseries.ram_total) : 'N/A'}</Text>
                             </Box>
                             <Box>
-                              <Typography color="textSecondary" variant="caption">Free RAM</Typography>
-                              <Typography variant="body2">{latestTimeseries ? formatRAM(latestTimeseries.ram_free) : 'N/A'}</Typography>
+                              <Text className="text-xs text-gray-500">Free RAM</Text>
+                              <Text className="text-sm">{latestTimeseries ? formatRAM(latestTimeseries.ram_free) : 'N/A'}</Text>
                             </Box>
                           </Stack>
                         </Grid>
@@ -1285,34 +1248,30 @@ export default function Devices() {
                     {/* Charts section */}
                     <Card variant='outlined' sx={{ p: 3 }}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                        <Typography variant="h6">Performance Metrics</Typography>
-                        <FormControl sx={{ minWidth: 150 }}>
-                          <InputLabel id="chart-select-label">Select Metric</InputLabel>
-                          <Select
-                            variant="outlined"
-                            size="small"
-                            labelId="chart-select-label"
-                            value={selectedMetric}
-                            label="Select Metric"
-                            sx={{ fontSize: '12px' }}
-                            onChange={(e) => setSelectedMetric(e.target.value)}
-                          >
-                            {metricOptions.map((option) => (
-                              <MenuItem sx={{ fontSize: '12px' }} key={option.value} value={option.value}>{option.label}</MenuItem>
+                        <Text className="text-base font-semibold mb-1">Performance Metrics</Text>
+                        <Dropdown>
+                          <DropdownButton outline>
+                            {metricOptions.find(option => option.value === selectedMetric)?.label || 'Select Metric'}
+                          </DropdownButton>
+                          <DropdownMenu>
+                            {metricOptions.map(option => (
+                              <DropdownItem key={option.value} onClick={() => setSelectedMetric(option.value)}>
+                                {option.label}
+                              </DropdownItem>
                             ))}
-                          </Select>
-                        </FormControl>
+                          </DropdownMenu>
+                        </Dropdown>
                       </Stack>
 
                       {/* Legend */}
                       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Box sx={{ width: 20, height: 3, bgcolor: selectedMetric === 'gpu' ? '#4CAF50' : selectedMetric === 'ram' ? '#2196F3' : selectedMetric === 'cpu' ? '#FF5722' : '#9C27B0', mr: 1 }} />
-                          <Typography variant="caption">Actual</Typography>
+                          <Text className="text-xs text-gray-500">Actual</Text>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Box sx={{ width: 20, height: 0, borderTop: '3px dashed #673ab7', mr: 1 }} />
-                          <Typography variant="caption">Predicted</Typography>
+                          <Text className="text-xs text-gray-500">Predicted</Text>
                         </Box>
                       </Stack>
 
@@ -1451,24 +1410,24 @@ export default function Devices() {
                 ) : (
                   <Box sx={{ textAlign: 'center', py: 5 }}>
                     <DevicesIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                    <Typography variant="h5" color="textSecondary">
+                    <Text className="text-2xl text-gray-500">
                       No devices available
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
+                    </Text>
+                    <Text className="text-base text-gray-500">
                       Please add a device to get started.
-                    </Typography>
+                    </Text>
                   </Box>
                 )}
               </>
             ) : (
               <Box sx={{ textAlign: 'center', py: 5 }}>
                 <DevicesIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h5" color="textSecondary">
+                <Text className="text-2xl text-gray-500">
                   No devices available
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
+                </Text>
+                <Text className="text-base text-gray-500">
                   Please add a device to get started.
-                </Typography>
+                </Text>
               </Box>
             )}
           </CardContent>
