@@ -91,7 +91,6 @@ const VideoViewer: React.FC<VideoViewerProps> = ({
   }, [src, onError]);
 
   const handleReady = () => {
-    setReady(true);
     onLoad?.();
   };
 
