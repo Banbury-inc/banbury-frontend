@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
-import { CardContent, TextField, Typography, Paper, Tooltip } from "@mui/material";
+import { CardContent, Typography, Paper, Tooltip } from "@mui/material";
 import Card from '@mui/material/Card';
 import { Grid, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
@@ -21,6 +21,8 @@ import ConversationsButton from './components/ConversationsButton';
 import ModelSelectorButton from './components/ModelSelectorButton';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { Textbox } from '../../common/Textbox/Textbox';
+import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
 
 interface MessageBubbleProps {
   isUser: boolean;
@@ -899,7 +901,7 @@ export default function AI() {
             borderTop: 1,
             pl: 8,
             pr: 3,
-            borderColor: 'divider',
+            borderColor: 'transparent',
             backgroundColor: (theme) => theme.palette.background.paper,
             flexShrink: 0
           }}>
@@ -908,85 +910,60 @@ export default function AI() {
               margin: '0 auto',
               width: '100%'
             }}>
-              {selectedImages.length > 0 && (
-                <ImagePreviewContainer>
-                  {selectedImages.map((image, index) => (
-                    <Box key={index} sx={{ position: 'relative' }}>
-                      <ImagePreview 
-                        src={`data:image/jpeg;base64,${image}`} 
-                        alt={`Selected image ${index + 1}`} 
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveImage(index)}
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: -8,
-                          backgroundColor: 'background.paper',
-                          '&:hover': { backgroundColor: 'action.hover' }
-                        }}
-                      >
-                        <CancelIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </ImagePreviewContainer>
-              )}
-              <Box sx={{ position: 'relative' }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  maxRows={20}
-                  size="small"
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  backgroundColor: (theme) => theme.palette.background.default,
+                  boxShadow: (theme) => theme.shadows[2],
+                  maxWidth: 600,
+                  margin: '0 auto',
+                  mt: 2,
+                }}
+              >
+                {selectedImages.length > 0 && (
+                  <ImagePreviewContainer>
+                    {selectedImages.map((image, index) => (
+                      <Box key={index} sx={{ position: 'relative' }}>
+                        <ImagePreview 
+                          src={`data:image/jpeg;base64,${image}`} 
+                          alt={`Selected image ${index + 1}`} 
+                        />
+                        <ToolbarButton
+                          onClick={() => handleRemoveImage(index)}
+                          size="small"
+                          sx={{
+                            minWidth: 0,
+                            width: 28,
+                            height: 28,
+                            borderRadius: 2,
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            backgroundColor: 'background.paper',
+                            '&:hover': { backgroundColor: 'action.hover' },
+                          }}
+                        >
+                          <CancelIcon sx={{ fontSize: '1.1rem' }} />
+                        </ToolbarButton>
+                      </Box>
+                    ))}
+                  </ImagePreviewContainer>
+                )}
+                <Textbox
+                  ref={inputRef}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   placeholder="Type a message..."
                   disabled={isLoading}
-                  inputRef={inputRef}
                   autoFocus
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1,
-                      minHeight: '32px',
-                      backgroundColor: (theme) => theme.palette.background.default,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        backgroundColor: (theme) => theme.palette.action.hover,
-                      },
-                      '&.Mui-focused': {
-                        backgroundColor: (theme) => theme.palette.background.default,
-                        '& fieldset': {
-                          borderColor: (theme) => theme.palette.primary.main,
-                          borderWidth: '1px',
-                        },
-                      },
-                      '& fieldset': {
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                      },
-                    },
-                    '& .MuiOutlinedInput-input': {
-                      padding: '4px 14px',
-                      paddingRight: '84px',
-                      fontSize: '0.875rem',
-                      lineHeight: 1.3,
-                      minHeight: '10px',
-                      maxHeight: '600px',
-                      overflow: 'auto !important',
-                      '&::placeholder': {
-                        fontSize: '0.875rem',
-                        opacity: 0.7,
-                      },
-                    },
-                    '& textarea': {
-                      resize: 'none',
-                      marginTop: '0 !important',
-                      marginBottom: '0 !important',
-                    },
-                  }}
+                  className="w-full"
+                  type="text"
+                  style={{ marginBottom: 16 }}
                 />
-                <Stack direction="row" spacing={1} sx={{ position: 'absolute', right: '8px', bottom: '8px' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                   <HiddenInput
                     type="file"
                     accept="image/*"
@@ -995,53 +972,48 @@ export default function AI() {
                     onChange={handleImageUpload}
                   />
                   <Tooltip title="Web Search">
-                    <IconButton
+                    <ToolbarButton
                       onClick={() => setUseWebSearch(!useWebSearch)}
                       size="small"
                       sx={{
-                        width: '28px',
-                        height: '28px',
-                        backgroundColor: useWebSearch ? 'rgba(66, 133, 244, 0.1)' : (theme) => theme.palette.grey[800],
-                        color: useWebSearch ? 'rgb(66, 133, 244)' : (theme) => theme.palette.grey[100],
-                        border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.3)' : 'none',
+                        minWidth: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
+                        backgroundColor: useWebSearch ? 'rgba(66,133,244,0.15)' : 'background.paper',
                         '&:hover': {
-                          backgroundColor: useWebSearch 
-                            ? 'rgba(66, 133, 244, 0.15)' 
-                            : (theme) => theme.palette.grey[700],
-                          border: useWebSearch ? '1px solid rgba(66, 133, 244, 0.4)' : 'none',
+                          backgroundColor: useWebSearch ? 'rgba(66,133,244,0.22)' : (theme) => theme.palette.action.hover,
                         },
                       }}
                     >
-                      <LanguageIcon sx={{ fontSize: '1.1rem' }} />
-                    </IconButton>
+                      <LanguageIcon sx={{ fontSize: '1.1rem', color: useWebSearch ? 'primary.main' : 'text.secondary' }} />
+                    </ToolbarButton>
                   </Tooltip>
                   <Tooltip title="Upload Image">
-                    <IconButton
+                    <ToolbarButton
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isLoading}
                       size="small"
-                    sx={{
-                      width: '28px',
-                      height: '28px',
-                      backgroundColor: (theme) => theme.palette.grey[800],
-                      color: (theme) => theme.palette.grey[100],
-                      '&:hover': {
-                        backgroundColor: (theme) => theme.palette.grey[700],
-                        },
+                      sx={{
+                        minWidth: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 2,
                       }}
                     >
                       <ImageIcon sx={{ fontSize: '1.1rem' }} />
-                    </IconButton>
+                    </ToolbarButton>
                   </Tooltip>
-                  <IconButton
+                  <ToolbarButton
                     onClick={isStreaming ? handleStopGeneration : handleSendMessage}
                     disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
-                    color="primary"
                     size="small"
                     sx={{
-                      width: '28px',
-                      height: '28px',
-                      backgroundColor: (theme) => 
+                      minWidth: 0,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 2,
+                      backgroundColor: (theme) =>
                         (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
                           ? theme.palette.grey[800]
                           : theme.palette.primary.main,
@@ -1055,16 +1027,12 @@ export default function AI() {
                             ? theme.palette.grey[700]
                             : theme.palette.primary.dark,
                       },
-                      '&.Mui-disabled': {
-                        backgroundColor: (theme) => theme.palette.grey[800],
-                        color: (theme) => theme.palette.grey[600],
-                      }
                     }}
                   >
                     {isStreaming ? <StopIcon sx={{ fontSize: '1.1rem' }} /> : <SendIcon sx={{ fontSize: '1.1rem' }} />}
-                  </IconButton>
-                </Stack>
-              </Box>
+                  </ToolbarButton>
+                </Box>
+              </Paper>
             </Box>
           </Box>
         </Card>
