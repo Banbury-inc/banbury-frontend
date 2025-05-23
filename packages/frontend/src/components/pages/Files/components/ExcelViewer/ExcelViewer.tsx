@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -6,8 +6,6 @@ import {
   Button,
   IconButton,
   Toolbar,
-  useTheme,
-  useMediaQuery
 } from '@mui/material';
 import {
   Save,
@@ -50,9 +48,6 @@ const ExcelViewer: React.FC<ExcelViewerProps> = ({
   const [saving, setSaving] = useState<boolean>(false);
   const [hasChanges, setHasChanges] = useState<boolean>(false);
   const [originalSheets, setOriginalSheets] = useState<SheetData[]>([]);
-  
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     const loadExcelFile = async () => {

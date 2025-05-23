@@ -8,7 +8,6 @@ import {
   Menu,
   MenuItem,
   Chip,
-  useTheme
 } from '@mui/material';
 import {
   Save,
@@ -155,7 +154,6 @@ const CodeViewer: React.FC<CodeViewerProps> = ({
   });
   
   const editorRef = useRef<AceEditor>(null);
-  const theme = useTheme();
 
   useEffect(() => {
     const loadCodeFile = async () => {

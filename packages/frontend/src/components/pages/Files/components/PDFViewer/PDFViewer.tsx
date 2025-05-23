@@ -10,8 +10,6 @@ import {
   IconButton,
   TextField,
   Toolbar,
-  useTheme,
-  useMediaQuery
 } from '@mui/material';
 import {
   ZoomIn,
@@ -59,9 +57,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   React.useEffect(() => {
     const loadPDF = async () => {

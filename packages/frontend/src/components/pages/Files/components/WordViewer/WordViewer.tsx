@@ -6,8 +6,6 @@ import {
   Button,
   IconButton,
   Toolbar,
-  useTheme,
-  useMediaQuery
 } from '@mui/material';
 import {
   Save,
@@ -17,7 +15,6 @@ import {
 } from '@mui/icons-material';
 import { shell } from 'electron';
 import fs from 'fs';
-import path from 'path';
 import yauzl from 'yauzl';
 import mammoth from 'mammoth';
 import { renderAsync } from 'docx-preview';
@@ -51,8 +48,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
   
   const quillRef = useRef<ReactQuill>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Method 1: Use docx-preview library
   const tryDocxPreview = async (filePath: string): Promise<string> => {
@@ -285,8 +280,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
           throw new Error('Word document does not exist');
         }
 
-        console.log('Loading Word document:', filePath);
-
         // Try multiple methods in order of preference
         const methods = [
           { name: 'docx-preview', fn: () => tryDocxPreview(filePath) },
@@ -294,31 +287,26 @@ const WordViewer: React.FC<WordViewerProps> = ({
           { name: 'manual-extraction', fn: () => tryManualExtraction(filePath) }
         ];
 
-        let lastError: any = null;
         let success = false;
 
         for (const method of methods) {
           try {
-            console.log(`Trying conversion method: ${method.name}`);
             const htmlContent = await method.fn();
             
             if (htmlContent && htmlContent.trim().length > 0) {
-              console.log(`Success with method: ${method.name}`);
               setContent(htmlContent);
               setOriginalContent(htmlContent);
               success = true;
               break;
             }
           } catch (error) {
-            console.warn(`Method ${method.name} failed:`, error);
-            lastError = error;
+            console.error(`Method ${method.name} failed:`, error);
             continue;
           }
         }
 
         // If all methods fail, show fallback content
         if (!success) {
-          console.log('All conversion methods failed, showing fallback content');
           const fallbackContent = createFallbackContent(filePath);
           setContent(fallbackContent);
           setOriginalContent(fallbackContent);

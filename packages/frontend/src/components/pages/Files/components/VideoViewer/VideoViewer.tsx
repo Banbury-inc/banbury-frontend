@@ -18,7 +18,6 @@ import {
 import { shell } from 'electron';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
-import path from 'path';
 import ReactPlayer from 'react-player';
 
 interface VideoViewerProps {
@@ -35,7 +34,6 @@ const VideoViewer: React.FC<VideoViewerProps> = ({
   onLoad
 }) => {
   const [error, setError] = useState<boolean>(false);
-  const [ready, setReady] = useState<boolean>(false);
   const [debugInfo, setDebugInfo] = useState<{
     fileExists: boolean;
     fileSize: number;

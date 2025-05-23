@@ -5,8 +5,6 @@ import {
   Tab,
   IconButton,
   Typography,
-  useTheme,
-  useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -39,8 +37,6 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
   onCloseTab,
   onSwitchTab
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   if (openTabs.length === 0) {
     return null;
@@ -106,9 +102,6 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
             onError={() => {
               console.error('Failed to load Word document:', tab.filePath);
             }}
-            onSave={(filePath) => {
-              console.log('Word document saved:', filePath);
-            }}
           />
         </Box>
       );
@@ -126,9 +119,6 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
             fileName={tab.fileName}
             onError={() => {
               console.error('Failed to load spreadsheet:', tab.filePath);
-            }}
-            onSave={(filePath) => {
-              console.log('Spreadsheet saved:', filePath);
             }}
           />
         </Box>
