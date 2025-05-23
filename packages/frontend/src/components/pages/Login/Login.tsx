@@ -7,7 +7,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
-import Checkbox from '@mui/material/Checkbox';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
@@ -26,6 +25,9 @@ import os from 'os';
 import { initAuthState } from '@banbury/core/src/auth';
 import { Link as RouterLink } from 'react-router-dom';
 import { startPeriodicDeviceInfoProcess } from '@banbury/core/src/device/startPeriodicDeviceInfoProcess';
+import { Textbox } from '../../common/Textbox/Textbox';
+import { Text } from '../../common/Text/Text';
+import { Checkbox } from '../../common/Checkbox/Checkbox';
 
 interface Message {
   type: string;
@@ -329,53 +331,35 @@ export default function SignIn() {
             {/* </Avatar> */}
             {/* <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 157.2, height: 137.2 }} /> */}
             <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 50, height: 50 }} />
-            <Typography component="h1" variant="h5">
+            <Text className="text-2xl font-semibold mb-4 text-center">
               Sign in
-            </Typography>
+            </Text>
             <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Username"
+
+            <Text className="block font-medium mb-1">
+             Username
+            </Text>
+              <Textbox
+                className='w-full mb-4'
+                type="email"
                 name="email"
                 autoComplete="email"
-                size='medium'
                 autoFocus
-                InputProps={{
-                  // style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
-
-                }}
-                InputLabelProps={{
-                  required: false, // Remove the asterisk
-                  // style: { fontSize: '1.7rem' }, // Adjusts the label font size
-                }}
               />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
+
+            <Text className="block font-medium mb-1">
+             Password
+            </Text>
+              <Textbox
+                className='w-full mb-2'
                 type="password"
-                size='medium'
-                id="password"
+                name="password"
                 autoComplete="current-password"
-                InputProps={{
-                  // style: { fontSize: '1.3rem' }, // Adjusts text font size inside the input box
-                }}
-                InputLabelProps={{
-                  required: false, // Remove the asterisk
-                  // style: { fontSize: '1.3rem' }, // Adjusts the label font size
-                }}
-
               />
-              <FormControlLabel
-                control={<Checkbox value="remember" color="primary" />}
-                // label="Remember me"
-                label={<Typography style={{ fontSize: '15px' }}>Remember me</Typography>}
-              />
+              <div className="flex items-center mb-2">
+                <Checkbox id="remember" name="remember" className="mr-2" />
+                <Text className="text-sm">Remember me</Text>
+              </div>
 
               <Button
                 type="submit"
