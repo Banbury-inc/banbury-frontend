@@ -16,7 +16,7 @@ import Grid from '@mui/material/Grid';
 import Checkbox from '@mui/material/Checkbox';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { visuallyHidden } from '@mui/utils';
-import { CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { CardContent } from "@mui/material";
 import ScannedFoldersChips from './components/ScannedFoldersChips';
 import { styled } from '@mui/material/styles';
 import AddScannedFolderButton from './components/ScannedFolderButton/AddScannedFolderButton';
@@ -271,11 +271,6 @@ export default function Devices() {
 
   // Add this new state for managing tabs
   const [selectedTab, setSelectedTab] = useState(0);
-
-  // Add this function to handle tab changes
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setSelectedTab(newValue);
-  };
 
   const [deviceListWidth, setDeviceListWidth] = useState(250);
   const [isDragging, setIsDragging] = useState(false);

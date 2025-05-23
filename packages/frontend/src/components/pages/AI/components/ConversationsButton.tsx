@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Button, Popover, Box, Typography, Stack, List, ListItem, ListItemText,
-  IconButton, Tooltip, Divider, TextField, Menu, MenuItem, Dialog,
-  DialogTitle, DialogContent, DialogActions, InputAdornment
+   Tooltip, Divider, Menu, MenuItem, Dialog,
+  DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
-import SearchIcon from '@mui/icons-material/Search';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FolderIcon from '@mui/icons-material/Folder';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';

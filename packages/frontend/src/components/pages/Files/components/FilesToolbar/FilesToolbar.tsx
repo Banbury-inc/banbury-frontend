@@ -39,7 +39,6 @@ export default function FilesToolbar({
   handleFinish,
   handleShareModalOpen,
   getColumnOptions,
-  columnVisibility,
   handleColumnVisibilityChange,
   viewType,
   setViewType,

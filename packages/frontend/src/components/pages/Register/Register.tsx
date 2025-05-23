@@ -14,8 +14,7 @@ import theme from "../../../renderer/themes/theme";
 import SignIn from '../Login/Login';
 import { handlers } from '../../../renderer/handlers';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Link as MuiLink } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function Copyright(props: any) {
   return (

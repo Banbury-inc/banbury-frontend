@@ -3,10 +3,8 @@ import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import { CardContent, Typography, Paper, Tooltip } from "@mui/material";
 import Card from '@mui/material/Card';
-import { Grid, IconButton } from '@mui/material';
+import { Grid } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CheckIcon from '@mui/icons-material/Check';
 import ImageIcon from '@mui/icons-material/Image';
 import CancelIcon from '@mui/icons-material/Cancel';
 import LanguageIcon from '@mui/icons-material/Language';
@@ -15,21 +13,13 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConversationsButton from './components/ConversationsButton';
 import ModelSelectorButton from './components/ModelSelectorButton';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Textbox } from '../../common/Textbox/Textbox';
 import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
 import { Text } from '../../common/Text/Text';
 import MessageBubble from './components/MessageBubble/MessageBuuble';
 
-interface MessageBubbleProps {
-  isUser: boolean;
-  children: React.ReactNode;
-}
 
 interface ChatResponse {
   model: string;
@@ -41,91 +31,6 @@ interface ChatResponse {
   done: boolean;
 }
 
-// Customize the VSC Dark Plus theme
-const customizedTheme = {
-  ...vscDarkPlus,
-  'pre[class*="language-"]': {
-    ...vscDarkPlus['pre[class*="language-"]'],
-    background: '#000000',
-  },
-  'code[class*="language-"]': {
-    ...vscDarkPlus['code[class*="language-"]'],
-    background: '#000000',
-  },
-};
-
-interface CodeBlockProps {
-  language: string;
-  code: string;
-}
-
-const CodeBlock: React.FC<CodeBlockProps> = ({ language, code }) => {
-  const [copied, setCopied] = useState(false);
-  const copyTimeout = useRef<NodeJS.Timeout>();
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-
-      if (copyTimeout.current) {
-        clearTimeout(copyTimeout.current);
-      }
-
-      copyTimeout.current = setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy code:', err);
-    }
-  };
-
-  return (
-    <Box sx={{ position: 'relative' }}>
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          zIndex: 1,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          borderRadius: '4px',
-        }}
-      >
-        <Tooltip title={copied ? "Copied!" : "Copy code"}>
-          <IconButton
-            size="small"
-            onClick={handleCopy}
-            sx={{
-              color: copied ? 'success.main' : 'grey.400',
-              '&:hover': {
-                color: copied ? 'success.main' : 'grey.100',
-              }
-            }}
-          >
-            {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
-          </IconButton>
-        </Tooltip>
-      </Box>
-      <SyntaxHighlighter
-        language={language}
-        style={customizedTheme}
-        customStyle={{
-          margin: 0,
-          borderRadius: '8px',
-          backgroundColor: '#000000',
-          fontSize: '14px',
-        }}
-        showLineNumbers
-        wrapLines
-        wrapLongLines
-      >
-        {code.trim()}
-      </SyntaxHighlighter>
-    </Box>
-  );
-};
-
 interface ExtendedChatMessage extends CoreChatMessage {
   thinking?: string;
   images?: string[];
@@ -133,23 +38,6 @@ interface ExtendedChatMessage extends CoreChatMessage {
     duration: number;
   };
 }
-
-const ThinkingBlock = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
-  marginBottom: theme.spacing(1),
-  maxWidth: '100%',
-  backgroundColor: theme.palette.grey[900],
-  color: theme.palette.grey[400],
-  borderRadius: theme.spacing(1),
-  border: `1px solid ${theme.palette.grey[800]}`,
-  transition: 'all 0.2s ease-in-out',
-  '& pre': {
-    margin: 0,
-    padding: theme.spacing(1),
-    borderRadius: theme.spacing(1),
-    backgroundColor: '#000000',
-  }
-}));
 
 const ImagePreview = styled('img')({
   maxWidth: '200px',

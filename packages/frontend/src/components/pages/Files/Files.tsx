@@ -1,12 +1,11 @@
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import { Button, CardContent } from '@mui/material';
+import { CardContent } from '@mui/material';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import TablePagination from '@mui/material/TablePagination';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { shell } from 'electron';
 import fs from 'fs';
