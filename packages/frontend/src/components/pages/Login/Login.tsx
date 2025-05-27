@@ -258,7 +258,6 @@ export default function SignIn() {
     setincorrect_login(false);
     setserver_offline(false);
 
-    let server: http.Server | null = null;
     let actualPort: number | null = null;
 
     try {
@@ -380,7 +379,6 @@ export default function SignIn() {
           });
 
           server.listen(port, () => {
-            console.log(`OAuth callback server listening on port ${port}`);
             actualPort = port;
             resolve(server);
           });
@@ -393,19 +391,18 @@ export default function SignIn() {
 
       for (const port of ports) {
         try {
-          server = await createCallbackServer(port);
+          await createCallbackServer(port);
           serverStarted = true;
           actualPort = port;
-          console.log(`Server started on port ${port}`);
           break;
         } catch (err) {
-          console.log(`Failed to start server on port ${port}, trying next...`);
+          console.error(err);
           continue;
         }
       }
 
       if (!serverStarted || !actualPort) {
-        throw new Error('Failed to start callback server on any available port');
+        throw new Error('Failed to start callback server on any available port.');
       }
 
       // Get the Google auth URL with the correct redirect URI
