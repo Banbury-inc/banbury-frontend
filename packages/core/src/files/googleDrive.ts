@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { config } from '../config/config';
 import { loadGlobalAxiosAuthToken, loadGlobalAxiosCredentials } from '../middleware/axiosGlobalHeader';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 /**
  * Get authorization headers for API requests
@@ -246,23 +249,72 @@ export const deleteGoogleDriveFile = async (fileId: string): Promise<any> => {
 };
 
 /**
+ * Download a Google Drive file and save it directly to the BCloud directory
+ */
+export const downloadAndSaveGoogleDriveFile = async (
+  fileId: string,
+  fileName: string
+): Promise<string> => {
+  try {
+    // Download the file as a blob
+    const blob = await downloadGoogleDriveFile(fileId);
+    
+    // Ensure BCloud directory exists
+    const directory_name: string = 'BCloud';
+    const directory_path: string = path.join(os.homedir(), directory_name);
+    
+    if (!fs.existsSync(directory_path)) {
+      fs.mkdirSync(directory_path, { recursive: true });
+    }
+    
+    // Save file path
+    const file_save_path: string = path.join(directory_path, fileName);
+    
+    // Convert blob to buffer
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Write file to disk
+    fs.writeFileSync(file_save_path, buffer);
+    
+    console.log(`Google Drive file saved to: ${file_save_path}`);
+    return file_save_path;
+  } catch (error) {
+    console.error('Error downloading and saving Google Drive file:', error);
+    throw error;
+  }
+};
+
+/**
+ * Upload multiple files to Google Drive
+ */
+export const uploadMultipleToGoogleDrive = async (
+  files: File[],
+  parentFolderId?: string
+): Promise<any[]> => {
+  try {
+    const uploadPromises = files.map(file => 
+      uploadToGoogleDrive(file, parentFolderId)
+    );
+
+    return await Promise.all(uploadPromises);
+  } catch (error) {
+    console.error('Error uploading multiple files to Google Drive:', error);
+    throw error;
+  }
+};
+
+/**
  * Save a Google Drive file to local BCloud directory
  */
 export const saveGoogleDriveFileToLocal = async (
   fileId: string,
-  _fileName: string
+  fileName: string
 ): Promise<string> => {
   try {
-    // Download the file content
-    const blob = await downloadGoogleDriveFile(fileId);
-    
-    // For Electron app, we'll need to save to the BCloud directory
-    // This would require Electron-specific file system access
-    const arrayBuffer = await blob.arrayBuffer();
-    const _buffer = Buffer.from(arrayBuffer);
-    
-    // Return success (actual file saving would be handled by Electron main process)
-    return 'success';
+    // Use the same function as downloadAndSaveGoogleDriveFile
+    const filePath = await downloadAndSaveGoogleDriveFile(fileId, fileName);
+    return filePath;
   } catch (error) {
     console.error('Error saving Google Drive file to local:', error);
     throw error;

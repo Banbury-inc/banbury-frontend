@@ -5,6 +5,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import React from "react";
 import { handlers } from "../../../../../../renderer/handlers";
 import { addDownloadsInfo } from "@banbury/core/src/device/addDownloadsInfo";
+import { downloadAndSaveGoogleDriveFile } from "@banbury/core/src/files/googleDrive";
 
 export default function DownloadFileButton({
   selectedFileNames,
@@ -52,6 +53,46 @@ export default function DownloadFileButton({
       const task_description = 'Downloading ' + selectedFileNames.join(', ');
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
+
+      // Check if any selected file is a Google Drive file
+      const hasGoogleDriveFiles = selectedFileInfo.some(file => file.source === 'google_drive' || file.google_drive_id);
+
+      if (hasGoogleDriveFiles) {
+        // Handle Google Drive files download
+        try {
+          for (const file of selectedFileInfo) {
+            if (file.source === 'google_drive' || file.google_drive_id) {
+              const fileId = file.google_drive_id || file.id;
+              // Use the function that saves directly to BCloud directory
+              await downloadAndSaveGoogleDriveFile(fileId, file.file_name);
+            }
+          }
+          
+          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+
+          // Update download status to 'completed' for all selected files
+          const completedDownloadsUpdate = selectedFileInfo.map(fileInfo => ({
+            filename: fileInfo.file_name,
+            fileType: fileInfo.kind || 'Unknown',
+            progress: 100,
+            status: 'completed' as const,
+            totalSize: fileInfo.file_size || 0,
+            downloadedSize: fileInfo.file_size || 0,
+            timeRemaining: undefined
+          }));
+          addDownloadsInfo(completedDownloadsUpdate);
+
+          showAlert('Download completed successfully', ['Your Google Drive files have been downloaded to the BCloud directory'], 'success');
+          setSelected([]);
+          return;
+        } catch (error) {
+          console.error('Error downloading Google Drive files:', error);
+          await banbury.sessions.failTask(taskInfo, 'Google Drive download failed', tasks, setTasks);
+          showAlert('Download failed', ['Failed to download Google Drive files. Please try again.'], 'error');
+          setSelected([]);
+          return;
+        }
+      }
 
       // Check if any selected file is an S3 file
       const hasS3Files = selectedFileInfo.some(file => file.is_s3 === true);
