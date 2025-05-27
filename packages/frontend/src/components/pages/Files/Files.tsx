@@ -155,13 +155,15 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
-  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' => {
+  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive' => {
     if (filePath.includes('Core/Sync') || filePath === 'Sync') {
       return 'sync';
     } else if (filePath.includes('Core/Shared') || filePath === 'Shared') {
       return 'shared';
     } else if (filePath.includes('Core/Cloud') || filePath === 'Cloud') {
       return 'cloud';
+    } else if (filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive') {
+      return 'google_drive';
     }
     return 'files';
   };
