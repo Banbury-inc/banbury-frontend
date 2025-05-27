@@ -29,7 +29,7 @@ import { formatFileSize } from './utils/formatFileSize';
 import { FolderIcon, DocumentIcon } from '@heroicons/react/20/solid';
 import FileTable from './components/Table/Table';
 import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
-import FileViewerTabs from './components/FileViewer/FileViewerTabs';
+import FileViewerTabs from '../../common/FileViewer/FileViewerTabs';
 import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from './utils/fileUtils';
 
 const ResizeHandle = styled('div')(({ theme }) => ({

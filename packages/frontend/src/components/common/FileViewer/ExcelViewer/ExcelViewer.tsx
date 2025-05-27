@@ -13,8 +13,8 @@ import {
 import { shell } from 'electron';
 import fs from 'fs';
 import * as XLSX from 'xlsx';
-import { Text } from '../../../../../common/Text/Text';
-import { ToolbarButton } from '../../../../../common/ToolbarButton/ToolbarButton';
+import { Text } from '../../Text/Text';
+import { ToolbarButton } from '../../ToolbarButton/ToolbarButton';
 
 // Note: Luckysheet requires a different integration approach
 // For now, we'll use a simpler table-based approach with XLSX

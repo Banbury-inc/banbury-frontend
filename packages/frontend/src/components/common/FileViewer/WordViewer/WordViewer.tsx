@@ -14,8 +14,8 @@ import { shell } from 'electron';
 import fs from 'fs';
 import yauzl from 'yauzl';
 import mammoth from 'mammoth';
-import { Text } from '../../../../../common/Text/Text';
-import { ToolbarButton } from '../../../../../common/ToolbarButton/ToolbarButton';
+import { Text } from '../../Text/Text';
+import { ToolbarButton } from '../../ToolbarButton/ToolbarButton';
 import { renderAsync } from 'docx-preview';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 

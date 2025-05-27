@@ -5,15 +5,15 @@ import {
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { shell } from 'electron';
-import { Text } from '../../../../common/Text/Text';
-import { Tabs } from '../../../../common/Tabs/Tabs';
+import { Text } from '../Text/Text';
+import { Tabs } from '../Tabs/Tabs';
 import PDFViewer from './PDFViewer/PDFViewer';
 import WordViewer from './WordViewer/WordViewer';
 import CodeViewer from './CodeViewer/CodeViewer';
 import ImageViewer from './ImageViewer/ImageViewer';
 import ExcelViewer from './ExcelViewer/ExcelViewer';
 import VideoViewer from './VideoViewer/VideoViewer';
-import { isPdfFile, isWordFile, isCodeFile, isExcelFile, isCsvFile, isVideoFile, isImageFile } from '../../utils/fileUtils';
+import { isPdfFile, isWordFile, isCodeFile, isExcelFile, isCsvFile, isVideoFile, isImageFile } from '../../pages/Files/utils/fileUtils';
 
 interface FileTab {
   id: string;
