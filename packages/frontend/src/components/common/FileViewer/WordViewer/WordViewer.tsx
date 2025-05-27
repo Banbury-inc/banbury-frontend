@@ -1,14 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   CircularProgress,
   Toolbar,
 } from '@mui/material';
 import {
-  Save,
   GetApp,
-  Edit,
-  Visibility
 } from '@mui/icons-material';
 import { shell } from 'electron';
 import fs from 'fs';
@@ -17,7 +14,6 @@ import mammoth from 'mammoth';
 import { Text } from '../../Text/Text';
 import { ToolbarButton } from '../../ToolbarButton/ToolbarButton';
 import { renderAsync } from 'docx-preview';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
 
 interface WordViewerProps {
   src: string;
@@ -32,15 +28,10 @@ const WordViewer: React.FC<WordViewerProps> = ({
   fileName,
   onError,
   onLoad,
-  onSave
 }) => {
   const [content, setContent] = useState<string>('');
-  const [originalContent, setOriginalContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [hasChanges, setHasChanges] = useState<boolean>(false);
   const [conversionMethod, setConversionMethod] = useState<string>('');
   
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -291,7 +282,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
             
             if (htmlContent && htmlContent.trim().length > 0) {
               setContent(htmlContent);
-              setOriginalContent(htmlContent);
               success = true;
               break;
             }
@@ -305,7 +295,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
         if (!success) {
           const fallbackContent = createFallbackContent(filePath);
           setContent(fallbackContent);
-          setOriginalContent(fallbackContent);
         }
         
         setLoading(false);
@@ -328,93 +317,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
       filePath = filePath.replace('file://', '');
     }
     shell.openPath(filePath);
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleView = () => {
-    setIsEditing(false);
-  };
-
-  const convertHtmlToDocx = (html: string): Document => {
-    try {
-      // Simple HTML to DOCX conversion
-      // Remove HTML tags for basic text conversion
-      const textContent = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
-      
-      // Split into paragraphs and filter out empty ones
-      const paragraphs = textContent.split('\n').filter(line => line.trim() !== '');
-      
-      // If no content, create a document with a single empty paragraph
-      if (paragraphs.length === 0) {
-        paragraphs.push('');
-      }
-      
-      const doc = new Document({
-        sections: [{
-          properties: {},
-          children: paragraphs.map(line => 
-            new Paragraph({
-              children: [new TextRun(line.trim())],
-            })
-          ),
-        }],
-      });
-      
-      return doc;
-    } catch (error) {
-      console.error('Error converting HTML to DOCX:', error);
-      // Return a minimal document if conversion fails
-      return new Document({
-        sections: [{
-          properties: {},
-          children: [
-            new Paragraph({
-              children: [new TextRun('Error: Could not convert document content')],
-            })
-          ],
-        }],
-      });
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      
-      let filePath = src;
-      if (filePath.startsWith('file://')) {
-        filePath = filePath.replace('file://', '');
-      }
-
-      // Convert HTML content back to DOCX
-      const doc = convertHtmlToDocx(content);
-      
-      try {
-        // Generate buffer with proper error handling
-        const buffer = await Promise.resolve(Packer.toBuffer(doc));
-        
-        // Save to file with error handling
-        fs.writeFileSync(filePath, buffer);
-        
-        setOriginalContent(content);
-        setHasChanges(false);
-        
-        onSave?.(filePath);
-        
-      } catch (packingError) {
-        console.error('Error packing document:', packingError);
-        throw new Error('Failed to convert document to DOCX format');
-      }
-      
-    } catch (error) {
-      console.error('Error saving Word document:', error);
-      alert('Failed to save document. Please try again or use "Open with System App".');
-    } finally {
-      setSaving(false);
-    }
   };
 
   if (error) {
@@ -474,12 +376,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
           </Text>
         )}
         
-        {hasChanges && (
-          <Text className="text-yellow-600 mr-2">
-            Unsaved changes
-          </Text>
-        )}
-        
         <ToolbarButton 
           onClick={handleOpenWithSystemApp} 
           className="min-w-[32px] h-8 p-0 flex items-center justify-center"
@@ -528,25 +424,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
           </Box>
         )}
       </Box>
-      
-      {saving && (
-        <Box sx={{ 
-          position: 'absolute', 
-          top: '50%', 
-          left: '50%', 
-          transform: 'translate(-50%, -50%)',
-          bgcolor: 'background.paper',
-          p: 2,
-          borderRadius: 1,
-          boxShadow: 3,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2
-        }}>
-          <CircularProgress size={20} />
-          <Text>Saving document...</Text>
-        </Box>
-      )}
     </Box>
   );
 };
