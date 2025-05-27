@@ -132,6 +132,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUsername');
     localStorage.removeItem('deviceId');
+    
+    // Clear Google OAuth session flag
+    localStorage.removeItem('googleOAuthSession');
 
     // Clear all states
     setUsername(null);
@@ -145,8 +148,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       websocket.close();
     }
 
-    // Clear auth header
+    // Clear auth headers
     axios.defaults.headers.common['Authorization'] = '';
+    axios.defaults.headers.common['X-API-Key'] = '';
 
     // Force reload the application
     window.location.reload();

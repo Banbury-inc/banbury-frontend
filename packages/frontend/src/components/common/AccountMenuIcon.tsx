@@ -48,6 +48,7 @@ export default function AccountMenuIcon() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUsername');
     localStorage.removeItem('deviceId');
+    localStorage.removeItem('googleOAuthSession');
     clearBanburyCredentials();
     handleClose();
     logout();
