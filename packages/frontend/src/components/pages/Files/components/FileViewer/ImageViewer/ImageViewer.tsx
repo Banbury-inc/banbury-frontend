@@ -5,8 +5,8 @@ import { Box, CircularProgress } from '@mui/material';
 import { shell } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import { Text } from '../../../../common/Text/Text';
-import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
+import { Text } from '../../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../../common/ToolbarButton/ToolbarButton';
 
 interface ImageViewerProps {
   src: string;

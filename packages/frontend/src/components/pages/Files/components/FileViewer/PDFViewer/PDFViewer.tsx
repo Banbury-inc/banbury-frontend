@@ -18,9 +18,9 @@ import {
 } from '@mui/icons-material';
 import { shell } from 'electron';
 import fs from 'fs';
-import { Text } from '../../../../common/Text/Text';
-import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
-import { Textbox } from '../../../../common/Textbox/Textbox';
+import { Text } from '../../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../../common/ToolbarButton/ToolbarButton';
+import { Textbox } from '../../../../../common/Textbox/Textbox';
 
 // Polyfill for Promise.withResolvers if not available
 if (!Promise.withResolvers) {

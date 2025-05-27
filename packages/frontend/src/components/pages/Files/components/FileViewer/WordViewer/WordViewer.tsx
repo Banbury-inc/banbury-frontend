@@ -1,10 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import {
   Box,
-  Typography,
   CircularProgress,
-  Button,
-  IconButton,
   Toolbar,
 } from '@mui/material';
 import {
@@ -17,10 +14,10 @@ import { shell } from 'electron';
 import fs from 'fs';
 import yauzl from 'yauzl';
 import mammoth from 'mammoth';
+import { Text } from '../../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../../common/ToolbarButton/ToolbarButton';
 import { renderAsync } from 'docx-preview';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 
 interface WordViewerProps {
   src: string;
@@ -46,7 +43,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
   const [hasChanges, setHasChanges] = useState<boolean>(false);
   const [conversionMethod, setConversionMethod] = useState<string>('');
   
-  const quillRef = useRef<ReactQuill>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // Method 1: Use docx-preview library
@@ -342,11 +338,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
     setIsEditing(false);
   };
 
-  const handleContentChange = useCallback((value: string) => {
-    setContent(value);
-    setHasChanges(value !== originalContent);
-  }, [originalContent]);
-
   const convertHtmlToDocx = (html: string): Document => {
     try {
       // Simple HTML to DOCX conversion
@@ -439,36 +430,21 @@ const WordViewer: React.FC<WordViewerProps> = ({
           height: '100%'
         }}
       >
-        <Typography variant="h6" color="error" gutterBottom>
+        <Text className="text-lg font-semibold text-red-600 mb-2">
           Failed to load Word document
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </Text>
+        <Text className="mb-4">
           {fileName ? `Could not display "${fileName}"` : 'The Word document could not be displayed'}
-        </Typography>
-        <Button 
-          variant="outlined" 
+        </Text>
+        <ToolbarButton 
           onClick={handleOpenWithSystemApp}
-          sx={{ mt: 1 }}
-          startIcon={<GetApp />}
+          className="mt-2"
         >
-          Open with System App
-        </Button>
+          <GetApp fontSize="inherit" /> Open with System App
+        </ToolbarButton>
       </Box>
     );
   }
-
-  const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'align': [] }],
-      ['clean']
-    ],
-  };
 
   return (
     <Box sx={{ 
@@ -488,44 +464,29 @@ const WordViewer: React.FC<WordViewerProps> = ({
           gap: 1
         }}
       >
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Text className="text-base font-semibold flex-grow">
           {fileName}
-        </Typography>
+        </Text>
         
         {conversionMethod && (
-          <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
+          <Text className="text-xs text-zinc-400 mr-2">
             Method: {conversionMethod}
-          </Typography>
+          </Text>
         )}
         
         {hasChanges && (
-          <Typography variant="body2" color="warning.main" sx={{ mr: 2 }}>
+          <Text className="text-yellow-600 mr-2">
             Unsaved changes
-          </Typography>
+          </Text>
         )}
         
-        <IconButton 
-          onClick={isEditing ? handleView : handleEdit} 
-          size="small" 
-          title={isEditing ? "View mode" : "Edit mode"}
+        <ToolbarButton 
+          onClick={handleOpenWithSystemApp} 
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+          title="Open with system app"
         >
-          {isEditing ? <Visibility /> : <Edit />}
-        </IconButton>
-        
-        {isEditing && (
-          <IconButton 
-            onClick={handleSave} 
-            disabled={!hasChanges || saving}
-            size="small" 
-            title="Save document"
-          >
-            <Save />
-          </IconButton>
-        )}
-        
-        <IconButton onClick={handleOpenWithSystemApp} size="small" title="Open with system app">
-          <GetApp />
-        </IconButton>
+          <GetApp fontSize="inherit" />
+        </ToolbarButton>
       </Toolbar>
 
       {/* Word Document Content */}
@@ -538,7 +499,7 @@ const WordViewer: React.FC<WordViewerProps> = ({
         {loading && (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
             <CircularProgress />
-            <Typography sx={{ ml: 2 }}>Loading document...</Typography>
+            <Text className="ml-2">Loading document...</Text>
           </Box>
         )}
         
@@ -551,19 +512,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
             boxShadow: 2,
             p: 1
           }}>
-            {isEditing ? (
-              <ReactQuill
-                ref={quillRef}
-                theme="snow"
-                value={content}
-                onChange={handleContentChange}
-                modules={modules}
-                style={{ 
-                  height: 'calc(100% - 42px)',
-                  border: 'none'
-                }}
-              />
-            ) : (
               <Box 
                 ref={previewContainerRef}
                 sx={{ 
@@ -577,7 +525,6 @@ const WordViewer: React.FC<WordViewerProps> = ({
                 }}
                 dangerouslySetInnerHTML={{ __html: content }}
               />
-            )}
           </Box>
         )}
       </Box>
@@ -597,7 +544,7 @@ const WordViewer: React.FC<WordViewerProps> = ({
           gap: 2
         }}>
           <CircularProgress size={20} />
-          <Typography>Saving document...</Typography>
+          <Text>Saving document...</Text>
         </Box>
       )}
     </Box>

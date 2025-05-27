@@ -7,14 +7,13 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { shell } from 'electron';
 import { Text } from '../../../../common/Text/Text';
 import { Tabs } from '../../../../common/Tabs/Tabs';
-import type { Tab } from '../../../../common/Tabs/Tabs';
-import ImageViewer from '../ImageViewer/ImageViewer';
-import PDFViewer from '../PDFViewer/PDFViewer';
-import WordViewer from '../WordViewer/WordViewer';
-import ExcelViewer from '../ExcelViewer/ExcelViewer';
-import CodeViewer from '../CodeViewer/CodeViewer';
-import VideoViewer from '../VideoViewer/VideoViewer';
-import { isImageFile, isPdfFile, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from '../../utils/fileUtils';
+import PDFViewer from './PDFViewer/PDFViewer';
+import WordViewer from './WordViewer/WordViewer';
+import CodeViewer from './CodeViewer/CodeViewer';
+import ImageViewer from './ImageViewer/ImageViewer';
+import ExcelViewer from './ExcelViewer/ExcelViewer';
+import VideoViewer from './VideoViewer/VideoViewer';
+import { isPdfFile, isWordFile, isCodeFile, isExcelFile, isCsvFile, isVideoFile, isImageFile } from '../../utils/fileUtils';
 
 interface FileTab {
   id: string;

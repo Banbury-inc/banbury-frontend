@@ -17,8 +17,8 @@ import { shell } from 'electron';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
 import ReactPlayer from 'react-player';
-import { Text } from '../../../../common/Text/Text';
-import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
+import { Text } from '../../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../../common/ToolbarButton/ToolbarButton';
 
 interface VideoViewerProps {
   src: string;

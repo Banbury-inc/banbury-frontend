@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Typography,
   CircularProgress,
-  Button,
-  IconButton,
   Toolbar,
 } from '@mui/material';
 import {
@@ -16,6 +13,8 @@ import {
 import { shell } from 'electron';
 import fs from 'fs';
 import * as XLSX from 'xlsx';
+import { Text } from '../../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../../common/ToolbarButton/ToolbarButton';
 
 // Note: Luckysheet requires a different integration approach
 // For now, we'll use a simpler table-based approach with XLSX
@@ -249,20 +248,18 @@ const ExcelViewer: React.FC<ExcelViewerProps> = ({
           height: '100%'
         }}
       >
-        <Typography variant="h6" color="error" gutterBottom>
+        <Text className="text-lg font-semibold text-red-600 mb-2">
           Failed to load spreadsheet
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </Text>
+        <Text className="mb-4">
           {fileName ? `Could not display "${fileName}"` : 'The spreadsheet could not be displayed'}
-        </Typography>
-        <Button 
-          variant="outlined" 
+        </Text>
+        <ToolbarButton 
           onClick={handleOpenWithSystemApp}
-          sx={{ mt: 1 }}
-          startIcon={<GetApp />}
+          className="mt-2"
         >
-          Open with System App
-        </Button>
+          <GetApp fontSize="inherit" /> Open with System App
+        </ToolbarButton>
       </Box>
     );
   }
@@ -285,38 +282,42 @@ const ExcelViewer: React.FC<ExcelViewerProps> = ({
           gap: 1
         }}
       >
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Text className="text-base font-semibold flex-grow">
           {fileName}
-        </Typography>
+        </Text>
         
         {hasChanges && (
-          <Typography variant="body2" color="warning.main" sx={{ mr: 2 }}>
+          <Text className="text-yellow-600 mr-2">
             Unsaved changes
-          </Typography>
+          </Text>
         )}
         
-        <IconButton 
+        <ToolbarButton 
           onClick={isEditing ? handleView : handleEdit} 
-          size="small" 
-          title={isEditing ? "View mode" : "Edit mode"}
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+          title={isEditing ? 'View mode' : 'Edit mode'}
         >
-          {isEditing ? <Visibility /> : <Edit />}
-        </IconButton>
+          {isEditing ? <Visibility fontSize="inherit" /> : <Edit fontSize="inherit" />}
+        </ToolbarButton>
         
         {isEditing && (
-          <IconButton 
+          <ToolbarButton 
             onClick={handleSave} 
             disabled={!hasChanges || saving}
-            size="small" 
+            className="min-w-[32px] h-8 p-0 flex items-center justify-center"
             title="Save spreadsheet"
           >
-            <Save />
-          </IconButton>
+            <Save fontSize="inherit" />
+          </ToolbarButton>
         )}
         
-        <IconButton onClick={handleOpenWithSystemApp} size="small" title="Open with system app">
-          <GetApp />
-        </IconButton>
+        <ToolbarButton 
+          onClick={handleOpenWithSystemApp} 
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+          title="Open with system app"
+        >
+          <GetApp fontSize="inherit" />
+        </ToolbarButton>
       </Toolbar>
 
       {/* Sheet Tabs */}
@@ -328,18 +329,20 @@ const ExcelViewer: React.FC<ExcelViewerProps> = ({
           bgcolor: 'background.paper'
         }}>
           {sheets.map((sheet, index) => (
-            <Button
+            <ToolbarButton
               key={index}
-              variant={activeSheet === index ? 'contained' : 'text'}
-              size="small"
               onClick={() => setActiveSheet(index)}
-              sx={{ 
-                borderRadius: 0,
-                textTransform: 'none'
-              }}
+              className={
+                (activeSheet === index
+                  ? 'bg-zinc-800 text-white'
+                  : 'bg-transparent text-zinc-500 hover:bg-zinc-100') +
+                ' rounded-none px-4 py-2 text-sm font-medium border-b-2 ' +
+                (activeSheet === index ? 'border-blue-500' : 'border-transparent')
+              }
+              style={{ borderRadius: 0, textTransform: 'none' }}
             >
               {sheet.name}
-            </Button>
+            </ToolbarButton>
           ))}
         </Box>
       )}
@@ -455,7 +458,7 @@ const ExcelViewer: React.FC<ExcelViewerProps> = ({
           gap: 2
         }}>
           <CircularProgress size={20} />
-          <Typography>Saving spreadsheet...</Typography>
+          <Text>Saving spreadsheet...</Text>
         </Box>
       )}
     </Box>
