@@ -20,6 +20,7 @@ import { shell } from 'electron';
 import fs from 'fs';
 import { Text } from '../../../../common/Text/Text';
 import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
+import { Textbox } from '../../../../common/Textbox/Textbox';
 
 // Polyfill for Promise.withResolvers if not available
 if (!Promise.withResolvers) {
@@ -170,56 +171,75 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
       overflow: 'hidden'
     }}>
       {/* PDF Toolbar */}
-      <Toolbar 
-        variant="dense" 
-        sx={{ 
+      <Toolbar
+        variant="dense"
+        sx={{
           bgcolor: 'background.paper',
           borderBottom: 1,
           borderColor: 'divider',
-          minHeight: 48,
-          gap: 1
+          minHeight: 40,
+          px: 1,
+          py: 0,
+          gap: 1,
+          alignItems: 'center',
         }}
       >
-        <ToolbarButton onClick={goToPrevPage} disabled={pageNumber <= 1} className="min-w-[30px] p-0">
+        <ToolbarButton
+          onClick={goToPrevPage}
+          disabled={pageNumber <= 1}
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+        >
           <NavigateBefore fontSize="inherit" />
         </ToolbarButton>
-        
-        <TextField
-          size="small"
-          type="number"
-          value={pageNumber}
-          onChange={handlePageInputChange}
-          inputProps={{
-            min: 1,
-            max: numPages,
-            style: { textAlign: 'center', width: '60px' }
-          }}
-          variant="outlined"
-        />
-        
-        <Text className="mx-2">
-          / {numPages}
-        </Text>
-        
-        <ToolbarButton onClick={goToNextPage} disabled={pageNumber >= numPages} className="min-w-[30px] p-0">
-          <NavigateNext fontSize="inherit" sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }} />
+
+        <Box className="flex items-center">
+          <Textbox
+            type="text"
+            value={pageNumber}
+            onChange={handlePageInputChange}
+            min={1}
+            max={numPages}
+            className="w-8 h-8 text-center"
+            style={{ fontSize: '1rem', lineHeight: '2rem', padding: 0 }}
+          />
+          <Text className="w-16 ml-2 text-base text-zinc-400">/ {numPages}</Text>
+        </Box>
+
+        <ToolbarButton
+          onClick={goToNextPage}
+          disabled={pageNumber >= numPages}
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+        >
+          <NavigateNext fontSize="inherit" />
         </ToolbarButton>
-        
+
         <Box sx={{ flexGrow: 1 }} />
-        
-        <ToolbarButton onClick={zoomOut} disabled={scale <= 0.5} className="min-w-[30px] p-0">
+
+        <ToolbarButton
+          onClick={zoomOut}
+          disabled={scale <= 0.5}
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+        >
           <ZoomOut fontSize="inherit" />
         </ToolbarButton>
-        
-        <Text className="mx-2 min-w-[60px] text-center">
+
+        <Text className="mx-2 min-w-[60px] text-center text-base text-zinc-400">
           {Math.round(scale * 100)}%
         </Text>
-        
-        <ToolbarButton onClick={zoomIn} disabled={scale >= 3.0} className="min-w-[30px] p-0">
+
+        <ToolbarButton
+          onClick={zoomIn}
+          disabled={scale >= 3.0}
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+        >
           <ZoomIn fontSize="inherit" />
         </ToolbarButton>
-        
-        <ToolbarButton onClick={handleOpenWithSystemApp} className="min-w-[30px] p-0" title="Open with system app">
+
+        <ToolbarButton
+          onClick={handleOpenWithSystemApp}
+          className="min-w-[32px] h-8 p-0 flex items-center justify-center"
+          title="Open with system app"
+        >
           <Fullscreen fontSize="inherit" />
         </ToolbarButton>
       </Toolbar>
