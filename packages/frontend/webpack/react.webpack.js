@@ -105,7 +105,7 @@ const config = {
       publicPath: "/",
     },
     headers: {
-      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
+      'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: blob: file: https: *; media-src 'self' data: blob: file: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
     },
     port: 8081,
     historyApiFallback: true,
@@ -133,7 +133,7 @@ const config = {
       meta: {
         'Content-Security-Policy': {
           'http-equiv': 'Content-Security-Policy',
-          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
+          'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: blob: file: https: *; media-src 'self' data: blob: file: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
         }
       }
     }),
