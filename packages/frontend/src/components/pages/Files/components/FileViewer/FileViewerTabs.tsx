@@ -1,14 +1,13 @@
 import React from 'react';
 import {
   Box,
-  Tabs,
-  Tab,
-  IconButton,
-  Typography,
+  Button,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { shell } from 'electron';
+import { Text } from '../../../../common/Text/Text';
+import { Tabs } from '../../../../common/Tabs/Tabs';
+import type { Tab } from '../../../../common/Tabs/Tabs';
 import ImageViewer from '../ImageViewer/ImageViewer';
 import PDFViewer from '../PDFViewer/PDFViewer';
 import WordViewer from '../WordViewer/WordViewer';
@@ -172,15 +171,15 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
         justifyContent: 'center',
         height: '100%'
       }}>
-        <Typography variant="h6" gutterBottom>
+        <Text className="text-lg font-semibold mb-4">
           File Type Not Supported
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+        </Text>
+        <Text className="text-gray-500">
           In-app viewing for {tab.fileType} files is not yet supported.
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        </Text>
+        <Text className="text-gray-500 mt-2">
           Click the button below to open with your system's default application.
-        </Typography>
+        </Text>
       </Box>
     );
   };
@@ -192,75 +191,49 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
       flexDirection: 'column',
       overflow: 'hidden'
     }}>
-      {/* Tab Headers */}
+            {/* Tab Headers */}
       <Box sx={{ 
         borderBottom: 1, 
         borderColor: 'divider',
         backgroundColor: 'background.paper',
         display: 'flex',
         alignItems: 'center',
-        minHeight: 48
       }}>
-        <Tabs
-          value={activeTab}
-          onChange={(_, newValue) => onSwitchTab(newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ 
-            flexGrow: 1,
-            '& .MuiTab-root': {
-              minHeight: 48,
-              textTransform: 'none',
-              fontSize: '0.875rem'
-            }
-          }}
-        >
-          {openTabs.map((tab) => (
-            <Tab
-              key={tab.id}
-              value={tab.id}
-              label={
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  maxWidth: 200
-                }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {tab.fileName}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCloseTab(tab.id);
-                    }}
-                    sx={{ p: 0.5 }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              }
-            />
-          ))}
-        </Tabs>
+        <Box sx={{ 
+          flexGrow: 1,
+          '& .tab': {
+            marginTop: '0 !important'
+          }
+        }}>
+          <Tabs
+            tabs={openTabs.map(tab => ({
+              id: tab.id,
+              label: tab.fileName,
+              path: tab.filePath
+            }))}
+            activeTab={activeTab || ''}
+            onTabChange={(tabId: string) => onSwitchTab(tabId)}
+            onTabClose={(tabId: string) => onCloseTab(tabId)}
+          />
+        </Box>
         
         {/* System App Button for Current Tab */}
         {currentTab && (
-          <IconButton
+          <Button
             onClick={() => handleOpenWithSystemApp(currentTab.filePath)}
-            sx={{ mr: 1 }}
+            sx={{ 
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              marginRight: '8px',
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
             title="Open with system app"
           >
-            <OpenInNewIcon />
-          </IconButton>
+            <OpenInNewIcon fontSize="inherit" />
+          </Button>
         )}
       </Box>
 

@@ -1,10 +1,8 @@
 import React, { useState, useRef } from 'react';
 import {
   Box,
-  Typography,
   IconButton,
   Toolbar,
-  Button,
   Alert,
   Accordion,
   AccordionSummary,
@@ -19,6 +17,8 @@ import { shell } from 'electron';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
 import ReactPlayer from 'react-player';
+import { Text } from '../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 
 interface VideoViewerProps {
   src: string;
@@ -127,70 +127,70 @@ const VideoViewer: React.FC<VideoViewerProps> = ({
         }}
       >
         <Alert severity="error" sx={{ mb: 2 }}>
-          <Typography variant="h6" gutterBottom>
+          <Text className="text-lg font-semibold mb-2">
             Failed to load video
-          </Typography>
-          <Typography variant="body2">
+          </Text>
+          <Text>
             {fileName ? `Could not play "${fileName}"` : 'The video file could not be played'}
-          </Typography>
+          </Text>
         </Alert>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Text className="mb-6">
           {!debugInfo.fileExists 
             ? 'The video file does not exist or cannot be accessed.'
             : 'This might be due to an unsupported format or codec.'
           }
-        </Typography>
+        </Text>
 
         <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-          <Button 
+          <ToolbarButton 
             variant="contained" 
             onClick={handleOpenWithSystemApp}
             startIcon={<GetApp />}
           >
             Open with System App
-          </Button>
-          <Button 
+          </ToolbarButton>
+          <ToolbarButton 
             variant="text" 
             onClick={() => window.location.reload()}
           >
             Reload Page
-          </Button>
+          </ToolbarButton>
         </Box>
 
         <Accordion>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Info />
-              <Typography>Debug Information</Typography>
+              <Text>Debug Information</Text>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
             <Box sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-              <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+              <Text className="mb-2 font-bold">
                 File Information:
-              </Typography>
-              <Typography variant="body2">
+              </Text>
+              <Text>
                 File path: {src}
-              </Typography>
-              <Typography variant="body2">
+              </Text>
+              <Text>
                 File exists: {debugInfo.fileExists ? 'Yes' : 'No'}
-              </Typography>
-              <Typography variant="body2">
+              </Text>
+              <Text>
                 File size: {(debugInfo.fileSize / (1024 * 1024)).toFixed(2)} MB
-              </Typography>
-              <Typography variant="body2">
+              </Text>
+              <Text>
                 React Player can play: {debugInfo.canPlay ? 'Yes' : 'No'}
-              </Typography>
+              </Text>
               
               {debugInfo.errorDetails && (
                 <>
-                  <Typography variant="body2" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>
+                  <Text className="mt-4 mb-2 font-bold">
                     Error Details:
-                  </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                  </Text>
+                  <Text className="whitespace-pre-wrap">
                     {JSON.stringify(debugInfo.errorDetails, null, 2)}
-                  </Typography>
+                  </Text>
                 </>
               )}
             </Box>
@@ -218,13 +218,13 @@ const VideoViewer: React.FC<VideoViewerProps> = ({
           gap: 1
         }}
       >
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Text className="flex-grow text-lg font-semibold">
           {fileName}
-        </Typography>
+        </Text>
         
-        <Typography variant="body2" color="text.secondary">
+        <Text className="text-sm text-gray-500">
           Size: {(debugInfo.fileSize / (1024 * 1024)).toFixed(2)} MB
-        </Typography>
+        </Text>
         
         <IconButton onClick={handleOpenWithSystemApp} size="small" title="Open with system app">
           <GetApp />

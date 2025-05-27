@@ -1,10 +1,12 @@
 import React from 'react';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
-import { Box, Typography, CircularProgress, Button } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import { shell } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import { Text } from '../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 
 interface ImageViewerProps {
   src: string;
@@ -115,19 +117,18 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
           textAlign: 'center'
         }}
       >
-        <Typography variant="h6" color="error" gutterBottom>
+        <Text className="text-lg font-semibold text-red-600 mb-2">
           Failed to load image
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </Text>
+        <Text className="mb-4">
           {fileName ? `Could not display "${fileName}"` : 'The image could not be displayed'}
-        </Typography>
-        <Button 
-          variant="outlined" 
+        </Text>
+        <ToolbarButton 
           onClick={handleOpenWithSystemApp}
           sx={{ mt: 1 }}
         >
           Open with System App
-        </Button>
+        </ToolbarButton>
       </Box>
     );
   }
@@ -182,16 +183,11 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
       )}
       
       {fileName && !imageLoading && (
-        <Typography 
-          variant="caption" 
-          sx={{ 
-            mt: 1, 
-            textAlign: 'center',
-            color: 'text.secondary'
-          }}
+        <Text 
+          className="text-sm text-center text-gray-500 mt-2"
         >
           {fileName}
-        </Typography>
+        </Text>
       )}
     </Box>
   );

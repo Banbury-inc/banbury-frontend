@@ -4,10 +4,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import {
   Box,
-  Typography,
   CircularProgress,
-  Button,
-  IconButton,
   TextField,
   Toolbar,
 } from '@mui/material';
@@ -21,6 +18,8 @@ import {
 } from '@mui/icons-material';
 import { shell } from 'electron';
 import fs from 'fs';
+import { Text } from '../../../../common/Text/Text';
+import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 
 // Polyfill for Promise.withResolvers if not available
 if (!Promise.withResolvers) {
@@ -147,20 +146,18 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           height: '100%'
         }}
       >
-        <Typography variant="h6" color="error" gutterBottom>
+        <Text className="text-lg font-semibold text-red-600 mb-2">
           Failed to load PDF
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        </Text>
+        <Text className="mb-4">
           {fileName ? `Could not display "${fileName}"` : 'The PDF could not be displayed'}
-        </Typography>
-        <Button 
-          variant="outlined" 
+        </Text>
+        <ToolbarButton 
           onClick={handleOpenWithSystemApp}
-          sx={{ mt: 1 }}
-          startIcon={<GetApp />}
+          className="mt-2"
         >
-          Open with System App
-        </Button>
+          <GetApp fontSize="inherit" /> Open with System App
+        </ToolbarButton>
       </Box>
     );
   }
@@ -183,9 +180,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           gap: 1
         }}
       >
-        <IconButton onClick={goToPrevPage} disabled={pageNumber <= 1} size="small">
-          <NavigateBefore />
-        </IconButton>
+        <ToolbarButton onClick={goToPrevPage} disabled={pageNumber <= 1} className="min-w-[30px] p-0">
+          <NavigateBefore fontSize="inherit" />
+        </ToolbarButton>
         
         <TextField
           size="small"
@@ -200,31 +197,31 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           variant="outlined"
         />
         
-        <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+        <Text className="mx-2">
           / {numPages}
-        </Typography>
+        </Text>
         
-        <IconButton onClick={goToNextPage} disabled={pageNumber >= numPages} size="small">
-          <NavigateNext />
-        </IconButton>
+        <ToolbarButton onClick={goToNextPage} disabled={pageNumber >= numPages} className="min-w-[30px] p-0">
+          <NavigateNext fontSize="inherit" sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }} />
+        </ToolbarButton>
         
         <Box sx={{ flexGrow: 1 }} />
         
-        <IconButton onClick={zoomOut} disabled={scale <= 0.5} size="small">
-          <ZoomOut />
-        </IconButton>
+        <ToolbarButton onClick={zoomOut} disabled={scale <= 0.5} className="min-w-[30px] p-0">
+          <ZoomOut fontSize="inherit" />
+        </ToolbarButton>
         
-        <Typography variant="body2" sx={{ minWidth: '60px', textAlign: 'center' }}>
+        <Text className="mx-2 min-w-[60px] text-center">
           {Math.round(scale * 100)}%
-        </Typography>
+        </Text>
         
-        <IconButton onClick={zoomIn} disabled={scale >= 3.0} size="small">
-          <ZoomIn />
-        </IconButton>
+        <ToolbarButton onClick={zoomIn} disabled={scale >= 3.0} className="min-w-[30px] p-0">
+          <ZoomIn fontSize="inherit" />
+        </ToolbarButton>
         
-        <IconButton onClick={handleOpenWithSystemApp} size="small" title="Open with system app">
-          <Fullscreen />
-        </IconButton>
+        <ToolbarButton onClick={handleOpenWithSystemApp} className="min-w-[30px] p-0" title="Open with system app">
+          <Fullscreen fontSize="inherit" />
+        </ToolbarButton>
       </Toolbar>
 
       {/* PDF Content */}
@@ -261,9 +258,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
       
       {fileName && !loading && (
         <Box sx={{ p: 1, textAlign: 'center', bgcolor: 'background.paper' }}>
-          <Typography variant="caption" color="text.secondary">
+          <Text className="text-xs text-gray-500">
             {fileName}
-          </Typography>
+          </Text>
         </Box>
       )}
     </Box>
