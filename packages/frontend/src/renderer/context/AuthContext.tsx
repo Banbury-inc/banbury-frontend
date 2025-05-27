@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import axios from 'axios';
+import { loadGlobalAxiosAuthToken } from '@banbury/core/src/middleware/axiosGlobalHeader';
 
 interface ImageData {
   content_type: string;
@@ -81,6 +82,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [files_is_loading, setFilesIsLoading] = useState<boolean>(false);
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
   const [isTokenRefreshFailed, setIsTokenRefreshFailed] = useState(false);
+
+  // Initialize authentication tokens on mount
+  useEffect(() => {
+    const { token, username: storedUsername } = loadGlobalAxiosAuthToken();
+    if (token && storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
 
   const setUsername = (username: string | null) => {
     setUser(username);

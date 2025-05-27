@@ -2,14 +2,11 @@ import axios from 'axios';
 import { DatabaseData } from '../types';
 import banbury from '@banbury/core';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
+import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';
 
-// Fetch regular files
-export const fetchFilesData = async (
-  filePath: string,
-  existingFiles: DatabaseData[] = []
-) => {
+// Helper function to create device online map
+const createDeviceOnlineMap = async () => {
   try {
-    // Fetch device information to check online status
     const deviceData = await fetchDeviceData();
     const deviceOnlineMap = new Map();
     
@@ -18,6 +15,21 @@ export const fetchFilesData = async (
         deviceOnlineMap.set(device.device_name, device.online);
       });
     }
+    
+    return deviceOnlineMap;
+  } catch (error) {
+    console.error('Error fetching device data:', error);
+    return new Map();
+  }
+};
+
+// Fetch regular files
+export const fetchFilesData = async (
+  filePath: string,
+  existingFiles: DatabaseData[] = []
+) => {
+  try {
+    const deviceOnlineMap = await createDeviceOnlineMap();
 
     const fileInfoResponse = await axios.post<{ files: any[] }>(
       `${banbury.config.url}/files/get_files_from_filepath/`,
@@ -56,15 +68,7 @@ export const fetchSyncData = async (
   filePath: string
 ) => {
   try {
-    // Fetch device information to check online status
-    const deviceData = await fetchDeviceData();
-    const deviceOnlineMap = new Map();
-    
-    if (Array.isArray(deviceData)) {
-      deviceData.forEach(device => {
-        deviceOnlineMap.set(device.device_name, device.online);
-      });
-    }
+    const deviceOnlineMap = await createDeviceOnlineMap();
     
     // Only send filepath if it contains more than just Core/Sync (for subfolders)
     const includePath = filePath !== 'Core/Sync' && filePath.startsWith('Core/Sync/');
@@ -105,15 +109,7 @@ export const fetchSyncData = async (
 export const fetchSharedData = async (
 ) => {
   try {
-    // Fetch device information to check online status
-    const deviceData = await fetchDeviceData();
-    const deviceOnlineMap = new Map();
-    
-    if (Array.isArray(deviceData)) {
-      deviceData.forEach(device => {
-        deviceOnlineMap.set(device.device_name, device.online);
-      });
-    }
+    const deviceOnlineMap = await createDeviceOnlineMap();
     
     const response = await axios.post<{ status: string; shared_files: { shared_files: any[] } }>(
       `${banbury.config.url}/files/get_shared_files/`,
@@ -163,10 +159,94 @@ export const fetchSharedData = async (
   }
 };
 
+// Helper function to extract Google Drive folder ID from path
+const extractGoogleDriveFolderId = (filePath: string): string | undefined => {
+  // If we're at the root Google Drive, return undefined (root folder)
+  if (filePath === 'Core/GoogleDrive' || filePath === 'GoogleDrive') {
+    return undefined;
+  }
+  
+  // For now, we'll implement a simple path-based navigation
+  // In a full implementation, you'd want to store folder IDs in the path or use a mapping
+  // Example: Core/GoogleDrive/FolderName -> extract folder ID from database or cache
+  
+  // This is a placeholder - you might want to implement a folder ID mapping system
+  // For now, return undefined to show root files
+  return undefined;
+};
+
+// Fetch Google Drive files
+export const fetchGoogleDriveData = async (
+  filePath: string
+) => {
+  try {
+    // Extract folder ID from path for subfolder navigation
+    const folderId = extractGoogleDriveFolderId(filePath);
+
+    const result = await listGoogleDriveFiles(undefined, folderId);
+    
+    // Check if result and result.files exist
+    if (!result || !result.files || !Array.isArray(result.files)) {
+      console.warn('Invalid response from Google Drive API:', result);
+      return [];
+    }
+    
+    // Transform Google Drive files to match DatabaseData format
+    return result.files.map((file) => {
+      // Create proper file path based on current location
+      let googleDriveFilePath = '';
+      if (filePath === 'Core/GoogleDrive' || filePath === 'GoogleDrive') {
+        googleDriveFilePath = `Core/GoogleDrive/${file.file_name}`;
+      } else {
+        // For subfolders, append to the current path
+        googleDriveFilePath = `${filePath}/${file.file_name}`;
+      }
+
+      return {
+        _id: file.id,
+        id: file.id,
+        file_name: file.file_name,
+        file_size: file.file_size,
+        file_path: googleDriveFilePath,
+        kind: file.kind,
+        device_name: 'Google Drive',
+        available: 'Available',
+        date_uploaded: file.date_uploaded,
+        date_modified: file.date_modified,
+        file_parent: filePath === 'Core/GoogleDrive' ? 'GoogleDrive' : filePath.split('/').pop() || 'GoogleDrive',
+        original_device: 'Google Drive',
+        file_priority: '1',
+        is_public: false,
+        deviceID: '',
+        helpers: 0,
+        mime_type: file.mime_type,
+        web_view_link: file.web_view_link,
+        thumbnail_link: file.thumbnail_link,
+        parents: file.parents,
+        google_drive_id: file.id, // Store the actual Google Drive file ID
+        source: 'google_drive' as const
+      };
+    });
+    
+  } catch (error) {
+    console.error('Error fetching Google Drive files:', error);
+    
+    // Check if it's an authentication error
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as any;
+      if (axiosError.response?.status === 401) {
+        throw new Error('GOOGLE_DRIVE_AUTH_REQUIRED');
+      }
+    }
+    
+    return [];
+  }
+};
+
 // Fetch all data based on the current view
 export const fetchAllData = async (
   filePath: string,
-  currentView: 'files' | 'sync' | 'shared' | 'cloud',
+  currentView: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive',
   existingFiles: DatabaseData[] = []
 ) => {
   // When accessing Sync or Shared nodes directly, transform the path
@@ -192,6 +272,10 @@ export const fetchAllData = async (
       return fetchSyncData(adjustedPath);
     case 'shared':
       return fetchSharedData();
+    case 'cloud':
+      return fetchGoogleDriveData(filePath);
+    case 'google_drive':
+      return fetchGoogleDriveData(filePath);
     default:
       return [];
   }

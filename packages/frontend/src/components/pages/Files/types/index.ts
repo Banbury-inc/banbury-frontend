@@ -17,12 +17,18 @@ export interface DatabaseData {
   children?: DatabaseData[];
   helpers?: number;
   shared_with?: string[];
-  source?: 'files' | 'sync' | 'shared' | 'cloud';
+  source?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
   owner?: string;
   date_modified?: string;
   is_s3?: boolean;
   s3_url?: string;
   device_ids?: string[];
+  // Google Drive specific fields
+  mime_type?: string;
+  web_view_link?: string;
+  thumbnail_link?: string;
+  parents?: string[];
+  google_drive_id?: string;
 }
 
 export type Order = 'asc' | 'desc';
@@ -34,7 +40,7 @@ export interface HeadCell {
   numeric: boolean;
   isVisibleOnSmallScreen: boolean;
   isVisibleNotOnCloudSync: boolean;
-  visibleIn?: Array<'files' | 'sync' | 'shared' | 'cloud'>;
+  visibleIn?: Array<'files' | 'sync' | 'shared' | 'cloud' | 'google_drive'>;
   width?: string;
 }
 
@@ -45,5 +51,5 @@ export interface EnhancedTableProps {
   order: Order;
   orderBy: keyof DatabaseData;
   rowCount: number;
-  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
 }

@@ -32,6 +32,8 @@ function getIconForKind(kind: string) {
       return <FolderSharedOutlinedIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Cloud':
       return <CloudDoneIcon style={{ marginRight: 5 }} fontSize="inherit" />;
+    case 'GoogleDrive':
+      return <CloudDoneIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Folder':
       return <FolderIcon style={{ marginRight: 5 }} fontSize="inherit" />;
     case 'Image':
@@ -73,6 +75,49 @@ const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
         device_name: '',
         date_uploaded: '',
         file_path: 'Core/Cloud',
+        file_size: '0',
+        file_type: '',
+        shared_with: [],
+        is_public: false,
+        deviceID: '',
+        helpers: 0,
+        available: '',
+        original_device: ''
+      });
+    }
+    
+    return updatedFileRows;
+  }
+  
+  return fileRows;
+};
+
+// Add the Google Drive node to the tree data
+const addGoogleDriveNode = (fileRows: DatabaseData[]): DatabaseData[] => {
+  // Find the Core node
+  const coreNodeIndex = fileRows.findIndex(node => node.id === 'Core');
+  
+  if (coreNodeIndex >= 0) {
+    // Create a copy of the fileRows
+    const updatedFileRows = [...fileRows];
+    
+    // Create the Google Drive node if Core node exists
+    if (!updatedFileRows[coreNodeIndex].children?.some(child => child.id === 'GoogleDrive')) {
+      // Ensure the children array exists
+      if (!updatedFileRows[coreNodeIndex].children) {
+        updatedFileRows[coreNodeIndex].children = [];
+      }
+      
+      // Add the Google Drive node as a child of Core
+      updatedFileRows[coreNodeIndex].children.push({
+        id: 'GoogleDrive',
+        _id: 'GoogleDrive',
+        file_name: 'Google Drive',
+        file_parent: 'Core',
+        kind: 'GoogleDrive',
+        device_name: '',
+        date_uploaded: '',
+        file_path: 'Core/GoogleDrive',
         file_size: '0',
         file_type: '',
         shared_with: [],
@@ -149,6 +194,8 @@ export default function FileTreeView({
         let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
+        // Add Google Drive node to the tree
+        treeData = addGoogleDriveNode(treeData);
         setFileRows(treeData);
         set_Files(updatedFiles);
         setIsLoading(false);
@@ -179,6 +226,8 @@ export default function FileTreeView({
         let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
+        // Add Google Drive node to the tree
+        treeData = addGoogleDriveNode(treeData);
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
@@ -207,6 +256,8 @@ export default function FileTreeView({
         let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
+        // Add Google Drive node to the tree
+        treeData = addGoogleDriveNode(treeData);
         setFileRows(treeData);
         set_Files(updatedFiles);
       }

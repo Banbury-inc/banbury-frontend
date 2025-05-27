@@ -10,6 +10,16 @@ import { Alert } from '../../components/template/alert';
 import { useAlert } from '../../renderer/context/AlertContext';
 import { ThemeProvider, useTheme } from "../../renderer/context/ThemeContext";
 import Register from "./Register/Register";
+// Import axios middleware to set up global headers and interceptors
+import '@banbury/core/src/middleware/axiosGlobalHeader';
+import { loadGlobalAxiosCredentials, setGlobalAxiosApiKey } from '@banbury/core/src/middleware/axiosGlobalHeader';
+
+// Initialize credentials on app startup
+const credentials = loadGlobalAxiosCredentials();
+// Set development API key if none is loaded
+if (!credentials.apiKey) {
+  setGlobalAxiosApiKey('dev_key_1');
+}
 
 function AlertWrapper() {
   const { alert } = useAlert();

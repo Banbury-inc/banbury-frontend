@@ -9,7 +9,7 @@ export const useAllFileData = (
   username: string | null,
   filePath: string,
   filePathDevice: string | null,
-  currentView: 'files' | 'sync' | 'shared' | 'cloud',
+  currentView: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive',
   setFirstname: (name: string) => void,
   setLastname: (name: string) => void,
   files: any,
@@ -95,13 +95,15 @@ export const useAllFileData = (
         // Add new files to the Map (will automatically overwrite duplicates)
         // Ensure each file has a unique ID
         newFiles.forEach((file, index) => {
-          // For Sync, Shared, and S3 views, ensure file paths include the right prefix
+          // For Sync, Shared, Google Drive, and S3 views, ensure file paths include the right prefix
           if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
             file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
           } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
             file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
           } else if (currentView === 'cloud' && !file.file_path.includes('Core/Cloud/')) {
             file.file_path = `Core/Cloud/${file.file_path.split('/').pop() || file.file_name}`;
+          } else if (currentView === 'google_drive' && !file.file_path.includes('Core/GoogleDrive/')) {
+            file.file_path = `Core/GoogleDrive/${file.file_path.split('/').pop() || file.file_name}`;
           }
           
           // Generate a unique ID if missing
@@ -174,6 +176,18 @@ export const useAllFileData = (
         );
         
         setFileRows(cloudFiles);
+        return;
+      }
+      
+      // Handle Google Drive files
+      if (filePath === 'Core/GoogleDrive' || filePath.includes('Core/GoogleDrive/')) {
+        const googleDriveFiles = fetchedFiles.filter(file => 
+          file.source === 'google_drive' || 
+          file.file_path?.includes('Core/GoogleDrive/') ||
+          file.device_name === 'Google Drive'
+        );
+        
+        setFileRows(googleDriveFiles);
         return;
       }
       
@@ -288,13 +302,15 @@ export const useAllFileData = (
         
         // Ensure each file has a unique ID
         newFiles.forEach((file, index) => {
-          // For Sync, Shared, and S3 views, ensure file paths include the right prefix
+          // For Sync, Shared, Google Drive, and S3 views, ensure file paths include the right prefix
           if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
             file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
           } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
             file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
           } else if (currentView === 'cloud' && !file.file_path.includes('Core/Cloud/')) {
             file.file_path = `Core/Cloud/${file.file_path.split('/').pop() || file.file_name}`;
+          } else if (currentView === 'google_drive' && !file.file_path.includes('Core/GoogleDrive/')) {
+            file.file_path = `Core/GoogleDrive/${file.file_path.split('/').pop() || file.file_name}`;
           }
           
           // Generate a unique ID if missing

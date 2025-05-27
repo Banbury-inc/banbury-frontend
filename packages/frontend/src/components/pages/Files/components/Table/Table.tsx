@@ -28,7 +28,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Name', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '30%'
   },
   { 
@@ -37,7 +37,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Size', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '10%'
   },
   { 
@@ -46,7 +46,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Kind', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '15%'
   },
   { 
@@ -55,7 +55,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Location', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '15%'
   },
   { 
@@ -64,7 +64,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Status', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '10%'
   },
   { 
@@ -121,7 +121,7 @@ const getHeadCells = (): HeadCell[] => [
 
 interface EnhancedTableHeadProps extends EnhancedTableProps {
   columnVisibility?: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
 }
 
 function EnhancedTableHead(props: EnhancedTableHeadProps) {
@@ -243,7 +243,7 @@ interface FileTableProps {
   setHoveredRowId: (id: string | number | null) => void;
   handlePriorityChange: (row: any, newValue: number | null) => void;
   columnVisibility: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
 }
 
 const FileTable: React.FC<FileTableProps> = ({

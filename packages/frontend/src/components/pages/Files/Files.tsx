@@ -155,13 +155,15 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
-  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' => {
+  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive' => {
     if (filePath.includes('Core/Sync') || filePath === 'Sync') {
       return 'sync';
     } else if (filePath.includes('Core/Shared') || filePath === 'Shared') {
       return 'shared';
     } else if (filePath.includes('Core/Cloud') || filePath === 'Cloud') {
       return 'cloud';
+    } else if (filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive') {
+      return 'google_drive';
     }
     return 'files';
   };
@@ -232,6 +234,39 @@ export default function Files() {
     
     const file_name = file.file_name;
     const file_path = file.file_path;
+    
+    // Special handling for Google Drive files
+    if (file.source === 'google_drive' || file.google_drive_id) {
+      try {
+        const task_description = 'Downloading ' + file_name;
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        setTaskbox_expanded(true);
+        
+        // Import the download function
+        const { downloadAndSaveGoogleDriveFile } = await import('@banbury/core/src/files/googleDrive');
+        
+        // Use the Google Drive file ID and save directly to BCloud directory
+        const fileId = file.google_drive_id || file.id;
+        const savedFilePath = await downloadAndSaveGoogleDriveFile(fileId.toString(), file_name);
+        
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        
+        // Check if it's a viewable file type and open in the in-app viewer
+        if (isViewableInApp(file_name)) {
+          openFileInTab(file_name, savedFilePath, file.kind || getFileType(file_name));
+        } else {
+          // For non-viewable files, use the system default application
+          shell.openPath(savedFilePath);
+        }
+        
+        showAlert('Download completed successfully', [`The Google Drive file "${file_name}" has been downloaded to the BCloud directory`], 'success');
+        return;
+      } catch (error) {
+        console.error('Error downloading Google Drive file:', error);
+        showAlert('Download failed', [`Failed to download "${file_name}". Please try again.`], 'error');
+        return;
+      }
+    }
     
     // Special handling for S3 files
     if (file.is_s3) {

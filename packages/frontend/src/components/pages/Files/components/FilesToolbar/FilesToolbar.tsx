@@ -8,6 +8,7 @@ import NavigateForwardButton from './NavigateForwardButton/NavigateForwardButton
 import NewInputFileUploadButton from './UploadFileButton/UploadFileButton';
 import DownloadFileButton from './DownloadFileButton/DownloadFileButton';
 import S3UploadButton from './S3UploadButton/S3UploadButton';
+import GoogleDriveUploadButton from './GoogleDriveUploadButton/GoogleDriveUploadButton';
 import DeleteFileButton from './DeleteFileBtton/DeleteFileButton';
 import AddFileToSyncButton from './AddFileToSyncButton/AddFileToSyncButton';
 import SyncButton from './SyncButton/SyncButton';
@@ -44,6 +45,9 @@ export default function FilesToolbar({
   setViewType,
   username
 }: any) {
+  // Check if we're in Google Drive context
+  const isGoogleDrive = filePath?.includes('Core/GoogleDrive') || filePath === 'GoogleDrive';
+
   return (
     <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
       <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
@@ -96,6 +100,15 @@ export default function FilesToolbar({
               }}
             />
           </Grid>
+          {isGoogleDrive && (
+            <Grid item paddingRight={1}>
+              <GoogleDriveUploadButton
+                onUploadComplete={() => {
+                  setUpdates(Date.now());
+                }}
+              />
+            </Grid>
+          )}
           <Grid item paddingRight={1}>
             <DeleteFileButton
               selectedFileNames={selectedFileNames}
