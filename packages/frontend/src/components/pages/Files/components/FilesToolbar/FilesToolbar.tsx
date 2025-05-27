@@ -103,7 +103,6 @@ export default function FilesToolbar({
           {isGoogleDrive && (
             <Grid item paddingRight={1}>
               <GoogleDriveUploadButton
-                filePath={filePath}
                 onUploadComplete={() => {
                   setUpdates(Date.now());
                 }}

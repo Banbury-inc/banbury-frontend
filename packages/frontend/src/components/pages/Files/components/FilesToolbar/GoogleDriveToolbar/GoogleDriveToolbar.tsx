@@ -26,14 +26,12 @@ interface GoogleDriveToolbarProps {
   authRequired: boolean;
   onRefresh: () => void;
   isLoading: boolean;
-  filePath: string;
 }
 
 const GoogleDriveToolbar: React.FC<GoogleDriveToolbarProps> = ({
   authRequired,
   onRefresh,
   isLoading,
-  filePath
 }) => {
   const [uploadMenuAnchor, setUploadMenuAnchor] = useState<null | HTMLElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -62,7 +60,7 @@ const GoogleDriveToolbar: React.FC<GoogleDriveToolbarProps> = ({
       // you'd extract the folder ID from the current path
       const parentFolderId = undefined; // TODO: Implement folder ID extraction
 
-      const result = await uploadToGoogleDrive(file, parentFolderId);
+      await uploadToGoogleDrive(file, parentFolderId);
       
       showAlert(
         'Upload Successful',

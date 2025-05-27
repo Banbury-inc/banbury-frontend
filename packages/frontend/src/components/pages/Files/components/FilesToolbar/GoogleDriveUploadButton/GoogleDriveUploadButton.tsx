@@ -6,12 +6,10 @@ import { useAlert } from '../../../../../../renderer/context/AlertContext';
 import { uploadMultipleToGoogleDrive } from '@banbury/core/src/files/googleDrive';
 
 interface GoogleDriveUploadButtonProps {
-  filePath?: string;
   onUploadComplete?: () => void;
 }
 
 const GoogleDriveUploadButton: React.FC<GoogleDriveUploadButtonProps> = ({ 
-  filePath = '', 
   onUploadComplete 
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,7 +18,7 @@ const GoogleDriveUploadButton: React.FC<GoogleDriveUploadButtonProps> = ({
   const { showAlert } = useAlert();
 
   // Extract folder ID from current path for Google Drive uploads
-  const extractFolderId = (path: string): string | undefined => {
+  const extractFolderId = (): string | undefined => {
     // This is a simplified implementation
     // In a full implementation, you'd need to map file paths to Google Drive folder IDs
     // For now, we'll upload to the root directory
@@ -31,19 +29,14 @@ const GoogleDriveUploadButton: React.FC<GoogleDriveUploadButtonProps> = ({
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    console.log('Google Drive upload started with files:', Array.from(files).map(f => f.name));
     setUploading(true);
     
     try {
       const fileArray = Array.from(files);
-      const parentFolderId = extractFolderId(filePath);
-      
-      console.log('Uploading to Google Drive with parentFolderId:', parentFolderId);
+      const parentFolderId = extractFolderId();
       
       // Upload all files using the multiple upload function
       const results = await uploadMultipleToGoogleDrive(fileArray, parentFolderId);
-      
-      console.log('Google Drive upload results:', results);
       
       // Check if any uploads failed by looking for error properties in results
       const failedUploads = results.filter(result => result && result.error);
@@ -56,7 +49,6 @@ const GoogleDriveUploadButton: React.FC<GoogleDriveUploadButtonProps> = ({
           showAlert('Partial Upload Success', ['Some files failed to upload to Google Drive.'], 'warning');
         }
       } else {
-        console.log('All uploads successful');
         showAlert('Upload Complete', ['Files successfully uploaded to Google Drive.'], 'success');
       }
       

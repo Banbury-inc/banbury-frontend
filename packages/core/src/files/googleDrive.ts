@@ -1,20 +1,9 @@
 import axios from 'axios';
 import { config } from '../config/config';
-import { loadGlobalAxiosAuthToken, loadGlobalAxiosCredentials } from '../middleware/axiosGlobalHeader';
+import { loadGlobalAxiosCredentials } from '../middleware/axiosGlobalHeader';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-
-/**
- * Get authorization headers for API requests
- */
-const getAuthHeaders = () => {
-  const { token } = loadGlobalAxiosAuthToken();
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-};
 
 export interface GoogleDriveFile {
   id: string;
@@ -277,7 +266,6 @@ export const downloadAndSaveGoogleDriveFile = async (
     // Write file to disk
     fs.writeFileSync(file_save_path, buffer);
     
-    console.log(`Google Drive file saved to: ${file_save_path}`);
     return file_save_path;
   } catch (error) {
     console.error('Error downloading and saving Google Drive file:', error);
