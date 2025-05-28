@@ -18,7 +18,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { useGoogleDriveFiles } from '../../hooks/useGoogleDriveFiles';
 import { formatFileSize } from '../../utils/formatFileSize';
-import { FolderIcon, DocumentIcon } from '@heroicons/react/20/solid';
 import FileTable from '../Table/Table';
 import { ViewType as FileViewType } from '../FilesToolbar/ChangeViewButton/ChangeViewButton';
 import { DatabaseData, Order } from '../../types';
@@ -45,6 +44,7 @@ interface GoogleDriveFilesListProps {
   handlePriorityChange: (row: any, newValue: number | null) => Promise<void>;
   columnVisibility: { [key: string]: boolean };
   setFilePath: (path: string) => void;
+  updates?: number;
 }
 
 const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
@@ -65,7 +65,8 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
   setHoveredRowId,
   handlePriorityChange,
   columnVisibility,
-  setFilePath
+  setFilePath,
+  updates
 }) => {
   const {
     googleDriveFiles,
@@ -76,7 +77,7 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
     hasMorePages,
     isLoadingMore,
     navigateToFolder
-  } = useGoogleDriveFiles(filePath);
+  } = useGoogleDriveFiles(filePath, updates);
 
   if (!isGoogleDrivePath) {
     return null;

@@ -24,7 +24,7 @@ export interface GoogleDriveFileRow {
   google_drive_id?: string;
 }
 
-export const useGoogleDriveFiles = (filePath: string) => {
+export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
   const [googleDriveFiles, setGoogleDriveFiles] = useState<GoogleDriveFileRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
@@ -195,7 +195,7 @@ export const useGoogleDriveFiles = (filePath: string) => {
     };
 
     fetchGoogleDriveFiles();
-  }, [filePath, username, isGoogleDrivePath, showAlert]);
+  }, [filePath, username, isGoogleDrivePath, showAlert, updates]);
 
   const refreshFiles = async () => {
     if (!isGoogleDrivePath || !username) return;

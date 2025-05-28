@@ -702,6 +702,7 @@ export default function Files() {
                     handlePriorityChange={handlePriorityChange}
                     columnVisibility={columnVisibility}
                     setFilePath={setFilePath}
+                    updates={updates}
                   />
                 ) : fileRows.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 5 }}>
