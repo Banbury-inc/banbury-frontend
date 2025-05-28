@@ -31,6 +31,7 @@ import FileTable from './components/Table/Table';
 import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
 import FileViewerTabs from '../../common/FileViewer/FileViewerTabs';
 import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from './utils/fileUtils';
+import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveFilesList';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -679,7 +680,29 @@ export default function Files() {
                 flexDirection: 'column',
                 transition: 'all 0.2s ease-in-out' // Smooth transition for view changes
               }}>
-                {fileRows.length === 0 ? (
+                {currentContext === 'google_drive' ? (
+                  <GoogleDriveFilesList
+                    filePath={filePath}
+                    filePathDevice={filePathDevice}
+                    viewType={viewType}
+                    order={order}
+                    orderBy={orderBy}
+                    selected={selected}
+                    page={page}
+                    rowsPerPage={rowsPerPage}
+                    hoveredRowId={hoveredRowId}
+                    devices={devices || []}
+                    onRequestSort={handleRequestSort}
+                    onSelectAllClick={handleSelectAllClick}
+                    handleClick={handleClick}
+                    handleFileNameClick={handleFileNameClick}
+                    isSelected={isSelected}
+                    setHoveredRowId={setHoveredRowId}
+                    handlePriorityChange={handlePriorityChange}
+                    columnVisibility={columnVisibility}
+                    setFilePath={setFilePath}
+                  />
+                ) : fileRows.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 5 }}>
                     <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h5" color="textSecondary">
@@ -823,15 +846,17 @@ export default function Files() {
                 )}
               </Box>
             </div>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25, 50, 100]}
-              component="div"
-              count={fileRows.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
+            {currentContext !== 'google_drive' && (
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25, 50, 100]}
+                component="div"
+                count={fileRows.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            )}
           </CardContent>
         </Card>
 

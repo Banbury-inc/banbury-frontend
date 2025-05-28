@@ -1,5 +1,27 @@
 import { DatabaseData } from '../types';
 
+// Import the Google Drive files hook type
+interface GoogleDriveFileRow {
+  id: string;
+  file_name: string;
+  kind: 'Folder' | 'File';
+  file_size: number;
+  date_modified?: string;
+  date_uploaded?: string;
+  mime_type: string;
+  web_view_link?: string;
+  thumbnail_link?: string;
+  parents: string[];
+  source: 'google_drive';
+  device_name: string;
+  available: string;
+  file_priority: number;
+  is_public: boolean;
+  original_device: string;
+  file_path: string;
+  google_drive_id?: string;
+}
+
 export function buildTree(files: DatabaseData[], allDevices: any[] = []): DatabaseData[] {
 
 
@@ -229,8 +251,79 @@ export function buildTree(files: DatabaseData[], allDevices: any[] = []): Databa
     });
   }
 
+  // Sort children in each node to put folders first
+  const sortChildrenFoldersFirst = (node: DatabaseData) => {
+    if (node.children && node.children.length > 0) {
+      // Sort children: folders first, then files, both alphabetically
+      node.children.sort((a, b) => {
+        const aIsFolder = a.kind === 'Folder' || a.file_type === 'directory' || a.kind === 'Device';
+        const bIsFolder = b.kind === 'Folder' || b.file_type === 'directory' || b.kind === 'Device';
+        
+        // If one is folder and other is file, folder comes first
+        if (aIsFolder && !bIsFolder) return -1;
+        if (!aIsFolder && bIsFolder) return 1;
+        
+        // If both are same type, sort alphabetically
+        return a.file_name.localeCompare(b.file_name);
+      });
+      
+      // Recursively sort children of children
+      node.children.forEach(child => sortChildrenFoldersFirst(child));
+    }
+  };
+
+  // Apply sorting to the entire tree
+  sortChildrenFoldersFirst(coreNode);
+
   // Return the tree with "Core" as the root
   return [coreNode];
+}
+
+// Function to build Google Drive tree structure
+export function buildGoogleDriveTree(googleDriveFiles: GoogleDriveFileRow[]): DatabaseData[] {
+  const googleDriveChildren: DatabaseData[] = [];
+  
+  // Convert Google Drive files to DatabaseData format
+  googleDriveFiles.forEach((file) => {
+    const treeNode: DatabaseData = {
+      _id: file.id,
+      id: `gdrive-${file.id}`,
+      file_type: file.kind === 'Folder' ? 'directory' : 'file',
+      file_name: file.file_name,
+      file_size: file.file_size.toString(),
+      file_path: file.file_path,
+      shared_with: [],
+      is_public: file.is_public,
+      kind: file.kind,
+      file_parent: 'GoogleDrive',
+      date_uploaded: file.date_uploaded || '',
+      helpers: 0,
+      available: file.available,
+      deviceID: 'google-drive',
+      device_name: 'Google Drive',
+      children: file.kind === 'Folder' ? [] : undefined,
+      original_device: 'Google Drive',
+      google_drive_id: file.id,
+      source: 'google_drive'
+    };
+    
+    googleDriveChildren.push(treeNode);
+  });
+  
+  // Sort Google Drive files: folders first, then files, both alphabetically
+  googleDriveChildren.sort((a, b) => {
+    const aIsFolder = a.kind === 'Folder' || a.file_type === 'directory';
+    const bIsFolder = b.kind === 'Folder' || b.file_type === 'directory';
+    
+    // If one is folder and other is file, folder comes first
+    if (aIsFolder && !bIsFolder) return -1;
+    if (!aIsFolder && bIsFolder) return 1;
+    
+    // If both are same type, sort alphabetically
+    return a.file_name.localeCompare(b.file_name);
+  });
+  
+  return googleDriveChildren;
 }
 
 

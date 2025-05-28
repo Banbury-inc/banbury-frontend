@@ -41,15 +41,16 @@ export const listGoogleDriveFiles = async (
     const { token, apiKey } = loadGlobalAxiosCredentials();
     const effectiveApiKey = apiKey || 'dev_key_1';
 
-    const response = await axios.get(
-      `${config.url}/files/google_drive/list_files/?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'X-API-Key': effectiveApiKey,
-        },
-      }
-    );
+    // Only append query string if we have parameters
+    const queryString = params.toString();
+    const url = `${config.url}/files/google_drive/list_files/${queryString ? `?${queryString}` : ''}`;
+
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-API-Key': effectiveApiKey,
+      },
+    });
 
     // Check if the response has the expected structure
     if (!response.data || typeof response.data !== 'object') {

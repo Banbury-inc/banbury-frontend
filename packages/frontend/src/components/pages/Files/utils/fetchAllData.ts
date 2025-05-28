@@ -192,7 +192,7 @@ export const fetchGoogleDriveData = async (
     }
     
     // Transform Google Drive files to match DatabaseData format
-    return result.files.map((file) => {
+    const transformedFiles = result.files.map((file) => {
       // Create proper file path based on current location
       let googleDriveFilePath = '';
       if (filePath === 'Core/GoogleDrive' || filePath === 'GoogleDrive') {
@@ -227,6 +227,21 @@ export const fetchGoogleDriveData = async (
         source: 'google_drive' as const
       };
     });
+
+    // Sort files: folders first, then files, both alphabetically
+    transformedFiles.sort((a, b) => {
+      const aIsFolder = a.kind === 'Folder';
+      const bIsFolder = b.kind === 'Folder';
+      
+      // If one is folder and other is file, folder comes first
+      if (aIsFolder && !bIsFolder) return -1;
+      if (!aIsFolder && bIsFolder) return 1;
+      
+      // If both are same type, sort alphabetically
+      return a.file_name.localeCompare(b.file_name);
+    });
+
+    return transformedFiles;
     
   } catch (error) {
     console.error('Error fetching Google Drive files:', error);
