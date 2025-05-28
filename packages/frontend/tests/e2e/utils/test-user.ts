@@ -463,7 +463,6 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
       .catch(() => false);
     
     if (isLoggedIn) {
-      console.log('User is already logged in and onboarded');
       return getSharedTestUserCredentials();
     }
     
@@ -471,7 +470,6 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     const isOnLoginPage = await window.locator('h1:has-text("Sign in")').isVisible({ timeout: 5000 })
       .catch(() => false);
     
-    console.log(`Is on login page: ${isOnLoginPage}`);
     
     if (!isOnLoginPage) {
       // Instead of reloading, try to navigate to login by clearing localStorage
@@ -507,32 +505,25 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     }
     
     // Get or create a test user
-    console.log('Getting or creating test user...');
     const credentials = await createTestUserIfNeeded(window);
     
     // We should be on the login page now, sign in
-    console.log('Logging in with test user...');
     await loginWithTestUser(window, credentials);
     
     // Check if we need to complete onboarding
     const isOnOnboarding = await window.locator('[data-testid="onboarding-component"]').isVisible({ timeout: 5000 })
       .catch(() => false);
     
-    console.log(`Is on onboarding: ${isOnOnboarding}`);
-    
     if (isOnOnboarding) {
-      console.log('Completing onboarding...');
       await completeOnboarding(window);
     }
     
     // Wait for the main component to be visible
-    console.log('Waiting for main component...');
     await window.waitForSelector('[data-testid="main-component"]', {
       timeout: 30000,
       state: 'visible'
     });
     
-    console.log('User is now logged in and onboarded');
     return credentials;
     
   } catch (error) {
