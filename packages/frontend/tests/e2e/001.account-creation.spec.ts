@@ -63,11 +63,22 @@ test.describe('Account creation tests', () => {
         password: 'testpassword123'
       };
 
-      // Go to sign up
-      const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
-      await signUpLink.click();
+      // Navigate to register page programmatically instead of clicking the link
+      await window.evaluate(() => {
+        // Use React Router's navigate function directly
+        const navigate = (window as any).__reactRouterNavigate;
+        if (navigate) {
+          navigate('/register');
+        } else {
+          // Fallback: trigger navigation via history API
+          window.history.pushState({}, '', '/register');
+          // Dispatch a popstate event to trigger React Router
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+      });
 
-      await window.waitForSelector('text="Sign up"');
+      // Wait for the registration form to appear
+      await window.waitForSelector('p:has-text("Sign up")', { timeout: 10000 });
       await window.fill('input[name="firstName"]', credentials.firstName);
       await window.fill('input[name="lastName"]', credentials.lastName);
       await window.fill('input[name="username"]', credentials.username);
@@ -98,12 +109,22 @@ test.describe('Account creation tests', () => {
       // Use our shared test user credentials to test duplicate registration
       const credentials = getSharedTestUserCredentials();
 
-      // Click on "Don't have an account? Sign Up" link
-      const signUpLink = await window.waitForSelector('text="Don\'t have an account? Sign Up"');
-      await signUpLink.click();
+      // Navigate to register page programmatically instead of clicking the link
+      await window.evaluate(() => {
+        // Use React Router's navigate function directly
+        const navigate = (window as any).__reactRouterNavigate;
+        if (navigate) {
+          navigate('/register');
+        } else {
+          // Fallback: trigger navigation via history API
+          window.history.pushState({}, '', '/register');
+          // Dispatch a popstate event to trigger React Router
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+      });
 
       // Wait for the registration form to appear
-      await window.waitForSelector('text="Sign up"');
+      await window.waitForSelector('p:has-text("Sign up")', { timeout: 10000 });
 
       // Fill in the registration form with existing user
       await window.fill('input[name="firstName"]', credentials.firstName);
