@@ -170,7 +170,6 @@ export default function SignIn() {
         if (authState.isAuthenticated && authState.username) {
           // Token is valid, proceed with auto-login
           setUsername(authState.username);
-          localStorage.setItem('authToken', authState.username);
           localStorage.setItem('authUsername', authState.username);
           
           // Create deviceId if missing
@@ -220,21 +219,27 @@ export default function SignIn() {
 
       if (email && password) {
         const result = await banbury.auth.login(email, password);
-        if (result.success && result.deviceId) {
+        if (result.success && result.deviceId && result.token) {
+          // Store the actual token, not the email
+          localStorage.setItem('authToken', result.token);
+          localStorage.setItem('deviceId', result.deviceId);
+          localStorage.setItem('authUsername', email);
+          
+          // Ensure the token is set in axios headers before proceeding
+          setGlobalAxiosAuthToken(result.token, email);
+          
+          // Wait a moment to ensure the token is properly set
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           // Check if this is the user's first login
           const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
           
           if (!hasCompletedOnboarding) {
             localStorage.setItem('pendingAuthEmail', email);
-            localStorage.setItem('deviceId', result.deviceId);
-            localStorage.setItem('authUsername', email);
             setUsername(email);
             setShowOnboarding(true);
           } else {
             setUsername(email);
-            localStorage.setItem('authToken', email);
-            localStorage.setItem('deviceId', result.deviceId);
-            localStorage.setItem('authUsername', email);
             setIsAuthenticated(true);
             setShowMain(true);
             maybeStartDeviceInfoProcess(email, result.deviceId);
@@ -295,6 +300,9 @@ export default function SignIn() {
                     
                     // Mark this as a Google OAuth session
                     localStorage.setItem('googleOAuthSession', 'true');
+                    
+                    // Mark Google Drive as configured since user just authenticated
+                    banbury.settings.markGoogleDriveAsConfigured();
                     
                     // Store success flag for polling
                     localStorage.setItem('googleAuthSuccess', 'true');
@@ -515,18 +523,15 @@ export default function SignIn() {
     if (email) {
       setUsername(email);
       
-      // For Google OAuth sessions, we need to get the actual JWT token
-      const isGoogleOAuth = localStorage.getItem('googleOAuthSession') === 'true';
+      // Get the actual auth token (should already be set from login)
       const authToken = localStorage.getItem('authToken');
       
-      if (isGoogleOAuth && authToken) {
-        // Set up axios headers with the JWT token for Google OAuth
+      if (authToken) {
+        // Ensure the token is set in axios headers
         setGlobalAxiosAuthToken(authToken, email);
         localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
       } else {
-        // For regular login, use email as token (legacy behavior)
-        localStorage.setItem('authToken', email);
-        localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
+        console.error('No auth token found during onboarding completion');
       }
       
       localStorage.setItem('authUsername', email);

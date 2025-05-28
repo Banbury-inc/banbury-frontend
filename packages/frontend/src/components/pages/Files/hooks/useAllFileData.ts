@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { DatabaseData } from '../types';
 import { fetchAllData } from '../utils/fetchAllData';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
@@ -21,6 +21,10 @@ export const useAllFileData = (
   const [isLoading, setIsLoading] = useState(true);
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
+  const lastGoogleDriveFetchRef = useRef<number>(0);
+  
+  // Debounce Google Drive calls to prevent excessive API requests
+  const GOOGLE_DRIVE_DEBOUNCE_MS = 2000;
 
   // Initial data fetch when component mounts or when view, path, or updates change
   useEffect(() => {
@@ -69,6 +73,16 @@ export const useAllFileData = (
           newFiles = [];
         }
       } else {
+        // For Google Drive, add debouncing to prevent excessive API calls
+        if (currentView === 'google_drive') {
+          const now = Date.now();
+          if (now - lastGoogleDriveFetchRef.current < GOOGLE_DRIVE_DEBOUNCE_MS) {
+            setIsLoading(false);
+            return;
+          }
+          lastGoogleDriveFetchRef.current = now;
+        }
+        
         // Fetch files based on current view
         newFiles = await fetchAllData(
           filePath,

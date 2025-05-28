@@ -212,6 +212,15 @@ function getComparator(
 }
 
 function descendingComparator(a: DatabaseData, b: DatabaseData, orderBy: keyof DatabaseData) {
+  // Always prioritize folders first, regardless of sort column
+  const aIsFolder = a.kind === 'Folder' || a.file_type === 'directory' || a.kind === 'Device';
+  const bIsFolder = b.kind === 'Folder' || b.file_type === 'directory' || b.kind === 'Device';
+  
+  // If one is folder and other is file, folder comes first (regardless of sort order)
+  if (aIsFolder && !bIsFolder) return -1;
+  if (!aIsFolder && bIsFolder) return 1;
+  
+  // If both are same type (both folders or both files), apply normal sorting
   const aValue = a[orderBy] || '';
   const bValue = b[orderBy] || '';
   

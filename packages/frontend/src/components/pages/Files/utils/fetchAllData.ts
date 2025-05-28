@@ -180,6 +180,13 @@ export const fetchGoogleDriveData = async (
   filePath: string
 ) => {
   try {
+    // Check if Google Drive integration is enabled before making API calls
+    const { banbury } = await import('@banbury/core');
+    const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
+    if (!isGoogleDriveEnabled) {
+      return [];
+    }
+
     // Extract folder ID from path for subfolder navigation
     const folderId = extractGoogleDriveFolderId(filePath);
 
@@ -192,7 +199,7 @@ export const fetchGoogleDriveData = async (
     }
     
     // Transform Google Drive files to match DatabaseData format
-    return result.files.map((file) => {
+    const transformedFiles = result.files.map((file) => {
       // Create proper file path based on current location
       let googleDriveFilePath = '';
       if (filePath === 'Core/GoogleDrive' || filePath === 'GoogleDrive') {
@@ -227,6 +234,21 @@ export const fetchGoogleDriveData = async (
         source: 'google_drive' as const
       };
     });
+
+    // Sort files: folders first, then files, both alphabetically
+    transformedFiles.sort((a, b) => {
+      const aIsFolder = a.kind === 'Folder';
+      const bIsFolder = b.kind === 'Folder';
+      
+      // If one is folder and other is file, folder comes first
+      if (aIsFolder && !bIsFolder) return -1;
+      if (!aIsFolder && bIsFolder) return 1;
+      
+      // If both are same type, sort alphabetically
+      return a.file_name.localeCompare(b.file_name);
+    });
+
+    return transformedFiles;
     
   } catch (error) {
     console.error('Error fetching Google Drive files:', error);

@@ -112,6 +112,7 @@ export default function FilesToolbar({
           <Grid item paddingRight={1}>
             <DeleteFileButton
               selectedFileNames={selectedFileNames}
+              selectedFileInfo={selectedFileInfo}
               filePath={filePath}
               setSelectedFileNames={setSelectedFileNames}
               updates={updates}

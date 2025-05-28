@@ -17,6 +17,9 @@ import { fetchFileData } from '../../utils/fetchFileData'
 import { DatabaseData } from './types';
 import { handleNodeSelect } from './handleNodeSelect';
 import { fileWatcherEmitter } from '@banbury/core/src/device/watchdog';
+import { useGoogleDriveTreeFiles } from '../../hooks/useGoogleDriveFiles';
+import { buildGoogleDriveTree } from './utils/buildTree';
+import { banbury } from '@banbury/core';
 
 function getIconForKind(kind: string) {
   switch (kind) {
@@ -92,8 +95,13 @@ const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
   return fileRows;
 };
 
-// Add the Google Drive node to the tree data
-const addGoogleDriveNode = (fileRows: DatabaseData[]): DatabaseData[] => {
+// Add the Google Drive node to the tree data (only if integration is enabled)
+const addGoogleDriveNode = (fileRows: DatabaseData[], googleDriveFiles: any[] = [], googleDriveEnabled: boolean = false): DatabaseData[] => {
+  // Don't add Google Drive node if integration is disabled
+  if (!googleDriveEnabled) {
+    return fileRows;
+  }
+
   // Find the Core node
   const coreNodeIndex = fileRows.findIndex(node => node.id === 'Core');
   
@@ -101,15 +109,17 @@ const addGoogleDriveNode = (fileRows: DatabaseData[]): DatabaseData[] => {
     // Create a copy of the fileRows
     const updatedFileRows = [...fileRows];
     
-    // Create the Google Drive node if Core node exists
-    if (!updatedFileRows[coreNodeIndex].children?.some(child => child.id === 'GoogleDrive')) {
+    // Find existing Google Drive node or create it
+    let googleDriveNodeIndex = updatedFileRows[coreNodeIndex].children?.findIndex(child => child.id === 'GoogleDrive');
+    
+    if (googleDriveNodeIndex === -1 || googleDriveNodeIndex === undefined) {
       // Ensure the children array exists
       if (!updatedFileRows[coreNodeIndex].children) {
         updatedFileRows[coreNodeIndex].children = [];
       }
       
       // Add the Google Drive node as a child of Core
-      updatedFileRows[coreNodeIndex].children.push({
+      const googleDriveNode: DatabaseData = {
         id: 'GoogleDrive',
         _id: 'GoogleDrive',
         file_name: 'Google Drive',
@@ -125,8 +135,18 @@ const addGoogleDriveNode = (fileRows: DatabaseData[]): DatabaseData[] => {
         deviceID: '',
         helpers: 0,
         available: '',
-        original_device: ''
-      });
+        original_device: '',
+        children: []
+      };
+      
+      updatedFileRows[coreNodeIndex].children.push(googleDriveNode);
+      googleDriveNodeIndex = updatedFileRows[coreNodeIndex].children.length - 1;
+    }
+    
+    // Add Google Drive files as children if available
+    if (googleDriveFiles.length > 0 && updatedFileRows[coreNodeIndex].children) {
+      const googleDriveTreeFiles = buildGoogleDriveTree(googleDriveFiles);
+      updatedFileRows[coreNodeIndex].children[googleDriveNodeIndex].children = googleDriveTreeFiles;
     }
     
     return updatedFileRows;
@@ -156,7 +176,39 @@ export default function FileTreeView({
   const cache = new Map<string, DatabaseData[]>();
   const [isLoading, setIsLoading] = useState(true);
   const [_expandedNodes, _setExpandedNodes] = useState<string[]>(['Core']);
+  const [isGoogleDriveEnabled, setIsGoogleDriveEnabled] = useState(false);
+  
+  // Add Google Drive tree hook
+  const { treeFiles: googleDriveTreeFiles, refreshTreeFiles } = useGoogleDriveTreeFiles();
 
+  // Check Google Drive integration status
+  useEffect(() => {
+    const checkGoogleDriveStatus = async () => {
+      try {
+        const isEnabled = await banbury.settings.isGoogleDriveEnabled();
+        setIsGoogleDriveEnabled(isEnabled);
+      } catch (error) {
+        console.error('Error checking Google Drive status:', error);
+        setIsGoogleDriveEnabled(false);
+      }
+    };
+
+    if (username) {
+      checkGoogleDriveStatus();
+    }
+  }, [username, updates]);
+
+  // Refresh Google Drive files when updates change - but only occasionally, not on every update
+  useEffect(() => {
+    if (username && isGoogleDriveEnabled) {
+      // Only refresh Google Drive files every 5 updates to reduce API calls
+      if (updates % 5 === 0) {
+        refreshTreeFiles();
+      }
+    }
+  }, [updates, username, isGoogleDriveEnabled]);
+
+  // Main effect to fetch and update files - consolidated from the three duplicate effects
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
       const new_files = await fetchFileData(
@@ -194,8 +246,8 @@ export default function FileTreeView({
         let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
-        // Add Google Drive node to the tree
-        treeData = addGoogleDriveNode(treeData);
+        // Add Google Drive node to the tree with actual files
+        treeData = addGoogleDriveNode(treeData, googleDriveTreeFiles, isGoogleDriveEnabled);
         setFileRows(treeData);
         set_Files(updatedFiles);
         setIsLoading(false);
@@ -203,39 +255,9 @@ export default function FileTreeView({
     };
 
     fetchAndUpdateFiles();
-  }, [username, disableFetch, updates, filePath, devices]);
+  }, [username, disableFetch, filePath, devices, googleDriveTreeFiles, isGoogleDriveEnabled]);
 
-  useEffect(() => {
-    const fetchAndUpdateFiles = async () => {
-      const new_files = await fetchFileData(
-        filePath || '',
-        {
-          setFirstname,
-          setLastname,
-          setFileRows,
-          setIsLoading,
-          cache,
-          existingFiles: fetchedFiles,
-        },
-      );
-
-      if (new_files) {
-        let updatedFiles: DatabaseData[] = [];
-        updatedFiles = [...fetchedFiles, ...new_files];
-        setFetchedFiles(updatedFiles);
-        let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
-        // Add S3 Files node to the tree
-        treeData = addS3FilesNode(treeData);
-        // Add Google Drive node to the tree
-        treeData = addGoogleDriveNode(treeData);
-        setFileRows(treeData);
-        set_Files(updatedFiles);
-      }
-    };
-
-    fetchAndUpdateFiles();
-  }, [username, disableFetch, updates, filePath, devices]);
-
+  // File watcher effect - separate from main fetch logic
   useEffect(() => {
     const handleFileChange = async () => {
       const new_files = await fetchFileData(
@@ -256,8 +278,8 @@ export default function FileTreeView({
         let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
-        // Add Google Drive node to the tree
-        treeData = addGoogleDriveNode(treeData);
+        // Add Google Drive node to the tree with actual files
+        treeData = addGoogleDriveNode(treeData, googleDriveTreeFiles, isGoogleDriveEnabled);
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
@@ -267,7 +289,7 @@ export default function FileTreeView({
     return () => {
       fileWatcherEmitter.off('fileChanged', handleFileChange);
     };
-  }, [username, disableFetch, devices]);
+  }, [username, disableFetch, devices, googleDriveTreeFiles, isGoogleDriveEnabled]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => (

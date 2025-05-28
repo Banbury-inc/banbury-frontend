@@ -7,8 +7,10 @@ let page: Page;
 
 test.describe('Settings tests', () => {
   test.beforeAll(async () => {
-    // Get the shared context
+    // Get the shared context and ensure it's initialized
     const sharedContext = getSharedContext();
+    await sharedContext.initialize();
+    
     page = sharedContext.window!;
     if (!page) {
       throw new Error('Page is not initialized');

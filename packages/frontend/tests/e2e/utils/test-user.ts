@@ -91,6 +91,12 @@ export async function createTestUserIfNeeded(window: Page): Promise<TestUserCred
       ),
     ]);
     
+    // Wait for the token to be set properly
+    await window.waitForFunction(() => {
+      const token = localStorage.getItem('authToken');
+      return token && token !== credentials.username; // Ensure it's not just the username
+    }, { timeout: 10000 });
+    
     // If login is successful, account exists
     return credentials;
   } catch (error) {
@@ -112,6 +118,12 @@ export async function loginWithTestUser(window: Page, credentials: TestUserCrede
     window.click('button[type="submit"]'),
     window.waitForResponse(response => response.url().includes('/authentication/getuserinfo4')),
   ]);
+  
+  // Wait for the token to be set in localStorage
+  await window.waitForFunction(() => {
+    const token = localStorage.getItem('authToken');
+    return token && token !== credentials.username; // Ensure it's not just the username
+  }, { timeout: 10000 });
 }
 
 // Complete the onboarding process for a new user
@@ -440,6 +452,9 @@ export async function waitForWebsocketConnection(window: Page): Promise<boolean>
  */
 export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUserCredentials> {
   try {
+    // Verify the window is still valid
+    await window.evaluate(() => true);
+    
     // Try to dismiss any unexpected dialogs first
     await dismissUnexpectedDialogs(window);
     
@@ -455,12 +470,38 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     const isOnLoginPage = await window.locator('h1:has-text("Sign in")').isVisible({ timeout: 5000 })
       .catch(() => false);
     
+    
     if (!isOnLoginPage) {
-      // Assuming there's some nav element or function to go to login
-      // For now, we'll just reload the page which should take us to login if not authenticated
-      await window.reload();
-      await window.waitForLoadState('domcontentloaded');
-      await window.waitForSelector('h1:has-text("Sign in")', { timeout: 10000 });
+      // Instead of reloading, try to navigate to login by clearing localStorage
+      // which should trigger the app to show the login page
+      await window.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+      
+      // Wait a moment for the app to react to the cleared storage
+      await window.waitForTimeout(1000);
+      
+      // Check if we're now on the login page
+      const isNowOnLoginPage = await window.locator('h1:has-text("Sign in")').isVisible({ timeout: 10000 })
+        .catch(() => false);
+      
+      if (!isNowOnLoginPage) {
+        // If still not on login page, try to navigate programmatically
+        await window.evaluate(() => {
+          // Try to trigger a navigation to login
+          if ((window as any).__reactRouterNavigate) {
+            (window as any).__reactRouterNavigate('/login');
+          } else {
+            // Fallback: trigger navigation via history API
+            (window as any).history.pushState({}, '', '/login');
+            (window as any).dispatchEvent(new PopStateEvent('popstate'));
+          }
+        });
+        
+        // Wait for login page to appear
+        await window.waitForSelector('h1:has-text("Sign in")', { timeout: 10000 });
+      }
     }
     
     // Get or create a test user
@@ -486,6 +527,28 @@ export async function ensureLoggedInAndOnboarded(window: Page): Promise<TestUser
     return credentials;
     
   } catch (error) {
+    console.error('Error in ensureLoggedInAndOnboarded:', error);
+    
+    // Try to get more context about the current page state
+    try {
+      const currentUrl = await window.url();
+      const pageTitle = await window.title();
+      console.error(`Current URL: ${currentUrl}, Page title: ${pageTitle}`);
+      
+      // Check what elements are visible on the page
+      const visibleElements = await window.evaluate(() => {
+        const elements: string[] = [];
+        if (document.querySelector('[data-testid="main-component"]')) elements.push('main-component');
+        if (document.querySelector('[data-testid="onboarding-component"]')) elements.push('onboarding-component');
+        if (document.querySelector('h1:has-text("Sign in")')) elements.push('sign-in-heading');
+        if (document.querySelector('p:has-text("Sign up")')) elements.push('sign-up-heading');
+        return elements;
+      });
+      console.error(`Visible elements: ${visibleElements.join(', ')}`);
+    } catch (debugError) {
+      console.error('Could not get debug information:', debugError);
+    }
+    
     throw new Error(`Failed to ensure user is logged in and onboarded: ${error}`);
   }
 }

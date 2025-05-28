@@ -36,4 +36,6 @@ export interface DatabaseData {
   original_device: string;
   global_file_path?: string;
   setGlobal_file_path?: (path: string) => void;
+  google_drive_id?: string;
+  source?: string;
 } 
