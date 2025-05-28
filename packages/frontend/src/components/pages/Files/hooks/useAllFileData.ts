@@ -39,57 +39,12 @@ export const useAllFileData = (
       
       let newFiles: DatabaseData[] = [];
       
-      // Special handling for Cloud files
-      if (filePath === 'Core/Cloud') {
-        try {
-          const s3Result = await banbury.files.listS3Files();
-          
-          if (s3Result && Array.isArray(s3Result.files)) {
-            // Convert S3 files to DatabaseData format
-            newFiles = s3Result.files.map((s3File: any, index: number) => ({
-              id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
-              file_name: s3File.file_name,
-              file_path: `Core/Cloud/${s3File.file_name}`,
-              file_size: s3File.file_size,
-              kind: s3File.file_type || 'File',
-              device_name: 'Cloud',
-              available: 'Available',
-              date_uploaded: s3File.date_uploaded,
-              date_modified: s3File.date_modified,
-              s3_url: s3File.s3_url,
-              source: 'cloud',
-              is_s3: true
-            }));
-            
-            // Immediately set cloud files
-            if (newFiles.length > 0) {
-              setFileRows(newFiles);
-            }
-          } else {
-            console.warn('No cloud files found or invalid response format:', s3Result);
-          }
-        } catch (error) {
-          console.error('Error fetching S3 files:', error);
-          newFiles = [];
-        }
-      } else {
-        // For Google Drive, add debouncing to prevent excessive API calls
-        if (currentView === 'google_drive') {
-          const now = Date.now();
-          if (now - lastGoogleDriveFetchRef.current < GOOGLE_DRIVE_DEBOUNCE_MS) {
-            setIsLoading(false);
-            return;
-          }
-          lastGoogleDriveFetchRef.current = now;
-        }
-        
-        // Fetch files based on current view
-        newFiles = await fetchAllData(
-          filePath,
-          currentView,
-          fetchedFiles
-        );
-      }
+      // Use fetchAllData for all contexts including cloud
+      newFiles = await fetchAllData(
+        filePath,
+        currentView,
+        fetchedFiles
+      );
       
       // If we actually have files OR we're explicitly switching contexts
       // This prevents clearing the view when API returns empty results temporarily
@@ -147,35 +102,6 @@ export const useAllFileData = (
   // Apply filtering based on filePathDevice or filePath
   useEffect(() => {
     try {
-      
-      // Special direct fetch for cloud files to troubleshoot
-      if (filePath === 'Core/Cloud' && username) {
-        banbury.files.listS3Files()
-          .then((result) => {
-            if (result && Array.isArray(result.files) && result.files.length > 0) {
-              const cloudFiles = result.files.map((s3File: any, index: number) => ({
-                id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
-                file_name: s3File.file_name,
-                file_path: `Core/Cloud/${s3File.file_name}`,
-                file_size: s3File.file_size,
-                kind: s3File.file_type || 'File',
-                device_name: 'Cloud',
-                available: 'Available',
-                date_uploaded: s3File.date_uploaded,
-                date_modified: s3File.date_modified,
-                s3_url: s3File.s3_url,
-                source: 'cloud',
-                is_s3: true
-              }));
-              setFileRows(cloudFiles);
-              return;
-            }
-          })
-          .catch(error => {
-            console.error('Error in direct cloud files fetch:', error);
-          });
-      }
-      
       if (!fetchedFiles || fetchedFiles.length === 0) {
         return;
       }
@@ -256,46 +182,7 @@ export const useAllFileData = (
       // Re-fetch files when changes are detected
       let newFiles: DatabaseData[] = [];
       
-      // Special handling for Cloud files
-      if (filePath === 'Core/Cloud') {
-        try {
-          const s3Result = await banbury.files.listS3Files();
-          
-          if (s3Result && Array.isArray(s3Result.files)) {
-            // Convert S3 files to DatabaseData format
-            newFiles = s3Result.files.map((s3File: any, index: number) => ({
-              id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
-              file_name: s3File.file_name,
-              file_path: `Core/Cloud/${s3File.file_name}`,
-              file_size: s3File.file_size,
-              kind: s3File.file_type || 'File',
-              device_name: 'Cloud',
-              available: 'Available',
-              date_uploaded: s3File.date_uploaded,
-              date_modified: s3File.date_modified,
-              s3_url: s3File.s3_url,
-              source: 'cloud',
-              is_s3: true
-            }));
-            
-            // Immediately update the file rows for cloud view
-            if (newFiles.length > 0) {
-              setFileRows(newFiles);
-              
-              // Also update fetchedFiles for consistency
-              setFetchedFiles(prevFiles => {
-                const nonCloudFiles = prevFiles.filter(file => file.source !== 'cloud');
-                return [...nonCloudFiles, ...newFiles];
-              });
-            }
-          }
-        } catch (error) {
-          console.error('Error refreshing cloud files:', error);
-        }
-        return; // Exit early as we've already updated the state
-      }
-      
-      // For non-cloud views, continue with regular file fetching
+      // Use fetchAllData for all contexts including cloud
       newFiles = await fetchAllData(
         filePath,
         currentView,
@@ -337,22 +224,22 @@ export const useAllFileData = (
         
         const updatedFiles = Array.from(uniqueFilesMap.values());
         
-        // Only update state if we actually have changes to make
-        // This prevents unnecessary re-renders
-        if (updatedFiles.length > 0) {
-          setFetchedFiles(prevFiles => {
-            const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
-            return [...otherViewFiles, ...updatedFiles];
-          });
-        }
+        // Keep previous files from other contexts, only update current context files
+        setFetchedFiles(prevFiles => {
+          const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
+          return [...otherViewFiles, ...updatedFiles];
+        });
       }
     };
 
-    fileWatcherEmitter.on('fileChanged', handleFileChange);
+    // Set up the file watcher
+    fileWatcherEmitter.on('fileChange', handleFileChange);
+
+    // Cleanup
     return () => {
-      fileWatcherEmitter.off('fileChanged', handleFileChange);
+      fileWatcherEmitter.off('fileChange', handleFileChange);
     };
-  }, [username, filePath, currentView, fetchedFiles]);
+  }, [filePath, currentView, fetchedFiles]);
 
   return { isLoading, fileRows, fetchedFiles };
 }; 

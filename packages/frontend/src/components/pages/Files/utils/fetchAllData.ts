@@ -265,6 +265,60 @@ export const fetchGoogleDriveData = async (
   }
 };
 
+// Fetch cloud files from S3
+export const fetchCloudData = async () => {
+  try {
+    const { banbury } = await import('@banbury/core');
+    const response = await banbury.files.listS3Files();
+    
+    // The listS3Files returns an axios response, so we need response.data
+    let files = null;
+    if (response && response.data && Array.isArray(response.data.files)) {
+      files = response.data.files;
+    }
+    
+    if (!files || files.length === 0) {
+      console.warn('No cloud files found or invalid response format:', response);
+      return [];
+    }
+    
+    console.log('Cloud files found:', files.length, files);
+    
+    // Transform S3 files to match DatabaseData format
+    const transformedFiles = files.map((s3File: any, index: number) => {
+      return {
+        _id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
+        id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
+        file_name: s3File.file_name,
+        file_size: s3File.file_size,
+        file_path: `Core/Cloud/${s3File.file_name}`,
+        kind: s3File.file_type || 'File',
+        device_name: 'Cloud',
+        available: 'Available',
+        date_uploaded: s3File.date_uploaded,
+        date_modified: s3File.date_modified,
+        file_parent: 'Cloud',
+        original_device: s3File.device_name || 'Cloud',
+        file_priority: '1',
+        is_public: false,
+        deviceID: '',
+        helpers: 0,
+        s3_url: s3File.s3_url,
+        s3_key: s3File.s3_key,
+        is_s3: true,
+        source: 'cloud' as const
+      };
+    });
+
+    console.log('Transformed cloud files:', transformedFiles);
+    return transformedFiles;
+    
+  } catch (error) {
+    console.error('Error fetching cloud files:', error);
+    return [];
+  }
+};
+
 // Fetch all data based on the current view
 export const fetchAllData = async (
   filePath: string,
@@ -295,7 +349,7 @@ export const fetchAllData = async (
     case 'shared':
       return fetchSharedData();
     case 'cloud':
-      return fetchGoogleDriveData(filePath);
+      return fetchCloudData();
     case 'google_drive':
       return fetchGoogleDriveData(filePath);
     default:
