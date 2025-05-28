@@ -13,7 +13,6 @@ import SyncButton from './SyncButton/SyncButton';
 import ShareFileButton from './ShareFileButton/ShareFileButton';
 import ToggleColumnsButton from './ToggleColumnsButton/ToggleColumnsButton';
 import ChangeViewButton from './ChangeViewButton/ChangeViewButton';
-import RemoveFileFromSyncButton from './RemoveFileFromSyncButton/RemoveFileFromSyncButton';
 
 export default function FilesToolbar({
   _backHistory,
@@ -111,14 +110,6 @@ export default function FilesToolbar({
               setTasks={setTasks}
             />
           </Grid>
-          {isCloudSync && (
-            <Grid item paddingRight={1}>
-              <RemoveFileFromSyncButton
-                selectedFileNames={selectedFileNames}
-                onFinish={handleFinish}
-              />
-            </Grid>
-          )}
           <Grid item paddingRight={1}>
             <SyncButton />
           </Grid>
