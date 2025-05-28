@@ -134,6 +134,7 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
   const convertedFiles: DatabaseData[] = googleDriveFiles.map(file => ({
     ...file,
     _id: file.id,
+    id: `gdrive-${file.id}`, // Ensure consistent prefixed ID format
     date_uploaded: file.date_uploaded || '',
     date_modified: file.date_modified || '',
     file_priority: file.file_priority,
@@ -154,8 +155,12 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
     return a.file_name.localeCompare(b.file_name);
   });
 
-  // Create sorted Google Drive files for grid view
-  const sortedGoogleDriveFiles = [...googleDriveFiles].sort((a, b) => {
+  // Create sorted Google Drive files for grid view with prefixed IDs
+  const sortedGoogleDriveFiles = googleDriveFiles.map(file => ({
+    ...file,
+    id: `gdrive-${file.id}`, // Ensure consistent prefixed ID format
+    google_drive_id: file.id // Keep original ID as google_drive_id
+  })).sort((a, b) => {
     const aIsFolder = a.kind === 'Folder';
     const bIsFolder = b.kind === 'Folder';
     
@@ -176,13 +181,18 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
 
   // Override the file name click for folders
   const handleItemClick = async (id: string | number) => {
-    const file = googleDriveFiles.find(f => f.id === id);
+    // Extract original Google Drive ID if it's a prefixed ID
+    const originalId = typeof id === 'string' && id.startsWith('gdrive-') 
+      ? id.replace('gdrive-', '') 
+      : id;
+    
+    const file = googleDriveFiles.find(f => f.id === originalId);
     if (!file) return;
     
     if (file.kind === 'Folder') {
       handleFolderClick(file);
     } else {
-      // For files, use the original handleFileNameClick
+      // For files, use the original handleFileNameClick with the prefixed ID
       await handleFileNameClick(id);
     }
   };

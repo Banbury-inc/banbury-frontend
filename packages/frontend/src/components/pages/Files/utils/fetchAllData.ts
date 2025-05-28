@@ -52,6 +52,8 @@ export const fetchFilesData = async (
       const isDeviceOnline = deviceOnlineMap.get(file.device_name);
       return {
         ...file,
+        _id: file._id,
+        id: `file-${file._id}-${file.device_name?.replace(/\s+/g, '-')}`, // Create unique composite ID
         available: isDeviceOnline ? 'Available' : 'Unavailable',
         source: 'files' as const
       };
@@ -92,6 +94,8 @@ export const fetchSyncData = async (
       
       return {
         ...file,
+        _id: file._id,
+        id: `sync-${file._id}-${file.device_name?.replace(/\s+/g, '-')}`, // Create unique composite ID
         file_path: syncFilePath,
         file_parent: file.file_parent || 'Sync',
         available: isDeviceOnline ? 'Available' : 'Unavailable',
@@ -131,7 +135,7 @@ export const fetchSharedData = async (
         
         return {
           _id: file._id || `file-${Math.random()}`,
-          id: file._id || `file-${Math.random()}`,
+          id: file._id ? `shared-${file._id}-${file.device_name?.replace(/\s+/g, '-')}` : `shared-file-${Math.random()}`, // Create unique composite ID
           file_name: file.file_name,
           file_size: file.file_size || '0',
           file_path: filePath,

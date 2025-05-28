@@ -254,7 +254,11 @@ export default function Files() {
         const { downloadAndSaveGoogleDriveFile } = await import('@banbury/core/src/files/googleDrive');
         
         // Use the Google Drive file ID and save directly to BCloud directory
-        const fileId = file.google_drive_id || file.id;
+        // Extract original Google Drive ID if it's a prefixed ID
+        let fileId = file.google_drive_id || file.id;
+        if (typeof fileId === 'string' && fileId.startsWith('gdrive-')) {
+          fileId = fileId.replace('gdrive-', '');
+        }
         const savedFilePath = await downloadAndSaveGoogleDriveFile(fileId.toString(), file_name);
         
         await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
@@ -283,9 +287,19 @@ export default function Files() {
         const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
         
+        // Extract original file ID for S3 operations
+        let originalFileId = file._id;
+        if (typeof file.id === 'string' && file.id.includes('-')) {
+          // For composite IDs like "file-originalId-deviceName", extract the originalId part
+          const parts = file.id.split('-');
+          if (parts.length >= 3) {
+            originalFileId = parts[1]; // Get the original ID part
+          }
+        }
+        
         // Use the direct save function instead of browser download
         await banbury.files.saveS3FileToBCloud(
-          file.id.toString(),
+          originalFileId?.toString() || file.id.toString(),
           file_name
         );
         
