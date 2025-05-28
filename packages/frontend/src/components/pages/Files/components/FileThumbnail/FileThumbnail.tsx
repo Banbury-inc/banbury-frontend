@@ -26,7 +26,6 @@ const FileThumbnail: React.FC<FileThumbnailProps> = ({
   filePath,
   size = 'medium',
   isGoogleDrive = false,
-  fileId
 }) => {
   const [thumbnailLoading, setThumbnailLoading] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
