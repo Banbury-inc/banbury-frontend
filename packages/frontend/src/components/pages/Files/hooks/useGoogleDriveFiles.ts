@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '../../../../renderer/context/AuthContext';
 import { useAlert } from '../../../../renderer/context/AlertContext';
 import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';
@@ -25,6 +25,19 @@ export interface GoogleDriveFileRow {
   google_drive_id?: string;
 }
 
+// Cache for Google Drive enabled status
+let googleDriveEnabledCache: { value: boolean; timestamp: number } | null = null;
+const CACHE_DURATION = 60000; // 1 minute cache
+
+// Cache for file lists
+const fileListCache = new Map<string, { 
+  files: GoogleDriveFileRow[]; 
+  nextPageToken?: string;
+  hasMorePages: boolean;
+  timestamp: number; 
+}>();
+const FILE_CACHE_DURATION = 30000; // 30 seconds cache
+
 export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
   const [googleDriveFiles, setGoogleDriveFiles] = useState<GoogleDriveFileRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,122 +46,69 @@ export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
   const [hasMorePages, setHasMorePages] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [folderIdMap, setFolderIdMap] = useState<Map<string, string>>(new Map());
+  const [error, setError] = useState<string | null>(null);
+  
   const { showAlert } = useAlert();
   const { username } = useAuth();
+  
+  // Use refs to track the current operation and prevent race conditions
+  const currentOperationRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
-  const isGoogleDrivePath = filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive';
+  const isGoogleDrivePath = useMemo(() => 
+    filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive', 
+    [filePath]
+  );
 
   // Helper function to extract folder ID from path
-  const extractFolderId = (path: string): string | undefined => {
-    
-    // For root Google Drive, return undefined
-    if (path === 'Core/GoogleDrive' || path === 'GoogleDrive') {
+  const extractFolderId = useCallback((path: string): string | undefined => {
+    if (!path.includes('Core/GoogleDrive') && path !== 'GoogleDrive') {
       return undefined;
     }
     
-    // For subfolders, we need to extract the folder ID
-    // The path format should be: Core/GoogleDrive/FolderName or Core/GoogleDrive/FolderName/SubFolderName
     const pathParts = path.split('/');
-    
-    // Find the Google Drive part and get the folder structure after it
     const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
+    
     if (googleDriveIndex === -1 || googleDriveIndex === pathParts.length - 1) {
-      return undefined; // No folder specified or GoogleDrive is the last part
+      return undefined; // Root Google Drive folder
     }
     
-    // Get the folder path relative to GoogleDrive root
+    // Get the folder path after GoogleDrive
     const folderPath = pathParts.slice(googleDriveIndex + 1).join('/');
-    
-    // Look up the folder ID in our mapping
-    const folderId = folderIdMap.get(folderPath);
-    
-    if (folderId) {
-      return folderId;
-    }
-    
-    // If we don't have the folder ID mapped, try to find it by looking at the last folder name
-    // This is a fallback for when the mapping isn't complete
-    const lastFolderName = pathParts[pathParts.length - 1];
-    
-    // Look through all mapped folders to see if any end with this folder name
-    for (const [mappedPath, mappedId] of folderIdMap.entries()) {
-      const mappedPathParts = mappedPath.split('/');
-      if (mappedPathParts[mappedPathParts.length - 1] === lastFolderName) {
-        return mappedId;
-      }
-    }
-    return undefined;
-  };
+    return folderIdMap.get(folderPath);
+  }, [folderIdMap]);
 
-  useEffect(() => {
-    if (!isGoogleDrivePath || !username) {
-      setGoogleDriveFiles([]);
-      setAuthRequired(false);
-      setNextPageToken(undefined);
-      setHasMorePages(false);
-      return;
+  // Cached function to check if Google Drive is enabled
+  const checkGoogleDriveEnabled = useCallback(async (): Promise<boolean> => {
+    const now = Date.now();
+    
+    // Return cached value if still valid
+    if (googleDriveEnabledCache && (now - googleDriveEnabledCache.timestamp) < CACHE_DURATION) {
+      return googleDriveEnabledCache.value;
     }
 
-    const fetchGoogleDriveFiles = async () => {
-      try {
-        // Check if Google Drive integration is enabled before making API calls
-        const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
-        if (!isGoogleDriveEnabled) {
-          setGoogleDriveFiles([]);
-          setIsLoading(false);
-          setAuthRequired(false);
-          setNextPageToken(undefined);
-          setHasMorePages(false);
-          return;
-        }
+    try {
+      const isEnabled = await banbury.settings.isGoogleDriveEnabled();
+      googleDriveEnabledCache = { value: isEnabled, timestamp: now };
+      return isEnabled;
+    } catch (error) {
+      console.error('Error checking Google Drive status:', error);
+      return false;
+    }
+  }, []);
 
-        setIsLoading(true);
-        setAuthRequired(false);
-        
-        // Clear existing files when navigating to a new folder
-        setGoogleDriveFiles([]);
-        
-        // Extract folder ID from path for subfolder navigation
-        const folderId = extractFolderId(filePath);
-
-        // Reset pagination when fetching initial files
-        const result = await listGoogleDriveFiles(undefined, folderId);
-        
-        // Check if result and result.files exist
-        if (!result || !result.files || !Array.isArray(result.files)) {
-          setGoogleDriveFiles([]);
-          setNextPageToken(undefined);
-          setHasMorePages(false);
-          return;
-        }
-        
-        // Store pagination info
-        setNextPageToken(result.nextPageToken);
-        setHasMorePages(!!result.nextPageToken);
-        
-        // Transform Google Drive files to match your file row structure
-        const transformedFiles: GoogleDriveFileRow[] = result.files.map((file) => {
+  // Async file transformation function (runs in a micro-task)
+  const transformFiles = useCallback(async (files: any[], currentFilePath: string): Promise<GoogleDriveFileRow[]> => {
+    return new Promise((resolve) => {
+      // Use setTimeout to yield control back to the main thread
+      setTimeout(() => {
+        const transformedFiles: GoogleDriveFileRow[] = files.map((file) => {
           // Create proper file path based on current location
           let googleDriveFilePath = '';
-          if (filePath === 'Core/GoogleDrive' || filePath === 'GoogleDrive') {
+          if (currentFilePath === 'Core/GoogleDrive' || currentFilePath === 'GoogleDrive') {
             googleDriveFilePath = `Core/GoogleDrive/${file.file_name}`;
           } else {
-            // For subfolders, append to the current path
-            googleDriveFilePath = `${filePath}/${file.file_name}`;
-          }
-
-          // Store folder ID mapping for folders as we discover them
-          if (file.kind === 'Folder') {
-            const pathParts = googleDriveFilePath.split('/');
-            const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
-            if (googleDriveIndex !== -1 && googleDriveIndex < pathParts.length - 1) {
-              const folderPath = pathParts.slice(googleDriveIndex + 1).join('/');
-              setFolderIdMap(prev => {
-                const newMap = new Map(prev);
-                newMap.set(folderPath, file.id);
-                return newMap;
-              });
-            }
+            googleDriveFilePath = `${currentFilePath}/${file.file_name}`;
           }
 
           return {
@@ -173,273 +133,255 @@ export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
           };
         });
 
-        setGoogleDriveFiles(transformedFiles);
-      } catch (error: any) {
-        console.error('Error fetching Google Drive files:', error);
-        
-        if (error.response?.status === 401 || error.message === 'GOOGLE_DRIVE_AUTH_REQUIRED') {
-          setAuthRequired(true);
-          showAlert(
-            'Google Drive Authentication Required',
-            [
-              'Your Google Drive access has expired or is not configured.',
-              'Please re-authenticate with Google to access your Drive files.',
-              'Go to Settings > Account > Connect Google Drive.'
-            ],
-            'warning'
-          );
-        } else {
-          showAlert(
-            'Error Loading Google Drive Files',
-            [
-              'Failed to load Google Drive files. Please try again later.',
-              error.message || 'Unknown error occurred.'
-            ],
-            'error'
-          );
-        }
-        setGoogleDriveFiles([]);
-        setNextPageToken(undefined);
-        setHasMorePages(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+        resolve(transformedFiles);
+      }, 0);
+    });
+  }, []);
 
-    fetchGoogleDriveFiles();
-  }, [filePath, username, isGoogleDrivePath, showAlert, updates]);
+  // Update folder ID mapping asynchronously
+  const updateFolderIdMap = useCallback(async (files: GoogleDriveFileRow[], currentFilePath: string) => {
+    setTimeout(() => {
+      if (!mountedRef.current) return;
+      
+      setFolderIdMap(prev => {
+        const newMap = new Map(prev);
+        files.forEach(file => {
+          if (file.kind === 'Folder') {
+            const pathParts = file.file_path.split('/');
+            const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
+            if (googleDriveIndex !== -1 && googleDriveIndex < pathParts.length - 1) {
+              const folderPath = pathParts.slice(googleDriveIndex + 1).join('/');
+              newMap.set(folderPath, file.id);
+            }
+          }
+        });
+        return newMap;
+      });
+    }, 0);
+  }, []);
 
-  const refreshFiles = async () => {
-    if (!isGoogleDrivePath || !username) return;
-    
-    // Check if Google Drive integration is enabled before making API calls
-    try {
-      const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
-      if (!isGoogleDriveEnabled) {
-        setGoogleDriveFiles([]);
-        setAuthRequired(false);
-        setNextPageToken(undefined);
-        setHasMorePages(false);
-        return;
-      }
-    } catch (error) {
-      console.error('Error checking Google Drive status:', error);
+  // Main fetch function with improved async handling
+  const fetchGoogleDriveFiles = useCallback(async (
+    pageToken?: string, 
+    isLoadMore: boolean = false
+  ): Promise<void> => {
+    if (!isGoogleDrivePath || !username) {
       setGoogleDriveFiles([]);
       setAuthRequired(false);
       setNextPageToken(undefined);
       setHasMorePages(false);
+      setError(null);
       return;
     }
-    
+
+    // Cancel any existing operation
+    if (currentOperationRef.current) {
+      currentOperationRef.current.abort();
+    }
+
+    // Create new abort controller
+    const abortController = new AbortController();
+    currentOperationRef.current = abortController;
+
     try {
-      setIsLoading(true);
-      const folderId = extractFolderId(filePath);
-      const result = await listGoogleDriveFiles(undefined, folderId);
-      
-      // Check if result and result.files exist
-      if (!result || !result.files || !Array.isArray(result.files)) {
+      // Check cache first for initial loads
+      if (!pageToken && !isLoadMore) {
+        const cacheKey = `${filePath}_${username}`;
+        const cached = fileListCache.get(cacheKey);
+        const now = Date.now();
+        
+        if (cached && (now - cached.timestamp) < FILE_CACHE_DURATION) {
+          if (!mountedRef.current) return;
+          setGoogleDriveFiles(cached.files);
+          setNextPageToken(cached.nextPageToken);
+          setHasMorePages(cached.hasMorePages);
+          setError(null);
+          return;
+        }
+      }
+
+      // Set loading states
+      if (isLoadMore) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+        setError(null);
         setGoogleDriveFiles([]);
+      }
+
+      // Check if operation was cancelled
+      if (abortController.signal.aborted || !mountedRef.current) return;
+
+      // Check Google Drive enabled status
+      const isGoogleDriveEnabled = await checkGoogleDriveEnabled();
+      
+      if (abortController.signal.aborted || !mountedRef.current) return;
+
+      if (!isGoogleDriveEnabled) {
+        setGoogleDriveFiles([]);
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        setAuthRequired(false);
         setNextPageToken(undefined);
         setHasMorePages(false);
+        setError(null);
         return;
       }
+
+      // Extract folder ID from path for subfolder navigation
+      const folderId = extractFolderId(filePath);
+
+      if (abortController.signal.aborted || !mountedRef.current) return;
+
+      // Fetch files from API
+      const result = await listGoogleDriveFiles(pageToken, folderId);
       
-      // Store pagination info
+      if (abortController.signal.aborted || !mountedRef.current) return;
+
+      // Check if result and result.files exist
+      if (!result || !result.files || !Array.isArray(result.files)) {
+        if (!mountedRef.current) return;
+        if (!isLoadMore) {
+          setGoogleDriveFiles([]);
+        }
+        setNextPageToken(undefined);
+        setHasMorePages(false);
+        setError('No files found');
+        return;
+      }
+
+      // Transform files asynchronously to avoid blocking UI
+      const transformedFiles = await transformFiles(result.files, filePath);
+      
+      if (abortController.signal.aborted || !mountedRef.current) return;
+
+      // Update state
+      if (isLoadMore) {
+        setGoogleDriveFiles(prevFiles => [...prevFiles, ...transformedFiles]);
+      } else {
+        setGoogleDriveFiles(transformedFiles);
+        
+        // Cache the results for initial loads
+        const cacheKey = `${filePath}_${username}`;
+        fileListCache.set(cacheKey, {
+          files: transformedFiles,
+          nextPageToken: result.nextPageToken,
+          hasMorePages: !!result.nextPageToken,
+          timestamp: Date.now()
+        });
+      }
+
       setNextPageToken(result.nextPageToken);
       setHasMorePages(!!result.nextPageToken);
-      
-      const transformedFiles: GoogleDriveFileRow[] = result.files.map((file) => {
-        let googleDriveFilePath = '';
-        if (filePath === 'Core/GoogleDrive' || filePath === 'GoogleDrive') {
-          googleDriveFilePath = `Core/GoogleDrive/${file.file_name}`;
-        } else {
-          googleDriveFilePath = `${filePath}/${file.file_name}`;
-        }
-
-        // Store folder ID mapping for folders as we discover them
-        if (file.kind === 'Folder') {
-          const pathParts = googleDriveFilePath.split('/');
-          const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
-          if (googleDriveIndex !== -1 && googleDriveIndex < pathParts.length - 1) {
-            const folderPath = pathParts.slice(googleDriveIndex + 1).join('/');
-            setFolderIdMap(prev => {
-              const newMap = new Map(prev);
-              newMap.set(folderPath, file.id);
-              return newMap;
-            });
-          }
-        }
-
-        return {
-          id: file.id,
-          file_name: file.file_name,
-          kind: file.kind,
-          file_size: file.file_size,
-          date_modified: file.date_modified,
-          date_uploaded: file.date_uploaded,
-          mime_type: file.mime_type,
-          web_view_link: file.web_view_link,
-          thumbnail_link: file.thumbnail_link,
-          parents: file.parents,
-          source: 'google_drive',
-          device_name: 'Google Drive',
-          available: 'Available',
-          file_priority: 1,
-          is_public: false,
-          original_device: 'Google Drive',
-          file_path: googleDriveFilePath,
-          google_drive_id: file.id
-        };
-      });
-
-      setGoogleDriveFiles(transformedFiles);
       setAuthRequired(false);
+      setError(null);
+
+      // Update folder ID mapping asynchronously
+      await updateFolderIdMap(transformedFiles, filePath);
+
     } catch (error: any) {
-      if (error.response?.status === 401) {
+      if (abortController.signal.aborted || !mountedRef.current) return;
+      
+      console.error('Error fetching Google Drive files:', error);
+      
+      if (error.response?.status === 401 || error.message === 'GOOGLE_DRIVE_AUTH_REQUIRED') {
         setAuthRequired(true);
+        setError('Authentication required');
+      } else {
+        setError(error.message || 'Failed to load files');
+        showAlert(
+          'Error Loading Google Drive Files',
+          [error.message || 'Unknown error occurred.'],
+          'error'
+        );
+      }
+      
+      if (!isLoadMore) {
+        setGoogleDriveFiles([]);
       }
       setNextPageToken(undefined);
       setHasMorePages(false);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-    const loadMoreFiles = async () => {
-    if (!isGoogleDrivePath || !username || !nextPageToken || isLoadingMore) return;
-
-    // Check if Google Drive integration is enabled before making API calls
-    try {
-      const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
-      if (!isGoogleDriveEnabled) {
-        return;
+      if (mountedRef.current) {
+        setIsLoading(false);
+        setIsLoadingMore(false);
       }
-    } catch (error) {
-      console.error('Error checking Google Drive status:', error);
-      return;
+      currentOperationRef.current = null;
     }
+  }, [
+    isGoogleDrivePath, 
+    username, 
+    filePath, 
+    extractFolderId, 
+    checkGoogleDriveEnabled, 
+    transformFiles, 
+    updateFolderIdMap, 
+    showAlert
+  ]);
 
-    try {
-      setIsLoadingMore(true);
-      const folderId = extractFolderId(filePath);
-      
-      // Use the nextPageToken to get the next page
-      const result = await listGoogleDriveFiles(nextPageToken, folderId);
-      
-      // Check if result and result.files exist
-      if (!result || !result.files || !Array.isArray(result.files)) {
-        return;
+  // Load more files function
+  const loadMoreFiles = useCallback(async () => {
+    if (!nextPageToken || isLoadingMore) return;
+    await fetchGoogleDriveFiles(nextPageToken, true);
+  }, [nextPageToken, isLoadingMore, fetchGoogleDriveFiles]);
+
+  // Refresh files function
+  const refreshFiles = useCallback(async () => {
+    // Clear cache for this path
+    const cacheKey = `${filePath}_${username}`;
+    fileListCache.delete(cacheKey);
+    
+    // Also clear Google Drive enabled cache to force recheck
+    googleDriveEnabledCache = null;
+    
+    await fetchGoogleDriveFiles();
+  }, [filePath, username, fetchGoogleDriveFiles]);
+
+  // Navigate to folder function
+  const navigateToFolder = useCallback((folderFile: GoogleDriveFileRow, setFilePath: (path: string) => void) => {
+    if (folderFile.kind === 'Folder') {
+      // Update folder mapping before navigation
+      const pathParts = folderFile.file_path.split('/');
+      const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
+      if (googleDriveIndex !== -1 && googleDriveIndex < pathParts.length - 1) {
+        const folderPath = pathParts.slice(googleDriveIndex + 1).join('/');
+        setFolderIdMap(prev => {
+          const newMap = new Map(prev);
+          newMap.set(folderPath, folderFile.id);
+          return newMap;
+        });
       }
-      
-      // Update pagination info
-      setNextPageToken(result.nextPageToken);
-      setHasMorePages(!!result.nextPageToken);
-      
-      // Transform new files
-      const transformedFiles: GoogleDriveFileRow[] = result.files.map((file) => {
-        let googleDriveFilePath = '';
-        if (filePath === 'Core/GoogleDrive' || filePath === 'GoogleDrive') {
-          googleDriveFilePath = `Core/GoogleDrive/${file.file_name}`;
-        } else {
-          googleDriveFilePath = `${filePath}/${file.file_name}`;
-        }
-
-        // Store folder ID mapping for folders as we discover them
-        if (file.kind === 'Folder') {
-          const pathParts = googleDriveFilePath.split('/');
-          const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
-          if (googleDriveIndex !== -1 && googleDriveIndex < pathParts.length - 1) {
-            const folderPath = pathParts.slice(googleDriveIndex + 1).join('/');
-            setFolderIdMap(prev => {
-              const newMap = new Map(prev);
-              newMap.set(folderPath, file.id);
-              return newMap;
-            });
-          }
-        }
-
-        return {
-          id: file.id,
-          file_name: file.file_name,
-          kind: file.kind,
-          file_size: file.file_size,
-          date_modified: file.date_modified,
-          date_uploaded: file.date_uploaded,
-          mime_type: file.mime_type,
-          web_view_link: file.web_view_link,
-          thumbnail_link: file.thumbnail_link,
-          parents: file.parents,
-          source: 'google_drive',
-          device_name: 'Google Drive',
-          available: 'Available',
-          file_priority: 1,
-          is_public: false,
-          original_device: 'Google Drive',
-          file_path: googleDriveFilePath,
-          google_drive_id: file.id
-        };
-      });
-
-      // Append new files to existing ones
-      setGoogleDriveFiles(prevFiles => [...prevFiles, ...transformedFiles]);
-      
-    } catch (error: any) {
-      showAlert(
-        'Error Loading More Files',
-        [
-          'Failed to load more Google Drive files. Please try again.',
-          error.message || 'Unknown error occurred.'
-        ],
-        'error'
-      );
-    } finally {
-      setIsLoadingMore(false);
+      setFilePath(folderFile.file_path);
     }
-  };
+  }, []);
 
-  const navigateToFolder = (folderFile: GoogleDriveFileRow, setFilePath: (path: string) => void) => {
-    if (folderFile.kind !== 'Folder') {
-      console.warn('Attempted to navigate to non-folder item:', folderFile);
-      return;
-    }
+  // Effect to fetch files when path or updates change
+  useEffect(() => {
+    fetchGoogleDriveFiles();
+  }, [filePath, updates, fetchGoogleDriveFiles]);
 
-    // Create the new path
-    const newPath = folderFile.file_path;
-    
-    // Store the folder ID mapping BEFORE navigation
-    const pathParts = newPath.split('/');
-    const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
-    if (googleDriveIndex !== -1 && googleDriveIndex < pathParts.length - 1) {
-      const folderPath = pathParts.slice(googleDriveIndex + 1).join('/');
-      
-      // Update the folder ID map immediately
-      setFolderIdMap(prev => {
-        const newMap = new Map(prev);
-        newMap.set(folderPath, folderFile.id);
-        return newMap;
-      });
-    }
-    
-    // Reset pagination and files before navigation
-    setNextPageToken(undefined);
-    setHasMorePages(false);
-    setGoogleDriveFiles([]);
-    
-    // Navigate to the folder - this will trigger the useEffect to fetch new files
-    setFilePath(newPath);
-  };
+  // Cleanup effect
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (currentOperationRef.current) {
+        currentOperationRef.current.abort();
+      }
+    };
+  }, []);
 
   return {
     googleDriveFiles,
-    isLoading: isGoogleDrivePath ? isLoading : false,
+    isLoading,
     isGoogleDrivePath,
     authRequired,
-    refreshFiles,
     loadMoreFiles,
     hasMorePages,
     isLoadingMore,
-    nextPageToken,
-    navigateToFolder
+    navigateToFolder,
+    refreshFiles,
+    error
   };
 };
 

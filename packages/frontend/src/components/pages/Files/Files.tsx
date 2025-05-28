@@ -32,6 +32,7 @@ import FileViewerTabs from '../../common/FileViewer/FileViewerTabs';
 import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from './utils/fileUtils';
 import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveFilesList';
 import FileThumbnail from './components/FileThumbnail/FileThumbnail';
+import { googleDriveService, GoogleDriveFileRow } from './services/googleDriveService';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -124,6 +125,12 @@ export default function Files() {
   }>>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showFileViewer, setShowFileViewer] = useState(false);
+
+  // Add Google Drive state
+  const [googleDriveFiles, setGoogleDriveFiles] = useState<GoogleDriveFileRow[]>([]);
+  const [isGoogleDriveLoading, setIsGoogleDriveLoading] = useState(false);
+  const [googleDriveError, setGoogleDriveError] = useState<string | null>(null);
+  const [googleDriveEnabled, setGoogleDriveEnabled] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -524,6 +531,65 @@ export default function Files() {
     fetchCloudFiles();
   }, [filePath, username]);
 
+  // Add Google Drive file fetching effect
+  useEffect(() => {
+    const fetchGoogleDriveFiles = async () => {
+      if (!username) return;
+
+      // Check if Google Drive is enabled
+      try {
+        const isEnabled = await googleDriveService.isGoogleDriveEnabled();
+        setGoogleDriveEnabled(isEnabled);
+        
+        if (!isEnabled) {
+          setGoogleDriveFiles([]);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking Google Drive status:', error);
+        setGoogleDriveEnabled(false);
+        setGoogleDriveFiles([]);
+        return;
+      }
+
+      // If we're specifically viewing a Google Drive path, fetch those files
+      if (filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive') {
+        setIsGoogleDriveLoading(true);
+        setGoogleDriveError(null);
+
+        try {
+          const folderId = googleDriveService.extractFolderId(filePath);
+          const result = await googleDriveService.getFiles(folderId || undefined, filePath, username);
+          setGoogleDriveFiles(result.files);
+        } catch (error: any) {
+          console.error('Error fetching Google Drive files:', error);
+          setGoogleDriveError(error.message || 'Failed to load Google Drive files');
+          setGoogleDriveFiles([]);
+        } finally {
+          setIsGoogleDriveLoading(false);
+        }
+      } else if (googleDriveFiles.length === 0 && !isGoogleDriveLoading) {
+        // Fetch root Google Drive files for tree display when not currently viewing Google Drive
+        // This ensures the tree shows the expandable arrow right away
+        setIsGoogleDriveLoading(true);
+        setGoogleDriveError(null);
+
+        try {
+          const result = await googleDriveService.getFiles(undefined, 'Core/GoogleDrive', username);
+          setGoogleDriveFiles(result.files);
+        } catch (error: any) {
+          console.error('Error fetching root Google Drive files:', error);
+          setGoogleDriveError(error.message || 'Failed to load Google Drive files');
+          setGoogleDriveFiles([]);
+        } finally {
+          setIsGoogleDriveLoading(false);
+        }
+      }
+    };
+
+    fetchGoogleDriveFiles();
+  }, [filePath, username, updates]);
+
   // Helper function to get file type
   const getFileType = (fileName: string): string => {
     if (isImageFile(fileName)) return 'Image';
@@ -625,6 +691,8 @@ export default function Files() {
                   setFilePathDevice={setFilePathDevice}
                   setBackHistory={setBackHistory}
                   setForwardHistory={setForwardHistory}
+                  googleDriveFiles={googleDriveFiles}
+                  googleDriveEnabled={googleDriveEnabled}
                 />
               </Box>
             </CardContent>
@@ -702,6 +770,10 @@ export default function Files() {
                     columnVisibility={columnVisibility}
                     setFilePath={setFilePath}
                     updates={updates}
+                    googleDriveFiles={googleDriveFiles}
+                    isGoogleDriveLoading={isGoogleDriveLoading}
+                    googleDriveError={googleDriveError}
+                    googleDriveEnabled={googleDriveEnabled}
                   />
                 ) : fileRows.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 5 }}>

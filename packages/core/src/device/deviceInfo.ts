@@ -9,6 +9,64 @@ import si from 'systeminformation';
 // Disable temperature monitoring to avoid the osx-temperature-sensor dependency
 process.env.SYSTEMINFORMATION_DISABLE_TEMPERATURE = 'true';
 
+// IP address cache to avoid unnecessary API calls
+interface IPAddressCache {
+  ip: string;
+  timestamp: number;
+  ttl: number; // Time to live in milliseconds
+}
+
+let ipAddressCache: IPAddressCache | null = null;
+const DEFAULT_IP_CACHE_TTL = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+
+// Cache file path in .banbury directory
+const getCacheFilePath = (): string => {
+  const banburyDir = path.join(os.homedir(), '.banbury');
+  // Ensure .banbury directory exists
+  if (!fs.existsSync(banburyDir)) {
+    fs.mkdirSync(banburyDir, { recursive: true });
+  }
+  return path.join(banburyDir, 'ip-cache.json');
+};
+
+// Load cache from file
+const loadCacheFromFile = (): IPAddressCache | null => {
+  try {
+    const cacheFilePath = getCacheFilePath();
+    if (fs.existsSync(cacheFilePath)) {
+      const cacheData = fs.readFileSync(cacheFilePath, 'utf8');
+      const parsedCache = JSON.parse(cacheData) as IPAddressCache;
+      
+      // Check if cache is still valid
+      const now = Date.now();
+      const isExpired = (now - parsedCache.timestamp) > parsedCache.ttl;
+      
+      if (!isExpired) {
+        return parsedCache;
+      } else {
+        // Cache expired, delete the file
+        fs.unlinkSync(cacheFilePath);
+      }
+    }
+  } catch (error) {
+    console.warn('Error loading IP cache from file:', error);
+  }
+  return null;
+};
+
+// Save cache to file
+const saveCacheToFile = (cache: IPAddressCache): void => {
+  try {
+    const cacheFilePath = getCacheFilePath();
+    fs.writeFileSync(cacheFilePath, JSON.stringify(cache, null, 2), 'utf8');
+  } catch (error) {
+    console.warn('Error saving IP cache to file:', error);
+  }
+};
+
+// Initialize cache from file on module load
+ipAddressCache = loadCacheFromFile();
+
 // Helper function to safely call systeminformation methods
 async function safeSystemInfo<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -317,7 +375,18 @@ export async function ram_free(): Promise<number> {
   }
 }
 
-export async function ip_address(): Promise<string> {
+export async function ip_address(cacheTtl: number = DEFAULT_IP_CACHE_TTL): Promise<string> {
+  // Check if we have a valid cached IP address
+  if (ipAddressCache) {
+    const now = Date.now();
+    const isExpired = (now - ipAddressCache.timestamp) > ipAddressCache.ttl;
+    
+    if (!isExpired) {
+      // Return cached IP if it's still valid
+      return ipAddressCache.ip;
+    }
+  }
+
   let ip_address: string | null = null;
 
   try {
@@ -330,7 +399,19 @@ export async function ip_address(): Promise<string> {
     ip_address = 'Unknown';
   }
 
-  return ip_address || 'Unknown';
+  const finalIpAddress = ip_address || 'Unknown';
+
+  // Update cache with new IP address
+  ipAddressCache = {
+    ip: finalIpAddress,
+    timestamp: Date.now(),
+    ttl: cacheTtl
+  };
+
+  // Save cache to file
+  saveCacheToFile(ipAddressCache);
+
+  return finalIpAddress;
 }
 
 export async function mac_address(): Promise<string> {
@@ -571,6 +652,40 @@ export async function getDeviceInfo() {
     totalmem: os.totalmem(),
     freemem: os.freemem()
   };
+}
+
+// Utility function to clear IP address cache
+export function clearIpAddressCache(): void {
+  ipAddressCache = null;
+  
+  // Also remove the cache file
+  try {
+    const cacheFilePath = getCacheFilePath();
+    if (fs.existsSync(cacheFilePath)) {
+      fs.unlinkSync(cacheFilePath);
+    }
+  } catch (error) {
+    console.warn('Error removing IP cache file:', error);
+  }
+}
+
+// Utility function to check if IP address cache is valid
+export function isIpAddressCacheValid(): boolean {
+  if (!ipAddressCache) {
+    return false;
+  }
+  
+  const now = Date.now();
+  const isExpired = (now - ipAddressCache.timestamp) > ipAddressCache.ttl;
+  return !isExpired;
+}
+
+// Utility function to get cached IP address without making API call
+export function getCachedIpAddress(): string | null {
+  if (ipAddressCache && isIpAddressCacheValid()) {
+    return ipAddressCache.ip;
+  }
+  return null;
 }
 
 

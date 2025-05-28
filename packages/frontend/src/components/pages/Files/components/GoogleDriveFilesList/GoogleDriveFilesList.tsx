@@ -7,22 +7,24 @@ import {
   Checkbox,
   Grid,
   Typography,
-  CircularProgress,
   Alert,
   Breadcrumbs,
-  Link
+  Link,
+  Fade
 } from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import HomeIcon from '@mui/icons-material/Home';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { useGoogleDriveFiles } from '../../hooks/useGoogleDriveFiles';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { formatFileSize } from '../../utils/formatFileSize';
 import FileTable from '../Table/Table';
 import { ViewType as FileViewType } from '../FilesToolbar/ChangeViewButton/ChangeViewButton';
 import { DatabaseData, Order } from '../../types';
-import { GoogleDriveFileRow } from '../../hooks/useGoogleDriveFiles';
+import { GoogleDriveFileRow } from '../../services/googleDriveService';
 import FileThumbnail from '../FileThumbnail/FileThumbnail';
+import GoogleDriveLoadingIndicator from './GoogleDriveLoadingIndicator';
+import { googleDriveService } from '../../services/googleDriveService';
 
 interface GoogleDriveFilesListProps {
   filePath: string;
@@ -45,6 +47,11 @@ interface GoogleDriveFilesListProps {
   columnVisibility: { [key: string]: boolean };
   setFilePath: (path: string) => void;
   updates?: number;
+  // New props for Google Drive data
+  googleDriveFiles: GoogleDriveFileRow[];
+  isGoogleDriveLoading: boolean;
+  googleDriveError: string | null;
+  googleDriveEnabled: boolean;
 }
 
 const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
@@ -66,24 +73,17 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
   handlePriorityChange,
   columnVisibility,
   setFilePath,
-  updates
+  updates,
+  googleDriveFiles,
+  isGoogleDriveLoading,
+  googleDriveError,
+  googleDriveEnabled
 }) => {
-  const {
-    googleDriveFiles,
-    isLoading,
-    isGoogleDrivePath,
-    authRequired,
-    loadMoreFiles,
-    hasMorePages,
-    isLoadingMore,
-    navigateToFolder
-  } = useGoogleDriveFiles(filePath, updates);
-
-  if (!isGoogleDrivePath) {
+  if (!googleDriveEnabled) {
     return null;
   }
 
-  if (authRequired) {
+  if (googleDriveError && googleDriveError.includes('GOOGLE_DRIVE_AUTH_REQUIRED')) {
     return (
       <Box sx={{ p: 2 }}>
         <Alert severity="warning">
@@ -95,11 +95,16 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
     );
   }
 
-  if (isLoading && googleDriveFiles.length === 0) {
+  // Show loading indicator for initial load or error states
+  if ((isGoogleDriveLoading && googleDriveFiles.length === 0) || googleDriveError) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <CircularProgress />
-      </Box>
+      <GoogleDriveLoadingIndicator
+        isLoading={isGoogleDriveLoading}
+        error={googleDriveError}
+        hasFiles={googleDriveFiles.length > 0}
+        viewType={viewType}
+        itemCount={12}
+      />
     );
   }
 
@@ -110,9 +115,17 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
         <Typography variant="h5" color="textSecondary">
           No Google Drive files available.
         </Typography>
-        <Typography variant="body2" color="textSecondary">
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
           Your Google Drive appears to be empty or you may need to authenticate.
         </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={() => window.location.reload()}
+          disabled={isGoogleDriveLoading}
+        >
+          Refresh
+        </Button>
       </Box>
     );
   }
@@ -157,7 +170,7 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
   // Handle folder navigation
   const handleFolderClick = (folderFile: GoogleDriveFileRow) => {
     if (folderFile.kind === 'Folder') {
-      navigateToFolder(folderFile, setFilePath);
+      setFilePath(folderFile.file_path);
     }
   };
 
@@ -174,216 +187,147 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
     }
   };
 
-  // Generate breadcrumb items from current path
-  const getBreadcrumbItems = () => {
-    const pathParts = filePath.split('/');
-    const googleDriveIndex = pathParts.findIndex(part => part === 'GoogleDrive');
-    
-    if (googleDriveIndex === -1) return [];
-    
-    const breadcrumbs = [
-      {
-        label: 'Google Drive',
-        path: 'Core/GoogleDrive',
-        isRoot: true
-      }
-    ];
-    
-    // Add folder breadcrumbs
-    if (googleDriveIndex < pathParts.length - 1) {
-      const folderParts = pathParts.slice(googleDriveIndex + 1);
-      folderParts.forEach((folderName, index) => {
-        const folderPath = pathParts.slice(0, googleDriveIndex + 2 + index).join('/');
-        breadcrumbs.push({
-          label: folderName,
-          path: folderPath,
-          isRoot: false
-        });
-      });
-    }
-    
-    return breadcrumbs;
-  };
-
-  const breadcrumbItems = getBreadcrumbItems();
-
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Google Drive Breadcrumb Navigation */}
-      {breadcrumbItems.length > 0 && (
-        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Breadcrumbs
-            separator={<NavigateNextIcon fontSize="small" />}
-            aria-label="Google Drive breadcrumb"
-          >
-            {breadcrumbItems.map((item, index) => {
-              const isLast = index === breadcrumbItems.length - 1;
-              return isLast ? (
-                <Typography key={item.path} color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
-                  {item.isRoot && <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />}
-                  {item.label}
-                </Typography>
-              ) : (
-                <Link
-                  key={item.path}
-                  underline="hover"
-                  color="inherit"
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setFilePath(item.path);
-                  }}
-                  sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                >
-                  {item.isRoot && <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />}
-                  {item.label}
-                </Link>
-              );
-            })}
-          </Breadcrumbs>
-        </Box>
-      )}
       
-      {viewType.includes('grid') ? (
-        <Box 
-          sx={{
-            flexGrow: 1,
-            overflow: 'auto',
-            px: 0.5
-          }}
-        >
-          <Grid container spacing={2} sx={{ p: 1.5 }}>
-            {sortedGoogleDriveFiles.map((row) => {
-              const isItemSelected = isSelected(row.id);
-              return (
-                <Grid item xs={viewType === 'grid' ? 1.5 : 3} key={row.id}>
-                  <Card
-                    sx={{
-                      cursor: 'pointer',
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                        '& .selection-checkbox': {
-                          opacity: 1
-                        }
-                      },
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      border: isItemSelected ? '2px solid' : '1px solid',
-                      borderColor: isItemSelected ? 'primary.main' : 'divider'
-                    }}
-                    onClick={(event) => handleClick(event, row.id)}
-                    onDoubleClick={() => {
-                      if (row.kind === 'Folder') {
-                        handleFolderClick(row);
-                      } else {
-                        handleFileNameClick(row.id);
-                      }
-                    }}
-                  >
-                    <Box
-                      className="selection-checkbox"
-                      sx={{
-                        position: 'absolute',
-                        top: 8,
-                        left: 8,
-                        opacity: isItemSelected ? 1 : 0,
-                        transition: 'opacity 0.2s',
-                        zIndex: 1
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Checkbox
-                        checked={isItemSelected}
-                        onChange={(event) => handleClick(event, row.id)}
-                        size="small"
-                      />
-                    </Box>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        p: 1,
-                        m: 1,
-                        minHeight: '80px'
-                      }}
-                    >
-                      <FileThumbnail
-                        fileName={row.file_name}
-                        fileKind={row.kind}
-                        thumbnailLink={row.thumbnail_link}
-                        filePath={row.file_path}
-                        size={viewType === 'grid' ? 'medium' : 'large'}
-                        isGoogleDrive={true}
-                        fileId={row.id}
-                      />
-                    </Box>
-                    <CardContent sx={{ flexGrow: 1, pt: 0.5, px: 1.5, pb: 1 }}>
-                      <Typography variant="body2" noWrap>
-                        {row.file_name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {formatFileSize(row.file_size)}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: '#1DB954' }}
+      {/* Files Content */}
+      <Fade in={!isGoogleDriveLoading || googleDriveFiles.length > 0} timeout={300}>
+        <Box sx={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {viewType.includes('grid') ? (
+            <Box 
+              sx={{
+                flexGrow: 1,
+                overflow: 'auto',
+                px: 0.5
+              }}
+            >
+              <Grid container spacing={2} sx={{ p: 1.5 }}>
+                {sortedGoogleDriveFiles.map((row) => {
+                  const isItemSelected = isSelected(row.id);
+                  return (
+                    <Grid item xs={viewType === 'grid' ? 1.5 : 3} key={row.id}>
+                      <Card
+                        sx={{
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                            '& .selection-checkbox': {
+                              opacity: 1
+                            }
+                          },
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          border: isItemSelected ? '2px solid' : '1px solid',
+                          borderColor: isItemSelected ? 'primary.main' : 'divider',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                        onClick={(event) => handleClick(event, row.id)}
+                        onDoubleClick={() => {
+                          if (row.kind === 'Folder') {
+                            handleFolderClick(row);
+                          } else {
+                            handleItemClick(row.id);
+                          }
+                        }}
                       >
-                        {row.available}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
+                        <Box
+                          className="selection-checkbox"
+                          sx={{
+                            position: 'absolute',
+                            top: 8,
+                            left: 8,
+                            opacity: isItemSelected ? 1 : 0,
+                            transition: 'opacity 0.2s',
+                            zIndex: 1
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={isItemSelected}
+                            onChange={(event) => handleClick(event, row.id)}
+                            size="small"
+                          />
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            p: 1,
+                            m: 1,
+                            minHeight: '80px'
+                          }}
+                        >
+                          <FileThumbnail
+                            fileName={row.file_name}
+                            fileKind={row.kind}
+                            thumbnailLink={row.thumbnail_link}
+                            filePath={row.file_path}
+                            size={viewType === 'grid' ? 'medium' : 'large'}
+                            isGoogleDrive={true}
+                            fileId={row.id}
+                          />
+                        </Box>
+                        <CardContent sx={{ flexGrow: 1, pt: 0.5, px: 1.5, pb: 1 }}>
+                          <Typography variant="body2" noWrap>
+                            {row.file_name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {formatFileSize(row.file_size)}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: '#1DB954' }}
+                          >
+                            {row.available}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Box>
+          ) : (
+            <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+              <FileTable
+                fileRows={convertedFiles}
+                isLoading={false} // We handle loading with our custom indicator
+                order={order}
+                orderBy={orderBy}
+                selected={selected}
+                page={page}
+                rowsPerPage={rowsPerPage}
+                isCloudSync={false}
+                hoveredRowId={hoveredRowId}
+                _devices={devices}
+                onRequestSort={onRequestSort}
+                onSelectAllClick={onSelectAllClick}
+                handleClick={handleClick}
+                handleFileNameClick={handleItemClick}
+                isSelected={isSelected}
+                setHoveredRowId={setHoveredRowId}
+                handlePriorityChange={handlePriorityChange}
+                columnVisibility={columnVisibility}
+                currentView="google_drive"
+              />
+            </Box>
+          )}
         </Box>
-      ) : (
-        <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-          <FileTable
-            fileRows={convertedFiles}
-            isLoading={isLoading}
-            order={order}
-            orderBy={orderBy}
-            selected={selected}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            isCloudSync={false}
-            hoveredRowId={hoveredRowId}
-            _devices={devices}
-            onRequestSort={onRequestSort}
-            onSelectAllClick={onSelectAllClick}
-            handleClick={handleClick}
-            handleFileNameClick={handleItemClick}
-            isSelected={isSelected}
-            setHoveredRowId={setHoveredRowId}
-            handlePriorityChange={handlePriorityChange}
-            columnVisibility={columnVisibility}
-            currentView="google_drive"
-          />
-        </Box>
-      )}
+      </Fade>
       
-      {/* Load More Button */}
-      {hasMorePages && (
-        <Box sx={{ p: 2, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button
-            variant="outlined"
-            onClick={loadMoreFiles}
-            disabled={isLoadingMore}
-            startIcon={isLoadingMore ? <CircularProgress size={16} /> : <ExpandMoreIcon />}
-            sx={{ minWidth: 120 }}
-          >
-            {isLoadingMore ? 'Loading...' : 'Load More'}
-          </Button>
-          <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
-            Showing {sortedGoogleDriveFiles.length} files
-          </Typography>
-        </Box>
+      {/* Progressive loading indicator for when more files are being loaded */}
+      {isGoogleDriveLoading && googleDriveFiles.length > 0 && (
+        <GoogleDriveLoadingIndicator
+          isLoading={true}
+          error={null}
+          hasFiles={true}
+          viewType={viewType}
+        />
       )}
     </Box>
   );

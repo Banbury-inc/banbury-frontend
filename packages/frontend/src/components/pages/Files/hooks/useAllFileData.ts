@@ -21,83 +21,46 @@ export const useAllFileData = (
   const [isLoading, setIsLoading] = useState(true);
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
-  const lastGoogleDriveFetchRef = useRef<number>(0);
-  
-  // Debounce Google Drive calls to prevent excessive API requests
-  const GOOGLE_DRIVE_DEBOUNCE_MS = 2000;
 
   // Initial data fetch when component mounts or when view, path, or updates change
   useEffect(() => {
-    const fetchAndUpdateData = async () => {
+    const loadFiles = async () => {
+      if (!username) {
+        setFileRows([]);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       
-      // Fetch device data if needed
-      if (!devices || devices.length === 0) {
-        const deviceData = await fetchDeviceData();
-        setDevices(Array.isArray(deviceData) ? deviceData : []);
+      try {
+        // Don't fetch Google Drive data here - it's handled in Files.tsx
+        if (currentView === 'google_drive') {
+          setFileRows([]);
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await fetchAllData(
+          username,
+          filePath, 
+          filePathDevice,
+          currentView,
+          devices
+        );
+        
+        setFileRows(data);
+        setFetchedFiles(data);
+      } catch (error) {
+        console.error('Error loading files:', error);
+        setFileRows([]);
+      } finally {
+        setIsLoading(false);
       }
-      
-      let newFiles: DatabaseData[] = [];
-      
-      // Use fetchAllData for all contexts including cloud
-      newFiles = await fetchAllData(
-        filePath,
-        currentView,
-        fetchedFiles
-      );
-      
-      // If we actually have files OR we're explicitly switching contexts
-      // This prevents clearing the view when API returns empty results temporarily
-      if (newFiles && newFiles.length > 0) {
-        // Create a Map to store unique files
-        const uniqueFilesMap = new Map<string, DatabaseData>();
-        
-        // Add existing fetched files to the Map - only for the same context
-        // This preserves files during navigation within the same context
-        fetchedFiles
-          .filter(file => file.source === currentView)
-          .forEach(file => {
-            const uniqueKey = `${file.file_path}-${file.device_name}-${file.source}`;
-            uniqueFilesMap.set(uniqueKey, file);
-          });
-        
-        // Add new files to the Map (will automatically overwrite duplicates)
-        // Ensure each file has a unique ID
-        newFiles.forEach((file, index) => {
-          // For Sync, Shared, Google Drive, and S3 views, ensure file paths include the right prefix
-          if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
-            file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
-          } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
-            file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
-          } else if (currentView === 'cloud' && !file.file_path.includes('Core/Cloud/')) {
-            file.file_path = `Core/Cloud/${file.file_path.split('/').pop() || file.file_name}`;
-          } else if (currentView === 'google_drive' && !file.file_path.includes('Core/GoogleDrive/')) {
-            file.file_path = `Core/GoogleDrive/${file.file_path.split('/').pop() || file.file_name}`;
-          }
-          
-          // Generate a unique ID if missing
-          if (!file.id || file.id === undefined) {
-            file.id = `file-${file.file_path}-${file.device_name}-${index}-${Date.now()}`;
-          }
-          const uniqueKey = `${file.file_path}-${file.device_name}-${file.source}`;
-          uniqueFilesMap.set(uniqueKey, file);
-        });
-        
-        // Convert Map back to array
-        const updatedFiles = Array.from(uniqueFilesMap.values());
-        
-        // Keep previous files from other contexts, only update current context files
-        setFetchedFiles(prevFiles => {
-          const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
-          return [...otherViewFiles, ...updatedFiles];
-        });
-      }
-      
-      setIsLoading(false);
     };
 
-    fetchAndUpdateData();
-  }, [username, filePath, currentView, updates]);
+    loadFiles();
+  }, [username, filePath, filePathDevice, currentView, devices, updates]);
 
   // Apply filtering based on filePathDevice or filePath
   useEffect(() => {
@@ -119,15 +82,9 @@ export const useAllFileData = (
         return;
       }
       
-      // Handle Google Drive files
+      // Google Drive is handled in Files.tsx, skip here
       if (filePath === 'Core/GoogleDrive' || filePath.includes('Core/GoogleDrive/')) {
-        const googleDriveFiles = fetchedFiles.filter(file => 
-          file.source === 'google_drive' || 
-          file.file_path?.includes('Core/GoogleDrive/') ||
-          file.device_name === 'Google Drive'
-        );
-        
-        setFileRows(googleDriveFiles);
+        setFileRows([]);
         return;
       }
       
@@ -179,56 +136,26 @@ export const useAllFileData = (
   // Listen for file changes
   useEffect(() => {
     const handleFileChange = async () => {
+      // Don't handle file changes for Google Drive - it's handled in Files.tsx
+      if (currentView === 'google_drive') {
+        return;
+      }
+
       // Re-fetch files when changes are detected
-      let newFiles: DatabaseData[] = [];
-      
-      // Use fetchAllData for all contexts including cloud
-      newFiles = await fetchAllData(
-        filePath,
-        currentView,
-        fetchedFiles
-      );
-      
-      if (newFiles && newFiles.length > 0) {
-        // Update files using same logic as above
-        const uniqueFilesMap = new Map<string, DatabaseData>();
+      try {
+        const newFiles = await fetchAllData(
+          username,
+          filePath,
+          filePathDevice,
+          currentView,
+          devices
+        );
         
-        // Preserve existing files to prevent flicker
-        fetchedFiles
-          .filter(file => file.source === currentView)
-          .forEach(file => {
-            const uniqueKey = `${file.file_path}-${file.device_name}-${file.source}`;
-            uniqueFilesMap.set(uniqueKey, file);
-          });
-        
-        // Ensure each file has a unique ID
-        newFiles.forEach((file, index) => {
-          // For Sync, Shared, Google Drive, and S3 views, ensure file paths include the right prefix
-          if (currentView === 'sync' && !file.file_path.includes('Core/Sync/')) {
-            file.file_path = `Core/Sync/${file.file_path.split('/').pop() || file.file_name}`;
-          } else if (currentView === 'shared' && !file.file_path.includes('Core/Shared/')) {
-            file.file_path = `Core/Shared/${file.file_path.split('/').pop() || file.file_name}`;
-          } else if (currentView === 'cloud' && !file.file_path.includes('Core/Cloud/')) {
-            file.file_path = `Core/Cloud/${file.file_path.split('/').pop() || file.file_name}`;
-          } else if (currentView === 'google_drive' && !file.file_path.includes('Core/GoogleDrive/')) {
-            file.file_path = `Core/GoogleDrive/${file.file_path.split('/').pop() || file.file_name}`;
-          }
-          
-          // Generate a unique ID if missing
-          if (!file.id || file.id === undefined) {
-            file.id = `file-${file.file_path}-${file.device_name}-${index}-${Date.now()}`;
-          }
-          const uniqueKey = `${file.file_path}-${file.device_name}-${file.source}`;
-          uniqueFilesMap.set(uniqueKey, file);
-        });
-        
-        const updatedFiles = Array.from(uniqueFilesMap.values());
-        
-        // Keep previous files from other contexts, only update current context files
-        setFetchedFiles(prevFiles => {
-          const otherViewFiles = prevFiles.filter(file => file.source !== currentView);
-          return [...otherViewFiles, ...updatedFiles];
-        });
+        if (newFiles && newFiles.length > 0) {
+          setFetchedFiles(newFiles);
+        }
+      } catch (error) {
+        console.error('Error refetching files after change:', error);
       }
     };
 
@@ -239,7 +166,7 @@ export const useAllFileData = (
     return () => {
       fileWatcherEmitter.off('fileChange', handleFileChange);
     };
-  }, [filePath, currentView, fetchedFiles]);
+  }, [username, filePath, filePathDevice, currentView, devices]);
 
   return { isLoading, fileRows, fetchedFiles };
 }; 

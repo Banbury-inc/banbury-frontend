@@ -321,38 +321,32 @@ export const fetchCloudData = async () => {
 
 // Fetch all data based on the current view
 export const fetchAllData = async (
+  username: string | null,
   filePath: string,
+  filePathDevice: string | null,
   currentView: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive',
-  existingFiles: DatabaseData[] = []
-) => {
-  // When accessing Sync or Shared nodes directly, transform the path
-  let adjustedPath = filePath;
+  devices: any[],
+): Promise<DatabaseData[]> => {
+  if (!username) return [];
   
-  // Handle the case where we're selecting Sync or Shared from the tree view
-  if (filePath === 'Core/Sync' || filePath === 'Sync') {
-    adjustedPath = 'Core/Sync'; // Use the standard path for sync
-  } else if (filePath === 'Core/Shared' || filePath === 'Shared') {
-    adjustedPath = 'Core/Shared'; // Use the standard path for shared
-  } else if (filePath.includes('Core/Sync/')) {
-    // We're inside a Sync subfolder
-    adjustedPath = filePath;
-  } else if (filePath.includes('Core/Shared/')) {
-    // We're inside a Shared subfolder  
-    adjustedPath = filePath;
-  }
-  
-  switch (currentView) {
-    case 'files':
-      return fetchFilesData(adjustedPath, existingFiles);
-    case 'sync':
-      return fetchSyncData(adjustedPath);
-    case 'shared':
-      return fetchSharedData();
-    case 'cloud':
-      return fetchCloudData();
-    case 'google_drive':
-      return fetchGoogleDriveData(filePath);
-    default:
-      return [];
+  try {
+    switch (currentView) {
+      case 'files':
+        return await fetchFilesData(filePath, []);
+      case 'sync':
+        return await fetchSyncData(filePath);
+      case 'shared':
+        return await fetchSharedData();
+      case 'cloud':
+        return await fetchCloudData();
+      case 'google_drive':
+        // Google Drive data is now handled centrally in Files.tsx
+        return [];
+      default:
+        return [];
+    }
+  } catch (error) {
+    console.error('Error fetching all data:', error);
+    return [];
   }
 }; 
