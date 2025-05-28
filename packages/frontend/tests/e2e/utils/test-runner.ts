@@ -19,7 +19,18 @@ export class SharedTestContext {
   }
 
   public async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized && this.window && this.electronApp) {
+      // Check if the window is still valid
+      try {
+        await this.window.evaluate(() => true);
+        return; // Window is still valid, no need to reinitialize
+      } catch (error) {
+        console.warn('Existing window is no longer valid, reinitializing...', error);
+        this.isInitialized = false;
+        this.window = null;
+        this.electronApp = null;
+      }
+    }
 
     try {
       // Get the correct path to the Electron app
@@ -34,7 +45,6 @@ export class SharedTestContext {
 
       // Wait for app to be ready
       await new Promise(resolve => setTimeout(resolve, 2000));
-
 
       // Wait for the first BrowserWindow to open
       this.window = await this.electronApp.firstWindow();
@@ -52,6 +62,9 @@ export class SharedTestContext {
       this.isInitialized = true;
     } catch (error) {
       console.error('Failed to initialize shared test context:', error);
+      this.isInitialized = false;
+      this.window = null;
+      this.electronApp = null;
       throw error;
     }
   }

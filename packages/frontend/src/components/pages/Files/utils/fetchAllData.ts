@@ -180,6 +180,13 @@ export const fetchGoogleDriveData = async (
   filePath: string
 ) => {
   try {
+    // Check if Google Drive integration is enabled before making API calls
+    const { banbury } = await import('@banbury/core');
+    const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
+    if (!isGoogleDriveEnabled) {
+      return [];
+    }
+
     // Extract folder ID from path for subfolder navigation
     const folderId = extractGoogleDriveFolderId(filePath);
 

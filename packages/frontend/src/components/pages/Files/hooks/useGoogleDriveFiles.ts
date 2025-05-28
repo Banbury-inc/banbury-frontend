@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../../../renderer/context/AuthContext';
 import { useAlert } from '../../../../renderer/context/AlertContext';
 import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';
+import { banbury } from '@banbury/core';
 
 export interface GoogleDriveFileRow {
   id: string;
@@ -90,6 +91,17 @@ export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
 
     const fetchGoogleDriveFiles = async () => {
       try {
+        // Check if Google Drive integration is enabled before making API calls
+        const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
+        if (!isGoogleDriveEnabled) {
+          setGoogleDriveFiles([]);
+          setIsLoading(false);
+          setAuthRequired(false);
+          setNextPageToken(undefined);
+          setHasMorePages(false);
+          return;
+        }
+
         setIsLoading(true);
         setAuthRequired(false);
         
@@ -200,6 +212,25 @@ export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
   const refreshFiles = async () => {
     if (!isGoogleDrivePath || !username) return;
     
+    // Check if Google Drive integration is enabled before making API calls
+    try {
+      const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
+      if (!isGoogleDriveEnabled) {
+        setGoogleDriveFiles([]);
+        setAuthRequired(false);
+        setNextPageToken(undefined);
+        setHasMorePages(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking Google Drive status:', error);
+      setGoogleDriveFiles([]);
+      setAuthRequired(false);
+      setNextPageToken(undefined);
+      setHasMorePages(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       const folderId = extractFolderId(filePath);
@@ -274,9 +305,20 @@ export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
     }
   };
 
-  const loadMoreFiles = async () => {
+    const loadMoreFiles = async () => {
     if (!isGoogleDrivePath || !username || !nextPageToken || isLoadingMore) return;
-    
+
+    // Check if Google Drive integration is enabled before making API calls
+    try {
+      const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
+      if (!isGoogleDriveEnabled) {
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking Google Drive status:', error);
+      return;
+    }
+
     try {
       setIsLoadingMore(true);
       const folderId = extractFolderId(filePath);
@@ -418,6 +460,12 @@ export const useGoogleDriveTreeFiles = () => {
 
   const fetchGoogleDriveTreeFiles = async (folderId?: string, parentPath: string = 'Core/GoogleDrive'): Promise<GoogleDriveFileRow[]> => {
     try {
+      // Check if Google Drive integration is enabled before making API calls
+      const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
+      if (!isGoogleDriveEnabled) {
+        return [];
+      }
+
       setIsLoading(true);
       setAuthRequired(false);
       
@@ -475,6 +523,20 @@ export const useGoogleDriveTreeFiles = () => {
 
   const refreshTreeFiles = async () => {
     if (!username) return;
+    
+    // Check if Google Drive integration is enabled before making API calls
+    try {
+      const isGoogleDriveEnabled = await banbury.settings.isGoogleDriveEnabled();
+      if (!isGoogleDriveEnabled) {
+        // Clear any existing files if Google Drive is disabled
+        setTreeFiles([]);
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking Google Drive status:', error);
+      setTreeFiles([]);
+      return;
+    }
     
     // Check if we should skip this refresh due to caching
     const now = Date.now();
