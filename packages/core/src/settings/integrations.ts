@@ -71,7 +71,6 @@ export const getGoogleDriveIntegrationStatus = async (): Promise<{
 }> => {
   try {
     const enabled = localStorage.getItem(STORAGE_KEYS.GOOGLE_DRIVE_ENABLED) === 'true';
-    const configured = localStorage.getItem(STORAGE_KEYS.GOOGLE_DRIVE_CONFIGURED) === 'true';
     
     // Check if user has Google Drive credentials by trying to list files
     let hasCredentials = false;
