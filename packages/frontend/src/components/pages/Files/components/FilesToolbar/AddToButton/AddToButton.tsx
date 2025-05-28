@@ -95,6 +95,7 @@ export default function AddToButton({
 
         if (addResult === 'success') {
           await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          showAlert('File Added to Sync', ['File added to sync'], 'success');
         } else {
           throw new Error(`Failed to add file: ${addResult}`);
         }
@@ -346,6 +347,7 @@ export default function AddToButton({
           
           <Stack spacing={0}>
             <MenuItem 
+              data-testid="add-to-sync-button"
               onClick={handleAddToSync}
               disabled={loading.sync}
               sx={{ 
@@ -371,6 +373,7 @@ export default function AddToButton({
             </MenuItem>
             
             <MenuItem 
+              data-testid="add-to-google-drive-button"
               onClick={handleGoogleDriveUpload}
               disabled={loading.googleDrive}
               sx={{ 
@@ -396,6 +399,7 @@ export default function AddToButton({
             </MenuItem>
             
             <MenuItem 
+              data-testid="add-to-cloud-button"
               onClick={handleS3Upload}
               disabled={loading.s3}
               sx={{ 
