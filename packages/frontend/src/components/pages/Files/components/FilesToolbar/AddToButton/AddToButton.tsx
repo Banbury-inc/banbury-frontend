@@ -8,7 +8,8 @@ import {
   MenuItem, 
   ListItemIcon, 
   ListItemText,
-  Typography 
+  Typography,
+  CircularProgress
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -21,7 +22,7 @@ import { uploadToGoogleDrive } from '@banbury/core/src/files/googleDrive';
 import { uploadToS3 } from '@banbury/core/src/files/uploadToS3';
 import banbury from '@banbury/core';
 import fs from 'fs';
-import { FileCopy } from '@mui/icons-material';
+import { FileCopy, AddToDrive, CloudUploadOutlined} from '@mui/icons-material';
 
 interface AddToButtonProps {
   selectedFileNames: string[];
@@ -301,7 +302,14 @@ export default function AddToButton({
           disabled={isAnyLoading}
           sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
         >
-          <FileCopy fontSize="inherit" />
+          {isAnyLoading ? (
+            <CircularProgress 
+              size={16} 
+              sx={{ color: '#ffffff' }}
+            />
+          ) : (
+            <FileCopy fontSize="inherit" />
+          )}
         </Button>
       </Tooltip>
       
@@ -349,7 +357,11 @@ export default function AddToButton({
               }}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
-                <SyncIcon fontSize="small" sx={{ color: '#ffffff' }} />
+                {loading.sync ? (
+                  <CircularProgress size={16} sx={{ color: '#ffffff' }} />
+                ) : (
+                  <SyncIcon fontSize="small" sx={{ color: '#ffffff' }} />
+                )}
               </ListItemIcon>
               <ListItemText>
                 <Typography variant="body2" sx={{ color: '#ffffff' }}>
@@ -370,7 +382,11 @@ export default function AddToButton({
               }}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
-                <CloudUploadIcon fontSize="small" sx={{ color: '#ffffff' }} />
+                {loading.googleDrive ? (
+                  <CircularProgress size={16} sx={{ color: '#ffffff' }} />
+                ) : (
+                  <AddToDrive fontSize="small" sx={{ color: '#ffffff' }} />
+                )}
               </ListItemIcon>
               <ListItemText>
                 <Typography variant="body2" sx={{ color: '#ffffff' }}>
@@ -391,7 +407,11 @@ export default function AddToButton({
               }}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
-                <CloudUploadOutlinedIcon fontSize="small" sx={{ color: '#ffffff' }} />
+                {loading.s3 ? (
+                  <CircularProgress size={16} sx={{ color: '#ffffff' }} />
+                ) : (
+                  <CloudUploadOutlined fontSize="small" sx={{ color: '#ffffff' }} />
+                )}
               </ListItemIcon>
               <ListItemText>
                 <Typography variant="body2" sx={{ color: '#ffffff' }}>

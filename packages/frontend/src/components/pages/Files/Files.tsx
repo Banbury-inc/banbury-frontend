@@ -181,7 +181,8 @@ export default function Files() {
   const { isLoading, fileRows } = useAllFileData(
     username,
     filePath,
-    currentContext
+    currentContext,
+    updates
   );
 
   useEffect(() => {
@@ -407,17 +408,33 @@ export default function Files() {
     }
     setSelected(newSelected);
 
+    // Determine which data source to use based on current context
+    let dataSource: any[] = [];
+    
+    if (currentContext === 'google_drive') {
+      // For Google Drive, convert googleDriveFiles to match the expected format
+      dataSource = googleDriveFiles.map(file => ({
+        ...file,
+        id: `gdrive-${file.id}`, // Use prefixed ID to match selection
+        google_drive_id: file.id // Keep original ID
+      }));
+    } else {
+      // For other contexts, use fileRows
+      dataSource = fileRows;
+    }
+
     const newSelectedFileNames = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.file_name)
+      .map((id) => dataSource.find((file) => file.id === id)?.file_name)
       .filter((name) => name !== undefined) as string[];
     const newSelectedDeviceNames = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.device_name)
+      .map((id) => dataSource.find((file) => file.id === id)?.device_name)
       .filter((name) => name !== undefined) as string[];
     setSelectedFileNames(newSelectedFileNames);
     setSelectedDeviceNames(newSelectedDeviceNames);
+    
     // Get file info for selected files and update selectedFileInfo state
     const newSelectedFileInfo = newSelected
-      .map((id) => fileRows.find((file) => file.id === id))
+      .map((id) => dataSource.find((file) => file.id === id))
       .filter((file) => file !== undefined);
     setSelectedFileInfo(newSelectedFileInfo);
   };
