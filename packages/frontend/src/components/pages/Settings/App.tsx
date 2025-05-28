@@ -8,6 +8,7 @@ import { useTheme, ThemeName } from '../../../renderer/context/ThemeContext';
 import { Text } from '../../common/Text/Text';
 import { Button } from '../../common/Button/Button';
 import { Dropdown, DropdownButton, DropdownMenu, DropdownItem } from '../../common/Dropdown/Dropdown';
+import { clearBanburyCredentials } from '@banbury/core/src/middleware/axiosGlobalHeader';
 
 export default function App() {
     const [updateStatus, setUpdateStatus] = useState<{ title: string; messages: string[] } | null>(null);
@@ -106,6 +107,8 @@ export default function App() {
                 
                 // Wait a moment before logging out and redirecting
                 setTimeout(() => {
+                    // Clear .banbury credentials before logout
+                    clearBanburyCredentials();
                     logout();
                 }, 1000);
             } else {
