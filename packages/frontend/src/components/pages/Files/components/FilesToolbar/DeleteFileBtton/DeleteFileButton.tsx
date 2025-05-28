@@ -1,6 +1,6 @@
 import { banbury } from "@banbury/core";
 import { useAlert } from "../../../../../../renderer/context/AlertContext";
-import { Button, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
+import { Button, Tooltip, CircularProgress } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import React, { useState } from "react";
 import { handlers } from "../../../../../../renderer/handlers";
@@ -35,7 +35,7 @@ export default function DeleteFileButton({
   setTasks,
 }: DeleteFileButtonProps) {
   const { showAlert } = useAlert();
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Determine the context based on file path and file info
   const getFileContext = () => {
@@ -55,7 +55,7 @@ export default function DeleteFileButton({
 
   const context = getFileContext();
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = async () => {
     // Check if any files are selected - different contexts use different arrays
     const hasSelectedFiles = selectedFileNames.length > 0 || selectedFileInfo.length > 0;
     
@@ -63,12 +63,8 @@ export default function DeleteFileButton({
       showAlert('No file selected', ['Please select one or more files to delete'], 'warning');
       return;
     }
-    setConfirmDialogOpen(true);
-  };
 
-  const handleConfirmDelete = async () => {
-    setConfirmDialogOpen(false);
-    
+    // Execute deletion immediately without confirmation
     try {
       // Generate file names for task description - use selectedFileNames if available, otherwise extract from selectedFileInfo
       const fileNamesForTask = selectedFileNames.length > 0 
@@ -78,6 +74,7 @@ export default function DeleteFileButton({
       const task_description = 'Deleting ' + fileNamesForTask.join(', ');
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
+      setLoading(true);
 
       let response: string = 'success';
 
@@ -109,6 +106,8 @@ export default function DeleteFileButton({
       console.error('Delete error:', error);
       showAlert('Delete failed. Please try again.', [error instanceof Error ? error.message : 'Unknown error occurred'], 'error');
       setSelected([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -208,7 +207,7 @@ export default function DeleteFileButton({
       }
 
       await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
-      showAlert('Remove completed successfully', [`Successfully removed ${selectedFileNames.length} file(s) from sync`], 'success');
+      showAlert('Delete completed successfully', [`Successfully removed ${selectedFileNames.length} file(s) from sync`], 'success');
       
       // Trigger data refresh
       setUpdates(updates + 1);
@@ -324,42 +323,6 @@ export default function DeleteFileButton({
     }
   };
 
-  const handleCancelDelete = () => {
-    setConfirmDialogOpen(false);
-  };
-
-  const getDeleteMessage = () => {
-    // Use the appropriate count based on what's available
-    const fileCount = selectedFileNames.length > 0 ? selectedFileNames.length : selectedFileInfo.length;
-    const fileText = fileCount === 1 ? 'file' : 'files';
-    
-    let location = '';
-    let action = 'delete';
-    
-    switch (context) {
-      case 'google_drive':
-        location = 'Google Drive';
-        break;
-      case 'cloud':
-        location = 'Cloud storage';
-        break;
-      case 'sync':
-        location = 'sync';
-        action = 'remove from';
-        break;
-      case 'shared':
-        location = 'shared files';
-        action = 'remove from';
-        break;
-      case 'devices':
-      default:
-        location = 'your device';
-        break;
-    }
-    
-    return `Are you sure you want to ${action} ${fileCount} ${fileText} ${action === 'delete' ? 'from' : ''} ${location}? ${action === 'delete' ? 'This action cannot be undone.' : ''}`;
-  };
-
   const getButtonTooltip = () => {
     switch (context) {
       case 'google_drive':
@@ -376,60 +339,18 @@ export default function DeleteFileButton({
     }
   };
 
-  // Get file names for display - use selectedFileNames if available, otherwise extract from selectedFileInfo
-  const getFileNamesForDisplay = () => {
-    if (selectedFileNames.length > 0) {
-      return selectedFileNames;
-    }
-    return selectedFileInfo.map(file => file.file_name || file.name || 'Unknown file');
-  };
-
-  const fileNamesForDisplay = getFileNamesForDisplay();
-
   return (
     <>
       <Tooltip title={getButtonTooltip()}>
         <Button
+          data-testid="delete-button"
           onClick={handleDeleteClick}
           sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+          disabled={loading}
         >
-          <DeleteIcon fontSize="inherit" />
+          {loading ? <CircularProgress size={20} /> : <DeleteIcon fontSize="inherit" />}
         </Button>
       </Tooltip>
-
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={handleCancelDelete}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">
-          Confirm {context === 'sync' || context === 'shared' ? 'Remove' : 'Delete'}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            {getDeleteMessage()}
-          </DialogContentText>
-          {fileNamesForDisplay.length > 0 && (
-            <DialogContentText sx={{ mt: 2, fontWeight: 'bold' }}>
-              Files to {context === 'sync' || context === 'shared' ? 'remove' : 'delete'}:
-            </DialogContentText>
-          )}
-          {fileNamesForDisplay.map((fileName, index) => (
-            <DialogContentText key={index} sx={{ ml: 2, fontSize: '0.875rem' }}>
-              • {fileName}
-            </DialogContentText>
-          ))}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">
-            {context === 'sync' || context === 'shared' ? 'Remove' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }

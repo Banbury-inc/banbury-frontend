@@ -3,6 +3,7 @@ import { DatabaseData } from '../types';
 import banbury from '@banbury/core';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';
+import { getSyncFiles } from '@banbury/core/src/files/getSyncFiles';
 
 // Helper function to create device online map
 const createDeviceOnlineMap = async () => {
@@ -73,18 +74,37 @@ export const fetchSyncData = async (
   try {
     const deviceOnlineMap = await createDeviceOnlineMap();
     
-    // Only send filepath if it contains more than just Core/Sync (for subfolders)
-    const includePath = filePath !== 'Core/Sync' && filePath.startsWith('Core/Sync/');
+    // Determine what path to send to the API
+    let globalFilePath: string | undefined = undefined;
     
-    const fileInfoResponse = await axios.post<{ files: any[] }>(
-      `${banbury.config.url}/predictions/get_files_to_sync/`,
-      {
-        global_file_path: includePath ? filePath : undefined
-      }
-    );
+    if (filePath !== 'Core/Sync' && filePath.startsWith('Core/Sync/')) {
+      // For subfolders, send the full path
+      globalFilePath = filePath;
+    } else if (filePath === 'Core/Sync') {
+      // For root sync folder, send empty string
+      globalFilePath = '';
+    }
+    
+    console.log('Fetching sync files with path:', globalFilePath);
+    
+    // Use the new core function
+    const response = await getSyncFiles(globalFilePath);
+    
+    console.log('Sync files response:', response);
+    
+    // Check if we have files in the response
+    if (!response.files || !Array.isArray(response.files)) {
+      console.warn('Invalid sync files response:', response);
+      return [];
+    }
+    
+    if (response.files.length === 0) {
+      console.log('No sync files found');
+      return [];
+    }
 
     // Mark the source of files
-    return fileInfoResponse.data.files.map(file => {
+    return response.files.map(file => {
       // Ensure the file path has the correct Core/Sync prefix
       let syncFilePath = file.file_path || '';
       if (!syncFilePath.includes('Core/Sync/')) {
@@ -100,6 +120,12 @@ export const fetchSyncData = async (
         file_path: syncFilePath,
         file_parent: file.file_parent || 'Sync',
         available: isDeviceOnline ? 'Available' : 'Unavailable',
+        kind: file.kind || 'file',
+        file_priority: file.file_priority ? parseInt(file.file_priority) : 0,
+        deviceID: file.deviceID || '',
+        original_device: file.original_device || file.device_name,
+        helpers: 0,
+        date_modified: file.date_modified || file.date_uploaded,
         source: 'sync' as const
       };
     });
