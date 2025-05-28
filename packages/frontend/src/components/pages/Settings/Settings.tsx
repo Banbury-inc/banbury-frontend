@@ -7,6 +7,7 @@ import { List, ListItemButton, ListItemText } from '@mui/material';
 import App from './App';
 import CloudSync from './CloudSync';
 import Public_Profile from './Public_Profile';
+import Integrations from './Integrations';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { styled } from '@mui/material/styles';
 
@@ -17,6 +18,7 @@ interface Section {
 
 const sections: Section[] = [
   { id: 'public-profile', title: 'Public Profile' },
+  { id: 'integrations', title: 'Integrations' },
   { id: 'cloud-sync', title: 'Cloud Sync' },
   { id: 'app', title: 'App' },
 ];
@@ -170,6 +172,7 @@ export default function Settings() {
           <CardContent>
             <Stack direction="column" spacing={3}>
               {activeSection === 'public-profile' && <Public_Profile />}
+              {activeSection === 'integrations' && <Integrations />}
               {activeSection === 'app' && <App />}
               {activeSection === 'cloud-sync' && <CloudSync />}
             </Stack>

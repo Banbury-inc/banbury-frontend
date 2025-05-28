@@ -1,8 +1,21 @@
 import { deleteAccount } from './deleteAccount';
+import { 
+  getGoogleDriveIntegrationStatus, 
+  enableGoogleDriveIntegration, 
+  disableGoogleDriveIntegration,
+  isGoogleDriveEnabled,
+  markGoogleDriveAsConfigured
+} from './integrations';
 
 export * from './updatePerformanceScoreWeightings';
 export * from './deleteAccount';
+export * from './integrations';
 
 export const settings = {
-  deleteAccount
+  deleteAccount,
+  getGoogleDriveIntegrationStatus,
+  enableGoogleDriveIntegration,
+  disableGoogleDriveIntegration,
+  isGoogleDriveEnabled,
+  markGoogleDriveAsConfigured
 };

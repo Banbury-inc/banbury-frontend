@@ -19,6 +19,7 @@ import { handleNodeSelect } from './handleNodeSelect';
 import { fileWatcherEmitter } from '@banbury/core/src/device/watchdog';
 import { useGoogleDriveTreeFiles } from '../../hooks/useGoogleDriveFiles';
 import { buildGoogleDriveTree } from './utils/buildTree';
+import { banbury } from '@banbury/core';
 
 function getIconForKind(kind: string) {
   switch (kind) {
@@ -94,8 +95,13 @@ const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
   return fileRows;
 };
 
-// Add the Google Drive node to the tree data
-const addGoogleDriveNode = (fileRows: DatabaseData[], googleDriveFiles: any[] = []): DatabaseData[] => {
+// Add the Google Drive node to the tree data (only if integration is enabled)
+const addGoogleDriveNode = (fileRows: DatabaseData[], googleDriveFiles: any[] = [], googleDriveEnabled: boolean = false): DatabaseData[] => {
+  // Don't add Google Drive node if integration is disabled
+  if (!googleDriveEnabled) {
+    return fileRows;
+  }
+
   // Find the Core node
   const coreNodeIndex = fileRows.findIndex(node => node.id === 'Core');
   
@@ -170,19 +176,37 @@ export default function FileTreeView({
   const cache = new Map<string, DatabaseData[]>();
   const [isLoading, setIsLoading] = useState(true);
   const [_expandedNodes, _setExpandedNodes] = useState<string[]>(['Core']);
+  const [isGoogleDriveEnabled, setIsGoogleDriveEnabled] = useState(false);
   
   // Add Google Drive tree hook
   const { treeFiles: googleDriveTreeFiles, refreshTreeFiles } = useGoogleDriveTreeFiles();
 
+  // Check Google Drive integration status
+  useEffect(() => {
+    const checkGoogleDriveStatus = async () => {
+      try {
+        const isEnabled = await banbury.settings.isGoogleDriveEnabled();
+        setIsGoogleDriveEnabled(isEnabled);
+      } catch (error) {
+        console.error('Error checking Google Drive status:', error);
+        setIsGoogleDriveEnabled(false);
+      }
+    };
+
+    if (username) {
+      checkGoogleDriveStatus();
+    }
+  }, [username, updates]);
+
   // Refresh Google Drive files when updates change - but only occasionally, not on every update
   useEffect(() => {
-    if (username) {
+    if (username && isGoogleDriveEnabled) {
       // Only refresh Google Drive files every 5 updates to reduce API calls
       if (updates % 5 === 0) {
         refreshTreeFiles();
       }
     }
-  }, [updates, username]);
+  }, [updates, username, isGoogleDriveEnabled]);
 
   // Main effect to fetch and update files - consolidated from the three duplicate effects
   useEffect(() => {
@@ -223,7 +247,7 @@ export default function FileTreeView({
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
         // Add Google Drive node to the tree with actual files
-        treeData = addGoogleDriveNode(treeData, googleDriveTreeFiles);
+        treeData = addGoogleDriveNode(treeData, googleDriveTreeFiles, isGoogleDriveEnabled);
         setFileRows(treeData);
         set_Files(updatedFiles);
         setIsLoading(false);
@@ -231,7 +255,7 @@ export default function FileTreeView({
     };
 
     fetchAndUpdateFiles();
-  }, [username, disableFetch, filePath, devices, googleDriveTreeFiles]);
+  }, [username, disableFetch, filePath, devices, googleDriveTreeFiles, isGoogleDriveEnabled]);
 
   // File watcher effect - separate from main fetch logic
   useEffect(() => {
@@ -255,7 +279,7 @@ export default function FileTreeView({
         // Add S3 Files node to the tree
         treeData = addS3FilesNode(treeData);
         // Add Google Drive node to the tree with actual files
-        treeData = addGoogleDriveNode(treeData, googleDriveTreeFiles);
+        treeData = addGoogleDriveNode(treeData, googleDriveTreeFiles, isGoogleDriveEnabled);
         setFileRows(treeData);
         set_Files(updatedFiles);
       }
@@ -265,7 +289,7 @@ export default function FileTreeView({
     return () => {
       fileWatcherEmitter.off('fileChanged', handleFileChange);
     };
-  }, [username, disableFetch, devices, googleDriveTreeFiles]);
+  }, [username, disableFetch, devices, googleDriveTreeFiles, isGoogleDriveEnabled]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => (
