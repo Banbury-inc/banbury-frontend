@@ -56,7 +56,7 @@ export async function createTestUser(window: Page): Promise<TestUserCredentials>
   await signUpLink.click();
 
   // Wait for the registration form to appear
-  await window.waitForSelector('h1:has-text("Sign up")');
+  await window.waitForSelector('p:has-text("Sign up")', { timeout: 10000 });
 
   // Fill in the registration form
   await window.fill('input[name="firstName"]', credentials.firstName);
