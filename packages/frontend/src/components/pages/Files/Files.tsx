@@ -181,15 +181,7 @@ export default function Files() {
   const { isLoading, fileRows } = useAllFileData(
     username,
     filePath,
-    filePathDevice,
-    currentContext,
-    setFirstname,
-    setLastname,
-    files,
-    sync_files,
-    devices || [],
-    setDevices,
-    updates
+    currentContext
   );
 
   useEffect(() => {
@@ -602,7 +594,7 @@ export default function Files() {
     };
 
     fetchGoogleDriveFiles();
-  }, [filePath, username, updates]);
+  }, [filePath]);
 
   // Helper function to get file type
   const getFileType = (fileName: string): string => {

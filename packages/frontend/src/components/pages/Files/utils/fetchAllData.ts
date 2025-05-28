@@ -29,7 +29,6 @@ export const fetchFilesData = async (
   existingFiles: DatabaseData[] = []
 ) => {
   try {
-    const deviceOnlineMap = await createDeviceOnlineMap();
 
     const fileInfoResponse = await axios.post<{ files: any[] }>(
       `${banbury.config.url}/files/get_files_from_filepath/`,
@@ -37,6 +36,8 @@ export const fetchFilesData = async (
         global_file_path: filePath
       }
     );
+
+    const deviceOnlineMap = await createDeviceOnlineMap();
 
     // Filter out files that already exist
     const existingFileKeys = new Set(
@@ -327,9 +328,7 @@ export const fetchCloudData = async () => {
 export const fetchAllData = async (
   username: string | null,
   filePath: string,
-  filePathDevice: string | null,
   currentView: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive',
-  devices: any[],
 ): Promise<DatabaseData[]> => {
   if (!username) return [];
   

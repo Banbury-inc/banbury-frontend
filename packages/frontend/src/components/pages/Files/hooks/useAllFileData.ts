@@ -1,21 +1,12 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { DatabaseData } from '../types';
 import { fetchAllData } from '../utils/fetchAllData';
-import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { fileWatcherEmitter } from '@banbury/core/src/device/watchdog';
-import banbury from '@banbury/core';
 
 export const useAllFileData = (
   username: string | null,
   filePath: string,
-  filePathDevice: string | null,
   currentView: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive',
-  setFirstname: (name: string) => void,
-  setLastname: (name: string) => void,
-  files: any,
-  sync_files: any,
-  devices: any[],
-  setDevices: (devices: any[]) => void,
   updates?: number
 ) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -44,9 +35,7 @@ export const useAllFileData = (
         const data = await fetchAllData(
           username,
           filePath, 
-          filePathDevice,
           currentView,
-          devices
         );
         
         setFileRows(data);
@@ -60,7 +49,7 @@ export const useAllFileData = (
     };
 
     loadFiles();
-  }, [username, filePath, filePathDevice, currentView, devices, updates]);
+  }, [username, filePath, currentView, updates]);
 
   // Apply filtering based on filePathDevice or filePath
   useEffect(() => {
@@ -90,11 +79,6 @@ export const useAllFileData = (
       
       // For other views, filter by source first
       let filtered = fetchedFiles.filter(file => file.source === currentView);
-      
-      // Filter by device if filePathDevice is set
-      if (filePathDevice) {
-        filtered = filtered.filter(file => file.device_name === filePathDevice);
-      }
       
       // If in 'files' view with a path, filter by path
       if (currentView === 'files' && filePath && filePath !== 'Core' && filePath !== 'Core/Devices') {
@@ -131,7 +115,7 @@ export const useAllFileData = (
     } catch (error) {
       console.error('Error in filtering effect:', error);
     }
-  }, [fetchedFiles, filePathDevice, filePath, currentView]);
+  }, [fetchedFiles, filePath, currentView]);
 
   // Listen for file changes
   useEffect(() => {
@@ -146,9 +130,7 @@ export const useAllFileData = (
         const newFiles = await fetchAllData(
           username,
           filePath,
-          filePathDevice,
           currentView,
-          devices
         );
         
         if (newFiles && newFiles.length > 0) {
@@ -166,7 +148,7 @@ export const useAllFileData = (
     return () => {
       fileWatcherEmitter.off('fileChange', handleFileChange);
     };
-  }, [username, filePath, filePathDevice, currentView, devices]);
+  }, [username, filePath, currentView]);
 
   return { isLoading, fileRows, fetchedFiles };
 }; 

@@ -7,10 +7,8 @@ import NavigateBackButton from './NavigateBackButton/NavigateBackButton';
 import NavigateForwardButton from './NavigateForwardButton/NavigateForwardButton';
 import NewInputFileUploadButton from './UploadFileButton/UploadFileButton';
 import DownloadFileButton from './DownloadFileButton/DownloadFileButton';
-import S3UploadButton from './S3UploadButton/S3UploadButton';
-import GoogleDriveUploadButton from './GoogleDriveUploadButton/GoogleDriveUploadButton';
 import DeleteFileButton from './DeleteFileBtton/DeleteFileButton';
-import AddFileToSyncButton from './AddFileToSyncButton/AddFileToSyncButton';
+import AddToButton from './AddToButton/AddToButton';
 import SyncButton from './SyncButton/SyncButton';
 import ShareFileButton from './ShareFileButton/ShareFileButton';
 import ToggleColumnsButton from './ToggleColumnsButton/ToggleColumnsButton';
@@ -49,8 +47,8 @@ export default function FilesToolbar({
   const isGoogleDrive = filePath?.includes('Core/GoogleDrive') || filePath === 'GoogleDrive';
 
   return (
-    <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
-      <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
+    <CardContent sx={{ paddingTop: '8px !important', paddingBottom: '4px !important' }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Grid container alignItems="center">
           <Grid item>
             <NavigateBackButton
@@ -90,25 +88,15 @@ export default function FilesToolbar({
             />
           </Grid>
           <Grid item paddingRight={1}>
-            <S3UploadButton 
+            <AddToButton
+              selectedFileNames={selectedFileNames}
+              selectedFileInfo={selectedFileInfo}
               filePath={filePath}
               onUploadComplete={() => {
                 setUpdates(Date.now());
-                if (filePath === 'Core/Cloud' && username) {
-                  // You may want to pass a callback prop for this
-                }
               }}
             />
           </Grid>
-          {isGoogleDrive && (
-            <Grid item paddingRight={1}>
-              <GoogleDriveUploadButton
-                onUploadComplete={() => {
-                  setUpdates(Date.now());
-                }}
-              />
-            </Grid>
-          )}
           <Grid item paddingRight={1}>
             <DeleteFileButton
               selectedFileNames={selectedFileNames}
@@ -123,13 +111,6 @@ export default function FilesToolbar({
               setTasks={setTasks}
             />
           </Grid>
-          {!isShared && (
-            <Grid item paddingRight={1}>
-              <Tooltip title="Add to Sync">
-                <AddFileToSyncButton selectedFileNames={selectedFileNames} />
-              </Tooltip>
-            </Grid>
-          )}
           {isCloudSync && (
             <Grid item paddingRight={1}>
               <RemoveFileFromSyncButton
@@ -155,10 +136,7 @@ export default function FilesToolbar({
             />
           </Grid>
           <Grid item>
-            <ChangeViewButton
-              currentView={viewType}
-              onViewChange={setViewType}
-            />
+            <ChangeViewButton currentView={viewType} onViewChange={setViewType} />
           </Grid>
         </Grid>
       </Stack>
