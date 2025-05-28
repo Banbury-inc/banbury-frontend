@@ -32,6 +32,7 @@ import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewBu
 import FileViewerTabs from '../../common/FileViewer/FileViewerTabs';
 import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from './utils/fileUtils';
 import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveFilesList';
+import FileThumbnail from './components/FileThumbnail/FileThumbnail';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -777,19 +778,19 @@ export default function Files() {
                                       justifyContent: 'center',
                                       alignItems: 'center',
                                       p: 1,
-                                      bgcolor: 'background.default',
-                                      border: '1px solid',
-                                      borderColor: 'divider',
-                                      borderRadius: '8px',
                                       m: 1,
-                                      minHeight: '60px'
+                                      minHeight: '80px'
                                     }}
                                   >
-                                    {row.kind === 'Folder' ? (
-                                      <FolderIcon className="w-6 h-6 text-primary-main" />
-                                    ) : (
-                                      <DocumentIcon className="w-6 h-6 text-text-secondary" />
-                                    )}
+                                    <FileThumbnail
+                                      fileName={row.file_name}
+                                      fileKind={row.kind as 'Folder' | 'File'}
+                                      thumbnailLink={row.thumbnail_link}
+                                      filePath={row.file_path}
+                                      size={viewType === 'grid' ? 'medium' : 'large'}
+                                      isGoogleDrive={row.source === 'google_drive'}
+                                      fileId={row.google_drive_id || row.id?.toString()}
+                                    />
                                   </Box>
                                   <CardContent sx={{ flexGrow: 1, pt: 0.5, px: 1.5, pb: 1 }}>
                                     <Typography variant="body2" noWrap>

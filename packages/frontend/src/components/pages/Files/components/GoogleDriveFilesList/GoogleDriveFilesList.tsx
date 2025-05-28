@@ -23,6 +23,7 @@ import FileTable from '../Table/Table';
 import { ViewType as FileViewType } from '../FilesToolbar/ChangeViewButton/ChangeViewButton';
 import { DatabaseData, Order } from '../../types';
 import { GoogleDriveFileRow } from '../../hooks/useGoogleDriveFiles';
+import FileThumbnail from '../FileThumbnail/FileThumbnail';
 
 interface GoogleDriveFilesListProps {
   filePath: string;
@@ -306,19 +307,19 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
                         justifyContent: 'center',
                         alignItems: 'center',
                         p: 1,
-                        bgcolor: 'background.default',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: '8px',
                         m: 1,
-                        minHeight: '60px'
+                        minHeight: '80px'
                       }}
                     >
-                      {row.kind === 'Folder' ? (
-                        <FolderIcon className="w-6 h-6 text-primary-main" />
-                      ) : (
-                        <DocumentIcon className="w-6 h-6 text-text-secondary" />
-                      )}
+                      <FileThumbnail
+                        fileName={row.file_name}
+                        fileKind={row.kind}
+                        thumbnailLink={row.thumbnail_link}
+                        filePath={row.file_path}
+                        size={viewType === 'grid' ? 'medium' : 'large'}
+                        isGoogleDrive={true}
+                        fileId={row.id}
+                      />
                     </Box>
                     <CardContent sx={{ flexGrow: 1, pt: 0.5, px: 1.5, pb: 1 }}>
                       <Typography variant="body2" noWrap>
