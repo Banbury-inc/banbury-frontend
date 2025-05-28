@@ -1,6 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import _fs from 'fs'
-import { waitForWebsocketConnection, ensureLoggedInAndOnboarded, wrapWithRecovery } from './utils/test-user'
+import { ensureLoggedInAndOnboarded, wrapWithRecovery } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
 import * as path from 'path'
 

@@ -11,9 +11,6 @@ import {
   Typography,
   CircularProgress
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useAuth } from '../../../../../../renderer/context/AuthContext';
 import { useAlert } from '../../../../../../renderer/context/AlertContext';
@@ -42,7 +39,6 @@ const createFileFromPath = async (filePath: string): Promise<File> => {
 export default function AddToButton({ 
   selectedFileNames, 
   selectedFileInfo,
-  filePath = '', 
   onUploadComplete 
 }: AddToButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

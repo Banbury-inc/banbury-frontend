@@ -1,8 +1,7 @@
 import { test, expect, Page } from '@playwright/test'
 import _fs from 'fs'
-import { waitForWebsocketConnection, ensureLoggedInAndOnboarded, wrapWithRecovery } from './utils/test-user'
+import { ensureLoggedInAndOnboarded } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
-import * as path from 'path'
 
 // This will hold our page object throughout the test file
 let page: Page;

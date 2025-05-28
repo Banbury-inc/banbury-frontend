@@ -18,7 +18,6 @@ import { DatabaseData } from './types';
 import { handleNodeSelect } from './handleNodeSelect';
 import { fileWatcherEmitter } from '@banbury/core/src/device/watchdog';
 import { buildGoogleDriveTree } from './utils/buildTree';
-import { banbury } from '@banbury/core';
 import { googleDriveService } from '../../services/googleDriveService';
 
 function getIconForKind(kind: string) {
@@ -199,7 +198,7 @@ export default function FileTreeView({
   googleDriveFiles?: any[],
   googleDriveEnabled?: boolean
 }) {
-  const { updates, set_Files, username, setFirstname, setLastname, devices } = useAuth();
+  const { set_Files, username, setFirstname, setLastname, devices } = useAuth();
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
   const disableFetch = false;
@@ -528,7 +527,7 @@ export default function FileTreeView({
           aria-label="file system navigator"
           sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
           expandedItems={expandedNodes}
-          onExpandedItemsChange={(event, itemIds) => setExpandedNodes(itemIds)}
+          onExpandedItemsChange={(_event, itemIds) => setExpandedNodes(itemIds)}
         >
           {renderTreeItems(fileRows)}
         </TreeView>

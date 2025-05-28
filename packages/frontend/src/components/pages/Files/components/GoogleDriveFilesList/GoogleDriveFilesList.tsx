@@ -8,14 +8,9 @@ import {
   Grid,
   Typography,
   Alert,
-  Breadcrumbs,
-  Link,
   Fade
 } from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import HomeIcon from '@mui/icons-material/Home';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { formatFileSize } from '../../utils/formatFileSize';
 import FileTable from '../Table/Table';
@@ -24,7 +19,6 @@ import { DatabaseData, Order } from '../../types';
 import { GoogleDriveFileRow } from '../../services/googleDriveService';
 import FileThumbnail from '../FileThumbnail/FileThumbnail';
 import GoogleDriveLoadingIndicator from './GoogleDriveLoadingIndicator';
-import { googleDriveService } from '../../services/googleDriveService';
 
 interface GoogleDriveFilesListProps {
   filePath: string;
@@ -55,7 +49,6 @@ interface GoogleDriveFilesListProps {
 }
 
 const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
-  filePath,
   viewType,
   order,
   orderBy,
@@ -73,7 +66,6 @@ const GoogleDriveFilesList: React.FC<GoogleDriveFilesListProps> = ({
   handlePriorityChange,
   columnVisibility,
   setFilePath,
-  updates,
   googleDriveFiles,
   isGoogleDriveLoading,
   googleDriveError,

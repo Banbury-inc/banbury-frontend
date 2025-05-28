@@ -32,18 +32,12 @@ export default function FilesToolbar({
   websocket,
   updates,
   setUpdates,
-  isShared,
-  isCloudSync,
-  handleFinish,
   handleShareModalOpen,
   getColumnOptions,
   handleColumnVisibilityChange,
   viewType,
   setViewType,
-  username
 }: any) {
-  // Check if we're in Google Drive context
-  const isGoogleDrive = filePath?.includes('Core/GoogleDrive') || filePath === 'GoogleDrive';
 
   return (
     <CardContent sx={{ paddingTop: '8px !important', paddingBottom: '4px !important' }}>

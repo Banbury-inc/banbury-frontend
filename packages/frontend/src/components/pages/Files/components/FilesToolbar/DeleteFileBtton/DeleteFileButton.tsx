@@ -76,8 +76,6 @@ export default function DeleteFileButton({
       setTaskbox_expanded(true);
       setLoading(true);
 
-      let response: string = 'success';
-
       switch (context) {
         case 'google_drive':
           await handleGoogleDriveDelete(taskInfo);

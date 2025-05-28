@@ -85,12 +85,8 @@ export const fetchSyncData = async (
       globalFilePath = '';
     }
     
-    console.log('Fetching sync files with path:', globalFilePath);
-    
     // Use the new core function
     const response = await getSyncFiles(globalFilePath);
-    
-    console.log('Sync files response:', response);
     
     // Check if we have files in the response
     if (!response.files || !Array.isArray(response.files)) {
@@ -99,7 +95,6 @@ export const fetchSyncData = async (
     }
     
     if (response.files.length === 0) {
-      console.log('No sync files found');
       return [];
     }
 
@@ -313,8 +308,6 @@ export const fetchCloudData = async () => {
       return [];
     }
     
-    console.log('Cloud files found:', files.length, files);
-    
     // Transform S3 files to match DatabaseData format
     const transformedFiles = files.map((s3File: any, index: number) => {
       return {
@@ -341,7 +334,6 @@ export const fetchCloudData = async () => {
       };
     });
 
-    console.log('Transformed cloud files:', transformedFiles);
     return transformedFiles;
     
   } catch (error) {

@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { ArrowUpwardOutlined, CloudUploadOutlined } from '@mui/icons-material';
+import { ArrowUpwardOutlined } from '@mui/icons-material';
 
 interface UploadProgressProps {
   uploads: {

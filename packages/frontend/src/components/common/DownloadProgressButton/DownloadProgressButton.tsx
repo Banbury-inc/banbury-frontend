@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import DownloadIcon from '@mui/icons-material/Download';
 import {
   Box,
   Button,
@@ -17,7 +16,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 import { DownloadInfo } from '@banbury/core/src/device/addDownloadsInfo';
-import { ArrowDownwardOutlined, CloudDownloadOutlined, DownloadOutlined } from '@mui/icons-material';
+import { ArrowDownwardOutlined } from '@mui/icons-material';
 
 interface DownloadProgressProps {
   downloads: DownloadInfo[];

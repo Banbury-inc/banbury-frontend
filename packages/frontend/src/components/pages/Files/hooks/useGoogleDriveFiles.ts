@@ -139,7 +139,7 @@ export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
   }, []);
 
   // Update folder ID mapping asynchronously
-  const updateFolderIdMap = useCallback(async (files: GoogleDriveFileRow[], currentFilePath: string) => {
+  const updateFolderIdMap = useCallback(async (files: GoogleDriveFileRow[] ) => {
     setTimeout(() => {
       if (!mountedRef.current) return;
       
@@ -277,7 +277,7 @@ export const useGoogleDriveFiles = (filePath: string, updates?: number) => {
       setError(null);
 
       // Update folder ID mapping asynchronously
-      await updateFolderIdMap(transformedFiles, filePath);
+      await updateFolderIdMap(transformedFiles);
 
     } catch (error: any) {
       if (abortController.signal.aborted || !mountedRef.current) return;
