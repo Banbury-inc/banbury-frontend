@@ -1,0 +1,29 @@
+name: Link branch to issue
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  link-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Extract issue number from branch name
+      id: extract
+      run: |
+        BRANCH_NAME=${{ github.ref_name }}
+        echo "Branch name: $BRANCH_NAME"
+        ISSUE_NUMBER=$(echo "$BRANCH_NAME" | grep -oE '^[0-9]+')
+        echo "Extracted issue number: $ISSUE_NUMBER"
+        echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+
+    - name: Post comment on issue
+      if: ${{ steps.extract.outputs.issue_number != '' }}
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ steps.extract.outputs.issue_number }}
+        body: |
+          🔗 **Branch [`${{ github.ref_name }}`](https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}) has been created for this issue.**
