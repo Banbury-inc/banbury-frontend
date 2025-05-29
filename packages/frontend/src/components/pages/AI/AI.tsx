@@ -555,7 +555,6 @@ export default function AI() {
             ollamaClient={ollamaClient}
             currentConversation={currentConversation}
             setCurrentConversation={setCurrentConversation}
-            handleKeyPress={handleKeyPress}
             handleStopGeneration={handleStopGeneration}
             handleRemoveImage={handleRemoveImage}
           />

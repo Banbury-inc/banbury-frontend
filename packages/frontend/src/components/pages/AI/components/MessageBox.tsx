@@ -56,7 +56,6 @@ interface MessageBoxProps {
   ollamaClient: any;
   currentConversation: any;
   setCurrentConversation: (conversation: any) => void;
-  handleKeyPress: (event: React.KeyboardEvent) => void;
   handleStopGeneration: () => void;
   handleRemoveImage: (index: number) => void;
 }
@@ -83,7 +82,6 @@ export default function MessageBox({
   ollamaClient,
   currentConversation,
   setCurrentConversation,
-  handleKeyPress,
   handleStopGeneration,
   handleRemoveImage,
 }: MessageBoxProps) {
@@ -112,6 +110,13 @@ export default function MessageBox({
       currentConversation,
       setCurrentConversation
     );
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendClick();
+    }
   };
 
   return (
@@ -174,7 +179,7 @@ export default function MessageBox({
             ref={inputRef}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             disabled={isLoading}
             autoFocus
