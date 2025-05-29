@@ -382,6 +382,10 @@ export default function ModelSelectorButton({ currentModel, onModelChange, devic
           delete newProgress[modelName];
           return newProgress;
         });
+
+        if (onRefreshDeviceInfo) {
+          onRefreshDeviceInfo();
+        }
       } else {
         setDownloadProgress(prev => {
           const newProgress = { ...prev };
