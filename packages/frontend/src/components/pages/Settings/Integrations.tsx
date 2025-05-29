@@ -12,7 +12,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Chip
+  Chip,
+  LinearProgress,
+  Tabs,
+  Tab,
+  Avatar
 } from '@mui/material';
 import { banbury } from '@banbury/core';
 import { useAuth } from '../../../renderer/context/AuthContext';
@@ -23,11 +27,34 @@ import Google_Drive_Icon from '../../../../static/Google_Drive_Icon.png';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
+import InfoIcon from '@mui/icons-material/Info';
+import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
 
 interface GoogleDriveStatus {
   enabled: boolean;
   configured: boolean;
   hasCredentials: boolean;
+}
+
+interface AuthResponse {
+  result: 'success' | 'error' | 'account_exists' | 'auth_required';
+  authUrl?: string;
+  message?: string;
+  existingAccount?: {
+    email: string;
+    name: string;
+  };
+}
+
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  category: string;
+  status: 'installed' | 'available';
+  configured?: boolean;
+  enabled?: boolean;
 }
 
 export default function Integrations() {
@@ -41,6 +68,10 @@ export default function Integrations() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDisableDialog, setShowDisableDialog] = useState(false);
+  const [showAccountExistsDialog, setShowAccountExistsDialog] = useState(false);
+  const [existingAccountInfo, setExistingAccountInfo] = useState<{email: string; name: string} | null>(null);
+  const [pendingAuthUrl, setPendingAuthUrl] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState(0);
 
   // Load Google Drive integration status on component mount
   useEffect(() => {
@@ -64,15 +95,19 @@ export default function Integrations() {
     }
   };
 
-  const handleGoogleDriveToggle = async (enabled: boolean) => {
-    if (!enabled && googleDriveStatus.enabled) {
-      // Show confirmation dialog for disabling
-      setShowDisableDialog(true);
-      return;
-    }
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue);
+  };
 
-    if (enabled) {
+  const handleConfigureIntegration = async (integrationId: string) => {
+    if (integrationId === 'google-drive') {
       await enableGoogleDrive();
+    }
+  };
+
+  const handleDisableIntegration = async (integrationId: string) => {
+    if (integrationId === 'google-drive') {
+      setShowDisableDialog(true);
     }
   };
 
@@ -83,46 +118,26 @@ export default function Integrations() {
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
       setTaskbox_expanded(true);
 
-      const response = await banbury.settings.enableGoogleDriveIntegration();
+      const response = await banbury.settings.enableGoogleDriveIntegration() as AuthResponse;
 
       if (response.result === 'success') {
         if (response.authUrl) {
-          // Open authentication window
-          const authWindow = window.open(
-            response.authUrl,
-            'google_auth',
-            'width=500,height=600,scrollbars=yes,resizable=yes'
-          );
-
-          // Monitor the auth window
-          const checkClosed = setInterval(() => {
-            if (authWindow?.closed) {
-              clearInterval(checkClosed);
-              // Reload status after auth window closes
-              setTimeout(() => {
-                loadGoogleDriveStatus();
-              }, 1000);
-            }
-          }, 1000);
-
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
-          showAlert(
-            'Authentication Required',
-            [
-              'Please complete the Google authentication in the popup window.',
-              'After authentication, your Google Drive integration will be enabled.'
-            ],
-            'info'
-          );
+          await handleAuthentication(response.authUrl, taskInfo);
         } else {
           // Integration enabled without needing auth
           await loadGoogleDriveStatus();
           await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
           showAlert('Success', ['Google Drive integration enabled successfully'], 'success');
         }
+      } else if (response.result === 'account_exists') {
+        // Handle case where account already exists
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        setExistingAccountInfo(response.existingAccount || { email: 'Unknown', name: 'Unknown' });
+        setPendingAuthUrl(response.authUrl || null);
+        setShowAccountExistsDialog(true);
       } else {
-        await banbury.sessions.failTask(taskInfo, 'Failed to enable Google Drive integration', tasks, setTasks);
-        showAlert('Error', ['Failed to enable Google Drive integration'], 'error');
+        await banbury.sessions.failTask(taskInfo, response.message || 'Failed to enable Google Drive integration', tasks, setTasks);
+        showAlert('Error', [response.message || 'Failed to enable Google Drive integration'], 'error');
       }
     } catch (error) {
       console.error('Error enabling Google Drive:', error);
@@ -134,6 +149,91 @@ export default function Integrations() {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleAuthentication = async (authUrl: string, taskInfo?: any) => {
+    try {
+      // Open authentication window
+      const authWindow = window.open(
+        authUrl,
+        'google_auth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      if (!authWindow) {
+        throw new Error('Failed to open authentication window. Please check your popup blocker settings.');
+      }
+
+      // Monitor the auth window
+      const checkClosed = setInterval(async () => {
+        if (authWindow?.closed) {
+          clearInterval(checkClosed);
+          
+          // Wait a moment for the backend to process the auth callback
+          setTimeout(async () => {
+            await loadGoogleDriveStatus();
+            
+            // Check if authentication was successful
+            const updatedStatus = await banbury.settings.getGoogleDriveIntegrationStatus();
+            
+            if (updatedStatus.enabled && updatedStatus.configured) {
+              if (taskInfo) {
+                await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+              }
+              showAlert(
+                'Success',
+                ['Google Drive integration enabled and authenticated successfully'],
+                'success'
+              );
+            } else {
+              if (taskInfo) {
+                await banbury.sessions.failTask(taskInfo, 'Authentication was not completed', tasks, setTasks);
+              }
+              showAlert(
+                'Authentication Incomplete',
+                ['Google authentication was not completed. Please try again.'],
+                'warning'
+              );
+            }
+          }, 2000);
+        }
+      }, 1000);
+
+      showAlert(
+        'Authentication Required',
+        [
+          'Please complete the Google authentication in the popup window.',
+          'After authentication, your Google Drive integration will be enabled.'
+        ],
+        'info'
+      );
+    } catch (error) {
+      console.error('Error during authentication:', error);
+      if (taskInfo) {
+        await banbury.sessions.failTask(taskInfo, 'Authentication failed', tasks, setTasks);
+      }
+      showAlert(
+        'Authentication Error',
+        [error instanceof Error ? error.message : 'Failed to open authentication window'],
+        'error'
+      );
+    }
+  };
+
+  const handleExistingAccountChoice = async (choice: 'link' | 'cancel') => {
+    setShowAccountExistsDialog(false);
+    
+    if (choice === 'link' && pendingAuthUrl) {
+      const task_description = 'Linking Google Account to Drive Integration';
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      setTaskbox_expanded(true);
+      
+      await handleAuthentication(pendingAuthUrl, taskInfo);
+    }
+    
+    // Clean up
+    setExistingAccountInfo(null);
+    setPendingAuthUrl(null);
   };
 
   const disableGoogleDrive = async () => {
@@ -167,7 +267,7 @@ export default function Integrations() {
     }
   };
 
-  const getStatusChip = () => {
+  const getGoogleDriveStatusChip = () => {
     if (isLoading) {
       return <Chip label="Loading..." size="small" />;
     }
@@ -204,111 +304,203 @@ export default function Integrations() {
     );
   };
 
-  const getStatusDescription = () => {
-    if (isLoading) {
-      return 'Loading integration status...';
-    }
-
+  // Get installed integrations
+  const getInstalledIntegrations = () => {
+    const integrations = [];
+    
+    // Add Google Drive if it's enabled and configured
     if (googleDriveStatus.enabled && googleDriveStatus.configured) {
-      return 'Google Drive is connected and ready to use. You can access your Google Drive files in the file browser.';
+      integrations.push({
+        id: 'google-drive',
+        name: 'Google Drive',
+        description: 'Access and sync your Google Drive files directly from Banbury.',
+        icon: <img src={Google_Drive_Icon} alt="Google Drive" className="w-8 h-8" />,
+        category: 'Cloud Storage',
+        status: 'installed' as const,
+        configured: true,
+        enabled: true
+      });
     }
-
-    if (googleDriveStatus.enabled && !googleDriveStatus.configured) {
-      return 'Google Drive integration is enabled but requires authentication. Please complete the authentication process.';
-    }
-
-    return 'Google Drive integration is disabled. Enable it to access your Google Drive files directly from Banbury.';
+    
+    return integrations;
   };
+
+  // Get available integrations (including unconfigured Google Drive)
+  const getAvailableIntegrations = () => {
+    const integrations = [];
+    
+    // Add Google Drive if it's not configured yet
+    if (!googleDriveStatus.enabled || !googleDriveStatus.configured) {
+      integrations.unshift({
+        id: 'google-drive',
+        name: 'Google Drive',
+        description: 'Access and sync your Google Drive files directly from Banbury.',
+        icon: <img src={Google_Drive_Icon} alt="Google Drive" className="w-8 h-8" />,
+        category: 'Cloud Storage',
+        status: 'available' as const,
+        configured: googleDriveStatus.configured,
+        enabled: googleDriveStatus.enabled
+      });
+    }
+    
+    return integrations;
+  };
+
+  const renderIntegrationCard = (integration: Integration, isInstalled: boolean) => (
+    <Card
+      key={integration.id}
+      variant="outlined"
+      sx={{
+        p: 3,
+        mb: 2,
+        '&:hover': {
+          boxShadow: 2,
+        },
+      }}
+    >
+      <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ flex: '1', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar sx={{ width: 48, height: 48, bgcolor: 'transparent' }}>
+            {integration.icon}
+          </Avatar>
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Text className="text-lg font-semibold">{integration.name}</Text>
+              {isInstalled && integration.id === 'google-drive' && getGoogleDriveStatusChip()}
+              {!isInstalled && (
+                <Chip
+                  label={integration.category}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+            </Box>
+            <Text className="text-sm text-gray-500 mb-1">
+              {integration.description}
+            </Text>
+            {integration.id === 'google-drive' && integration.enabled && !integration.configured && (
+              <Text className="text-xs text-orange-600">
+                Authentication required to complete setup
+              </Text>
+            )}
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {isInstalled ? (
+            <Button
+              onClick={() => handleDisableIntegration(integration.id)}
+              disabled={isLoading || isUpdating}
+              outline
+            >
+              Disable
+            </Button>
+          ) : (
+            <Button
+              onClick={() => handleConfigureIntegration(integration.id)}
+              disabled={isLoading || isUpdating}
+            >
+              Configure
+            </Button>
+          )}
+        </Box>
+      </Stack>
+    </Card>
+  );
+
+  const installedIntegrations = getInstalledIntegrations();
+  const availableIntegrationsData = getAvailableIntegrations();
 
   return (
     <>
-      <Text id="integrations" className="text-2xl font-bold mb-2">Integrations</Text>
+      <Text id="integrations" className="text-2xl font-bold mb-4">Integrations</Text>
 
-      <Card variant='outlined' sx={{ p: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Stack spacing={2}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Stack spacing={2} sx={{ width: '100%' }}>
-                  <Box sx={{ pr: 3, pb: 2 }}>
-                    <Text className="text-lg font-semibold mb-1">Third-party Integrations</Text>
-                    <Text className="text-xs text-gray-500">
-                      Connect external services to enhance your Banbury experience. 
-                      Manage which services you want to integrate with your account.
-                    </Text>
-                  </Box>
+      <Card variant='outlined' sx={{ p: 0 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={selectedTab} onChange={handleTabChange} aria-label="integration tabs">
+            <Tab 
+              label={`Installed Integrations (${installedIntegrations.length})`} 
+              sx={{ textTransform: 'none', fontSize: '0.9rem' }}
+            />
+            <Tab 
+              label={`Available Integrations (${availableIntegrationsData.length})`} 
+              sx={{ textTransform: 'none', fontSize: '0.9rem' }}
+            />
+          </Tabs>
+        </Box>
 
-                  {/* Google Drive Integration */}
-                  <Stack direction="row" spacing={2} sx={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ flex: '1', display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <img src={Google_Drive_Icon} alt="Google Drive" className="w-10 h-10" />
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <Text className="text-lg font-semibold">Google Drive</Text>
-                          {getStatusChip()}
-                        </Box>
-                        <Text className="text-xs text-gray-500">
-                          {getStatusDescription()}
-                        </Text>
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Switch
-                        checked={googleDriveStatus.enabled}
-                        onChange={(e) => handleGoogleDriveToggle(e.target.checked)}
-                        disabled={isLoading || isUpdating}
-                        size="small"
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            '&:hover': {
-                              backgroundColor: 'rgba(76, 175, 80, 0.08)',
-                            },
-                          },
-                          '& .MuiSwitch-thumb': {
-                            backgroundColor: '#fff',
-                          },
-                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                            backgroundColor: '#2fca45',
-                          },
-                        }}
-                      />
-                    </Box>
-                  </Stack>
+        <Box sx={{ p: 3 }}>
+          {/* Loading indicator during updates */}
+          {isUpdating && (
+            <Box sx={{ width: '100%', mb: 2 }}>
+              <LinearProgress />
+            </Box>
+          )}
 
-                  {/* Show additional info if Google Drive is enabled but not configured */}
-                  {googleDriveStatus.enabled && !googleDriveStatus.configured && (
-                    <Alert severity="warning" sx={{ mt: 2 }}>
-                      <Text className="text-sm">
-                        Google Drive integration is enabled but requires authentication. 
-                        Click the toggle again to complete the authentication process.
-                      </Text>
-                    </Alert>
-                  )}
-
-                  {/* Show info about file tree visibility */}
-                  {googleDriveStatus.enabled && googleDriveStatus.configured && (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      <Text className="text-sm">
-                        Google Drive files are now accessible in the file browser under "Core → Google Drive". 
-                        You can browse, upload, and download files directly from your Google Drive.
-                      </Text>
-                    </Alert>
-                  )}
-
-                  <Divider />
-
-                  {/* Future integrations placeholder */}
-                  <Box sx={{ py: 2 }}>
-                    <Text className="text-sm text-gray-500 text-center">
-                      More integrations coming soon...
-                    </Text>
-                  </Box>
-                </Stack>
+          {selectedTab === 0 && (
+            <Box>
+              <Box sx={{ mb: 3 }}>
+                <Text className="text-sm text-gray-600">
+                  Integrations that are currently active and configured for your account.
+                </Text>
               </Box>
-            </Stack>
-          </Grid>
-        </Grid>
+              
+              {installedIntegrations.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <IntegrationInstructionsIcon sx={{ fontSize: 48, color: 'gray', mb: 2 }} />
+                  <Text className="text-lg font-medium text-gray-500 mb-1">
+                    No installed integrations
+                  </Text>
+                  <Text className="text-sm text-gray-400">
+                    Configure integrations from the Available tab to get started.
+                  </Text>
+                </Box>
+              ) : (
+                <Stack spacing={0}>
+                  {installedIntegrations.map((integration) => 
+                    renderIntegrationCard(integration, true)
+                  )}
+                </Stack>
+              )}
+            </Box>
+          )}
+
+          {selectedTab === 1 && (
+            <Box>
+              <Box sx={{ mb: 3 }}>
+                <Text className="text-sm text-gray-600">
+                  Available integrations you can configure to enhance your Banbury experience.
+                </Text>
+              </Box>
+              
+              <Stack spacing={0}>
+                {availableIntegrationsData.map((integration) => 
+                  renderIntegrationCard(integration, false)
+                )}
+              </Stack>
+            </Box>
+          )}
+        </Box>
       </Card>
+
+      {/* Show additional info if Google Drive needs authentication */}
+      {googleDriveStatus.enabled && !googleDriveStatus.configured && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          <Text className="text-sm">
+            Google Drive integration requires authentication. 
+            Click "Configure" to complete the authentication process and link your Google account.
+          </Text>
+        </Alert>
+      )}
+
+      {/* Show info about file tree visibility */}
+      {googleDriveStatus.enabled && googleDriveStatus.configured && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Text className="text-sm">
+            Google Drive files are now accessible in the file browser under "Core → Google Drive". 
+            You can browse, upload, and download files directly from your Google Drive.
+          </Text>
+        </Alert>
+      )}
 
       {/* Disable Confirmation Dialog */}
       <Dialog
@@ -325,7 +517,9 @@ export default function Integrations() {
             Are you sure you want to disable Google Drive integration? This will:
             <br />
             • Remove Google Drive from the file browser
+            <br />
             • Disable access to your Google Drive files
+            <br />
             • Remove stored authentication credentials
             <br /><br />
             You can re-enable it at any time, but you'll need to authenticate again.
@@ -335,8 +529,47 @@ export default function Integrations() {
           <Button onClick={() => setShowDisableDialog(false)}>
             Cancel
           </Button>
-          <Button onClick={disableGoogleDrive} autoFocus>
+          <Button onClick={disableGoogleDrive}>
             Disable Integration
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Account Already Exists Dialog */}
+      <Dialog
+        open={showAccountExistsDialog}
+        onClose={() => handleExistingAccountChoice('cancel')}
+        aria-labelledby="account-exists-dialog-title"
+        aria-describedby="account-exists-dialog-description"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="account-exists-dialog-title">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <InfoIcon color="info" />
+            Link Existing Google Account
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="account-exists-dialog-description">
+            The Google account <strong>{existingAccountInfo?.email}</strong> ({existingAccountInfo?.name}) 
+            is already associated with your Banbury account.
+            <br /><br />
+            Would you like to link this account to Google Drive integration? This will allow you to:
+            <br />
+            • Access your Google Drive files in the file browser
+            <br />
+            • Upload and download files directly to/from Google Drive
+            <br />
+            • Manage your Google Drive content within Banbury
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => handleExistingAccountChoice('cancel')}>
+            Cancel
+          </Button>
+          <Button onClick={() => handleExistingAccountChoice('link')}>
+            Link Account
           </Button>
         </DialogActions>
       </Dialog>
