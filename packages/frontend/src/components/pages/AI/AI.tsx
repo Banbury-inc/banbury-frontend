@@ -1,29 +1,27 @@
-import React, { useEffect, useState, useRef } from 'react';
-import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import { CardContent, Typography, Paper, Tooltip } from "@mui/material";
-import Card from '@mui/material/Card';
-import { Grid } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
-import ImageIcon from '@mui/icons-material/Image';
-import CancelIcon from '@mui/icons-material/Cancel';
-import LanguageIcon from '@mui/icons-material/Language';
-import StopIcon from '@mui/icons-material/Stop';
-import { useAlert } from '../../../renderer/context/AlertContext';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Grid,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
-import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
-import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
-import ConversationsButton from './components/ConversationsButton';
-import ModelSelectorButton from './components/ModelSelectorButton';
-import { Textbox } from '../../common/Textbox/Textbox';
-import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
+import { AlertColor } from '@mui/material';
+import { useAlert } from '../../../renderer/context/AlertContext';
 import { Text } from '../../common/Text/Text';
+import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import MessageBubble from './components/MessageBubble/MessageBuuble';
+import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
+import { extractThinkingContent } from './handlers/handleExtractThinkingContent';
+import { saveConversation } from './handlers/handleSaveConversation';
+import ModelSelectorButton from './components/ModelSelectorButton';
+import ConversationsButton from './components/ConversationsButton';
+import MessageBox from './components/MessageBox';
 
-
-interface ChatResponse {
+export interface ChatResponse {
   model: string;
   created_at: Date;
   message: {
@@ -33,7 +31,7 @@ interface ChatResponse {
   done: boolean;
 }
 
-interface ExtendedChatMessage extends CoreChatMessage {
+export interface ExtendedChatMessage extends CoreChatMessage {
   thinking?: string;
   images?: string[];
   searchInfo?: {
@@ -68,22 +66,6 @@ interface Conversation {
   messages: ExtendedChatMessage[];
   category?: string;
 }
-
-const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
-  const thinkRegex = /<think>([\s\S]*?)<\/think>/;
-  const match = content.match(thinkRegex);
-
-  if (match) {
-    // Remove all <think> blocks from the content
-    const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-    return {
-      thinking: match[1].trim(),
-      cleanContent
-    };
-  }
-
-  return { cleanContent: content };
-};
 
 // Add this near the other styled components
 const SearchingIndicator = styled(Typography)`
@@ -198,46 +180,6 @@ export default function AI() {
     fetchDeviceInfo();
   };
 
-  const saveConversation = (messages: ExtendedChatMessage[]) => {
-    if (messages.length === 0) return;
-
-    const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');
-    const lastMessage = messages[messages.length - 1].content.slice(0, 100) +
-      (messages[messages.length - 1].content.length > 100 ? '...' : '');
-
-    const conversation: Conversation = {
-      id: currentConversation?.id || crypto.randomUUID(),
-      title,
-      lastMessage,
-      timestamp: new Date(),
-      messages: messages.filter(msg =>
-        msg.role === 'user' || msg.role === 'assistant'
-      )
-    };
-
-    // Load existing conversations
-    const savedConversations = localStorage.getItem('ai_conversations');
-    let conversations: Conversation[] = [];
-    if (savedConversations) {
-      try {
-        conversations = JSON.parse(savedConversations);
-      } catch (error) {
-        console.error('Error loading conversations:', error);
-      }
-    }
-
-    // Update or add the conversation
-    const existingIndex = conversations.findIndex(c => c.id === conversation.id);
-    if (existingIndex !== -1) {
-      conversations[existingIndex] = conversation;
-    } else {
-      conversations.unshift(conversation);
-    }
-
-    // Save back to localStorage
-    localStorage.setItem('ai_conversations', JSON.stringify(conversations));
-    setCurrentConversation(conversation);
-  };
 
   const handleSelectConversation = (conversation: Conversation) => {
     setCurrentConversation(conversation);
@@ -254,30 +196,6 @@ export default function AI() {
     inputRef.current?.focus();
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) {
-        showAlert('Error', ['Only image files are allowed'], 'error');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (typeof e.target?.result === 'string') {
-          // Extract the base64 data from the data URL
-          const base64Data = e.target.result.split(',')[1];
-          setSelectedImages(prev => [...prev, base64Data]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Clear the input
-    event.target.value = '';
-  };
 
   const handleRemoveImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
@@ -353,7 +271,7 @@ export default function AI() {
         };
         const updatedMessages = [...messages, assistantMessage];
         setMessages(updatedMessages);
-        saveConversation(updatedMessages);
+        saveConversation(updatedMessages, currentConversation, setCurrentConversation, setMessages);
       }
       
       // Clear streaming states
@@ -365,128 +283,11 @@ export default function AI() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
-
-    // Clean up any existing abort controller before starting a new request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-
-    const userMessage: ExtendedChatMessage = {
-      role: 'user',
-      content: inputMessage.trim(),
-      images: selectedImages
-    };
-
-    // Create a new AbortController for this request
-    abortControllerRef.current = new AbortController();
-
-    // Update UI state
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setSelectedImages([]);
-    setIsLoading(true);
-    setIsStreaming(true);
-    setStreamingMessage('');
-    setStreamingThinking('');
-
-    try {
-      if (useWebSearch) {
-        setIsSearching(true);
-        const startTime = Date.now();
-        // Modify the user's message to include web search results
-        const webSearchService = new WebSearchService();
-        const searchResults = await webSearchService.search(inputMessage.trim());
-        const duration = ((Date.now() - startTime) / 1000);
-        setIsSearching(false);
-        
-        // Format search results into a context string
-        const searchContext = searchResults.map((result: WebSearchResult) => 
-          `[${result.title}]\n${result.snippet}\nSource: ${result.link}`
-        ).join('\n\n');
-
-        // Add search results and duration as context to the user message
-        userMessage.content = `<context>${searchContext}</context>\n${inputMessage.trim()}`;
-        userMessage.searchInfo = { duration: parseFloat(duration.toFixed(1)) };
-      }
-
-      const response = await ollamaClient.chat([...messages, userMessage], {
-        stream: true,
-        model: currentModel,
-        useWebSearch,
-        signal: abortControllerRef.current.signal
-      });
-
-      if (Symbol.asyncIterator in response) {
-        // Handle streaming response
-        let completeMessage = '';
-        try {
-          for await (const chunk of response as AsyncIterable<ChatResponse>) {
-            // Check if the request was aborted
-            if (abortControllerRef.current?.signal.aborted) {
-              break;
-            }
-            completeMessage += chunk.message.content;
-            const { thinking, cleanContent } = extractThinkingContent(completeMessage);
-            setStreamingMessage(cleanContent);
-            if (thinking) {
-              setStreamingThinking(thinking);
-            }
-          }
-        } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
-            return;
-          }
-          throw error;
-        }
-
-        // Only add the message if we weren't aborted
-        if (!abortControllerRef.current?.signal.aborted) {
-          const { thinking, cleanContent } = extractThinkingContent(completeMessage);
-          const assistantMessage: ExtendedChatMessage = {
-            role: 'assistant',
-            content: cleanContent,
-            thinking
-          };
-          const updatedMessages = [...messages, userMessage, assistantMessage];
-          setMessages(updatedMessages);
-          saveConversation(updatedMessages);
-        }
-      } else {
-        // Handle non-streaming response (fallback)
-        const chatResponse = response as unknown as ChatResponse;
-        const { thinking, cleanContent } = extractThinkingContent(chatResponse.message.content);
-        const assistantMessage: ExtendedChatMessage = {
-          role: 'assistant',
-          content: cleanContent,
-          thinking
-        };
-        const updatedMessages = [...messages, userMessage, assistantMessage];
-        setMessages(updatedMessages);
-        saveConversation(updatedMessages);
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        return;
-      }
-      console.error('Error sending message:', error);
-      showAlert('Error', ['Failed to send message', error instanceof Error ? error.message : 'Unknown error'], 'error');
-    } finally {
-      // Always clean up states
-      setIsLoading(false);
-      setIsStreaming(false);
-      setStreamingMessage('');
-      setStreamingThinking('');
-      abortControllerRef.current = null;
-    }
-  };
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSendMessage();
+      // MessageBox component now handles sending messages
     }
   };
 
@@ -732,145 +533,32 @@ export default function AI() {
               <div ref={messagesEndRef} />
             </Box>
           </CardContent>
-          <Box sx={{
-            p: 2,
-            borderTop: 1,
-            pl: 8,
-            pr: 3,
-            borderColor: 'transparent',
-            backgroundColor: (theme) => theme.palette.background.paper,
-            flexShrink: 0
-          }}>
-            <Box sx={{
-              maxWidth: '1000px',
-              margin: '0 auto',
-              width: '100%'
-            }}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  backgroundColor: (theme) => theme.palette.background.default,
-                  boxShadow: (theme) => theme.shadows[2],
-                  maxWidth: 600,
-                  margin: '0 auto',
-                  mt: 2,
-                }}
-              >
-                {selectedImages.length > 0 && (
-                  <ImagePreviewContainer>
-                    {selectedImages.map((image, index) => (
-                      <Box key={index} sx={{ position: 'relative' }}>
-                        <ImagePreview 
-                          src={`data:image/jpeg;base64,${image}`} 
-                          alt={`Selected image ${index + 1}`} 
-                        />
-                        <ToolbarButton
-                          onClick={() => handleRemoveImage(index)}
-                          size="small"
-                          sx={{
-                            minWidth: 0,
-                            width: 28,
-                            height: 28,
-                            borderRadius: 2,
-                            position: 'absolute',
-                            top: -8,
-                            right: -8,
-                            backgroundColor: 'background.paper',
-                            '&:hover': { backgroundColor: 'action.hover' },
-                          }}
-                        >
-                          <CancelIcon sx={{ fontSize: '1.1rem' }} />
-                        </ToolbarButton>
-                      </Box>
-                    ))}
-                  </ImagePreviewContainer>
-                )}
-                <Textbox
-                  ref={inputRef}
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder="Type a message..."
-                  disabled={isLoading}
-                  autoFocus
-                  className="w-full"
-                  type="text"
-                  style={{ marginBottom: 16 }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                  <HiddenInput
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                  />
-                  <Tooltip title="Web Search">
-                    <ToolbarButton
-                      onClick={() => setUseWebSearch(!useWebSearch)}
-                      size="small"
-                      sx={{
-                        minWidth: 0,
-                        width: 36,
-                        height: 36,
-                        borderRadius: 2,
-                        backgroundColor: useWebSearch ? 'rgba(66,133,244,0.15)' : 'background.paper',
-                        '&:hover': {
-                          backgroundColor: useWebSearch ? 'rgba(66,133,244,0.22)' : (theme) => theme.palette.action.hover,
-                        },
-                      }}
-                    >
-                      <LanguageIcon sx={{ fontSize: '1.1rem', color: useWebSearch ? 'primary.main' : 'text.secondary' }} />
-                    </ToolbarButton>
-                  </Tooltip>
-                  <Tooltip title="Upload Image">
-                    <ToolbarButton
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isLoading}
-                      size="small"
-                      sx={{
-                        minWidth: 0,
-                        width: 36,
-                        height: 36,
-                        borderRadius: 2,
-                      }}
-                    >
-                      <ImageIcon sx={{ fontSize: '1.1rem' }} />
-                    </ToolbarButton>
-                  </Tooltip>
-                  <ToolbarButton
-                    onClick={isStreaming ? handleStopGeneration : handleSendMessage}
-                    disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
-                    size="small"
-                    sx={{
-                      minWidth: 0,
-                      width: 36,
-                      height: 36,
-                      borderRadius: 2,
-                      backgroundColor: (theme) =>
-                        (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
-                          ? theme.palette.grey[800]
-                          : theme.palette.primary.main,
-                      color: (theme) =>
-                        (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
-                          ? theme.palette.grey[100]
-                          : theme.palette.primary.contrastText,
-                      '&:hover': {
-                        backgroundColor: (theme) =>
-                          (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
-                            ? theme.palette.grey[700]
-                            : theme.palette.primary.dark,
-                      },
-                    }}
-                  >
-                    {isStreaming ? <StopIcon sx={{ fontSize: '1.1rem' }} /> : <SendIcon sx={{ fontSize: '1.1rem' }} />}
-                  </ToolbarButton>
-                </Box>
-              </Paper>
-            </Box>
-          </Box>
+          <MessageBox
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            selectedImages={selectedImages}
+            setSelectedImages={setSelectedImages}
+            isLoading={isLoading}
+            isStreaming={isStreaming}
+            useWebSearch={useWebSearch}
+            setUseWebSearch={setUseWebSearch}
+            messages={messages}
+            setMessages={setMessages}
+            setIsLoading={setIsLoading}
+            setIsStreaming={setIsStreaming}
+            setStreamingMessage={setStreamingMessage}
+            setStreamingThinking={setStreamingThinking}
+            abortControllerRef={abortControllerRef}
+            currentModel={currentModel}
+            setIsSearching={setIsSearching}
+            showAlert={showAlert}
+            ollamaClient={ollamaClient}
+            currentConversation={currentConversation}
+            setCurrentConversation={setCurrentConversation}
+            handleKeyPress={handleKeyPress}
+            handleStopGeneration={handleStopGeneration}
+            handleRemoveImage={handleRemoveImage}
+          />
         </Card>
       </Stack>
     </Box>
