@@ -7,7 +7,7 @@ import { AlertColor } from "@mui/material";
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
 
 // Local implementation to avoid import issues
-const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
+export const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
   const thinkRegex = /<think>([\s\S]*?)<\/think>/;
   const match = content.match(thinkRegex);
 
