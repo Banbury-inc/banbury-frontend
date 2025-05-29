@@ -301,9 +301,6 @@ export default function SignIn() {
                     // Mark this as a Google OAuth session
                     localStorage.setItem('googleOAuthSession', 'true');
                     
-                    // Mark Google Drive as configured since user just authenticated
-                    banbury.settings.markGoogleDriveAsConfigured();
-                    
                     // Store success flag for polling
                     localStorage.setItem('googleAuthSuccess', 'true');
                     localStorage.setItem('googleAuthEmail', email);
