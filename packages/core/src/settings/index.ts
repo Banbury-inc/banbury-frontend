@@ -3,8 +3,7 @@ import {
   getGoogleDriveIntegrationStatus, 
   enableGoogleDriveIntegration, 
   disableGoogleDriveIntegration,
-  isGoogleDriveEnabled,
-  markGoogleDriveAsConfigured
+  isGoogleDriveEnabled
 } from './integrations';
 
 export * from './updatePerformanceScoreWeightings';
@@ -16,6 +15,5 @@ export const settings = {
   getGoogleDriveIntegrationStatus,
   enableGoogleDriveIntegration,
   disableGoogleDriveIntegration,
-  isGoogleDriveEnabled,
-  markGoogleDriveAsConfigured
+  isGoogleDriveEnabled
 };

@@ -121,14 +121,14 @@ export default function Integrations() {
       const response = await banbury.settings.enableGoogleDriveIntegration() as AuthResponse;
 
       if (response.result === 'success') {
-        if (response.authUrl) {
-          await handleAuthentication(response.authUrl, taskInfo);
-        } else {
-          // Integration enabled without needing auth
-          await loadGoogleDriveStatus();
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
-          showAlert('Success', ['Google Drive integration enabled successfully'], 'success');
-        }
+        // Integration completed successfully (either with existing credentials or after OAuth)
+        await loadGoogleDriveStatus();
+        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        showAlert(
+          'Success', 
+          [response.message || 'Google Drive integration enabled successfully'], 
+          'success'
+        );
       } else if (response.result === 'account_exists') {
         // Handle case where account already exists
         await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
@@ -141,13 +141,31 @@ export default function Integrations() {
       }
     } catch (error) {
       console.error('Error enabling Google Drive:', error);
+      
+      // Determine the appropriate error message
+      let errorMessage = 'Failed to enable Google Drive integration';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // If there's a task in progress, fail it
+      try {
+        const task_description = 'Enabling Google Drive Integration';
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, errorMessage, tasks, setTasks);
+      } catch (taskError) {
+        // Ignore task errors at this point
+      }
+      
       showAlert(
         'Error',
-        ['Failed to enable Google Drive integration', error instanceof Error ? error.message : 'Unknown error'],
+        [errorMessage],
         'error'
       );
     } finally {
       setIsUpdating(false);
+      // Reload status in case of partial success
+      await loadGoogleDriveStatus();
     }
   };
 
@@ -488,6 +506,16 @@ export default function Integrations() {
           <Text className="text-sm">
             Google Drive integration requires authentication. 
             Click "Configure" to complete the authentication process and link your Google account.
+          </Text>
+        </Alert>
+      )}
+
+      {/* Show info about authentication process for unconfigured Google Drive */}
+      {!googleDriveStatus.enabled && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Text className="text-sm">
+            <strong>Google Drive Integration:</strong> If you signed in to Banbury with Google, you may already have Google Drive access. 
+            Click "Configure" to enable the integration. If you don't have Google credentials yet, the authentication process will open in your default browser.
           </Text>
         </Alert>
       )}

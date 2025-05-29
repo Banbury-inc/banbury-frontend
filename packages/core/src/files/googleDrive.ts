@@ -310,4 +310,45 @@ export const saveGoogleDriveFileToLocal = async (
   }
 };
 
+/**
+ * Check if user has Google Drive credentials stored
+ */
+export const checkGoogleDriveCredentials = async (): Promise<{
+  hasCredentials: boolean;
+  message?: string;
+}> => {
+  try {
+    const { token, apiKey } = loadGlobalAxiosCredentials();
+    const effectiveApiKey = apiKey || 'dev_key_1';
+
+    const response = await axios.get(
+      `${config.url}/files/google_drive/check_credentials/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-API-Key': effectiveApiKey,
+        },
+      }
+    );
+
+    if (response.data.result === 'success') {
+      return {
+        hasCredentials: response.data.has_credentials,
+        message: response.data.message,
+      };
+    } else {
+      return {
+        hasCredentials: false,
+        message: response.data.message || 'Error checking credentials',
+      };
+    }
+  } catch (error) {
+    console.error('Error checking Google Drive credentials:', error);
+    return {
+      hasCredentials: false,
+      message: 'Failed to check credentials',
+    };
+  }
+};
+
  
