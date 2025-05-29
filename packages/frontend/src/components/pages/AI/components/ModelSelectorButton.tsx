@@ -44,6 +44,7 @@ interface ModelSelectorButtonProps {
   currentModel: string;
   onModelChange: (model: string) => void;
   deviceInfo?: DeviceInfo | null;
+  onRefreshDeviceInfo?: () => void;
 }
 
 interface ModelInfo {
@@ -129,7 +130,7 @@ const AVAILABLE_MODELS: ModelInfo[] = [
   { name: 'falcon:40b', category: 'Specialized Models', size: '22.4 GB' },
 ];
 
-export default function ModelSelectorButton({ currentModel, onModelChange, deviceInfo }: ModelSelectorButtonProps) {
+export default function ModelSelectorButton({ currentModel, onModelChange, deviceInfo, onRefreshDeviceInfo }: ModelSelectorButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [downloadedModels, setDownloadedModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(false);
@@ -418,6 +419,10 @@ export default function ModelSelectorButton({ currentModel, onModelChange, devic
           if (remainingModels.length > 0) {
             handleModelSelect(remainingModels[0].name);
           }
+        }
+
+        if (onRefreshDeviceInfo) {
+          onRefreshDeviceInfo();
         }
       } else {
         console.error('Failed to delete model:', result.error);

@@ -181,18 +181,22 @@ export default function AI() {
   }, [messages, streamingMessage]);
 
   useEffect(() => {
-    // Fetch device info
-    const fetchDeviceInfo = async () => {
-      try {
-        const deviceName = os.hostname();
-        const info = await getSingleDeviceInfoWithDeviceName(deviceName);
-        setDeviceInfo(info);
-      } catch (error) {
-        console.error('Failed to fetch device info:', error);
-      }
-    };
     fetchDeviceInfo();
   }, []);
+
+  const fetchDeviceInfo = async () => {
+    try {
+      const deviceName = os.hostname();
+      const info = await getSingleDeviceInfoWithDeviceName(deviceName);
+      setDeviceInfo(info);
+    } catch (error) {
+      console.error('Failed to fetch device info:', error);
+    }
+  };
+
+  const handleRefreshDeviceInfo = () => {
+    fetchDeviceInfo();
+  };
 
   const saveConversation = (messages: ExtendedChatMessage[]) => {
     if (messages.length === 0) return;
@@ -569,6 +573,7 @@ export default function AI() {
                   currentModel={currentModel}
                   onModelChange={setCurrentModel}
                   deviceInfo={deviceInfo}
+                  onRefreshDeviceInfo={handleRefreshDeviceInfo}
                 />
               </Grid>
             </Grid>
