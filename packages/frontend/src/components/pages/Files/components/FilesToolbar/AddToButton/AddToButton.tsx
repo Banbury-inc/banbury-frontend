@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Button, 
   Tooltip, 
@@ -47,11 +47,27 @@ export default function AddToButton({
     googleDrive: false,
     s3: false
   });
+  const [isGoogleDriveEnabled, setIsGoogleDriveEnabled] = useState<boolean>(false);
   
-  const { tasks, setTasks, setTaskbox_expanded, devices, setUpdates } = useAuth();
+  const { tasks, setTasks, setTaskbox_expanded, devices, setUpdates, updates } = useAuth();
   const { showAlert } = useAlert();
   
   const open = Boolean(anchorEl);
+
+  // Check Google Drive configuration status on mount
+  useEffect(() => {
+    const checkGoogleDriveStatus = async () => {
+      try {
+        const enabled = await banbury.settings.isGoogleDriveEnabled();
+        setIsGoogleDriveEnabled(enabled);
+      } catch (error) {
+        console.error('Error checking Google Drive status:', error);
+        setIsGoogleDriveEnabled(false);
+      }
+    };
+
+    checkGoogleDriveStatus();
+  }, [updates]); // Re-check when updates context changes
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     event.stopPropagation();
@@ -122,6 +138,16 @@ export default function AddToButton({
   // Upload to Google Drive functionality
   const handleGoogleDriveUpload = async () => {
     handleClose();
+    
+    // Check if Google Drive is configured first
+    if (!isGoogleDriveEnabled) {
+      showAlert(
+        'Google Drive Not Configured',
+        ['Please configure Google Drive in Settings > Integrations before uploading files.'],
+        'warning'
+      );
+      return;
+    }
     
     if (!hasSelectedFiles) {
       showAlert(
@@ -367,33 +393,6 @@ export default function AddToButton({
                 </Typography>
               </ListItemText>
             </MenuItem>
-            
-            <MenuItem 
-              data-testid="add-to-google-drive-button"
-              onClick={handleGoogleDriveUpload}
-              disabled={loading.googleDrive}
-              sx={{ 
-                px: 2, 
-                py: 1,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                {loading.googleDrive ? (
-                  <CircularProgress size={16} sx={{ color: '#ffffff' }} />
-                ) : (
-                  <AddToDrive fontSize="small" sx={{ color: '#ffffff' }} />
-                )}
-              </ListItemIcon>
-              <ListItemText>
-                <Typography variant="body2" sx={{ color: '#ffffff' }}>
-                  {loading.googleDrive ? 'Uploading to Google Drive...' : 'Upload to Google Drive'}
-                </Typography>
-              </ListItemText>
-            </MenuItem>
-            
             <MenuItem 
               data-testid="add-to-cloud-button"
               onClick={handleS3Upload}
@@ -419,6 +418,41 @@ export default function AddToButton({
                 </Typography>
               </ListItemText>
             </MenuItem>
+            <Tooltip 
+              title={!isGoogleDriveEnabled ? "Google Drive not configured. Please set up Google Drive in Settings > Integrations." : ""}
+              placement="right"
+            >
+              <span>
+                <MenuItem 
+                  data-testid="add-to-google-drive-button"
+                  onClick={handleGoogleDriveUpload}
+                  disabled={loading.googleDrive || !isGoogleDriveEnabled}
+                  sx={{ 
+                    px: 2, 
+                    py: 1,
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    opacity: !isGoogleDriveEnabled ? 0.5 : 1
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    {loading.googleDrive ? (
+                      <CircularProgress size={16} sx={{ color: '#ffffff' }} />
+                    ) : (
+                      <AddToDrive fontSize="small" sx={{ color: '#ffffff' }} />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText>
+                    <Typography variant="body2" sx={{ color: '#ffffff' }}>
+                      {loading.googleDrive ? 'Uploading to Google Drive...' : 
+                       !isGoogleDriveEnabled ? 'Upload to Google Drive (Not Configured)' : 
+                       'Upload to Google Drive'}
+                    </Typography>
+                  </ListItemText>
+                </MenuItem>
+              </span>
+            </Tooltip>
           </Stack>
         </Box>
       </Popover>
