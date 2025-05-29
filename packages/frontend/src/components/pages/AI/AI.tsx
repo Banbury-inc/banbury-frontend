@@ -10,15 +10,15 @@ import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
 import { saveConversation } from './handlers/handleSaveConversation';
-import MessageBox from './components/MessageBox';
+import { handleStopGeneration } from './components/MessageBox/handlers/handleStopGeneration';
+import MessageBox from './components/MessageBox/MessageBox';
 import AIToolbar from './components/AIToolbar/AIToolbar';
-import ChatMessages from './components/ChatMessages';
+import ChatMessages from './components/ChatMessages/ChatMessages';
 import DragDropOverlay from './components/DragDropOverlay/DragDropOverlay';
 import { handleDragEnter } from './components/DragDropOverlay/handlers/handleDragEnter';
 import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDragLeave';
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
-import { handleStopGeneration } from './handlers/handleStopGeneration';
 
 export interface ChatResponse {
   model: string;
@@ -50,15 +50,11 @@ interface Conversation {
 export default function AI() {
   const { showAlert } = useAlert();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [streamingThinking, setStreamingThinking] = useState<string>('');
   const [currentModel, setCurrentModel] = useState<string>('llava');
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [useWebSearch, setUseWebSearch] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -71,9 +67,6 @@ export default function AI() {
     // Initialize Ollama client
     const client = new OllamaClient('http://localhost:11434', currentModel);
     setOllamaClient(client);
-
-    // Focus the input field
-    inputRef.current?.focus();
   }, [currentModel]);
 
   useEffect(() => {
@@ -104,20 +97,12 @@ export default function AI() {
     setCurrentConversation(conversation);
     setMessages(conversation.messages);
     setStreamingMessage('');
-    setInputMessage('');
   };
 
   const handleNewChat = () => {
     setCurrentConversation(null);
     setMessages([]);
-    setInputMessage('');
     setStreamingMessage('');
-    inputRef.current?.focus();
-  };
-
-
-  const handleRemoveImage = (index: number) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleStopGenerationWrapper = () => {
@@ -155,7 +140,7 @@ export default function AI() {
     onDragEnter={(e) => handleDragEnter(e, setIsDragging)}
     onDragLeave={(e) => handleDragLeave(e, setIsDragging)}
     onDragOver={(e) => handleDragOver(e, isDragging, setIsDragging)}
-    onDrop={(e) => handleDrop(e, setIsDragging, setSelectedImages, showAlert)}
+    onDrop={(e) => handleDrop(e, setIsDragging, showAlert)}
     >
       <DragDropOverlay isDragging={isDragging} />
       <AIToolbar
@@ -207,16 +192,10 @@ export default function AI() {
             />
           </CardContent>
           <MessageBox
-            inputMessage={inputMessage}
-            setInputMessage={setInputMessage}
-            selectedImages={selectedImages}
-            setSelectedImages={setSelectedImages}
-            isLoading={isLoading}
-            isStreaming={isStreaming}
-            useWebSearch={useWebSearch}
-            setUseWebSearch={setUseWebSearch}
             messages={messages}
             setMessages={setMessages}
+            isLoading={isLoading}
+            isStreaming={isStreaming}
             setIsLoading={setIsLoading}
             setIsStreaming={setIsStreaming}
             setStreamingMessage={setStreamingMessage}
@@ -229,7 +208,6 @@ export default function AI() {
             currentConversation={currentConversation}
             setCurrentConversation={setCurrentConversation}
             handleStopGeneration={handleStopGenerationWrapper}
-            handleRemoveImage={handleRemoveImage}
           />
         </Card>
       </Stack>

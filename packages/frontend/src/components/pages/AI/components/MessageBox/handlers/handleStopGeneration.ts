@@ -1,4 +1,4 @@
-import { ExtendedChatMessage } from "../AI";
+import { ExtendedChatMessage } from "../../../AI";
 import { extractThinkingContent } from "./handleSendMessage";
 
 export const handleStopGeneration = async (

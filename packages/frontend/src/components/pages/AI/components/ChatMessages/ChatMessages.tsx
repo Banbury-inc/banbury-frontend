@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Text } from '../../../common/Text/Text';
-import MessageBubble from './MessageBubble/MessageBuuble';
-import { ExtendedChatMessage } from '../AI';
+import { Text } from '../../../../common/Text/Text';
+import MessageBubble from '../MessageBubble/MessageBuuble';
+import { ExtendedChatMessage } from '../../AI';
 
 const SearchingIndicator = styled(Typography)`
   @keyframes fadeIn {

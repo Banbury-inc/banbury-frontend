@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Box, Paper, Tooltip } from '@mui/material';
 import {
   Send as SendIcon,
@@ -9,11 +9,11 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { AlertColor } from '@mui/material';
-import { ExtendedChatMessage } from '../AI';
-import { Textbox } from '../../../common/Textbox/Textbox';
-import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
-import { handleImageUpload } from '../handlers/handleImageUpload';
-import { handleSendMessage } from '../handlers/handleSendMessage';
+import { ExtendedChatMessage } from '../../AI';
+import { Textbox } from '../../../../common/Textbox/Textbox';
+import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
+import { handleImageUpload } from './handlers/handleImageUpload';
+import { handleSendMessage } from './handlers/handleSendMessage';
 
 const HiddenInput = styled('input')({
   display: 'none',
@@ -35,16 +35,10 @@ const ImagePreview = styled('img')({
 });
 
 interface MessageBoxProps {
-  inputMessage: string;
-  setInputMessage: (message: string) => void;
-  selectedImages: string[];
-  setSelectedImages: React.Dispatch<React.SetStateAction<string[]>>;
-  isLoading: boolean;
-  isStreaming: boolean;
-  useWebSearch: boolean;
-  setUseWebSearch: (useWebSearch: boolean) => void;
   messages: ExtendedChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ExtendedChatMessage[]>>;
+  isLoading: boolean;
+  isStreaming: boolean;
   setIsLoading: (isLoading: boolean) => void;
   setIsStreaming: (isStreaming: boolean) => void;
   setStreamingMessage: (message: string) => void;
@@ -57,20 +51,13 @@ interface MessageBoxProps {
   currentConversation: any;
   setCurrentConversation: (conversation: any) => void;
   handleStopGeneration: () => void;
-  handleRemoveImage: (index: number) => void;
 }
 
 export default function MessageBox({
-  inputMessage,
-  setInputMessage,
-  selectedImages,
-  setSelectedImages,
-  isLoading,
-  isStreaming,
-  useWebSearch,
-  setUseWebSearch,
   messages,
   setMessages,
+  isLoading,
+  isStreaming,
   setIsLoading,
   setIsStreaming,
   setStreamingMessage,
@@ -83,10 +70,45 @@ export default function MessageBox({
   currentConversation,
   setCurrentConversation,
   handleStopGeneration,
-  handleRemoveImage,
 }: MessageBoxProps) {
+  // Internal state management
+  const [inputMessage, setInputMessage] = useState('');
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [useWebSearch, setUseWebSearch] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Listen for file drop events
+  useEffect(() => {
+    const handleFilesDrop = (event: any) => {
+      const files = event.detail.files;
+      files.forEach((file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (typeof e.target?.result === 'string') {
+            const base64Data = e.target.result.split(',')[1];
+            setSelectedImages(prev => [...prev, base64Data]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+    window.addEventListener('filesDrop', handleFilesDrop);
+    return () => {
+      window.removeEventListener('filesDrop', handleFilesDrop);
+    };
+  }, []);
+
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleSendClick = () => {
     handleSendMessage(

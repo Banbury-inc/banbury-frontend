@@ -3,7 +3,6 @@ import { AlertColor } from '@mui/material';
 export const handleDrop = (
   e: React.DragEvent,
   setIsDragging: (isDragging: boolean) => void,
-  setSelectedImages: React.Dispatch<React.SetStateAction<string[]>>,
   showAlert: (title: string, messages: string[], severity: AlertColor) => void
 ) => {
   e.preventDefault();
@@ -11,19 +10,19 @@ export const handleDrop = (
   setIsDragging(false);
 
   const files = Array.from(e.dataTransfer.files);
-  files.forEach(file => {
-    if (!file.type.startsWith('image/')) {
-      showAlert('Error', ['Only image files are allowed'], 'error');
-      return;
-    }
+  
+  // Validate that all files are images
+  const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
+  if (invalidFiles.length > 0) {
+    showAlert('Error', ['Only image files are allowed'], 'error');
+    return;
+  }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (typeof e.target?.result === 'string') {
-        const base64Data = e.target.result.split(',')[1];
-        setSelectedImages(prev => [...prev, base64Data]);
-      }
-    };
-    reader.readAsDataURL(file);
-  });
+  // If validation passes, dispatch a custom event that MessageBox can listen to
+  if (files.length > 0) {
+    const dropEvent = new CustomEvent('filesDrop', { 
+      detail: { files } 
+    });
+    window.dispatchEvent(dropEvent);
+  }
 }; 

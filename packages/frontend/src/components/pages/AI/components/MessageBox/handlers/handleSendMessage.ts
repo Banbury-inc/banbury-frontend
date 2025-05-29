@@ -1,7 +1,7 @@
 import React from 'react';
-import { ExtendedChatMessage } from "../AI";
-import { ChatResponse } from "../AI";
-import { saveConversation } from "./handleSaveConversation";
+import { ExtendedChatMessage } from "../../../AI";
+import { ChatResponse } from "../../../AI";
+import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import { AlertColor } from "@mui/material";
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
@@ -29,7 +29,7 @@ export const handleSendMessage = async (
   messages: ExtendedChatMessage[], 
   setMessages: React.Dispatch<React.SetStateAction<ExtendedChatMessage[]>>, 
   setInputMessage: (inputMessage: string) => void, 
-  setSelectedImages: (selectedImages: string[]) => void, 
+  setSelectedImages: React.Dispatch<React.SetStateAction<string[]>>, 
   setIsLoading: (isLoading: boolean) => void, 
   setIsStreaming: (isStreaming: boolean) => void, 
   setStreamingMessage: (streamingMessage: string) => void, 
