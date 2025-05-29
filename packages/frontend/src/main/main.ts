@@ -216,7 +216,7 @@ app.whenReady().then(async () => {
   // Register IPC handlers first
   registerIpcHandlers();
   
-  // Then initialize services and create window
+  // Then create window
   await createWindow();
 });
 

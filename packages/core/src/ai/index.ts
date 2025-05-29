@@ -122,7 +122,7 @@ export class OllamaClient {
      */
     async deleteModel(modelName: string) {
         try {
-            const response = await fetch(`${this.client.config.host}/api/delete`, {
+            const response = await fetch(`http://localhost:11434/api/delete`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'

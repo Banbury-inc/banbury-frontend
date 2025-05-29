@@ -13,12 +13,14 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import { styled } from '@mui/material/styles';
 import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
+import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import ConversationsButton from './components/ConversationsButton';
 import ModelSelectorButton from './components/ModelSelectorButton';
 import { Textbox } from '../../common/Textbox/Textbox';
 import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
 import { Text } from '../../common/Text/Text';
 import MessageBubble from './components/MessageBubble/MessageBuuble';
+import os from 'os';
 
 
 interface ChatResponse {
@@ -162,6 +164,7 @@ export default function AI() {
   const [isSearching, setIsSearching] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [deviceInfo, setDeviceInfo] = useState<any | null>(null);
 
   useEffect(() => {
     // Initialize Ollama client
@@ -176,6 +179,20 @@ export default function AI() {
     // Scroll to bottom when messages change or streaming content updates
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
+
+  useEffect(() => {
+    // Fetch device info
+    const fetchDeviceInfo = async () => {
+      try {
+        const deviceName = os.hostname();
+        const info = await getSingleDeviceInfoWithDeviceName(deviceName);
+        setDeviceInfo(info);
+      } catch (error) {
+        console.error('Failed to fetch device info:', error);
+      }
+    };
+    fetchDeviceInfo();
+  }, []);
 
   const saveConversation = (messages: ExtendedChatMessage[]) => {
     if (messages.length === 0) return;
@@ -551,6 +568,7 @@ export default function AI() {
                 <ModelSelectorButton
                   currentModel={currentModel}
                   onModelChange={setCurrentModel}
+                  deviceInfo={deviceInfo}
                 />
               </Grid>
             </Grid>

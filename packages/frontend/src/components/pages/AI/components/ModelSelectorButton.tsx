@@ -35,9 +35,15 @@ interface Model {
   category?: string;
 }
 
+interface DeviceInfo {
+  downloaded_models?: string[];
+  [key: string]: any;
+}
+
 interface ModelSelectorButtonProps {
   currentModel: string;
   onModelChange: (model: string) => void;
+  deviceInfo?: DeviceInfo | null;
 }
 
 interface ModelInfo {
@@ -123,7 +129,7 @@ const AVAILABLE_MODELS: ModelInfo[] = [
   { name: 'falcon:40b', category: 'Specialized Models', size: '22.4 GB' },
 ];
 
-export default function ModelSelectorButton({ currentModel, onModelChange }: ModelSelectorButtonProps) {
+export default function ModelSelectorButton({ currentModel, onModelChange, deviceInfo }: ModelSelectorButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [downloadedModels, setDownloadedModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(false);
@@ -131,6 +137,7 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [deletingModels, setDeletingModels] = useState<{ [key: string]: boolean }>({});
+  const [deviceExistsInBackend, setDeviceExistsInBackend] = useState<boolean | null>(null);
   const open = Boolean(anchorEl);
 
   const ollamaClient = new OllamaClient();
@@ -155,6 +162,13 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   }, [open]);
 
   useEffect(() => {
+    // Sync models when deviceInfo becomes available (even if popover isn't opened)
+    if (deviceInfo && downloadedModels.length > 0) {
+      syncModelsWithBackend(downloadedModels);
+    }
+  }, [deviceInfo]);
+
+  useEffect(() => {
     // Listen for model download progress updates
     const handleModelProgress = (_event: any, data: { modelName: string, progress: string }) => {
       setDownloadProgress((prev: { [key: string]: string }) => ({
@@ -173,13 +187,160 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   const loadModels = async () => {
     try {
       setLoading(true);
-      const response = await ollamaClient.listModels();
-      setDownloadedModels(response.models.map((model: any) => ({ ...model, isDownloaded: true })));
+      
+      // Get local models from Ollama
+      const ollamaResponse = await ollamaClient.listModels();
+      const localModels = ollamaResponse.models.map((model: any) => ({ ...model, isDownloaded: true }));
+      setDownloadedModels(localModels);
+      
+      // Only sync with backend if device info is available
+      if (deviceInfo) {
+        await syncModelsWithBackend(localModels);
+      }
+      
     } catch (error) {
       console.error('Failed to load models:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const syncModelsWithBackend = async (localModels: Model[]) => {
+    try {
+      console.info('DEBUG: Starting sync with backend...');
+      
+      // Skip sync if we already know the device doesn't exist
+      if (deviceExistsInBackend === false) {
+        console.info('DEBUG: Skipping sync - device marked as not existing in backend');
+        return;
+      }
+
+      // Use the passed deviceInfo instead of making an API call
+      if (!deviceInfo) {
+        console.info(`Device info not available. This is normal if this is your first time using AI models.`);
+        setDeviceExistsInBackend(false);
+        return;
+      }
+      
+      console.info('DEBUG: Device info available:', deviceInfo);
+      
+      // Mark device as existing in backend
+      if (deviceExistsInBackend === null) {
+        setDeviceExistsInBackend(true);
+        console.info('DEBUG: Marked device as existing in backend');
+      }
+      
+      const backendModels = Array.isArray(deviceInfo.downloaded_models) ? deviceInfo.downloaded_models : [];
+      const localModelNames = localModels.map((model: Model) => model.name);
+      
+      console.info('DEBUG: Local models:', localModelNames);
+      console.info('DEBUG: Backend models:', backendModels);
+      
+      // Find models that exist locally but not in backend (need to add to backend)
+      const modelsToAddToBackend = localModelNames.filter((modelName: string) => !backendModels.includes(modelName));
+      
+      // Find models that exist in backend but not locally (need to remove from backend)
+      const modelsToRemoveFromBackend = backendModels.filter((modelName: string) => !localModelNames.includes(modelName));
+      
+      console.info('DEBUG: Models to add to backend:', modelsToAddToBackend);
+      console.info('DEBUG: Models to remove from backend:', modelsToRemoveFromBackend);
+      
+      // Add missing models to backend
+      if (modelsToAddToBackend.length > 0) {
+        console.info(`DEBUG: Adding ${modelsToAddToBackend.length} models to backend...`);
+        for (const modelName of modelsToAddToBackend) {
+          try {
+            console.info(`DEBUG: Calling addModelToBackend for: ${modelName}`);
+            const result = await addModelToBackend(os.hostname(), modelName);
+            console.info(`Successfully synced model ${modelName} to backend:`, result);
+          } catch (error) {
+            console.error(`Failed to add model ${modelName} to backend:`, error);
+          }
+        }
+      } else {
+        console.info('DEBUG: No models to add to backend');
+      }
+      
+      // Remove extra models from backend
+      if (modelsToRemoveFromBackend.length > 0) {
+        console.info(`DEBUG: Removing ${modelsToRemoveFromBackend.length} models from backend...`);
+        for (const modelName of modelsToRemoveFromBackend) {
+          try {
+            console.info(`DEBUG: Calling removeModelFromBackend for: ${modelName}`);
+            const result = await removeModelFromBackend(os.hostname(), modelName);
+            console.info(`Successfully removed model ${modelName} from backend:`, result);
+          } catch (error) {
+            console.error(`Failed to remove model ${modelName} from backend:`, error);
+          }
+        }
+      } else {
+        console.info('DEBUG: No models to remove from backend');
+      }
+      
+      console.info('DEBUG: Sync with backend completed');
+      
+    } catch (error) {
+      console.error('Error syncing models with backend:', error);
+      setDeviceExistsInBackend(false);
+    }
+  };
+
+  const addModelToBackend = async (deviceName: string, modelName: string) => {
+    console.info(`DEBUG: addModelToBackend called with device: ${deviceName}, model: ${modelName}`);
+    const { token } = loadGlobalAxiosCredentials();
+    const url = `${CONFIG?.url || 'http://www.api.dev.banbury.io'}/devices/add_downloaded_model/`;
+    
+    console.info(`DEBUG: Making POST request to: ${url}`);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        device_name: deviceName,
+        model_name: modelName,
+      }),
+      credentials: 'include',
+    });
+
+    console.info(`DEBUG: Response status: ${response.status}`);
+    const data = await response.json();
+    console.info(`DEBUG: Response data:`, data);
+    
+    if (data.result !== 'success') {
+      throw new Error(data.error || data.message || 'Failed to add model');
+    }
+    return data;
+  };
+
+  const removeModelFromBackend = async (deviceName: string, modelName: string) => {
+    console.info(`DEBUG: removeModelFromBackend called with device: ${deviceName}, model: ${modelName}`);
+    const { token } = loadGlobalAxiosCredentials();
+    const url = `${CONFIG?.url || 'http://www.api.dev.banbury.io'}/devices/remove_downloaded_model/`;
+    
+    console.info(`DEBUG: Making POST request to: ${url}`);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        device_name: deviceName,
+        model_name: modelName,
+      }),
+      credentials: 'include',
+    });
+
+    console.info(`DEBUG: Response status: ${response.status}`);
+    const data = await response.json();
+    console.info(`DEBUG: Response data:`, data);
+    
+    if (data.result !== 'success') {
+      throw new Error(data.error || data.message || 'Failed to remove model');
+    }
+    return data;
   };
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -213,42 +374,7 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
       const result = await ipcRenderer.invoke('download-ollama-model', modelName);
       
       if (result.success) {
-        await loadModels();
-        
-        // Add model to device's downloaded_models array in backend
-        try {
-          const deviceName = os.hostname();
-          console.log(`DEBUG: Attempting to add model ${modelName} to device: ${deviceName}`);
-          const { token } = loadGlobalAxiosCredentials();
-          
-          // First, try to add the model
-          const response = await fetch(`${CONFIG?.url || 'http://www.api.dev.banbury.io'}/devices/add_downloaded_model/`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token && { 'Authorization': `Bearer ${token}` }),
-            },
-            body: JSON.stringify({
-              device_name: deviceName,
-              model_name: modelName,
-            }),
-            credentials: 'include',
-          });
-
-          const data = await response.json();
-          console.log(`DEBUG: Response from add model API:`, data);
-          
-          if (data.result === 'success') {
-            console.log(`Successfully added model ${modelName} to device ${deviceName}`);
-          } else if (data.error?.includes('Device not found') || data.message?.includes('Device not found')) {
-            console.log(`Device ${deviceName} not found in database. This is normal if this is your first time using AI models.`);
-            console.log('The system will track downloaded models once your device is registered with the backend.');
-          } else {
-            console.error('Failed to add model to device:', data.error || data.message);
-          }
-        } catch (error) {
-          console.error('Error updating device downloaded models:', error);
-        }
+        await loadModels(); // This will now also sync with backend
         
         setDownloadProgress(prev => {
           const newProgress = { ...prev };
@@ -273,9 +399,6 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   };
 
   const handleDeleteModel = async (modelName: string) => {
-    if (!confirm(`Are you sure you want to delete the model "${modelName}"? This action cannot be undone.`)) {
-      return;
-    }
 
     try {
       setDeletingModels(prev => ({
@@ -286,41 +409,8 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
       const result = await ipcRenderer.invoke('delete-ollama-model', modelName);
       
       if (result.success) {
-        // Refresh the models list after successful deletion
+        // Refresh the models list after successful deletion - this will also sync with backend
         await loadModels();
-        
-        // Remove model from device's downloaded_models array in backend
-        try {
-          const deviceName = os.hostname();
-          console.log(`DEBUG: Attempting to remove model ${modelName} from device: ${deviceName}`);
-          const { token } = loadGlobalAxiosCredentials();
-          const response = await fetch(`${CONFIG?.url || 'http://www.api.dev.banbury.io'}/devices/remove_downloaded_model/`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token && { 'Authorization': `Bearer ${token}` }),
-            },
-            body: JSON.stringify({
-              device_name: deviceName,
-              model_name: modelName,
-            }),
-            credentials: 'include',
-          });
-
-          const data = await response.json();
-          console.log(`DEBUG: Response from remove model API:`, data);
-          
-          if (data.result === 'success') {
-            console.log(`Successfully removed model ${modelName} from device ${deviceName}`);
-          } else if (data.error?.includes('Device not found') || data.message?.includes('Device not found')) {
-            console.log(`Device ${deviceName} not found in database. This is normal if this is your first time using AI models.`);
-            console.log('The system will track downloaded models once your device is registered with the backend.');
-          } else {
-            console.error('Failed to remove model from device:', data.error || data.message);
-          }
-        } catch (error) {
-          console.error('Error updating device downloaded models:', error);
-        }
         
         // If the deleted model was the current model, reset to a different one
         if (currentModel === modelName) {
