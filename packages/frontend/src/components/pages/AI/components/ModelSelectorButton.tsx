@@ -13,7 +13,8 @@ import {
   LinearProgress,
   Tooltip,
   Divider,
-  InputAdornment
+  InputAdornment,
+  IconButton
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
@@ -131,6 +132,7 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   const [downloadProgress, setDownloadProgress] = useState<{ [key: string]: string }>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [deletingModels, setDeletingModels] = useState<{ [key: string]: boolean }>({});
   const open = Boolean(anchorEl);
 
   const ollamaClient = new OllamaClient();
@@ -254,6 +256,44 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
     }
   };
 
+  const handleDeleteModel = async (modelName: string) => {
+    if (!confirm(`Are you sure you want to delete the model "${modelName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingModels(prev => ({
+        ...prev,
+        [modelName]: true
+      }));
+
+      const result = await ipcRenderer.invoke('delete-ollama-model', modelName);
+      
+      if (result.success) {
+        // Refresh the models list after successful deletion
+        await loadModels();
+        // If the deleted model was the current model, reset to a different one
+        if (currentModel === modelName) {
+          const remainingModels = downloadedModels.filter(m => m.name !== modelName);
+          if (remainingModels.length > 0) {
+            handleModelSelect(remainingModels[0].name);
+          }
+        }
+      } else {
+        console.error('Failed to delete model:', result.error);
+        alert(`Failed to delete model: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete model:', error);
+      alert(`Failed to delete model: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setDeletingModels(prev => ({
+        ...prev,
+        [modelName]: false
+      }));
+    }
+  };
+
   const categories = Array.from(new Set(AVAILABLE_MODELS.map(model => model.category)));
   
   const filteredModels = AVAILABLE_MODELS.filter(model => 
@@ -263,25 +303,31 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
 
   const renderModelItem = (modelName: string, isDownloaded: boolean) => {
     const isDownloading = !!downloadProgress[modelName];
+    const isDeleting = !!deletingModels[modelName];
     const isCurrentModel = currentModel === modelName;
     const modelInfo = AVAILABLE_MODELS.find(m => m.name === modelName);
 
     return (
       <ListItem
         key={modelName}
-        onClick={() => isDownloaded ? handleModelSelect(modelName) : handleDownloadModel(modelName)}
+        onClick={() => {
+          if (!isDeleting && !isDownloading) {
+            isDownloaded ? handleModelSelect(modelName) : handleDownloadModel(modelName);
+          }
+        }}
         sx={{
           borderRadius: 1,
           height: 'auto',
           minHeight: 48,
           mb: 0.5,
-          cursor: 'pointer',
+          cursor: isDeleting || isDownloading ? 'default' : 'pointer',
           backgroundColor: isCurrentModel 
             ? 'rgba(255, 255, 255, 0.08)'
             : 'transparent',
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            backgroundColor: isDeleting || isDownloading ? 'transparent' : 'rgba(255, 255, 255, 0.05)',
           },
+          opacity: isDeleting ? 0.5 : 1,
         }}
       >
         <ListItemIcon sx={{ minWidth: 36 }}>
@@ -297,17 +343,44 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
               <Typography variant="inherit" sx={{ color: 'white', fontWeight: 500 }}>
                 {modelName}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'grey.500', ml: 1 }}>
-                {modelInfo?.size}
-              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="caption" sx={{ color: 'grey.500' }}>
+                  {modelInfo?.size}
+                </Typography>
+                {isDownloaded && !isCurrentModel && (
+                  <Button
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteModel(modelName);
+                    }}
+                    disabled={isDeleting || isDownloading}
+                    sx={{
+                      minWidth: 'auto',
+                      minHeight: 0,
+                      padding: '2px 6px',
+                      fontSize: '0.65rem',
+                      color: 'error.main',
+                      border: '1px solid',
+                      borderColor: 'error.main',
+                      '&:hover': {
+                        backgroundColor: 'error.main',
+                        color: 'white',
+                      },
+                    }}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </Button>
+                )}
+              </Stack>
             </Stack>
           }
           secondary={
-            isDownloading ? (
+            (isDownloading || isDeleting) ? (
               <>
                 <LinearProgress sx={{ mt: 0.5 }} />
                 <Typography variant="caption" sx={{ color: 'grey.500', mt: 0.5, display: 'block' }}>
-                  {downloadProgress[modelName]}
+                  {isDeleting ? 'Deleting model...' : downloadProgress[modelName]}
                 </Typography>
               </>
             ) : null

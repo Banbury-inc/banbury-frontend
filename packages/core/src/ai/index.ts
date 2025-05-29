@@ -118,6 +118,34 @@ export class OllamaClient {
     }
 
     /**
+     * Delete a model
+     */
+    async deleteModel(modelName: string) {
+        try {
+            const response = await fetch(`${this.client.config.host}/api/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: modelName
+                })
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error(`Model "${modelName}" not found`);
+                }
+                throw new Error(`Failed to delete model: ${response.status} ${response.statusText}`);
+            }
+
+            return { success: true };
+        } catch (error) {
+            throw new Error(`Failed to delete model "${modelName}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
      * Generate a completion for a prompt
      */
     async generate(prompt: string, options: ChatOptions = {}) {
