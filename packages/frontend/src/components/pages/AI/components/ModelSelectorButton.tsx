@@ -13,8 +13,7 @@ import {
   LinearProgress,
   Tooltip,
   Divider,
-  InputAdornment,
-  IconButton
+  InputAdornment
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
