@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
-  Grid, 
   Stack, 
   Box, 
-  Divider, 
-  Switch, 
   Alert,
   Dialog,
   DialogTitle,
@@ -154,7 +151,7 @@ export default function Integrations() {
         const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         await banbury.sessions.failTask(taskInfo, errorMessage, tasks, setTasks);
       } catch (taskError) {
-        // Ignore task errors at this point
+        console.error('Error failing task:', taskError);
       }
       
       showAlert(
