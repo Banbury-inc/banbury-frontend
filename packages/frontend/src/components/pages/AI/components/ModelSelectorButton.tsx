@@ -23,9 +23,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { ipcRenderer } from 'electron';
-import { addDownloadedModel } from '@banbury/core/src/ai/addDownloadedModel';
-import { useAuth } from '../../../../renderer/context/AuthContext';
-import { banbury } from '@banbury/core';
 
 interface Model {
   name: string;
@@ -125,7 +122,6 @@ const AVAILABLE_MODELS: ModelInfo[] = [
 ];
 
 export default function ModelSelectorButton({ currentModel, onModelChange }: ModelSelectorButtonProps) {
-  const { username, devices} = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [downloadedModels, setDownloadedModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(false);
@@ -159,7 +155,7 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
   useEffect(() => {
     // Listen for model download progress updates
     const handleModelProgress = (_event: any, data: { modelName: string, progress: string }) => {
-      setDownloadProgress(prev => ({
+      setDownloadProgress((prev: { [key: string]: string }) => ({
         ...prev,
         [data.modelName]: data.progress
       }));
@@ -176,7 +172,7 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
     try {
       setLoading(true);
       const response = await ollamaClient.listModels();
-      setDownloadedModels(response.models.map(model => ({ ...model, isDownloaded: true })));
+      setDownloadedModels(response.models.map((model: any) => ({ ...model, isDownloaded: true })));
     } catch (error) {
       console.error('Failed to load models:', error);
     } finally {
@@ -221,24 +217,6 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
           delete newProgress[modelName];
           return newProgress;
         });
-
-        // After successful download, call add_downloaded_model
-        try {
-          if (username) {
-            if (devices && devices.length > 0) {
-              const device = devices.find(d => d.device_name === banbury.device.name());
-              if (device) {
-                const deviceId = device._id;
-                const addModelResult = await addDownloadedModel(modelName, deviceId);
-                if (addModelResult === 'failed' || addModelResult === 'task_add failed') {
-                  console.error('Failed to register downloaded model');
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error registering downloaded model:', error);
-        }
       } else {
         setDownloadProgress(prev => {
           const newProgress = { ...prev };
