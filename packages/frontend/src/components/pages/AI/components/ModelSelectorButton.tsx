@@ -21,7 +21,10 @@ import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { OllamaClient } from '@banbury/core/src/ai';
+import { CONFIG } from '@banbury/core/src/config';
+import { loadGlobalAxiosCredentials } from '@banbury/core/src/middleware/axiosGlobalHeader';
 import { ipcRenderer } from 'electron';
+import os from 'os';
 
 interface Model {
   name: string;
@@ -211,6 +214,42 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
       
       if (result.success) {
         await loadModels();
+        
+        // Add model to device's downloaded_models array in backend
+        try {
+          const deviceName = os.hostname();
+          console.log(`DEBUG: Attempting to add model ${modelName} to device: ${deviceName}`);
+          const { token } = loadGlobalAxiosCredentials();
+          
+          // First, try to add the model
+          const response = await fetch(`${CONFIG?.url || 'http://www.api.dev.banbury.io'}/devices/add_downloaded_model/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+            body: JSON.stringify({
+              device_name: deviceName,
+              model_name: modelName,
+            }),
+            credentials: 'include',
+          });
+
+          const data = await response.json();
+          console.log(`DEBUG: Response from add model API:`, data);
+          
+          if (data.result === 'success') {
+            console.log(`Successfully added model ${modelName} to device ${deviceName}`);
+          } else if (data.error?.includes('Device not found') || data.message?.includes('Device not found')) {
+            console.log(`Device ${deviceName} not found in database. This is normal if this is your first time using AI models.`);
+            console.log('The system will track downloaded models once your device is registered with the backend.');
+          } else {
+            console.error('Failed to add model to device:', data.error || data.message);
+          }
+        } catch (error) {
+          console.error('Error updating device downloaded models:', error);
+        }
+        
         setDownloadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[modelName];
@@ -249,6 +288,40 @@ export default function ModelSelectorButton({ currentModel, onModelChange }: Mod
       if (result.success) {
         // Refresh the models list after successful deletion
         await loadModels();
+        
+        // Remove model from device's downloaded_models array in backend
+        try {
+          const deviceName = os.hostname();
+          console.log(`DEBUG: Attempting to remove model ${modelName} from device: ${deviceName}`);
+          const { token } = loadGlobalAxiosCredentials();
+          const response = await fetch(`${CONFIG?.url || 'http://www.api.dev.banbury.io'}/devices/remove_downloaded_model/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+            body: JSON.stringify({
+              device_name: deviceName,
+              model_name: modelName,
+            }),
+            credentials: 'include',
+          });
+
+          const data = await response.json();
+          console.log(`DEBUG: Response from remove model API:`, data);
+          
+          if (data.result === 'success') {
+            console.log(`Successfully removed model ${modelName} from device ${deviceName}`);
+          } else if (data.error?.includes('Device not found') || data.message?.includes('Device not found')) {
+            console.log(`Device ${deviceName} not found in database. This is normal if this is your first time using AI models.`);
+            console.log('The system will track downloaded models once your device is registered with the backend.');
+          } else {
+            console.error('Failed to remove model from device:', data.error || data.message);
+          }
+        } catch (error) {
+          console.error('Error updating device downloaded models:', error);
+        }
+        
         // If the deleted model was the current model, reset to a different one
         if (currentModel === modelName) {
           const remainingModels = downloadedModels.filter(m => m.name !== modelName);
