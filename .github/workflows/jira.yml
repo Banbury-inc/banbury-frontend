@@ -41,10 +41,10 @@ jobs:
       - name: Jira Login
         if: steps.extract_jira_key.outputs.jira_key != ''
         uses: frieder/gha-jira-login@v1
-        env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_HOST }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_USERNAME }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_PASSWORD }}
+        with:
+          baseUrl: ${{ secrets.JIRA_HOST }}
+          email: ${{ secrets.JIRA_USERNAME }}
+          token: ${{ secrets.JIRA_PASSWORD }}
 
       - name: Move ticket to In Progress
         if: steps.extract_jira_key.outputs.jira_key != ''
@@ -149,10 +149,10 @@ jobs:
       - name: Jira Login
         if: steps.extract_jira_key.outputs.jira_key != ''
         uses: frieder/gha-jira-login@v1
-        env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_HOST }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_USERNAME }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_PASSWORD }}
+        with:
+          baseUrl: ${{ secrets.JIRA_HOST }}
+          email: ${{ secrets.JIRA_USERNAME }}
+          token: ${{ secrets.JIRA_PASSWORD }}
 
       - name: Move ticket to Done
         if: steps.extract_jira_key.outputs.jira_key != ''
