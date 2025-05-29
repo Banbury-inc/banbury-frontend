@@ -32,6 +32,7 @@ import FileViewerTabs from '../../common/FileViewer/FileViewerTabs';
 import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from './utils/fileUtils';
 import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveFilesList';
 import FileThumbnail from './components/FileThumbnail/FileThumbnail';
+import { googleDriveService, GoogleDriveFileRow } from './services/googleDriveService';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -80,11 +81,7 @@ export default function Files() {
     tasks,
     setTasks,
     username,
-    files,
-    sync_files,
     devices,
-    setFirstname,
-    setLastname,
     setPhoneNumber: _setPhoneNumber,
     setEmail: _setEmail,
     setDevices,
@@ -124,6 +121,12 @@ export default function Files() {
   }>>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showFileViewer, setShowFileViewer] = useState(false);
+
+  // Add Google Drive state
+  const [googleDriveFiles, setGoogleDriveFiles] = useState<GoogleDriveFileRow[]>([]);
+  const [isGoogleDriveLoading, setIsGoogleDriveLoading] = useState(false);
+  const [googleDriveError, setGoogleDriveError] = useState<string | null>(null);
+  const [googleDriveEnabled, setGoogleDriveEnabled] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -174,14 +177,7 @@ export default function Files() {
   const { isLoading, fileRows } = useAllFileData(
     username,
     filePath,
-    filePathDevice,
     currentContext,
-    setFirstname,
-    setLastname,
-    files,
-    sync_files,
-    devices || [],
-    setDevices,
     updates
   );
 
@@ -247,7 +243,11 @@ export default function Files() {
         const { downloadAndSaveGoogleDriveFile } = await import('@banbury/core/src/files/googleDrive');
         
         // Use the Google Drive file ID and save directly to BCloud directory
-        const fileId = file.google_drive_id || file.id;
+        // Extract original Google Drive ID if it's a prefixed ID
+        let fileId = file.google_drive_id || file.id;
+        if (typeof fileId === 'string' && fileId.startsWith('gdrive-')) {
+          fileId = fileId.replace('gdrive-', '');
+        }
         const savedFilePath = await downloadAndSaveGoogleDriveFile(fileId.toString(), file_name);
         
         await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
@@ -276,9 +276,19 @@ export default function Files() {
         const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
         setTaskbox_expanded(true);
         
+        // Extract original file ID for S3 operations
+        let originalFileId = file._id;
+        if (typeof file.id === 'string' && file.id.includes('-')) {
+          // For composite IDs like "file-originalId-deviceName", extract the originalId part
+          const parts = file.id.split('-');
+          if (parts.length >= 3) {
+            originalFileId = parts[1]; // Get the original ID part
+          }
+        }
+        
         // Use the direct save function instead of browser download
         await banbury.files.saveS3FileToBCloud(
-          file.id.toString(),
+          originalFileId?.toString() || file.id.toString(),
           file_name
         );
         
@@ -394,17 +404,33 @@ export default function Files() {
     }
     setSelected(newSelected);
 
+    // Determine which data source to use based on current context
+    let dataSource: any[] = [];
+    
+    if (currentContext === 'google_drive') {
+      // For Google Drive, convert googleDriveFiles to match the expected format
+      dataSource = googleDriveFiles.map(file => ({
+        ...file,
+        id: `gdrive-${file.id}`, // Use prefixed ID to match selection
+        google_drive_id: file.id // Keep original ID
+      }));
+    } else {
+      // For other contexts, use fileRows
+      dataSource = fileRows;
+    }
+
     const newSelectedFileNames = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.file_name)
+      .map((id) => dataSource.find((file) => file.id === id)?.file_name)
       .filter((name) => name !== undefined) as string[];
     const newSelectedDeviceNames = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.device_name)
+      .map((id) => dataSource.find((file) => file.id === id)?.device_name)
       .filter((name) => name !== undefined) as string[];
     setSelectedFileNames(newSelectedFileNames);
     setSelectedDeviceNames(newSelectedDeviceNames);
+    
     // Get file info for selected files and update selectedFileInfo state
     const newSelectedFileInfo = newSelected
-      .map((id) => fileRows.find((file) => file.id === id))
+      .map((id) => dataSource.find((file) => file.id === id))
       .filter((file) => file !== undefined);
     setSelectedFileInfo(newSelectedFileInfo);
   };
@@ -524,6 +550,65 @@ export default function Files() {
     fetchCloudFiles();
   }, [filePath, username]);
 
+  // Add Google Drive file fetching effect
+  useEffect(() => {
+    const fetchGoogleDriveFiles = async () => {
+      if (!username) return;
+
+      // Check if Google Drive is enabled
+      try {
+        const isEnabled = await googleDriveService.isGoogleDriveEnabled();
+        setGoogleDriveEnabled(isEnabled);
+        
+        if (!isEnabled) {
+          setGoogleDriveFiles([]);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking Google Drive status:', error);
+        setGoogleDriveEnabled(false);
+        setGoogleDriveFiles([]);
+        return;
+      }
+
+      // If we're specifically viewing a Google Drive path, fetch those files
+      if (filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive') {
+        setIsGoogleDriveLoading(true);
+        setGoogleDriveError(null);
+
+        try {
+          const folderId = googleDriveService.extractFolderId(filePath);
+          const result = await googleDriveService.getFiles(folderId || undefined, filePath, username);
+          setGoogleDriveFiles(result.files);
+        } catch (error: any) {
+          console.error('Error fetching Google Drive files:', error);
+          setGoogleDriveError(error.message || 'Failed to load Google Drive files');
+          setGoogleDriveFiles([]);
+        } finally {
+          setIsGoogleDriveLoading(false);
+        }
+      } else if (googleDriveFiles.length === 0 && !isGoogleDriveLoading) {
+        // Fetch root Google Drive files for tree display when not currently viewing Google Drive
+        // This ensures the tree shows the expandable arrow right away
+        setIsGoogleDriveLoading(true);
+        setGoogleDriveError(null);
+
+        try {
+          const result = await googleDriveService.getFiles(undefined, 'Core/GoogleDrive', username);
+          setGoogleDriveFiles(result.files);
+        } catch (error: any) {
+          console.error('Error fetching root Google Drive files:', error);
+          setGoogleDriveError(error.message || 'Failed to load Google Drive files');
+          setGoogleDriveFiles([]);
+        } finally {
+          setIsGoogleDriveLoading(false);
+        }
+      }
+    };
+
+    fetchGoogleDriveFiles();
+  }, [filePath]);
+
   // Helper function to get file type
   const getFileType = (fileName: string): string => {
     if (isImageFile(fileName)) return 'Image';
@@ -625,6 +710,8 @@ export default function Files() {
                   setFilePathDevice={setFilePathDevice}
                   setBackHistory={setBackHistory}
                   setForwardHistory={setForwardHistory}
+                  googleDriveFiles={googleDriveFiles}
+                  googleDriveEnabled={googleDriveEnabled}
                 />
               </Box>
             </CardContent>
@@ -702,6 +789,10 @@ export default function Files() {
                     columnVisibility={columnVisibility}
                     setFilePath={setFilePath}
                     updates={updates}
+                    googleDriveFiles={googleDriveFiles}
+                    isGoogleDriveLoading={isGoogleDriveLoading}
+                    googleDriveError={googleDriveError}
+                    googleDriveEnabled={googleDriveEnabled}
                   />
                 ) : fileRows.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 5 }}>

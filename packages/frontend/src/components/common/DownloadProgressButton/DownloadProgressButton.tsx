@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import DownloadIcon from '@mui/icons-material/Download';
 import {
   Box,
   Button,
@@ -17,6 +16,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { banbury } from '@banbury/core';
 import { DownloadInfo } from '@banbury/core/src/device/addDownloadsInfo';
+import { ArrowDownwardOutlined } from '@mui/icons-material';
 
 interface DownloadProgressProps {
   downloads: DownloadInfo[];
@@ -83,7 +83,7 @@ export default function DownloadProgress({ downloads }: DownloadProgressProps) {
         data-testid="download-progress-button"
         sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }}
       >
-        <DownloadIcon data-testid="DownloadIcon" sx={{ fontSize: 'inherit' }} />
+        <ArrowDownwardOutlined data-testid="DownloadIcon" sx={{ fontSize: 'inherit' }} />
         {activeDownloads > 0 && (
           <Box
             sx={{

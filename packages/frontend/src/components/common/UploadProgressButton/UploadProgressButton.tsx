@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import UploadIcon from '@mui/icons-material/Upload'; // For the trigger button
+import { ArrowUpwardOutlined } from '@mui/icons-material';
 
 interface UploadProgressProps {
   uploads: {
@@ -54,7 +54,7 @@ export default function UploadProgress({ uploads }: UploadProgressProps) {
         data-testid="upload-progress-button"
         sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px', zIndex: 9999 }}
       >
-        <UploadIcon sx={{ fontSize: 'inherit' }} />
+        <ArrowUpwardOutlined sx={{ fontSize: 'inherit' }} />
         {activeUploads > 0 && (
           <Box
             sx={{

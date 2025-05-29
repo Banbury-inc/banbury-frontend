@@ -3,6 +3,7 @@ import { DatabaseData } from '../types';
 import banbury from '@banbury/core';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';
+import { getSyncFiles } from '@banbury/core/src/files/getSyncFiles';
 
 // Helper function to create device online map
 const createDeviceOnlineMap = async () => {
@@ -29,7 +30,6 @@ export const fetchFilesData = async (
   existingFiles: DatabaseData[] = []
 ) => {
   try {
-    const deviceOnlineMap = await createDeviceOnlineMap();
 
     const fileInfoResponse = await axios.post<{ files: any[] }>(
       `${banbury.config.url}/files/get_files_from_filepath/`,
@@ -37,6 +37,8 @@ export const fetchFilesData = async (
         global_file_path: filePath
       }
     );
+
+    const deviceOnlineMap = await createDeviceOnlineMap();
 
     // Filter out files that already exist
     const existingFileKeys = new Set(
@@ -52,6 +54,8 @@ export const fetchFilesData = async (
       const isDeviceOnline = deviceOnlineMap.get(file.device_name);
       return {
         ...file,
+        _id: file._id,
+        id: `file-${file._id}-${file.device_name?.replace(/\s+/g, '-')}`, // Create unique composite ID
         available: isDeviceOnline ? 'Available' : 'Unavailable',
         source: 'files' as const
       };
@@ -70,18 +74,32 @@ export const fetchSyncData = async (
   try {
     const deviceOnlineMap = await createDeviceOnlineMap();
     
-    // Only send filepath if it contains more than just Core/Sync (for subfolders)
-    const includePath = filePath !== 'Core/Sync' && filePath.startsWith('Core/Sync/');
+    // Determine what path to send to the API
+    let globalFilePath: string | undefined = undefined;
     
-    const fileInfoResponse = await axios.post<{ files: any[] }>(
-      `${banbury.config.url}/predictions/get_files_to_sync/`,
-      {
-        global_file_path: includePath ? filePath : undefined
-      }
-    );
+    if (filePath !== 'Core/Sync' && filePath.startsWith('Core/Sync/')) {
+      // For subfolders, send the full path
+      globalFilePath = filePath;
+    } else if (filePath === 'Core/Sync') {
+      // For root sync folder, send empty string
+      globalFilePath = '';
+    }
+    
+    // Use the new core function
+    const response = await getSyncFiles(globalFilePath);
+    
+    // Check if we have files in the response
+    if (!response.files || !Array.isArray(response.files)) {
+      console.warn('Invalid sync files response:', response);
+      return [];
+    }
+    
+    if (response.files.length === 0) {
+      return [];
+    }
 
     // Mark the source of files
-    return fileInfoResponse.data.files.map(file => {
+    return response.files.map(file => {
       // Ensure the file path has the correct Core/Sync prefix
       let syncFilePath = file.file_path || '';
       if (!syncFilePath.includes('Core/Sync/')) {
@@ -92,9 +110,17 @@ export const fetchSyncData = async (
       
       return {
         ...file,
+        _id: file._id,
+        id: `sync-${file._id}-${file.device_name?.replace(/\s+/g, '-')}`, // Create unique composite ID
         file_path: syncFilePath,
         file_parent: file.file_parent || 'Sync',
         available: isDeviceOnline ? 'Available' : 'Unavailable',
+        kind: file.kind || 'file',
+        file_priority: file.file_priority ? parseInt(file.file_priority) : 0,
+        deviceID: file.deviceID || '',
+        original_device: file.original_device || file.device_name,
+        helpers: 0,
+        date_modified: file.date_modified || file.date_uploaded,
         source: 'sync' as const
       };
     });
@@ -131,7 +157,7 @@ export const fetchSharedData = async (
         
         return {
           _id: file._id || `file-${Math.random()}`,
-          id: file._id || `file-${Math.random()}`,
+          id: file._id ? `shared-${file._id}-${file.device_name?.replace(/\s+/g, '-')}` : `shared-file-${Math.random()}`, // Create unique composite ID
           file_name: file.file_name,
           file_size: file.file_size || '0',
           file_path: filePath,
@@ -265,40 +291,83 @@ export const fetchGoogleDriveData = async (
   }
 };
 
+// Fetch cloud files from S3
+export const fetchCloudData = async () => {
+  try {
+    const { banbury } = await import('@banbury/core');
+    const response = await banbury.files.listS3Files();
+    
+    // The listS3Files returns an axios response, so we need response.data
+    let files = null;
+    if (response && response.data && Array.isArray(response.data.files)) {
+      files = response.data.files;
+    }
+    
+    if (!files || files.length === 0) {
+      console.warn('No cloud files found or invalid response format:', response);
+      return [];
+    }
+    
+    // Transform S3 files to match DatabaseData format
+    const transformedFiles = files.map((s3File: any, index: number) => {
+      return {
+        _id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
+        id: s3File.file_id || `s3-file-${index}-${Date.now()}`,
+        file_name: s3File.file_name,
+        file_size: s3File.file_size,
+        file_path: `Core/Cloud/${s3File.file_name}`,
+        kind: s3File.file_type || 'File',
+        device_name: 'Cloud',
+        available: 'Available',
+        date_uploaded: s3File.date_uploaded,
+        date_modified: s3File.date_modified,
+        file_parent: 'Cloud',
+        original_device: s3File.device_name || 'Cloud',
+        file_priority: '1',
+        is_public: false,
+        deviceID: '',
+        helpers: 0,
+        s3_url: s3File.s3_url,
+        s3_key: s3File.s3_key,
+        is_s3: true,
+        source: 'cloud' as const
+      };
+    });
+
+    return transformedFiles;
+    
+  } catch (error) {
+    console.error('Error fetching cloud files:', error);
+    return [];
+  }
+};
+
 // Fetch all data based on the current view
 export const fetchAllData = async (
+  username: string | null,
   filePath: string,
   currentView: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive',
-  existingFiles: DatabaseData[] = []
-) => {
-  // When accessing Sync or Shared nodes directly, transform the path
-  let adjustedPath = filePath;
+): Promise<DatabaseData[]> => {
+  if (!username) return [];
   
-  // Handle the case where we're selecting Sync or Shared from the tree view
-  if (filePath === 'Core/Sync' || filePath === 'Sync') {
-    adjustedPath = 'Core/Sync'; // Use the standard path for sync
-  } else if (filePath === 'Core/Shared' || filePath === 'Shared') {
-    adjustedPath = 'Core/Shared'; // Use the standard path for shared
-  } else if (filePath.includes('Core/Sync/')) {
-    // We're inside a Sync subfolder
-    adjustedPath = filePath;
-  } else if (filePath.includes('Core/Shared/')) {
-    // We're inside a Shared subfolder  
-    adjustedPath = filePath;
-  }
-  
-  switch (currentView) {
-    case 'files':
-      return fetchFilesData(adjustedPath, existingFiles);
-    case 'sync':
-      return fetchSyncData(adjustedPath);
-    case 'shared':
-      return fetchSharedData();
-    case 'cloud':
-      return fetchGoogleDriveData(filePath);
-    case 'google_drive':
-      return fetchGoogleDriveData(filePath);
-    default:
-      return [];
+  try {
+    switch (currentView) {
+      case 'files':
+        return await fetchFilesData(filePath, []);
+      case 'sync':
+        return await fetchSyncData(filePath);
+      case 'shared':
+        return await fetchSharedData();
+      case 'cloud':
+        return await fetchCloudData();
+      case 'google_drive':
+        // Google Drive data is now handled centrally in Files.tsx
+        return [];
+      default:
+        return [];
+    }
+  } catch (error) {
+    console.error('Error fetching all data:', error);
+    return [];
   }
 }; 
