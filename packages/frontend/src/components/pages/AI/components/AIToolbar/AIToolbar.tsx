@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Stack, Grid } from '@mui/material';
 import ConversationsButton from './ConversationsButton';
-import ModelSelectorButton from './ModelSelectorButton';
+import ModelSelectorButton from './ModelSelectorButton/ModelSelectorButton';
 
 interface Conversation {
   id: string;
