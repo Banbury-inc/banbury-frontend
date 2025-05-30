@@ -1,5 +1,5 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 import { UsersTable } from '../types';
 
 export async function registerUser(
@@ -9,7 +9,7 @@ export async function registerUser(
 
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/authentication/register/`, {
+    }>(`${CONFIG.url}/authentication/register/`, {
       username: user.username,
       password: user.password,
       first_name: user.first_name,

@@ -5,7 +5,7 @@ import { NotificationsTable } from '../types';
 
 export async function addNotification(
     friend_username: string,
-    notification: NotificationsTable,
+    notification: Omit<NotificationsTable, '_id'>,
 ) {
     const { token } = loadGlobalAxiosAuthToken();
     const url = `${CONFIG.url}/notifications/add_notification/${friend_username}/`;

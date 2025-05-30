@@ -2,6 +2,9 @@ import { Ollama } from 'ollama';
 import { WebSearchService, WebSearchResult } from './web-search';
 import { ChatMessage } from '../types';
 
+// Re-export ChatMessage for external use
+export { ChatMessage };
+
 export interface ChatOptions {
     model?: string;
     temperature?: number;

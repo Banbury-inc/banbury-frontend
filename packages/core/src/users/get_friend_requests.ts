@@ -1,14 +1,13 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 
-
-export async function getFriendRequests(username: string) {
+export async function getFriendRequests() {
   try {
     const response = await axios.get<{
       result: string;
       friend_requests: any[];
     }>(
-      `${banbury.config.url}/users/get_friend_requests/${username}`
+      `${CONFIG.url}/users/get_friend_requests/`
     );
 
     if (response.data.result === 'success') {

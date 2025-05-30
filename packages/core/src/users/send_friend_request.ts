@@ -1,13 +1,14 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 import { NotificationsTable } from '../types';
+import { addNotification } from '../notifications/addNotification';
 
 export async function sendFriendRequest(
   friend_username: string
 ) {
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/send_friend_request/`, {
+    }>(`${CONFIG.url}/users/send_friend_request/`, {
       friend_username: friend_username
     });
 
@@ -21,7 +22,7 @@ export async function sendFriendRequest(
         timestamp: new Date().toISOString(),
         read: false,
       };
-      const response = await banbury.notifications.addNotification(friend_username, notification);
+      const response = await addNotification(friend_username, notification);
       if (response === 'success') {
         return 'success';
       }

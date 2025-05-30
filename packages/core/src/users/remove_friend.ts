@@ -1,5 +1,5 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 
 export async function removeFriend(
   username: string,
@@ -10,7 +10,7 @@ export async function removeFriend(
 
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/remove_friend/`, {
+    }>(`${CONFIG.url}/users/remove_friend/`, {
       username: username,
       friend_username: friend_username
     });

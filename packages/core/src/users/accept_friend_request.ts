@@ -1,17 +1,16 @@
-import banbury from '@banbury/core';
 import axios from 'axios';
+import { CONFIG } from '../config';
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
 export async function acceptFriendRequest(
-  username: string,
   friend_username: string
 ) {
 
   try {
-
+    await loadGlobalAxiosAuthToken();
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/accept_friend_request/`, {
-      username: username,
+    }>(`${CONFIG.url}/users/accept_friend_request/`, {
       friend_username: friend_username
     });
 

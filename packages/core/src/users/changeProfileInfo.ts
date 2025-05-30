@@ -1,5 +1,6 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 import { UsersTable } from '../types';
 
 export async function change_profile_info(
@@ -9,7 +10,7 @@ export async function change_profile_info(
 
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/update_profile/`, {
+    }>(`${CONFIG.url}/users/update_profile/`, {
       username: user.username,
       first_name: user.first_name,
       last_name: user.last_name,

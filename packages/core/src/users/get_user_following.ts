@@ -1,5 +1,5 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 
 
 export async function getUserFollowing(username: string) {
@@ -8,7 +8,7 @@ export async function getUserFollowing(username: string) {
       result: string;
       following: any;
     }>(
-      `${banbury.config.url}/users/get_user_following/${username}`
+      `${CONFIG.url}/users/get_user_following/${username}`
     );
 
     if (response.data.result === 'success') {

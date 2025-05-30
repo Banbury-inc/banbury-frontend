@@ -101,7 +101,7 @@ export default function Friends() {
 
 
   useEffect(() => {
-    banbury.users.getFriends(username || '')
+    banbury.users.getFriends()
       .then(response => {
         if (response && response.data) {
           setFriends(response.data.friends);
@@ -115,7 +115,7 @@ export default function Friends() {
 
 
   useEffect(() => {
-    banbury.users.getFriendRequests(username || '')
+    banbury.users.getFriendRequests()
       .then(response => {
         if (response && response.data) {
           setFriendRequests(response.data.friend_requests);
@@ -192,7 +192,7 @@ export default function Friends() {
           const data = JSON.parse(event.data);
           if (data.request_type === "friend_request") {
             // Reload friend requests
-            banbury.users.getFriendRequests(username || '')
+            banbury.users.getFriendRequests()
               .then(response => {
                 if (response && response.data) {
                   setFriendRequests(response.data.friend_requests);
@@ -216,13 +216,13 @@ export default function Friends() {
   // Update the friend request accept handler
   const handleAcceptFriendRequest = async (requestUsername: string) => {
     try {
-      await banbury.users.acceptFriendRequest(username || '', requestUsername);
+      await banbury.users.acceptFriendRequest(requestUsername);
       setUpdates(prevUpdates => [...prevUpdates, 'friend_request_accepted']);
 
       // Refresh both friends and requests lists
       const [friendsResponse, requestsResponse] = await Promise.all([
-        banbury.users.getFriends(username || ''),
-        banbury.users.getFriendRequests(username || '')
+        banbury.users.getFriends(),
+        banbury.users.getFriendRequests()
       ]);
 
       if (friendsResponse?.data) {
@@ -243,7 +243,7 @@ export default function Friends() {
   const handleRejectFriendRequest = async (requestUsername: string) => {
     try {
       await banbury.users.rejectFriendRequest(username || '', requestUsername);
-      const response = await banbury.users.getFriendRequests(username || '');
+      const response = await banbury.users.getFriendRequests();
       if (response?.data) {
         setFriendRequests(response.data.friend_requests);
       }

@@ -21,10 +21,10 @@ describe('addNotification', () => {
 
     const friendUsername = 'friendUser';
     const testNotification = {
-        type: 'info',
+        type: 'system' as const,
         title: 'Test Notification',
         description: 'This is a test notification',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         read: false,
     };
     const baseUrl = `${CONFIG.url}/notifications/add_notification/${friendUsername}/`;
