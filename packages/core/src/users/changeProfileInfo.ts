@@ -1,25 +1,21 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
+import { UsersTable } from '../types';
 
 export async function change_profile_info(
-  username: string,
-  first_name: string,
-  last_name: string,
-  phone_number: string,
-  email: string,
-  picture: any | null) {
-
+  user: UsersTable,
+) {
   try {
 
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/update_profile/`, {
-      username: username,
-      first_name: first_name,
-      last_name: last_name,
-      phone_number: phone_number,
-      email: email,
-      picture: picture,
+    }>(`${CONFIG.url}/users/update_profile/`, {
+      username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      phone_number: user.phone_number,
+      email: user.email,
+      picture: user.picture,
     });
 
     const result = response.data.result;

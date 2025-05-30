@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { DatabaseData } from '../components/NewTreeView/types';
+import { DatabaseData } from '@banbury/core/src/types';
 import banbury from '@banbury/core';
 
 export const fetchFileData = async (

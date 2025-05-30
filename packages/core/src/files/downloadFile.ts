@@ -4,8 +4,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { CONFIG } from '../config';
 import { addDownloadsInfo } from '../device/addDownloadsInfo';
+import { FileInfo, TaskInfo } from '../types';
 
-export function downloadFile(files: string[], devices: string[], fileInfo: any, taskInfo: any, websocket: WebSocket): Promise<string> {
+export function downloadFile(files: string[], devices: string[], fileInfo: FileInfo[], taskInfo: TaskInfo, websocket: WebSocket): Promise<string> {
   return new Promise((resolve, reject) => {
     let currentTransferRoom: string | null = null;
 

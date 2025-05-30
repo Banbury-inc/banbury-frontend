@@ -1,13 +1,4 @@
-import { ExtendedChatMessage } from "../AI";
-
-interface Conversation {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-  messages: ExtendedChatMessage[];
-  category?: string;
-}
+import { Conversation, ExtendedChatMessage } from "@banbury/core/src/types";
 
 export const saveConversation = (messages: ExtendedChatMessage[], currentConversation: Conversation | null, setCurrentConversation: (conversation: Conversation | null) => void) => {
     if (messages.length === 0) return;

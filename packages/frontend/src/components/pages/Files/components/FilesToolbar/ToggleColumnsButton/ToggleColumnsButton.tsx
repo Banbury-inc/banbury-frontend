@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { Button, Tooltip, Typography, Popover, Box, Stack, Checkbox, FormControlLabel } from "@mui/material";
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 
 interface ColumnOption {
-  id: string;
+  id: AvailableTableColumns;
   label: string;
-  visible: boolean;
+  isVisible: boolean;
 }
 
 interface ToggleColumnsButtonProps {
   columnOptions: ColumnOption[];
-  onColumnVisibilityChange: (columnId: string, isVisible: boolean) => void;
+  onColumnVisibilityChange: (columnId: AvailableTableColumns, isVisible: boolean) => void;
 }
-
 
 export default function ToggleColumnsButton({ columnOptions, onColumnVisibilityChange }: ToggleColumnsButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -27,7 +27,7 @@ export default function ToggleColumnsButton({ columnOptions, onColumnVisibilityC
     setAnchorEl(null);
   };
 
-  const handleToggleColumn = (columnId: string, isVisible: boolean) => {
+  const handleToggleColumn = (columnId: AvailableTableColumns, isVisible: boolean) => {
     onColumnVisibilityChange(columnId, isVisible);
   };
 
@@ -77,7 +77,7 @@ export default function ToggleColumnsButton({ columnOptions, onColumnVisibilityC
                 key={option.id}
                 control={
                   <Checkbox
-                    checked={option.visible}
+                    checked={option.isVisible}
                     onChange={(event) => handleToggleColumn(option.id, event.target.checked)}
                     data-testid={`column-toggle-${option.id}`}
                     size="small"

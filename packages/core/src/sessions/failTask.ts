@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
 import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
+import { SessionsTable } from '../types';
 
 /**
  *
@@ -10,10 +11,10 @@ import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
  * @param setTasks
  */
 export async function failTask(
-  taskInfo: any,
+  taskInfo: SessionsTable,
   response: any,
-  tasks: any,
-  setTasks: any
+  tasks: SessionsTable[],
+  setTasks: (tasks: SessionsTable[]) => void
 
 ) {
   const task_response = response;
@@ -22,7 +23,7 @@ export async function failTask(
   try {
     const url = `${CONFIG.url}/tasks/fail_task/`;
     const response = await axios.post<{ result: string }>(url, {
-      task_id: taskInfo.task_id,
+      task_id: taskInfo._id,
       task_name: taskInfo.task_name,
       result: task_response,
       task_device: taskInfo.task_device,

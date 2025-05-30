@@ -2,8 +2,9 @@ import axios from 'axios';
 import { CONFIG } from '../config';
 import '../middleware/axiosGlobalHeader';
 import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
+import { NotificationsTable } from '../types';
 
-export async function getNotifications() {
+export async function getNotifications(): Promise<NotificationsTable[]> {
     try {
         const url = `${CONFIG.url}/notifications/get_notifications/`;
         const { token } = loadGlobalAxiosAuthToken();
@@ -17,7 +18,7 @@ export async function getNotifications() {
 
         switch (response.data.result) {
             case 'success':
-                return response.data.notifications;
+                return response.data.notifications as NotificationsTable[];
 
             case 'fail':
                 throw new Error('Failed to fetch notifications');

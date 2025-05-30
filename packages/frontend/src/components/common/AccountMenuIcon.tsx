@@ -19,7 +19,14 @@ export default function AccountMenuIcon() {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [mainImageError, setMainImageError] = React.useState(false);
   const [menuImageError, setMenuImageError] = React.useState(false);
+  const [profilePictureUrl, setProfilePictureUrl] = React.useState<string>('');
   const open = Boolean(anchorEl);
+
+  React.useEffect(() => {
+    if (username) {
+      banbury.users.getProfilePictureUrl().then(setProfilePictureUrl);
+    }
+  }, [username]);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (anchorEl) {
@@ -79,7 +86,7 @@ export default function AccountMenuIcon() {
           >
             {username && !mainImageError ? (
               <img
-                src={`${banbury.config.url}/users/get_profile_picture/${username}/`}
+                src={profilePictureUrl}
                 alt={username || 'User'}
                 style={{ width: 'inherit', height: 'inherit', objectFit: 'cover' }}
                 onError={() => setMainImageError(true)}
@@ -131,7 +138,7 @@ export default function AccountMenuIcon() {
           <Avatar sx={{ bgcolor: 'primary.main' }}>
             {username && !menuImageError ? (
               <img
-                src={`${banbury.config.url}/users/get_profile_picture/${username}/`}
+                src={profilePictureUrl}
                 alt={username || 'User'}
                 style={{ width: 'inherit', height: 'inherit', objectFit: 'cover' }}
                 onError={() => setMenuImageError(true)}

@@ -1,23 +1,9 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
-
-export interface SyncFile {
-  _id: string;
-  file_name: string;
-  file_path: string;
-  file_size: string;
-  device_name: string;
-  date_uploaded: string;
-  date_modified: string;
-  file_parent?: string;
-  file_priority?: string;
-  kind?: string;
-  original_device?: string;
-  deviceID?: string;
-}
+import { FilesTable } from '../types';
 
 export interface GetSyncFilesResponse {
-  files: SyncFile[];
+  files: FilesTable[];
   result?: string;
   message?: string;
 }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 
 
 export async function getFriendUserInfo(friend_username: string) {
@@ -16,7 +16,7 @@ export async function getFriendUserInfo(friend_username: string) {
       status: any;
       online: boolean;
     }>(
-      `${banbury.config.url}/users/getfrienduserinfo/${friend_username}`
+      `${CONFIG.url}/users/getfrienduserinfo/${friend_username}`
     );
 
     if (response.data.status === 'success') {

@@ -4,29 +4,20 @@ import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import { styled } from '@mui/material/styles';
-import { handlers } from '../../../../../../renderer/handlers';
 import { banbury } from '@banbury/core';
 import { useAuth } from '../../../../../../renderer/context/AuthContext';
 import CheckIcon from '@mui/icons-material/Check';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LockIcon from '@mui/icons-material/Lock';
 import { useAlert } from '../../../../../../renderer/context/AlertContext';
+import { FilesTable, User } from '@banbury/core/src/types';
 
 interface ShareFileButtonProps {
   selectedFileNames: string[];
-  selectedFileInfo: any[];
+  selectedFileInfo: FilesTable[];
   onShare: () => void;
 }
 
-interface User {
-  id: number;
-  first_name: string;
-  last_name: string;
-  status: string;
-  username: string;
-  email?: string;
-  avatar_url?: string;
-}
 
 const ShareButton = styled(Button)(() => ({
   width: '100%',
@@ -117,7 +108,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
     }
 
     try {
-      const response = await handlers.users.typeahead(query);
+      const response = await banbury.users.typeahead(query);
 
       if (!response) {
         throw new Error('No response received from server');
@@ -181,7 +172,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
       return;
     }
 
-    const device_name = selectedFileInfo[0]?.device_name;
+    const device_name = selectedFileInfo[0]?.original_device;
     if (!device_name) {
       showAlert('Permission Change Failed', ['Device information not found']);
       return;
@@ -211,7 +202,7 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
       return;
     }
 
-    const device_name = selectedFileInfo[0]?.device_name;
+    const device_name = selectedFileInfo[0]?.original_device;
     if (!device_name) {
       showAlert('Permission Change Failed', ['Device information not found'], 'error');
       return;
@@ -354,10 +345,10 @@ export default function ShareFileButton({ selectedFileNames, selectedFileInfo }:
                           borderBottom: 'none'
                         }
                       }}>
-                        {option.avatar_url ? (
+                        {option.picture ? (
                           <Box
                             component="img"
-                            src={option.avatar_url}
+                            src={option.picture}
                             alt=""
                             sx={{
                               width: 36,

@@ -3,9 +3,10 @@ import { useAlert } from "../../../../../../renderer/context/AlertContext";
 import { Button, Tooltip } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
 import React from "react";
-import { handlers } from "../../../../../../renderer/handlers";
 import { addDownloadsInfo } from "@banbury/core/src/device/addDownloadsInfo";
 import { downloadAndSaveGoogleDriveFile } from "@banbury/core/src/files/googleDrive";
+import { handlers } from "../../../../../../renderer/handlers";
+import { TaskInfo } from "@banbury/core/src/types/Types";
 
 export default function DownloadFileButton({
   selectedFileNames,
@@ -51,7 +52,7 @@ export default function DownloadFileButton({
       addDownloadsInfo(initialDownloads);
 
       const task_description = 'Downloading ' + selectedFileNames.join(', ');
-      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
       setTaskbox_expanded(true);
 
       // Check if any selected file is a Google Drive file
@@ -68,7 +69,7 @@ export default function DownloadFileButton({
             }
           }
           
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
 
           // Update download status to 'completed' for all selected files
           const completedDownloadsUpdate = selectedFileInfo.map(fileInfo => ({
@@ -87,7 +88,7 @@ export default function DownloadFileButton({
           return;
         } catch (error) {
           console.error('Error downloading Google Drive files:', error);
-          await banbury.sessions.failTask(taskInfo, 'Google Drive download failed', tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, 'Google Drive download failed', tasks || [], setTasks);
           showAlert('Download failed', ['Failed to download Google Drive files. Please try again.'], 'error');
           setSelected([]);
           return;
@@ -110,7 +111,7 @@ export default function DownloadFileButton({
             }
           }
           
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
 
           // Update download status to 'completed' for all selected files
           const completedDownloadsUpdate = selectedFileInfo.map(fileInfo => ({
@@ -130,7 +131,7 @@ export default function DownloadFileButton({
           return;
         } catch (error) {
           console.error('Error downloading S3 files:', error);
-          await banbury.sessions.failTask(taskInfo, 'S3 download failed', tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, 'S3 download failed', tasks || [], setTasks);
           showAlert('Download failed', ['Failed to download S3 files. Please try again.'], 'error');
           setSelected([]);
           return;
@@ -155,7 +156,7 @@ export default function DownloadFileButton({
           selectedFileNames,
           selectedDeviceNames,
           selectedFileInfo,
-          taskInfo,
+          taskInfo as unknown as TaskInfo,
           websocket
         ),
         timeoutPromise

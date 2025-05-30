@@ -33,6 +33,8 @@ import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsv
 import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveFilesList';
 import FileThumbnail from './components/FileThumbnail/FileThumbnail';
 import { googleDriveService, GoogleDriveFileRow } from './services/googleDriveService';
+import { TaskInfo } from '@banbury/core/src/types/Types';
+import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -98,18 +100,16 @@ export default function Files() {
   const [filePath, setFilePath] = useState<string>('');
   const [_backHistory, setBackHistory] = useState<string[]>([]);
   const [_forwardHistory, setForwardHistory] = useState<string[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>({
+  const [columnVisibility, setColumnVisibility] = useState<Partial<Record<AvailableTableColumns, boolean>>>({
     file_name: true,
     file_size: true,
     kind: true,
-    device_name: true,
+    original_device: true,
     available: true,
+    is_public: false,
     file_priority: true,
     date_uploaded: true,
-    is_public: true,
-    original_device: true,
-    owner: true,
-    date_modified: true
+    date_modified: false,
   });
 
   // File viewer tabs state
@@ -236,7 +236,7 @@ export default function Files() {
     if (file.source === 'google_drive' || file.google_drive_id) {
       try {
         const task_description = 'Downloading ' + file_name;
-        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
         setTaskbox_expanded(true);
         
         // Import the download function
@@ -250,7 +250,7 @@ export default function Files() {
         }
         const savedFilePath = await downloadAndSaveGoogleDriveFile(fileId.toString(), file_name);
         
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         
         // Check if it's a viewable file type and open in the in-app viewer
         if (isViewableInApp(file_name)) {
@@ -273,7 +273,7 @@ export default function Files() {
     if (file.is_s3) {
       try {
         const task_description = 'Downloading ' + file_name;
-        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
         setTaskbox_expanded(true);
         
         // Extract original file ID for S3 operations
@@ -292,7 +292,7 @@ export default function Files() {
           file_name
         );
         
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         
         showAlert('Download completed successfully', [`The file "${file_name}" has been downloaded successfully`], 'success');
         return;
@@ -332,30 +332,30 @@ export default function Files() {
         console.error(`File '${file_name}' not found in directory, searching other devices`);
 
         const task_description = 'Opening ' + selectedFileNames.join(', ');
-        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
         setTaskbox_expanded(true);
         const response = await handlers.files.downloadFile(
           selectedFileNames,
           selectedDeviceNames,
           selectedFileInfo,
-          taskInfo,
+          taskInfo as unknown as TaskInfo,
           websocket as unknown as WebSocket,
         );
         
         if (response === 'No file selected') {
-          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks || [], setTasks);
           showAlert('No file selected', ['Please select a file to download'], 'warning');
         }
         if (response === 'file_not_found') {
-          await banbury.sessions.failTask(taskInfo, 'File not found', tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, 'File not found', tasks || [], setTasks);
           showAlert('File not found', [`The file "${file_name}" could not be found on the selected device.`], 'error');
         }
         if (response === 'File not available') {
-          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks || [], setTasks);
           showAlert('File not available', ['The selected file is not currently available for download.'], 'error');
         }
         if (response === 'success') {
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
@@ -450,7 +450,7 @@ export default function Files() {
     if (newValue === null) return;
 
     const task_description = 'Updating File Priority';
-    const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+    const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
     setTaskbox_expanded(true);
 
     const newPriority = newValue;
@@ -458,7 +458,7 @@ export default function Files() {
     const result = await banbury.files.updateFilePriority(row._id, newPriority);
 
     if (result === 'success') {
-      await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+      await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
       setUpdates(updates + 1);
     }
   };
@@ -474,7 +474,7 @@ export default function Files() {
     setIsShareModalOpen(false);
   };
 
-  const handleColumnVisibilityChange = (columnId: string, isVisible: boolean) => {
+  const handleColumnVisibilityChange = (columnId: AvailableTableColumns, isVisible: boolean) => {
     setColumnVisibility(prev => ({
       ...prev,
       [columnId]: isVisible
@@ -482,19 +482,37 @@ export default function Files() {
   };
 
   const getColumnOptions = () => {
-    return [
-      { id: 'file_name', label: 'Name', visible: columnVisibility.file_name },
-      { id: 'file_size', label: 'Size', visible: columnVisibility.file_size },
-      { id: 'kind', label: 'Kind', visible: columnVisibility.kind },
-      { id: 'device_name', label: 'Location', visible: columnVisibility.device_name },
-      { id: 'file_priority', label: 'Priority', visible: columnVisibility.file_priority },
-      { id: 'available', label: 'Status', visible: columnVisibility.available },
-      { id: 'date_uploaded', label: 'Date Uploaded', visible: columnVisibility.date_uploaded },
-      //{ id: 'is_public', label: 'Visibility', visible: columnVisibility.is_public },
-      // { id: 'original_device', label: 'Original Device', visible: columnVisibility.original_device },
-      // { id: 'owner', label: 'Owner', visible: columnVisibility.owner },
-      // { id: 'date_modified', label: 'Last Modified', visible: columnVisibility.date_modified }
+    // Define which columns to show and their display labels (based on AvailableTableColumns)
+    const columnLabels: Record<AvailableTableColumns, string> = {
+      file_name: 'File Name',
+      file_size: 'File Size',
+      kind: 'Kind',
+      original_device: 'Location',
+      available: 'Status',
+      file_priority: 'Priority',
+      date_uploaded: 'Date Uploaded',
+      date_modified: 'Date Modified',
+      is_public: 'Visibility',
+    };
+
+    // Define which columns should be available for toggling (AvailableTableColumns)
+    const availableColumns: AvailableTableColumns[] = [
+      'file_name',
+      'file_size',
+      'kind',
+      'original_device',
+      'available',
+      'file_priority',
+      'date_uploaded',
+      'date_modified',
+      'is_public'
     ];
+
+    return availableColumns.map((columnId) => ({
+      id: columnId,
+      label: columnLabels[columnId],
+      isVisible: columnVisibility[columnId] ?? true // Default to visible if not set
+    }));
   };
   
   const handleFinish = () => {

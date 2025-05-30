@@ -76,12 +76,12 @@ export default function SyncButton() {
 
       // Add the selected folder as a scanned folder
       const task_description = `Adding scanned folder: ${absoluteFolderPath}`;
-      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
 
       const addResult = await banbury.device.addScannedFolder(absoluteFolderPath);
 
       if (addResult === 'success') {
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         // Get fresh devices data first
         const updatedDevices = await banbury.device.fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);
@@ -134,7 +134,7 @@ export default function SyncButton() {
       if (file.progress === 100) continue;
 
       const task_description = 'Scanning folder';
-      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
 
       // Update local state to show scanning started
       setSyncData(prev => ({
@@ -162,15 +162,15 @@ export default function SyncButton() {
         );
 
         if (result === 'success') {
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         } else if (result === 'device_not_found') {
           // Handle device not found error
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
           showAlert('Device Not Found', ['Current device not added. Please add device before scanning.'], 'error');
           break; // Stop scanning remaining folders
         } else if (result === 'unauthorized') {
           // Handle unauthorized error
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
           showAlert('Authentication Error', ['You are not authorized to access this resource. Please log in again.'], 'error');
           break; // Stop scanning remaining folders
         }
@@ -194,12 +194,12 @@ export default function SyncButton() {
   const handleRemoveFolder = async (folderPath: string) => {
     try {
       const task_description = `Removing folder: ${folderPath}`;
-      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
 
       const removeResult = await banbury.device.removeScannedFolder(folderPath);
 
       if (removeResult === 'success') {
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         // Get fresh devices data first
         const updatedDevices = await banbury.device.fetchDeviceData();
         setDevices(Array.isArray(updatedDevices) ? updatedDevices : null);

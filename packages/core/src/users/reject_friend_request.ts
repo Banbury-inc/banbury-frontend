@@ -1,5 +1,5 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 
 export async function rejectFriendRequest(
   username: string,
@@ -10,7 +10,7 @@ export async function rejectFriendRequest(
 
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/reject_friend_request/`, {
+    }>(`${CONFIG.url}/users/reject_friend_request/`, {
       username: username,
       friend_username: friend_username
     });

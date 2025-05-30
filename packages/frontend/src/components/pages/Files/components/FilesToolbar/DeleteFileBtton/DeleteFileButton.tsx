@@ -224,14 +224,24 @@ export default function DeleteFileButton({
       // Since there's no existing unshare API, we'll use the removeFiles API
       // but specify that these are shared files
       const sharedFiles = selectedFileInfo.map(file => ({
+        _id: file._id || '',
+        device_id: file.deviceID || '',
+        file_type: file.file_type || 'file',
         file_name: file.file_name,
         file_path: file.file_path,
-        _id: file._id,
-        device_name: file.device_name
+        file_size: typeof file.file_size === 'string' ? parseInt(file.file_size) : file.file_size || 0,
+        date_uploaded: file.date_uploaded || '',
+        date_modified: file.date_modified || file.date_uploaded || '',
+        file_parent: file.file_parent || '',
+        file_priority: file.file_priority || 0,
+        original_device: file.original_device || file.device_name || '',
+        kind: file.kind,
+        shared_with: file.shared_with || [],
+        is_public: file.is_public || false
       }));
       
       // Use the device name from the file info for shared files
-      const device_name = sharedFiles[0]?.device_name || 'Unknown';
+      const device_name = selectedFileInfo[0]?.device_name || 'Unknown';
       const result = await banbury.files.removeFiles(device_name, sharedFiles);
       
       if (result === 'success') {
@@ -260,14 +270,24 @@ export default function DeleteFileButton({
       if (selectedFileInfo.length > 0) {
         // Use the database deletion API for device files
         const deviceFiles = selectedFileInfo.map(file => ({
+          _id: file._id || '',
+          device_id: file.deviceID || '',
+          file_type: file.file_type || 'file',
           file_name: file.file_name,
           file_path: file.file_path,
-          _id: file._id,
-          device_name: file.device_name
+          file_size: typeof file.file_size === 'string' ? parseInt(file.file_size) : file.file_size || 0,
+          date_uploaded: file.date_uploaded || '',
+          date_modified: file.date_modified || file.date_uploaded || '',
+          file_parent: file.file_parent || '',
+          file_priority: file.file_priority || 0,
+          original_device: file.original_device || file.device_name || '',
+          kind: file.kind,
+          shared_with: file.shared_with || [],
+          is_public: file.is_public || false
         }));
         
         // Use the device name from the file info
-        const device_name = deviceFiles[0]?.device_name || 'Unknown';
+        const device_name = selectedFileInfo[0]?.device_name || 'Unknown';
         const result = await removeFiles(device_name, deviceFiles) as string;
         
         if (result === 'success') {

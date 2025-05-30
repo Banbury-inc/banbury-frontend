@@ -446,7 +446,7 @@ export default function Devices() {
         fetchDevicesFunc();
         showAlert('Success', ['Sync storage capacity updated successfully'], 'success');
       } else {
-        await banbury.sessions.failTask(taskInfo, 'Failed to update sync storage capacity', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Failed to update sync storage capacity', tasks || [], setTasks);
         showAlert('Error', ['Failed to update sync storage capacity'], 'error');
       }
     } catch (error) {
@@ -467,7 +467,7 @@ export default function Devices() {
   ) => {
     try {
       const task_description = 'Updating prediction preferences';
-      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
       setTaskbox_expanded(true);
 
       const result = await handlers.devices.updateScorePreferences(
@@ -485,7 +485,7 @@ export default function Devices() {
       if (result === 'success') {
         showAlert('Success', ['Prediction preferences updated successfully'], 'success');
       } else {
-        await banbury.sessions.failTask(taskInfo, 'Failed to update prediction preferences', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Failed to update prediction preferences', tasks || [], setTasks);
         showAlert('Error', ['Failed to update prediction preferences'], 'error');
       }
     } catch (error) {

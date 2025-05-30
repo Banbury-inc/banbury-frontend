@@ -100,13 +100,13 @@ export default function AddToButton({
       let taskInfo = null;
       try {
         const task_description = `Adding file to sync: ${file}`;
-        taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
         setTaskbox_expanded(true);
 
         const addResult = await addFileToSync(file);
 
         if (addResult === 'success') {
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
           showAlert('File Added to Sync', ['File added to sync'], 'success');
         } else {
           throw new Error(`Failed to add file: ${addResult}`);
@@ -116,9 +116,9 @@ export default function AddToButton({
         if (taskInfo) {
           await banbury.sessions.failTask(
             taskInfo,
-            tasks,
-            setTasks,
-            error instanceof Error ? error.message : 'Unknown error occurred'
+            error instanceof Error ? error.message : 'Unknown error occurred',
+            tasks || [],
+            setTasks
           );
         }
         showAlert(
@@ -178,7 +178,7 @@ export default function AddToButton({
         try {
           const fileName = filePath.split('/').pop() || 'Unknown file';
           const task_description = `Uploading to Google Drive: ${fileName}`;
-          taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+          taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
           setTaskbox_expanded(true);
 
           // Convert file path to File object and upload to Google Drive
@@ -186,7 +186,7 @@ export default function AddToButton({
           const result = await uploadToGoogleDrive(fileObject);
           
           if (result && !result.error) {
-            await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+            await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
             successCount++;
           } else {
             throw new Error(result?.error || 'Upload failed');
@@ -196,9 +196,9 @@ export default function AddToButton({
           if (taskInfo) {
             await banbury.sessions.failTask(
               taskInfo,
-              tasks,
-              setTasks,
-              error instanceof Error ? error.message : 'Unknown error occurred'
+              error instanceof Error ? error.message : 'Unknown error occurred',
+              tasks || [],
+              setTasks
             );
           }
           failCount++;
@@ -265,7 +265,7 @@ export default function AddToButton({
         try {
           const fileName = filePath.split('/').pop() || 'Unknown file';
           const task_description = `Uploading to Cloud: ${fileName}`;
-          taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+          taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
           setTaskbox_expanded(true);
 
           // Convert file path to File object and upload to S3/Cloud
@@ -273,7 +273,7 @@ export default function AddToButton({
           const result = await uploadToS3(fileObject, deviceName, filePath);
           
           if (result && !result.error) {
-            await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+            await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
             successCount++;
           } else {
             throw new Error(result?.error || 'Upload failed');
@@ -283,9 +283,9 @@ export default function AddToButton({
           if (taskInfo) {
             await banbury.sessions.failTask(
               taskInfo,
-              tasks,
-              setTasks,
-              error instanceof Error ? error.message : 'Unknown error occurred'
+              error instanceof Error ? error.message : 'Unknown error occurred',
+              tasks || [],
+              setTasks
             );
           }
           failCount++;

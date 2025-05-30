@@ -1,17 +1,16 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
+import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 
-export async function removeFriend(
-  username: string,
+export async function acceptFriendRequest(
   friend_username: string
 ) {
 
   try {
-
+    await loadGlobalAxiosAuthToken();
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/remove_friend/`, {
-      username: username,
+    }>(`${CONFIG.url}/users/accept_friend_request/`, {
       friend_username: friend_username
     });
 
@@ -22,9 +21,8 @@ export async function removeFriend(
     if (result === 'fail') {
       return 'failed';
     }
-
     else {
-      return 'remove friend failed';
+      return 'accept friend request failed';
     }
   } catch (error) {
     console.error('Error fetching data:', error);

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
 
 
 export async function getUserFriends(username: string) {
@@ -8,7 +8,7 @@ export async function getUserFriends(username: string) {
       result: string;
       friends: any;
     }>(
-      `${banbury.config.url}/users/get_user_friends/${username}`
+      `${CONFIG.url}/users/get_user_friends/${username}`
     );
 
     if (response.data.result === 'success') {

@@ -26,6 +26,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
+import { Integration } from '@banbury/core/src/types';
 
 interface GoogleDriveStatus {
   enabled: boolean;
@@ -43,16 +44,7 @@ interface AuthResponse {
   };
 }
 
-interface Integration {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  category: string;
-  status: 'installed' | 'available';
-  configured?: boolean;
-  enabled?: boolean;
-}
+
 
 export default function Integrations() {
   const { tasks, setTasks, setTaskbox_expanded } = useAuth();
@@ -120,7 +112,7 @@ export default function Integrations() {
       if (response.result === 'success') {
         // Integration completed successfully (either with existing credentials or after OAuth)
         await loadGoogleDriveStatus();
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         showAlert(
           'Success', 
           [response.message || 'Google Drive integration enabled successfully'], 
@@ -128,12 +120,12 @@ export default function Integrations() {
         );
       } else if (response.result === 'account_exists') {
         // Handle case where account already exists
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         setExistingAccountInfo(response.existingAccount || { email: 'Unknown', name: 'Unknown' });
         setPendingAuthUrl(response.authUrl || null);
         setShowAccountExistsDialog(true);
       } else {
-        await banbury.sessions.failTask(taskInfo, response.message || 'Failed to enable Google Drive integration', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, response.message || 'Failed to enable Google Drive integration', tasks || [], setTasks);
         showAlert('Error', [response.message || 'Failed to enable Google Drive integration'], 'error');
       }
     } catch (error) {
@@ -149,7 +141,7 @@ export default function Integrations() {
       try {
         const task_description = 'Enabling Google Drive Integration';
         const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
-        await banbury.sessions.failTask(taskInfo, errorMessage, tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, errorMessage, tasks || [], setTasks);
       } catch (taskError) {
         console.error('Error failing task:', taskError);
       }
@@ -193,7 +185,7 @@ export default function Integrations() {
             
             if (updatedStatus.enabled && updatedStatus.configured) {
               if (taskInfo) {
-                await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+                await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
               }
               showAlert(
                 'Success',
@@ -202,7 +194,7 @@ export default function Integrations() {
               );
             } else {
               if (taskInfo) {
-                await banbury.sessions.failTask(taskInfo, 'Authentication was not completed', tasks, setTasks);
+                await banbury.sessions.failTask(taskInfo, 'Authentication was not completed', tasks || [], setTasks);
               }
               showAlert(
                 'Authentication Incomplete',
@@ -225,7 +217,7 @@ export default function Integrations() {
     } catch (error) {
       console.error('Error during authentication:', error);
       if (taskInfo) {
-        await banbury.sessions.failTask(taskInfo, 'Authentication failed', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Authentication failed', tasks || [], setTasks);
       }
       showAlert(
         'Authentication Error',
@@ -264,10 +256,10 @@ export default function Integrations() {
 
       if (response.result === 'success') {
         await loadGoogleDriveStatus();
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         showAlert('Success', ['Google Drive integration disabled successfully'], 'success');
       } else {
-        await banbury.sessions.failTask(taskInfo, 'Failed to disable Google Drive integration', tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, 'Failed to disable Google Drive integration', tasks || [], setTasks);
         showAlert('Error', ['Failed to disable Google Drive integration'], 'error');
       }
     } catch (error) {

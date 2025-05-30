@@ -16,18 +16,7 @@ import { format } from 'date-fns';
 import { Textbox } from '../../../../common/Textbox/Textbox';
 import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import AddIcon from '@mui/icons-material/Add';
-
-interface Conversation {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-  messages: Array<{
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-  }>;
-  category?: string;
-}
+import { Conversation } from '@banbury/core/src/types';
 
 interface ConversationsButtonProps {
   onSelectConversation?: (conversation: Conversation) => void;

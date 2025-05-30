@@ -1,4 +1,4 @@
-import { ExtendedChatMessage } from "../../../AI";
+import { ExtendedChatMessage } from "@banbury/core/src/types";
 import { extractThinkingContent } from "./handleSendMessage";
 
 export const handleStopGeneration = async (

@@ -1,20 +1,15 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
+import { User } from '../types';
 
 interface UserSearchResponse {
   result: string;
-  users?: Array<{
-    id: number;
-    first_name: string;
-    last_name: string;
-    status: string;
-    username: string;
-  }>;
+  users?: User[];
 }
 
 export async function typeahead(query: string) {
     const response = await axios.get<UserSearchResponse>(
-      `${banbury.config.url}/users/typeahead/${query}`
+      `${CONFIG.url}/users/typeahead/${query}`
     );
 
     if (response.data.result === 'success') {

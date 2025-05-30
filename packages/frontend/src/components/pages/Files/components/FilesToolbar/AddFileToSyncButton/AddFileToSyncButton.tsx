@@ -38,13 +38,13 @@ export default function AddFileToSyncButton({ selectedFileNames }: { selectedFil
       try {
         // Add the selected folder as a scanned folder
         const task_description = `Adding file to sync: ${file}`;
-        taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
         setTaskbox_expanded(true);
 
         const addResult = await addFileToSync(file);
 
         if (addResult === 'success') {
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         } else {
           throw new Error(`Failed to add file: ${addResult}`);
         }
@@ -54,9 +54,9 @@ export default function AddFileToSyncButton({ selectedFileNames }: { selectedFil
         if (taskInfo) {
           await banbury.sessions.failTask(
             taskInfo,
-            tasks,
-            setTasks,
-            error instanceof Error ? error.message : 'Unknown error occurred'
+            error instanceof Error ? error.message : 'Unknown error occurred',
+            tasks || [],
+            setTasks
           );
         }
         // Show error notification

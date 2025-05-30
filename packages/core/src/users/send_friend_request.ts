@@ -1,25 +1,28 @@
 import axios from 'axios';
-import banbury from '@banbury/core';
+import { CONFIG } from '../config';
+import { NotificationsTable } from '../types';
+import { addNotification } from '../notifications/addNotification';
 
 export async function sendFriendRequest(
   friend_username: string
 ) {
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/send_friend_request/`, {
+    }>(`${CONFIG.url}/users/send_friend_request/`, {
       friend_username: friend_username
     });
 
     const result = response.data.result;
     if (result === 'success') {
-      const notification = {
+      const notification: NotificationsTable = {
+        _id: '',
         type: 'friend_request',
         title: 'Friend Request',
         description: 'You have a new friend request',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         read: false,
       };
-      const response = await banbury.notifications.addNotification(friend_username, notification);
+      const response = await addNotification(friend_username, notification);
       if (response === 'success') {
         return 'success';
       }

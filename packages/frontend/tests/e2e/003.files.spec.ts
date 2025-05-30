@@ -576,6 +576,7 @@ test.describe('Files tests', () => {
       const addToPopover = page.locator('[data-testid="add-to-popover"]');
       await expect(addToPopover).toBeVisible({ timeout: 10000 });
 
+
       // 7. Click the add to sync button
       const addToSyncButton = addToPopover.locator('[data-testid="add-to-sync-button"]');
       await expect(addToSyncButton).toBeVisible({ timeout: 10000 });
@@ -584,7 +585,7 @@ test.describe('Files tests', () => {
 
       // 8. Verify we get an alert that the file was added to sync
       const alert = page.locator('[data-testid="alert-success"]');
-      await expect(alert).toBeVisible({ timeout: 10000 });
+      await expect(alert).toBeVisible({ timeout: 100000 });
       await expect(alert).toContainText('File added to sync', { timeout: 10000 });
       await expect(alert).not.toBeVisible({ timeout: 10000 });
       

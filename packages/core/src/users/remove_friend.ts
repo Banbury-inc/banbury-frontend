@@ -1,7 +1,7 @@
-import banbury from '@banbury/core';
 import axios from 'axios';
+import { CONFIG } from '../config';
 
-export async function acceptFriendRequest(
+export async function removeFriend(
   username: string,
   friend_username: string
 ) {
@@ -10,7 +10,7 @@ export async function acceptFriendRequest(
 
     const response = await axios.post<{
       result: string;
-    }>(`${banbury.config.url}/users/accept_friend_request/`, {
+    }>(`${CONFIG.url}/users/remove_friend/`, {
       username: username,
       friend_username: friend_username
     });
@@ -22,8 +22,9 @@ export async function acceptFriendRequest(
     if (result === 'fail') {
       return 'failed';
     }
+
     else {
-      return 'accept friend request failed';
+      return 'remove friend failed';
     }
   } catch (error) {
     console.error('Error fetching data:', error);
