@@ -273,3 +273,5 @@ export interface FileInfo {
   file_type?: string;
   _id?: string;
 }
+
+export type AvailableTableColumns = 'file_name' | 'file_size' | 'kind' | 'original_device' | 'available' | 'file_priority' | 'date_uploaded' | 'date_modified' | 'is_public';

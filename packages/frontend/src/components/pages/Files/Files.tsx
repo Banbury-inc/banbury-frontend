@@ -34,7 +34,7 @@ import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveF
 import FileThumbnail from './components/FileThumbnail/FileThumbnail';
 import { googleDriveService, GoogleDriveFileRow } from './services/googleDriveService';
 import { TaskInfo, FilesTable, FilesColumns } from '@banbury/core/src/types/Types';
-import { AvailableTableColumns } from './types';
+import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -106,10 +106,10 @@ export default function Files() {
     kind: true,
     original_device: true,
     available: true,
+    is_public: false,
     file_priority: true,
     date_uploaded: true,
-    date_modified: true,
-    is_public: true,
+    date_modified: false,
   });
 
   // File viewer tabs state
@@ -492,7 +492,7 @@ export default function Files() {
       file_priority: 'Priority',
       date_uploaded: 'Date Uploaded',
       date_modified: 'Date Modified',
-      is_public: 'Public',
+      is_public: 'Visibility',
     };
 
     // Define which columns should be available for toggling (AvailableTableColumns)

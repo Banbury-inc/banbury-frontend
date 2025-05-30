@@ -16,7 +16,8 @@ import {
   Typography as _Typography
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
-import { DatabaseData, Order, HeadCell, EnhancedTableProps, FilesColumns, AvailableTableColumns } from '../../types';
+import { DatabaseData, Order, HeadCell, EnhancedTableProps } from '../../types';
+import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 import { formatFileSize } from '../../utils/formatFileSize';
 import { formatDate } from '../../utils/formatDate';
 
@@ -68,6 +69,15 @@ const getHeadCells = (): HeadCell[] => [
     width: '10%'
   },
   { 
+    id: 'is_public', 
+    numeric: false, 
+    label: 'Visibility', 
+    isVisibleOnSmallScreen: true, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files'],
+    width: '10%'
+  },
+  { 
     id: 'file_priority', 
     numeric: false, 
     label: 'Priority', 
@@ -78,29 +88,20 @@ const getHeadCells = (): HeadCell[] => [
   },
   { 
     id: 'date_uploaded', 
-    numeric: false, 
+    numeric: true, 
     label: 'Date Uploaded', 
-    isVisibleOnSmallScreen: false, 
+    isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
     visibleIn: ['files', 'sync', 'shared', 'cloud'],
     width: '10%'
   },
   { 
     id: 'date_modified', 
-    numeric: false, 
+    numeric: true, 
     label: 'Date Modified', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
     visibleIn: ['files', 'sync', 'shared', 'cloud'],
-    width: '10%'
-  },
-  { 
-    id: 'is_public', 
-    numeric: false, 
-    label: 'Visibility', 
-    isVisibleOnSmallScreen: false, 
-    isVisibleNotOnCloudSync: true,
-    visibleIn: ['files'],
     width: '10%'
   },
   // { 
@@ -186,7 +187,7 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
           .filter((headCell: HeadCell) => {
             const isVisibleOnCurrentScreen = !isSmallScreen || headCell.isVisibleOnSmallScreen;
             const isVisibleInCurrentView = !headCell.visibleIn || headCell.visibleIn.includes(currentView || 'files');
-            const isColumnVisible = !props.columnVisibility || props.columnVisibility[headCell.id] !== false;
+            const isColumnVisible = !props.columnVisibility || (props.columnVisibility as any)[headCell.id] !== false;
             return isVisibleOnCurrentScreen && isVisibleInCurrentView && isColumnVisible;
           })
           .map((headCell: HeadCell, index: number) => (
@@ -369,12 +370,22 @@ const FileTable: React.FC<FileTableProps> = ({
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
+                {columnVisibility.file_priority && (
+                  <TableCell>
+                    <Skeleton variant="text" width="100%" />
+                  </TableCell>
+                )}
                 {columnVisibility.date_uploaded && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
                 {columnVisibility.date_modified && (
+                  <TableCell>
+                    <Skeleton variant="text" width="100%" />
+                  </TableCell>
+                )}
+                {columnVisibility.is_public && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
@@ -500,6 +511,20 @@ const FileTable: React.FC<FileTableProps> = ({
                       </TableCell>
                     )}
 
+                    {columnVisibility.is_public && (
+                      <TableCell
+                        padding="normal"
+                        align="left"
+                        sx={{
+                          borderBottomColor: '#424242',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {row.is_public ? 'Public' : 'Private'}
+                      </TableCell>
+                    )}
                     {columnVisibility.file_priority && (currentView === 'files' || currentView === 'sync') && (
                       <TableCell
                         align="left"
@@ -558,20 +583,6 @@ const FileTable: React.FC<FileTableProps> = ({
                         }}
                       >
                         {formatDate(row.date_modified)}
-                      </TableCell>
-                    )}
-                    {columnVisibility.is_public && (
-                      <TableCell
-                        padding="normal"
-                        align="right"
-                        sx={{
-                          borderBottomColor: '#424242',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {row.is_public}
                       </TableCell>
                     )}
 

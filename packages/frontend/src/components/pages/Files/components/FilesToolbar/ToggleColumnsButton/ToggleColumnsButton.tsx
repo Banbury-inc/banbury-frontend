@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Tooltip, Typography, Popover, Box, Stack, Checkbox, FormControlLabel } from "@mui/material";
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
-import { AvailableTableColumns } from '../../../types/index';
+import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 
 interface ColumnOption {
   id: AvailableTableColumns;
