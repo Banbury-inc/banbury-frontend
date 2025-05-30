@@ -30,11 +30,29 @@ export const fetchFilesData = async (
   existingFiles: DatabaseData[] = []
 ) => {
   try {
+    // Convert frontend file path format to backend expected format
+    let backendFilePath = filePath;
+    
+    // Handle device-specific paths
+    if (filePath.startsWith('Core/Devices/')) {
+      // Extract device name and remaining path
+      const pathParts = filePath.replace('Core/Devices/', '').split('/');
+      const deviceName = pathParts[0];
+      const remainingPath = pathParts.slice(1).join('/');
+      
+      // For device root or BCloud directory, use the backend expected format
+      if (remainingPath === '' || remainingPath === 'BCloud') {
+        backendFilePath = `Core/Devices/${deviceName}`;
+      } else {
+        // For subdirectories within BCloud, use the full path
+        backendFilePath = `Core/Devices/${deviceName}/${remainingPath}`;
+      }
+    }
 
-    const fileInfoResponse = await axios.post<{ files: FilesTable[] }>(
+    const fileInfoResponse = await axios.post<{ files: any[] }>(
       `${banbury.config.url}/files/get_files_from_filepath/`,
       {
-        global_file_path: filePath
+        global_file_path: backendFilePath
       }
     );
 
@@ -51,13 +69,15 @@ export const fetchFilesData = async (
 
     // Mark the source of files and add available status
     return uniqueNewFiles.map(file => {
-      const isDeviceOnline = deviceOnlineMap.get(file.original_device);
+      // Use device_name from API response, fallback to original_device if available
+      const deviceName = file.device_name || file.original_device || 'Unknown Device';
+      const isDeviceOnline = deviceOnlineMap.get(deviceName);
       return {
         ...file,
         _id: file._id,
-        id: `file-${file._id}-${file.original_device?.replace(/\s+/g, '-')}`, // Create unique composite ID
-        device_name: file.original_device || 'Unknown Device', // Keep for backward compatibility
-        original_device: file.original_device || 'Unknown Device', // Ensure original_device is set
+        id: `file-${file._id}-${deviceName?.replace(/\s+/g, '-')}`, // Create unique composite ID
+        device_name: deviceName, // Keep for backward compatibility
+        original_device: deviceName, // Ensure original_device is set
         available: isDeviceOnline ? 'Available' : 'Unavailable',
         source: 'files' as const
       };

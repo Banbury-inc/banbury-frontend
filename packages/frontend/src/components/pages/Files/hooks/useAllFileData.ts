@@ -82,32 +82,65 @@ export const useAllFileData = (
       
       // If in 'files' view with a path, filter by path
       if (currentView === 'files' && filePath && filePath !== 'Core' && filePath !== 'Core/Devices') {
-        if (filePath.startsWith('Core/Devices/') && filePath.split('/').length > 3) {
-          // For paths like Core/Devices/DeviceName/some/path
-          const devicePathParts = filePath.split('/');
-          const deviceName = devicePathParts[2];
-          const remainingPath = '/' + devicePathParts.slice(3).join('/');
+                 if (filePath.startsWith('Core/Devices/')) {
+           const devicePathParts = filePath.split('/');
+           const deviceName = devicePathParts[2];
+           
+           // Filter by device name first
+           filtered = filtered.filter(file => file.device_name === deviceName || file.original_device === deviceName);
           
-          filtered = filtered.filter(file => {
-            if (file.device_name !== deviceName) {
-              return false;
+                     // If there's a specific path within the device (like BCloud)
+           if (devicePathParts.length > 3) {
+             const remainingPath = devicePathParts.slice(3).join('/');
+             
+             // For BCloud directory specifically, show files that are in the BCloud folder
+             if (remainingPath === 'BCloud' || remainingPath.includes('BCloud')) {
+               
+               // If we're in the root BCloud directory, show all files in BCloud
+               if (remainingPath === 'BCloud' || remainingPath === 'home/michael-mills/BCloud') {
+                 filtered = filtered.filter(file => {
+                   // Check if the file path contains BCloud
+                   return file.file_path && (
+                     file.file_path.includes('/BCloud/') || 
+                     file.file_path.endsWith('/BCloud') ||
+                     file.file_path.includes('BCloud/')
+                   );
+                 });
+                                } else {
+                   // We're in a subfolder of BCloud, filter by the specific path
+                   const targetPath = remainingPath.startsWith('home/') ? '/' + remainingPath : remainingPath;
+                   
+                   filtered = filtered.filter(file => {
+                     if (!file.file_path) return false;
+                     
+                     // For subfolders, show files that are directly in that folder
+                     return file.file_path.includes(targetPath) || 
+                            file.file_path.startsWith(targetPath + '/') ||
+                            file.file_path.endsWith(targetPath);
+                   });
+                 }
+             } else {
+              // For other subdirectories
+              const targetPath = '/' + remainingPath;
+              filtered = filtered.filter(file => {
+                if (!file.file_path) return false;
+                
+                // Files directly in this directory
+                if (file.file_path === targetPath || file.file_path.endsWith(targetPath)) {
+                  return true;
+                }
+                
+                // Files in subdirectories - display only direct children
+                if (file.file_path.includes(targetPath + '/')) {
+                  const fileDirSegments = file.file_path.split('/').filter(Boolean).length;
+                  const currentDirSegments = targetPath.split('/').filter(Boolean).length;
+                  return fileDirSegments === currentDirSegments + 1;
+                }
+                
+                return false;
+              });
             }
-            
-            // Files directly in this directory
-            if (file.file_path === remainingPath) {
-              return true;
-            }
-            
-            // Files in subdirectories - display only direct children
-            if (file.file_path.startsWith(remainingPath + '/')) {
-              // Count segments to ensure we only show immediate children
-              const fileDirSegments = file.file_path.split('/').filter(Boolean).length;
-              const currentDirSegments = remainingPath.split('/').filter(Boolean).length;
-              return fileDirSegments === currentDirSegments + 1;
-            }
-            
-            return false;
-          });
+          }
         }
       }
       
