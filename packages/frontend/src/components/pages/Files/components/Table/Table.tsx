@@ -120,7 +120,7 @@ const getHeadCells = (): HeadCell[] => [
 ];
 
 interface EnhancedTableHeadProps extends EnhancedTableProps {
-  columnVisibility?: { [key: string]: boolean };
+  columnVisibility?: Partial<Record<keyof DatabaseData, boolean>>;
   currentView?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
 }
 
@@ -159,7 +159,7 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
           .filter((headCell: HeadCell) => {
             const isVisibleOnCurrentScreen = !isSmallScreen || headCell.isVisibleOnSmallScreen;
             const isVisibleInCurrentView = !headCell.visibleIn || headCell.visibleIn.includes(currentView || 'files');
-            const isColumnVisible = !props.columnVisibility || props.columnVisibility[headCell.id];
+            const isColumnVisible = !props.columnVisibility || (props.columnVisibility as any)[headCell.id] !== false;
             return isVisibleOnCurrentScreen && isVisibleInCurrentView && isColumnVisible;
           })
           .map((headCell: HeadCell, index: number) => (
@@ -251,7 +251,7 @@ interface FileTableProps {
   isSelected: (id: string | number) => boolean;
   setHoveredRowId: (id: string | number | null) => void;
   handlePriorityChange: (row: any, newValue: number | null) => void;
-  columnVisibility: { [key: string]: boolean };
+  columnVisibility: Partial<Record<keyof DatabaseData, boolean>>;
   currentView?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
 }
 

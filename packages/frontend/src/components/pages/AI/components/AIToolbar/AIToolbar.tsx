@@ -2,15 +2,7 @@ import React from 'react';
 import { Card, CardContent, Stack, Grid } from '@mui/material';
 import ConversationsButton from './ConversationsButton';
 import ModelSelectorButton from './ModelSelectorButton/ModelSelectorButton';
-
-interface Conversation {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-  messages: any[];
-  category?: string;
-}
+import { Conversation } from '@banbury/core/src/types';
 
 interface AIToolbarProps {
   currentModel: string;

@@ -11,6 +11,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LockIcon from '@mui/icons-material/Lock';
 import { useAlert } from '../../../../../../renderer/context/AlertContext';
+import { User } from '@banbury/core/src/types';
 
 interface ShareFileButtonProps {
   selectedFileNames: string[];
@@ -18,15 +19,6 @@ interface ShareFileButtonProps {
   onShare: () => void;
 }
 
-interface User {
-  id: number;
-  first_name: string;
-  last_name: string;
-  status: string;
-  username: string;
-  email?: string;
-  avatar_url?: string;
-}
 
 const ShareButton = styled(Button)(() => ({
   width: '100%',

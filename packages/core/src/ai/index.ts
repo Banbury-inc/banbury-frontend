@@ -1,11 +1,6 @@
 import { Ollama } from 'ollama';
 import { WebSearchService, WebSearchResult } from './web-search';
-
-export interface ChatMessage {
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-    images?: string[]; // Base64 encoded images
-}
+import { ChatMessage } from '../types';
 
 export interface ChatOptions {
     model?: string;

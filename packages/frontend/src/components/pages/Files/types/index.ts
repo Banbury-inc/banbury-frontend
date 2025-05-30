@@ -1,35 +1,7 @@
-export interface DatabaseData {
-  _id?: string;
-  id: number | string;
-  file_name: string;
-  file_path: string;
-  file_size: string | number;
-  kind: string;
-  device_name: string;
-  date_uploaded: string;
-  available: string;
-  file_priority?: number;
-  original_device?: string;
-  file_type?: string;
-  file_parent?: string;
-  is_public?: boolean;
-  deviceID?: string;
-  children?: DatabaseData[];
-  helpers?: number;
-  shared_with?: string[];
-  source?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
-  owner?: string;
-  date_modified?: string;
-  is_s3?: boolean;
-  s3_url?: string;
-  device_ids?: string[];
-  // Google Drive specific fields
-  mime_type?: string;
-  web_view_link?: string;
-  thumbnail_link?: string;
-  parents?: string[];
-  google_drive_id?: string;
-}
+import { DatabaseData, GoogleDriveFileRow } from '@banbury/core/src/types';
+
+// Re-export types from core for use in Files components
+export { DatabaseData, GoogleDriveFileRow };
 
 export type Order = 'asc' | 'desc';
 

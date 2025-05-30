@@ -5,27 +5,10 @@
 
 import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';
 import { banbury } from '@banbury/core';
+import { GoogleDriveFileRow } from '@banbury/core/src/types';
 
-export interface GoogleDriveFileRow {
-  id: string;
-  file_name: string;
-  kind: 'Folder' | 'File';
-  file_size: number;
-  date_modified?: string;
-  date_uploaded?: string;
-  mime_type: string;
-  web_view_link?: string;
-  thumbnail_link?: string;
-  parents: string[];
-  source: 'google_drive';
-  device_name: string;
-  available: string;
-  file_priority: number;
-  is_public: boolean;
-  original_device: string;
-  file_path: string;
-  google_drive_id?: string;
-}
+// Re-export GoogleDriveFileRow for use in Files components
+export { GoogleDriveFileRow };
 
 interface CachedFiles {
   files: GoogleDriveFileRow[];

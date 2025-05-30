@@ -14,7 +14,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../../renderer/context/AuthContext';
 import { buildTree } from './utils/buildTree';
 import { fetchFileData } from '../../utils/fetchFileData'
-import { DatabaseData } from './types';
+import { DatabaseData } from '@banbury/core/src/types';
 import { handleNodeSelect } from './handleNodeSelect';
 import { fileWatcherEmitter } from '@banbury/core/src/device/watchdog';
 import { buildGoogleDriveTree } from './utils/buildTree';
@@ -265,7 +265,7 @@ export default function FileTreeView({
       return nodes.map(node => {
         if (node.id === nodeId) {
           // Convert folder files to tree nodes
-          const children = folderFiles.map(file => ({
+          const children: DatabaseData[] = folderFiles.map(file => ({
             _id: file.id,
             id: `gdrive-${file.id}`,
             file_type: file.kind === 'Folder' ? 'directory' : 'file',
@@ -275,7 +275,7 @@ export default function FileTreeView({
             shared_with: [],
             is_public: file.is_public || false,
             kind: file.kind,
-            file_parent: node.id,
+            file_parent: String(node.id),
             date_uploaded: file.date_uploaded || '',
             helpers: 0,
             available: 'Available',
@@ -284,7 +284,7 @@ export default function FileTreeView({
             children: file.kind === 'Folder' ? [] : undefined,
             original_device: 'Google Drive',
             google_drive_id: file.id,
-            source: 'google_drive'
+            source: 'google_drive' as const
           }));
 
           return {
@@ -478,14 +478,14 @@ export default function FileTreeView({
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => {
-      const isLoading = loadingFolders.has(node.id);
+      const isLoading = loadingFolders.has(String(node.id));
       
       return (
         <TreeItem
           key={node.id}
           data-testid={`file-tree-item-${node.id}`}
           itemId={node.id.toString()}
-          onClick={() => handleCustomNodeSelect(node.id)}
+          onClick={() => handleCustomNodeSelect(String(node.id))}
           label={
             <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
               {getIconForKind(node.kind)}

@@ -6,7 +6,7 @@ import {
   Stack,
 } from '@mui/material';
 import { useAlert } from '../../../renderer/context/AlertContext';
-import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
+import { OllamaClient } from '@banbury/core/src/ai';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
 import { saveConversation } from './handlers/handleSaveConversation';
@@ -19,33 +19,9 @@ import { handleDragEnter } from './components/DragDropOverlay/handlers/handleDra
 import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDragLeave';
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
+import { Conversation, ExtendedChatMessage } from '@banbury/core/src/types';
 
-export interface ChatResponse {
-  model: string;
-  created_at: Date;
-  message: {
-    role: string;
-    content: string;
-  };
-  done: boolean;
-}
 
-export interface ExtendedChatMessage extends CoreChatMessage {
-  thinking?: string;
-  images?: string[];
-  searchInfo?: {
-    duration: number;
-  };
-}
-
-interface Conversation {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-  messages: ExtendedChatMessage[];
-  category?: string;
-}
 
 export default function AI() {
   const { showAlert } = useAlert();

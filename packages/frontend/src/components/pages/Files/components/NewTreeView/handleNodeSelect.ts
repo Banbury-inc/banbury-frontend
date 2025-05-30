@@ -1,4 +1,4 @@
-import { DatabaseData } from "./types";
+import { DatabaseData } from "@banbury/core/src/types";
 
 export const handleNodeSelect = (
   setFilePath: (filePath: string) => void,
