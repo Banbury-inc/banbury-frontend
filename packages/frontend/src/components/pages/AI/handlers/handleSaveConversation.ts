@@ -9,7 +9,7 @@ interface Conversation {
   category?: string;
 }
 
-export const saveConversation = (messages: ExtendedChatMessage[], currentConversation: Conversation | null, setCurrentConversation: (conversation: Conversation | null) => void, setMessages: React.Dispatch<React.SetStateAction<ExtendedChatMessage[]>>) => {
+export const saveConversation = (messages: ExtendedChatMessage[], currentConversation: Conversation | null, setCurrentConversation: (conversation: Conversation | null) => void) => {
     if (messages.length === 0) return;
 
     const title = messages[0].content.slice(0, 50) + (messages[0].content.length > 50 ? '...' : '');

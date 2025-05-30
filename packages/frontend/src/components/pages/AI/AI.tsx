@@ -107,7 +107,7 @@ export default function AI() {
 
   const handleStopGenerationWrapper = () => {
     const saveConversationWrapper = (messages: ExtendedChatMessage[]) => {
-      saveConversation(messages, currentConversation, setCurrentConversation, setMessages);
+      saveConversation(messages, currentConversation, setCurrentConversation);
     };
 
     handleStopGeneration(

@@ -2,7 +2,6 @@ import React from 'react';
 import { ExtendedChatMessage } from "../../../AI";
 import { ChatResponse } from "../../../AI";
 import { saveConversation } from "../../../handlers/handleSaveConversation";
-import { OllamaClient, ChatMessage as CoreChatMessage } from '@banbury/core/src/ai';
 import { AlertColor } from "@mui/material";
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
 
@@ -130,7 +129,7 @@ export const handleSendMessage = async (
           };
           const updatedMessages = [...messages, userMessage, assistantMessage];
           setMessages(updatedMessages);
-          saveConversation(updatedMessages, currentConversation, setCurrentConversation, setMessages);
+          saveConversation(updatedMessages, currentConversation, setCurrentConversation);
         }
       } else {
         // Handle non-streaming response (fallback)
@@ -143,7 +142,7 @@ export const handleSendMessage = async (
         };
         const updatedMessages = [...messages, userMessage, assistantMessage];
         setMessages(updatedMessages);
-        saveConversation(updatedMessages, currentConversation, setCurrentConversation, setMessages);
+        saveConversation(updatedMessages, currentConversation, setCurrentConversation);
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {

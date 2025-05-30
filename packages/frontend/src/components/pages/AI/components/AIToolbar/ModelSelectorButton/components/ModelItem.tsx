@@ -5,7 +5,6 @@ import {
   ListItemText,
   Typography,
   Stack,
-  Button,
   Box
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
