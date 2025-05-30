@@ -1,0 +1,285 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { Box, Paper, Tooltip } from '@mui/material';
+import {
+  Send as SendIcon,
+  Stop as StopIcon,
+  Image as ImageIcon,
+  Language as LanguageIcon,
+  Cancel as CancelIcon,
+} from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
+import { AlertColor } from '@mui/material';
+import { ExtendedChatMessage } from '../../AI';
+import { Textbox } from '../../../../common/Textbox/Textbox';
+import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
+import { handleImageUpload } from './handlers/handleImageUpload';
+import { handleSendMessage } from './handlers/handleSendMessage';
+
+const HiddenInput = styled('input')({
+  display: 'none',
+});
+
+const ImagePreviewContainer = styled(Box)({
+  display: 'flex',
+  gap: '8px',
+  marginBottom: '16px',
+  flexWrap: 'wrap',
+});
+
+const ImagePreview = styled('img')({
+  width: '64px',
+  height: '64px',
+  objectFit: 'cover',
+  borderRadius: '8px',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+});
+
+interface MessageBoxProps {
+  messages: ExtendedChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ExtendedChatMessage[]>>;
+  isLoading: boolean;
+  isStreaming: boolean;
+  setIsLoading: (isLoading: boolean) => void;
+  setIsStreaming: (isStreaming: boolean) => void;
+  setStreamingMessage: (message: string) => void;
+  setStreamingThinking: (thinking: string) => void;
+  abortControllerRef: React.MutableRefObject<AbortController | null>;
+  currentModel: string;
+  setIsSearching: (isSearching: boolean) => void;
+  showAlert: (title: string, messages: string[], severity: AlertColor) => void;
+  ollamaClient: any;
+  currentConversation: any;
+  setCurrentConversation: (conversation: any) => void;
+  handleStopGeneration: () => void;
+}
+
+export default function MessageBox({
+  messages,
+  setMessages,
+  isLoading,
+  isStreaming,
+  setIsLoading,
+  setIsStreaming,
+  setStreamingMessage,
+  setStreamingThinking,
+  abortControllerRef,
+  currentModel,
+  setIsSearching,
+  showAlert,
+  ollamaClient,
+  currentConversation,
+  setCurrentConversation,
+  handleStopGeneration,
+}: MessageBoxProps) {
+  // Internal state management
+  const [inputMessage, setInputMessage] = useState('');
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [useWebSearch, setUseWebSearch] = useState(false);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Listen for file drop events
+  useEffect(() => {
+    const handleFilesDrop = (event: any) => {
+      const files = event.detail.files;
+      files.forEach((file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (typeof e.target?.result === 'string') {
+            const base64Data = e.target.result.split(',')[1];
+            setSelectedImages(prev => [...prev, base64Data]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
+    window.addEventListener('filesDrop', handleFilesDrop);
+    return () => {
+      window.removeEventListener('filesDrop', handleFilesDrop);
+    };
+  }, []);
+
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSendClick = () => {
+    handleSendMessage(
+      inputMessage,
+      selectedImages,
+      messages,
+      setMessages,
+      setInputMessage,
+      setSelectedImages,
+      setIsLoading,
+      setIsStreaming,
+      setStreamingMessage,
+      setStreamingThinking,
+      abortControllerRef,
+      currentModel,
+      useWebSearch,
+      setIsSearching,
+      showAlert,
+      ollamaClient,
+      isLoading,
+      currentConversation,
+      setCurrentConversation
+    );
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendClick();
+    }
+  };
+
+  return (
+    <Box sx={{
+      p: 2,
+      borderTop: 1,
+      pl: 8,
+      pr: 3,
+      borderColor: 'transparent',
+      backgroundColor: (theme) => theme.palette.background.paper,
+      flexShrink: 0
+    }}>
+      <Box sx={{
+        maxWidth: '1000px',
+        margin: '0 auto',
+        width: '100%'
+      }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 2,
+            borderRadius: 3,
+            backgroundColor: (theme) => theme.palette.background.default,
+            boxShadow: (theme) => theme.shadows[2],
+            maxWidth: 600,
+            margin: '0 auto',
+            mt: 2,
+          }}
+        >
+          {selectedImages.length > 0 && (
+            <ImagePreviewContainer>
+              {selectedImages.map((image, index) => (
+                <Box key={index} sx={{ position: 'relative' }}>
+                  <ImagePreview 
+                    src={`data:image/jpeg;base64,${image}`} 
+                    alt={`Selected image ${index + 1}`} 
+                  />
+                  <ToolbarButton
+                    onClick={() => handleRemoveImage(index)}
+                    size="small"
+                    sx={{
+                      minWidth: 0,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 2,
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      backgroundColor: 'background.paper',
+                      '&:hover': { backgroundColor: 'action.hover' },
+                    }}
+                  >
+                    <CancelIcon sx={{ fontSize: '1.1rem' }} />
+                  </ToolbarButton>
+                </Box>
+              ))}
+            </ImagePreviewContainer>
+          )}
+          <Textbox
+            ref={inputRef}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            disabled={isLoading}
+            autoFocus
+            className="w-full"
+            type="text"
+            style={{ marginBottom: 16 }}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <HiddenInput
+              type="file"
+              accept="image/*"
+              multiple
+              ref={fileInputRef}
+              onChange={(e) => handleImageUpload(e, setSelectedImages, showAlert)}
+            />
+            <Tooltip title="Web Search">
+              <ToolbarButton
+                onClick={() => setUseWebSearch(!useWebSearch)}
+                size="small"
+                sx={{
+                  minWidth: 0,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                  backgroundColor: useWebSearch ? 'rgba(66,133,244,0.15)' : 'background.paper',
+                  '&:hover': {
+                    backgroundColor: useWebSearch ? 'rgba(66,133,244,0.22)' : (theme) => theme.palette.action.hover,
+                  },
+                }}
+              >
+                <LanguageIcon sx={{ fontSize: '1.1rem', color: useWebSearch ? 'primary.main' : 'text.secondary' }} />
+              </ToolbarButton>
+            </Tooltip>
+            <Tooltip title="Upload Image">
+              <ToolbarButton
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                size="small"
+                sx={{
+                  minWidth: 0,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                }}
+              >
+                <ImageIcon sx={{ fontSize: '1.1rem' }} />
+              </ToolbarButton>
+            </Tooltip>
+            <ToolbarButton
+              onClick={isStreaming ? handleStopGeneration : handleSendClick}
+              disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
+              size="small"
+              sx={{
+                minWidth: 0,
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                backgroundColor: (theme) =>
+                  (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
+                    ? theme.palette.grey[800]
+                    : theme.palette.primary.main,
+                color: (theme) =>
+                  (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
+                    ? theme.palette.grey[100]
+                    : theme.palette.primary.contrastText,
+                '&:hover': {
+                  backgroundColor: (theme) =>
+                    (!inputMessage.trim() && selectedImages.length === 0) && !isStreaming
+                      ? theme.palette.grey[700]
+                      : theme.palette.primary.dark,
+                },
+              }}
+            >
+              {isStreaming ? <StopIcon sx={{ fontSize: '1.1rem' }} /> : <SendIcon sx={{ fontSize: '1.1rem' }} />}
+            </ToolbarButton>
+          </Box>
+        </Paper>
+      </Box>
+    </Box>
+  );
+} 

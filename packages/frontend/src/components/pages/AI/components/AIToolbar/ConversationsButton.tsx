@@ -11,10 +11,10 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import FolderIcon from '@mui/icons-material/Folder';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { useAlert } from '../../../../renderer/context/AlertContext';
+import { useAlert } from '../../../../../renderer/context/AlertContext';
 import { format } from 'date-fns';
-import { Textbox } from '../../../common/Textbox/Textbox';
-import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
+import { Textbox } from '../../../../common/Textbox/Textbox';
+import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import AddIcon from '@mui/icons-material/Add';
 
 interface Conversation {

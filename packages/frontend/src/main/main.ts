@@ -75,6 +75,34 @@ function registerIpcHandlers() {
     }
   });
 
+  ipcMain.handle('delete-ollama-model', async (_event: any, modelName: string) => {
+    try {
+      if (!ollamaService) {
+        return {
+          success: false,
+          error: 'Ollama service is not initialized. Please restart the application and try again.'
+        };
+      }
+
+      if (!modelName) {
+        return {
+          success: false,
+          error: 'Model name is required'
+        };
+      }
+
+      await ollamaService.deleteModel(modelName);
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error deleting model:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to delete model' 
+      };
+    }
+  });
+
   ipcMain.on('fetch-data', async (event) => {
     try {
       const response = await axios.get('https://catfact.ninja/fact');
@@ -188,7 +216,7 @@ app.whenReady().then(async () => {
   // Register IPC handlers first
   registerIpcHandlers();
   
-  // Then initialize services and create window
+  // Then create window
   await createWindow();
 });
 
