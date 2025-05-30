@@ -1,13 +1,16 @@
-import { DatabaseData, GoogleDriveFileRow } from '@banbury/core/src/types';
+import { FilesColumns, DatabaseData, GoogleDriveFileRow } from '@banbury/core/src/types';
 
 // Re-export types from core for use in Files components
-export { DatabaseData, GoogleDriveFileRow };
+export { FilesColumns, DatabaseData, GoogleDriveFileRow };
 
 export type Order = 'asc' | 'desc';
 
+// Type representing only the columns that are actually available in the table
+export type AvailableTableColumns = 'file_name' | 'file_size' | 'kind' | 'original_device' | 'available' | 'file_priority' | 'date_uploaded' | 'date_modified' | 'is_public';
+
 export interface HeadCell {
   disablePadding?: boolean;
-  id: keyof DatabaseData;
+  id: AvailableTableColumns;
   label: string;
   numeric: boolean;
   isVisibleOnSmallScreen: boolean;

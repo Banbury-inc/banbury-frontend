@@ -1,15 +1,10 @@
 import axios from 'axios';
 import banbury from '@banbury/core';
+import { User } from '@banbury/core/src/types';
 
 interface UserSearchResponse {
   result: string;
-  users?: Array<{
-    id: number;
-    first_name: string;
-    last_name: string;
-    status: string;
-    username: string;
-  }>;
+  users?: User[];
 }
 
 export async function typeahead(query: string) {

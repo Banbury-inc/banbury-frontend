@@ -2,16 +2,7 @@ import { shell } from 'electron';
 import http from 'http';
 import axios from 'axios';
 import { config } from '../config/config';
-
-export interface Integration {
-  id: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-  configured: boolean;
-  icon?: string;
-  settings?: Record<string, any>;
-}
+import { Integration } from '../types';
 
 export interface IntegrationsResponse {
   result: string;
@@ -34,6 +25,8 @@ export const getIntegrations = async (): Promise<IntegrationsResponse> => {
         enabled: googleDriveStatus.enabled,
         configured: googleDriveStatus.configured,
         icon: 'cloud',
+        category: 'cloud',
+        status: 'installed',
       }
     ]
   };

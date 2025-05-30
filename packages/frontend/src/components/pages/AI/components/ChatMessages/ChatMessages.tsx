@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Text } from '../../../../common/Text/Text';
 import MessageBubble from '../MessageBubble/MessageBuuble';
-import { ExtendedChatMessage } from '../../AI';
+import { ExtendedChatMessage } from "@banbury/core/src/types";
 
 const SearchingIndicator = styled(Typography)`
   @keyframes fadeIn {

@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
-import { FileInfo } from '../types';
+import { FilesTable } from '../types';
 
 export interface GetSyncFilesResponse {
-  files: FileInfo[];
+  files: FilesTable[];
   result?: string;
   message?: string;
 }

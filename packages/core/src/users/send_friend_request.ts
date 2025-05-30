@@ -1,5 +1,6 @@
 import axios from 'axios';
 import banbury from '@banbury/core';
+import { NotificationsTable } from '../types';
 
 export async function sendFriendRequest(
   friend_username: string
@@ -12,11 +13,12 @@ export async function sendFriendRequest(
 
     const result = response.data.result;
     if (result === 'success') {
-      const notification = {
+      const notification: NotificationsTable = {
+        _id: '',
         type: 'friend_request',
         title: 'Friend Request',
         description: 'You have a new friend request',
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         read: false,
       };
       const response = await banbury.notifications.addNotification(friend_username, notification);

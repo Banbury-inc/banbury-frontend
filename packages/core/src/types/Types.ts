@@ -1,8 +1,72 @@
+export interface FilesTable {
+  _id: string;
+  device_id: string;
+  file_type: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  date_uploaded: string;
+  date_modified: string;
+  file_parent: string;
+  file_priority: number;
+  original_device: string;
+  kind: string;
+  shared_with: string[];
+  is_public: boolean;
+}
+
+// Display interface that extends FilesTable with computed/display fields used in the UI
+export interface FilesColumns extends FilesTable {
+  available: string; // Computed based on device online status
+  source: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive'; // Source context
+}
+
+export interface UsersTable {
+  id: number;
+  devices: string[];
+  email?: string;
+  first_name: string;
+  last_name: string;
+  online: string;
+  password: string;
+  phone_number: string;
+  username: string;
+  picture?: string;
+  google_drive_credentials?: {
+    access_token: string;
+    refresh_token: string;
+    token_type: string;
+    expiry_date: number;
+  };
+}
+
+export interface NotificationsTable {
+  _id: string;
+  type: 'friend_request' | 'share' | 'upload' | 'system';
+  title: string;
+  description: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface SessionsTable {
+  _id: string;
+  device_id: string;
+  username: string;
+  task_name: string;
+  task_type: string;
+  task_device: string;
+  task_status: string;
+  task_progress: number;
+  task_date_added: string;
+  task_date_modified: string;
+}
+
 export interface DeviceInfo {
   user: string;
   device_number: number;
   device_name: string;
-  files: FileInfo[];
+  files: FilesTable[];
   storage_capacity_GB: number;
   max_storage_capacity_GB: number;
   date_added: string;
@@ -30,27 +94,12 @@ export interface DeviceInfo {
   online: boolean;
 }
 
-
 export interface SmallDeviceInfo {
   user: string;
   device_number: number;
   device_name: string;
-  files: FileInfo[];
+  files: FilesTable[];
   date_added: string;
-}
-
-export interface FileInfo {
-  File_Type: string;
-  File_Name: string;
-  File_Path: string;
-  Date_Uploaded: string;
-  Date_Modified: string;
-  File_Size: number;
-  File_Priority: number;
-  File_Parent: string;
-  Original_Device: string;
-  Device_ID: string;
-  Kind: string;
 }
 
 export interface FileData {
@@ -72,6 +121,8 @@ export interface FileData {
 }
 
 export interface TaskInfo {
+  task_id: string;
+  task_progress: number;
   task_name: string;
   task_device: string;
   task_status: string;
@@ -147,12 +198,78 @@ export interface GoogleDriveFileRow {
   google_drive_id?: string;
 }
 
+export interface Conversation {
+  id: string;
+  title: string;
+  lastMessage: string;
+  timestamp: Date;
+  messages: ExtendedChatMessage[];
+  category?: string;
+}
+
+export interface ChatResponse {
+  model: string;
+  created_at: Date;
+  message: {
+    role: string;
+    content: string;
+  };
+  done: boolean;
+}
+
+export interface ExtendedChatMessage extends ChatMessage {
+  thinking?: string;
+  images?: string[];
+  searchInfo?: {
+    duration: number;
+  };
+}
+
+export interface ChatMessage {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+    images?: string[]; // Base64 encoded images
+}
+
+export interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  category: string;
+  status: 'installed' | 'available';
+  configured?: boolean;
+  enabled?: boolean;
+}
+
+// Add missing type definitions
+export interface UserNotification {
+  _id: string;
+  type: 'friend_request' | 'share' | 'upload' | 'system';
+  title: string;
+  description: string;
+  timestamp: string;
+  read: boolean;
+}
+
 export interface User {
   id: number;
+  username: string;
   first_name: string;
   last_name: string;
-  status: string;
-  username: string;
   email?: string;
-  avatar_url?: string;
+  phone_number: string;
+  online: string;
+  picture?: string;
+  devices: string[];
+}
+
+export interface FileInfo {
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  kind: string;
+  device_id: string;
+  file_type?: string;
+  _id?: string;
 }

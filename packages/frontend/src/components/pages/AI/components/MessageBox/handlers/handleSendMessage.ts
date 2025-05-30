@@ -1,6 +1,5 @@
 import React from 'react';
-import { ExtendedChatMessage } from "../../../AI";
-import { ChatResponse } from "../../../AI";
+import { ExtendedChatMessage, ChatResponse } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
 import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';

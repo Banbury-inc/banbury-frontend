@@ -9,7 +9,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { AlertColor } from '@mui/material';
-import { ExtendedChatMessage } from '../../AI';
+import { ExtendedChatMessage } from "@banbury/core/src/types";
 import { Textbox } from '../../../../common/Textbox/Textbox';
 import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import { handleImageUpload } from './handlers/handleImageUpload';

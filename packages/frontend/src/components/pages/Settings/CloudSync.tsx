@@ -38,10 +38,10 @@ export default function CloudSync() {
             );
 
             if (response === 'success') {
-                await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+                await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
                 showAlert('Success', ['Performance score weightings updated successfully'], 'success');
             } else {
-                await banbury.sessions.failTask(taskInfo, 'Failed to update performance score weightings', tasks, setTasks);
+                await banbury.sessions.failTask(taskInfo, 'Failed to update performance score weightings', tasks || [], setTasks);
                 showAlert('Error', ['Failed to update performance score weightings'], 'error');
             }
         } catch (error) {

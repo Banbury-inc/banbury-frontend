@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card, Grid, Stack, Box, Divider, Avatar, Menu, MenuItem } from '@mui/material';
 import { banbury } from '@banbury/core';
 import { useAuth } from '../../../renderer/context/AuthContext';
-import { handlers } from '../../../renderer/handlers';
 import EditIcon from '@mui/icons-material/Edit';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { Text } from '../../common/Text/Text';
@@ -42,21 +41,27 @@ export default function Public_Profile() {
                 content_type: localPicture.content_type
             } : undefined;
 
-            const response = await handlers.users.change_profile_info(
-                username ?? '',
-                first_name,
-                last_name,
-                phone_number,
-                email,
-                pictureData
+            const response = await banbury.users.change_profile_info(
+                {
+                    id: 0,
+                    username: username || '',
+                    first_name: first_name,
+                    last_name: last_name,
+                    email: email,
+                    phone_number: phone_number,
+                    online: '',
+                    picture: pictureData?.data || '',
+                    devices: [],
+                    password: ''
+                }
             );
 
             if (response === 'success') {
-                await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+                await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
                 setPicture(pictureData || null);
                 showAlert('Success', ['Profile settings updated successfully'], 'success');
             } else {
-                await banbury.sessions.failTask(taskInfo, 'Failed to update profile settings', tasks, setTasks);
+                await banbury.sessions.failTask(taskInfo, 'Failed to update profile settings', tasks || [], setTasks);
                 showAlert('Error', ['Failed to update profile settings'], 'error');
             }
         } catch (error) {

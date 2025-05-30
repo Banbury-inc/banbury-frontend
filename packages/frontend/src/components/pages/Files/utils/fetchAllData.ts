@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { DatabaseData } from '../types';
+import { DatabaseData, FilesTable } from '@banbury/core/src/types';
 import banbury from '@banbury/core';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';
@@ -31,7 +31,7 @@ export const fetchFilesData = async (
 ) => {
   try {
 
-    const fileInfoResponse = await axios.post<{ files: any[] }>(
+    const fileInfoResponse = await axios.post<{ files: FilesTable[] }>(
       `${banbury.config.url}/files/get_files_from_filepath/`,
       {
         global_file_path: filePath
@@ -42,20 +42,22 @@ export const fetchFilesData = async (
 
     // Filter out files that already exist
     const existingFileKeys = new Set(
-      existingFiles.map(file => `${file.file_path}-${file.device_name}`)
+      existingFiles.map(file => `${file.file_path}-${file.original_device}`)
     );
 
     const uniqueNewFiles = fileInfoResponse.data.files.filter(file =>
-      !existingFileKeys.has(`${file.file_path}-${file.device_name}`)
+      !existingFileKeys.has(`${file.file_path}-${file.original_device}`)
     );
 
     // Mark the source of files and add available status
     return uniqueNewFiles.map(file => {
-      const isDeviceOnline = deviceOnlineMap.get(file.device_name);
+      const isDeviceOnline = deviceOnlineMap.get(file.original_device);
       return {
         ...file,
         _id: file._id,
-        id: `file-${file._id}-${file.device_name?.replace(/\s+/g, '-')}`, // Create unique composite ID
+        id: `file-${file._id}-${file.original_device?.replace(/\s+/g, '-')}`, // Create unique composite ID
+        device_name: file.original_device || 'Unknown Device', // Keep for backward compatibility
+        original_device: file.original_device || 'Unknown Device', // Ensure original_device is set
         available: isDeviceOnline ? 'Available' : 'Unavailable',
         source: 'files' as const
       };
@@ -106,21 +108,25 @@ export const fetchSyncData = async (
         syncFilePath = `Core/Sync/${file.file_name}`;
       }
       
-      const isDeviceOnline = deviceOnlineMap.get(file.device_name);
+      // Use proper property access - these are API response objects, not FileInfo objects
+      const deviceName = (file as any).device_name || '';
+      const isDeviceOnline = deviceOnlineMap.get(deviceName);
       
       return {
         ...file,
         _id: file._id,
-        id: `sync-${file._id}-${file.device_name?.replace(/\s+/g, '-')}`, // Create unique composite ID
+        id: `sync-${file._id}-${deviceName?.replace(/\s+/g, '-')}`, // Create unique composite ID
         file_path: syncFilePath,
         file_parent: file.file_parent || 'Sync',
         available: isDeviceOnline ? 'Available' : 'Unavailable',
         kind: file.kind || 'file',
-        file_priority: file.file_priority ? parseInt(file.file_priority) : 0,
-        deviceID: file.deviceID || '',
-        original_device: file.original_device || file.device_name,
+        file_priority: file.file_priority ? parseInt(String(file.file_priority)) : 0,
+        deviceID: (file as any).device_id || '',
+        device_name: deviceName, // Keep for backward compatibility
+        original_device: file.original_device || deviceName, // Ensure original_device is set
         helpers: 0,
-        date_modified: file.date_modified || file.date_uploaded,
+        date_uploaded: file.date_uploaded,
+        date_modified: file.date_modified,
         source: 'sync' as const
       };
     });
@@ -166,11 +172,11 @@ export const fetchSharedData = async (
           date_uploaded: file.date_uploaded,
           date_modified: file.date_modified,
           file_parent: file.file_parent || 'Shared',
-          original_device: file.original_device,
+          original_device: file.original_device || file.device_name || 'Unknown Device', // Ensure original_device is set
           available: isDeviceOnline ? 'Available' : 'Unavailable',
           file_priority: file.file_priority || '0',
           owner: file.owner,
-          device_name: file.device_name || 'Unknown Device',
+          device_name: file.device_name || 'Unknown Device', // Keep for backward compatibility
           deviceID: file.device_id || file.deviceID || '',
           kind: file.kind || 'file',
           source: 'shared' as const
@@ -242,12 +248,12 @@ export const fetchGoogleDriveData = async (
         file_size: file.file_size,
         file_path: googleDriveFilePath,
         kind: file.kind,
-        device_name: 'Google Drive',
+        device_name: 'Google Drive', // Keep for backward compatibility
+        original_device: 'Google Drive', // Ensure original_device is set
         available: 'Available',
         date_uploaded: file.date_uploaded,
         date_modified: file.date_modified,
         file_parent: filePath === 'Core/GoogleDrive' ? 'GoogleDrive' : filePath.split('/').pop() || 'GoogleDrive',
-        original_device: 'Google Drive',
         file_priority: '1',
         is_public: false,
         deviceID: '',
@@ -317,12 +323,12 @@ export const fetchCloudData = async () => {
         file_size: s3File.file_size,
         file_path: `Core/Cloud/${s3File.file_name}`,
         kind: s3File.file_type || 'File',
-        device_name: 'Cloud',
+        device_name: 'Cloud', // Keep for backward compatibility
+        original_device: s3File.device_name || 'Cloud', // Ensure original_device is set
         available: 'Available',
         date_uploaded: s3File.date_uploaded,
         date_modified: s3File.date_modified,
         file_parent: 'Cloud',
-        original_device: s3File.device_name || 'Cloud',
         file_priority: '1',
         is_public: false,
         deviceID: '',

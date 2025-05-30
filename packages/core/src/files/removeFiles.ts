@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
+import { FileInfo } from '../types';
 
 export async function removeFiles(
   device_name: string,
-  filesInfo: any
+  filesInfo: FileInfo[]
 ): Promise<'success' | 'failed' | 'device not found' | 'invalid files format' | 'no files to delete' | 'no files were deleted' | 'network error' | string> {
 
 

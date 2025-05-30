@@ -7,15 +7,7 @@ import { useAuth } from '../../../renderer/context/AuthContext';
 import { fetchNotifications } from './fetchNotifications';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { banbury } from '@banbury/core';
-
-interface UserNotification {
-  _id: string;
-  type: 'friend_request' | 'share' | 'upload' | 'system';
-  title: string;
-  description: string;
-  timestamp: string;
-  read: boolean;
-}
+import { UserNotification } from '@banbury/core/src/types';
 
 
 export default function NotificationsButton() {

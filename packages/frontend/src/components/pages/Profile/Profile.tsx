@@ -11,6 +11,7 @@ import CardContent from '@mui/material/CardContent';
 import Divider from '@mui/material/Divider';
 import { Email } from '@mui/icons-material';
 import { handlers } from '../../../renderer/handlers';
+import banbury from '@banbury/core';
 
 
 export default function Profile() {
@@ -50,7 +51,18 @@ export default function Profile() {
 
     setShowFirstnameTextField(!showFirstnameTextField);
 
-    handlers.users.change_profile_info(new_first_name, lastname, username ?? '', email ?? '', "undefined", null);
+    banbury.users.change_profile_info({
+      id: 0, // temporary ID
+      username: username || '',
+      first_name: new_first_name,
+      last_name: lastname,
+      email: email,
+      phone_number: '',
+      online: '',
+      picture: '',
+      devices: [],
+      password: ''
+    });
   };
 
   const [showLastnameTextField, setShowLastnameTextField] = useState(false);
@@ -63,10 +75,20 @@ export default function Profile() {
   };
   const handleLastnameConfirmClick = async () => {
     try {
-      handlers.users.change_profile_info(new_first_name, lastname, username ?? '', email ?? '', "undefined", null);
+      banbury.users.change_profile_info({
+        id: 0,
+        username: username || '',
+        first_name: firstname,
+        last_name: lastname,
+        email: email,
+        phone_number: '',
+        online: '',
+        picture: '',
+        devices: [],
+        password: ''
+      });
     } catch (error) {
       console.error('There was an error!', error);
-
     }
   };
 
@@ -82,10 +104,20 @@ export default function Profile() {
   };
   const handleUsernameConfirmClick = async () => {
     try {
-      handlers.users.change_profile_info(new_first_name, lastname, username ?? '', email ?? '', "undefined", null);
+      banbury.users.change_profile_info({
+        id: 0,
+        username: username || '',
+        first_name: firstname,
+        last_name: lastname,
+        email: email,
+        phone_number: '',
+        online: '',
+        picture: '',
+        devices: [],
+        password: ''
+      });
     } catch (error) {
       console.error('There was an error!', error);
-
     }
   };
 
@@ -99,10 +131,20 @@ export default function Profile() {
   };
   const handleEmailConfirmClick = async () => {
     try {
-      handlers.users.change_profile_info(new_first_name, lastname, username ?? '', email ?? '', "undefined", null);
+      banbury.users.change_profile_info({
+        id: 0,
+        username: username || '',
+        first_name: firstname,
+        last_name: lastname,
+        email: email,
+        phone_number: '',
+        online: '',
+        picture: '',
+        devices: [],
+        password: ''
+      });
     } catch (error) {
       console.error('There was an error!', error);
-
     }
   };
 
@@ -117,10 +159,20 @@ export default function Profile() {
   };
   const handlePasswordConfirmClick = async () => {
     try {
-      handlers.users.change_profile_info(new_first_name, lastname, username ?? '', email ?? '', "undefined", null);
+      banbury.users.change_profile_info({
+        id: 0,
+        username: username || '',
+        first_name: firstname,
+        last_name: lastname,
+        email: email,
+        phone_number: '',
+        online: '',
+        picture: '',
+        devices: [],
+        password: ''
+      });
     } catch (error) {
       console.error('There was an error!', error);
-
     }
   };
 

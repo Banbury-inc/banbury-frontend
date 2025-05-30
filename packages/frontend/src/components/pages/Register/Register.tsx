@@ -12,9 +12,9 @@ import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from "../../../renderer/themes/theme";
 import SignIn from '../Login/Login';
-import { handlers } from '../../../renderer/handlers';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
 import { useNavigate } from 'react-router-dom';
+import banbury from '@banbury/core';
 
 function Copyright(props: any) {
   return (
@@ -46,14 +46,18 @@ export default function SignUp() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     try {
-      const result = await handlers.users.registerUser(
-        data.get('username') as string,
-        data.get('password') as string,
-        data.get('firstName') as string,
-        data.get('lastName') as string,
-        data.get('phone_number') as string,
-        data.get('email') as string,
-        data.get('picture') as string
+      const result = await banbury.users.registerUser(
+        {
+          id: 0, // Server will assign actual ID
+          username: data.get('username') as string,
+          password: data.get('password') as string,
+          first_name: data.get('firstName') as string,
+          last_name: data.get('lastName') as string,
+          email: data.get('email') as string,
+          phone_number: '',
+          devices: [],
+          online: 'offline',
+        }
       );
       if (result === 'success') {
         setregistration_success(true);
