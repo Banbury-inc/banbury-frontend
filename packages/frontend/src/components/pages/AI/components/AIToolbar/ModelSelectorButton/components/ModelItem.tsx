@@ -83,7 +83,7 @@ export function ModelItem({
               color: 'white', 
               fontWeight: 500, 
               fontSize: '0.875rem',
-              pl: !isDownloaded ? 4 : 4  // Add padding for non-downloaded models with cloud icons
+              pl: !isDownloaded ? 1 : 1  // Add padding for non-downloaded models with cloud icons
             }}>
               {model.name}
             </Typography>

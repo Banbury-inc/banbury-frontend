@@ -70,6 +70,7 @@ export function ModelSelector({
     >
       <Box sx={{ p: 2 }}>
         <Stack spacing={1}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
           <ModelSearch 
             searchQuery={searchQuery}
             onSearchChange={onSearchChange}
@@ -82,6 +83,7 @@ export function ModelSelector({
               onCategoryChange={onCategoryChange}
             />
           )}
+          </Stack>
 
           <ModelList
             downloadedModels={downloadedModels}
