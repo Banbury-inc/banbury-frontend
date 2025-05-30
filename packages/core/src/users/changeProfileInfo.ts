@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
-import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 import { UsersTable } from '../types';
 
 export async function change_profile_info(

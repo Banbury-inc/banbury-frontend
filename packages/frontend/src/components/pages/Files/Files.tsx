@@ -33,7 +33,7 @@ import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsv
 import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveFilesList';
 import FileThumbnail from './components/FileThumbnail/FileThumbnail';
 import { googleDriveService, GoogleDriveFileRow } from './services/googleDriveService';
-import { TaskInfo, FilesTable, FilesColumns } from '@banbury/core/src/types/Types';
+import { TaskInfo } from '@banbury/core/src/types/Types';
 import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 
 const ResizeHandle = styled('div')(({ theme }) => ({

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { DatabaseData, FilesTable } from '@banbury/core/src/types';
+import { DatabaseData } from '@banbury/core/src/types';
 import banbury from '@banbury/core';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { listGoogleDriveFiles } from '@banbury/core/src/files/googleDrive';

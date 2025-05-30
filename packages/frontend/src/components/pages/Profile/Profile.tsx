@@ -10,7 +10,6 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Divider from '@mui/material/Divider';
 import { Email } from '@mui/icons-material';
-import { handlers } from '../../../renderer/handlers';
 import banbury from '@banbury/core';
 
 
