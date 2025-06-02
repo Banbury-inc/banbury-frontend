@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CloudMcpClient, McpToolCall, McpToolResult, McpServerConfig } from '@banbury/core/src/mcp/CloudMcpClient';
+import { CloudMcpClient, McpToolCall, McpToolResult, McpServerConfig } from '@banbury/core/src/ai/CloudMcpClient';
 import { loadGlobalAxiosCredentials } from '@banbury/core/src/middleware/axiosGlobalHeader';
+import banbury from '@banbury/core';
 
 interface UseMcpClientOptions {
   serverUrl?: string;
@@ -25,8 +26,8 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
     availableTools: []
   });
 
-  const serverUrl = options.serverUrl || process.env.REACT_APP_MCP_SERVER_URL || 'http://localhost:3001';
-  const apiKey = options.apiKey || process.env.REACT_APP_MCP_API_KEY;
+  const serverUrl = banbury.config.url_mcp;
+  const apiKey = options.apiKey;
 
   // Initialize MCP client
   const initializeClient = useCallback(() => {
@@ -44,9 +45,16 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
         client,
         isConnected: true,
         isAuthenticated: isAuth,
-        availableTools: client.getAvailableTools(),
+        availableTools: [],
         error: null
       }));
+      // Fetch available tools asynchronously and update state
+      client.fetchAvailableTools().then(tools => {
+        setState(prev => ({
+          ...prev,
+          availableTools: tools.map((t: any) => t.name)
+        }));
+      });
 
       return client;
     } catch (error) {
@@ -81,7 +89,7 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
       };
     }
 
-    if (!state.isAuthenticated && state.client.getAvailableTools().filter(tool => 
+    if (!state.isAuthenticated && state.availableTools.filter(tool => 
       !['add', 'get-joke', 'banbury-login'].includes(tool)
     ).includes(toolCall.tool)) {
       return {
@@ -101,41 +109,7 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
-  }, [state.client, state.isAuthenticated]);
-
-
-  const addTask = useCallback(async (description: string, deviceName?: string): Promise<McpToolResult> => {
-    if (!state.client) {
-      return {
-        success: false,
-        content: [{ type: 'text', text: 'MCP client not initialized' }],
-        error: 'Client not initialized'
-      };
-    }
-    return state.client.addTask(description, deviceName);
-  }, [state.client]);
-
-  const getDeviceInfo = useCallback(async (deviceName: string): Promise<McpToolResult> => {
-    if (!state.client) {
-      return {
-        success: false,
-        content: [{ type: 'text', text: 'MCP client not initialized' }],
-        error: 'Client not initialized'
-      };
-    }
-    return state.client.getDeviceInfo(deviceName);
-  }, [state.client]);
-
-  const getSessions = useCallback(async (): Promise<McpToolResult> => {
-    if (!state.client) {
-      return {
-        success: false,
-        content: [{ type: 'text', text: 'MCP client not initialized' }],
-        error: 'Client not initialized'
-      };
-    }
-    return state.client.getSessions();
-  }, [state.client]);
+  }, [state.client, state.isAuthenticated, state.availableTools]);
 
   // Initialize on mount or when credentials change
   useEffect(() => {
@@ -171,11 +145,6 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
     callTool,
     
     // Convenience functions
-    addTask,
-    getDeviceInfo,
-    getSessions,
-    
-    // Tool parsing helpers for AI integration
     parseToolCallFromMessage: (message: string): McpToolCall | null => {
       try {
         // Look for tool calls in various formats

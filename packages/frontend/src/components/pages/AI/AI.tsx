@@ -10,7 +10,7 @@ import {
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { EnhancedAIClient } from '@banbury/core/src/ai/EnhancedAIClient';
-import { useMcpClient } from '../../../hooks/useMcpClient';
+import { useMcpClient } from './handlers/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
 import { saveConversation } from './handlers/handleSaveConversation';
@@ -31,7 +31,7 @@ export default function AI() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [streamingThinking, setStreamingThinking] = useState<string>('');
-  const [currentModel, setCurrentModel] = useState<string>('llava');
+  const [currentModel, setCurrentModel] = useState<string>('llama2:latest');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [enhancedAIClient, setEnhancedAIClient] = useState<EnhancedAIClient | null>(null);
@@ -50,7 +50,6 @@ export default function AI() {
     isAuthenticated: mcpAuthenticated,
     error: mcpError,
     availableTools,
-    addTask
   } = useMcpClient();
 
   useEffect(() => {
@@ -212,7 +211,8 @@ export default function AI() {
                 <Chip
                   label="Get Random Files"
                   size="small"
-                  onClick={() => mcpClient?.callTool({ tool: 'banbury-get-scanned-folders', parameters: { count: 10 } })}
+                  onClick={() => mcpClient?.callTool({ tool: 'banbury-get-scanned-folders', parameters: { count: 10 } }).then(result => {
+                  })}
                   sx={{ cursor: 'pointer' }}
                 />
                 

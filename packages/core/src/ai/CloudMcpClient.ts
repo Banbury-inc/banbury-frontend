@@ -1,4 +1,6 @@
 import { loadGlobalAxiosCredentials } from '../middleware/axiosGlobalHeader';
+import banbury from '..';
+
 
 export interface McpToolCall {
   tool: string;
@@ -24,8 +26,11 @@ export class CloudMcpClient {
   private token?: string;
   private username?: string;
 
-  constructor(config: McpServerConfig) {
-    this.config = config;
+  constructor(serverConfig?: McpServerConfig) {
+    this.config = {
+      baseUrl: banbury.config.url_mcp,
+      ...serverConfig
+    };
     this.loadCredentials();
   }
 
@@ -125,81 +130,58 @@ export class CloudMcpClient {
   }
 
   /**
-   * Get list of available tools
+   * Fetch list of available tools from the MCP server
    */
-  public getAvailableTools(): string[] {
-    return [
-      'add',
-      'get-joke',
-      'banbury-login',
-      'banbury-get-device-info',
-      'banbury-update-device',
-      'banbury-declare-online',
-    //   'banbury-get-files',
-      'banbury-get-scanned-folders',
-      'banbury-get-sessions',
-      'banbury-add-task',
-    //   'banbury-add-model'
-    ];
-  }
-
-  /**
-   * Get scanned folders for a device
-   */
-  public async getScannedFolders(deviceName?: string): Promise<McpToolResult> {
-    return this.callTool({
-      tool: 'banbury-get-scanned-folders',
-      parameters: {
-        ...(deviceName && { device_name: deviceName }),
-        environment: 'dev'
+  public async fetchAvailableTools(): Promise<any[]> {
+    if (!this.token) {
+      throw new Error('No authentication token available. Please log in first.');
+    }
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.token}`,
+    };
+    if (this.config.apiKey) {
+      headers['X-API-Key'] = this.config.apiKey;
+    }
+    if (this.username) {
+      headers['X-Username'] = this.username;
+    }
+    // Try /tools endpoint
+    const endpoints = [`${this.config.baseUrl}/tools`];
+    console.log('CloudMcpClient: Attempting to fetch available tools from endpoints:', endpoints);
+    let lastError: any = null;
+    for (const url of endpoints) {
+      try {
+        console.log(`CloudMcpClient: Trying endpoint: ${url}`);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+        });
+        console.log(`CloudMcpClient: Response from ${url}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('CloudMcpClient: Successfully fetched tools:', data);
+          return data.tools || [];
+        } else {
+          const errorText = await response.text();
+          console.error(`CloudMcpClient: HTTP error from ${url}:`, errorText);
+          throw new Error(`MCP Server Error: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+      } catch (error) {
+        console.error(`CloudMcpClient: Error from ${url}:`, error);
+        lastError = error;
+        // If this is a network error (fetch failed), provide more context
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          lastError = new Error(`Network error when trying ${url}: ${error.message}. Check if the server is running and accessible.`);
+        }
       }
-    });
-  }
-
-  /**
-   * Add a task to Banbury
-   */
-  public async addTask(description: string, deviceName?: string): Promise<McpToolResult> {
-    return this.callTool({
-      tool: 'banbury-add-task',
-      parameters: {
-        task_description: description,
-        ...(deviceName && { device_name: deviceName }),
-        environment: 'dev'
-      }
-    });
-  }
-
-  /**
-   * Get device information
-   */
-  public async getDeviceInfo(deviceName: string): Promise<McpToolResult> {
-    return this.callTool({
-      tool: 'banbury-get-device-info',
-      parameters: {
-        device_name: deviceName,
-        environment: 'dev'
-      }
-    });
-  }
-
-  /**
-   * Get current sessions
-   */
-  public async getSessions(): Promise<McpToolResult> {
-    return this.callTool({
-      tool: 'banbury-get-sessions',
-      parameters: { environment: 'dev' }
-    });
-  }
-
-  /**
-   * Login to Banbury (for initial authentication)
-   */
-  public async login(username: string, password: string): Promise<McpToolResult> {
-    return this.callTool({
-      tool: 'banbury-login',
-      parameters: { username, password, environment: 'dev' }
-    });
+    }
+    const finalError = `Failed to fetch available tools from any endpoint. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`;
+    console.error('CloudMcpClient:', finalError);
+    throw new Error(finalError);
   }
 } 

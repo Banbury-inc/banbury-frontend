@@ -1,5 +1,5 @@
 import { OllamaClient } from './index';
-import { CloudMcpClient, McpToolCall, McpToolResult } from '../mcp/CloudMcpClient';
+import { CloudMcpClient, McpToolCall, McpToolResult } from './CloudMcpClient';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -32,87 +32,99 @@ export interface StreamCallback {
 export class EnhancedAIClient {
   private ollamaClient: OllamaClient;
   private mcpClient: CloudMcpClient | null;
-  private systemPrompt: string;
+  private systemPrompt: string | null = null;
   private currentModel: string;
   private executedToolCalls: Set<string> = new Set(); // Track executed tool calls
 
   constructor(
     ollamaBaseUrl: string = 'http://localhost:11434',
-    model: string = 'llava',
+    model: string = 'llama2:latest',
     mcpClient: CloudMcpClient | null = null
   ) {
     this.ollamaClient = new OllamaClient(ollamaBaseUrl, model);
     this.mcpClient = mcpClient;
     this.currentModel = model;
-    this.systemPrompt = this.buildSystemPrompt();
   }
 
   /**
-   * Build system prompt that includes MCP tool instructions
+   * Build system prompt that includes MCP tool instructions (async)
    */
-  private buildSystemPrompt(): string {
+  private async buildSystemPrompt(): Promise<string> {
     const basePrompt = `You are Banbury AI, an intelligent assistant with access to the Banbury system and its tools.`;
-    
     if (!this.mcpClient) {
       return basePrompt;
     }
-
-    const availableTools = this.mcpClient.getAvailableTools();
+    let availableTools: any[] = [];
+    try {
+      availableTools = await this.mcpClient.fetchAvailableTools();
+    } catch (e) {
+      // fallback if fetch fails
+      return basePrompt + '\n\n(Note: Unable to fetch available tools from server.)';
+    }
+    // Generate tool usage examples from inputSchema
+    const toolDetails = availableTools.map(tool => {
+      let paramExample = '{}';
+      if (tool.inputSchema && tool.inputSchema.properties) {
+        const props = tool.inputSchema.properties;
+        const required = tool.inputSchema.required || [];
+        const exampleObj: Record<string, any> = {};
+        
+        // Filter out authentication/system parameters that are handled automatically
+        const userParameters = Object.keys(props).filter(key => 
+          !['token', 'environment', 'apiKey'].includes(key)
+        );
+        
+        for (const key of userParameters) {
+          const type = props[key].type;
+          const description = props[key].description || '';
+          
+          // Skip if this is auto-provided
+          if (description.toLowerCase().includes('optional') && key === 'device_name') {
+            continue; // Don't include optional device_name in examples
+          }
+          
+          if (type === 'string') {
+            exampleObj[key] = required.includes(key) ? `${key}_value` : '';
+          } else if (type === 'integer' || type === 'number') {
+            exampleObj[key] = required.includes(key) ? 1 : 0;
+          } else if (type === 'boolean') {
+            exampleObj[key] = false;
+          } else {
+            exampleObj[key] = null;
+          }
+        }
+        
+        // Only show parameters if there are user-facing ones
+        if (Object.keys(exampleObj).length > 0) {
+          paramExample = JSON.stringify(exampleObj, null, 2);
+        }
+      }
+      
+      // Add special note for banbury tools about auto-authentication
+      const authNote = tool.name.startsWith('banbury-') 
+        ? '\n  **Authentication**: Handled automatically - no token required'
+        : '';
+      
+      // Add device auto-detection note for relevant tools
+      const deviceNote = tool.name.includes('device') || tool.name.includes('scanned-folders')
+        ? '\n  **Device**: Will auto-detect your device if not specified'
+        : '';
+      
+      return `- **${tool.name}**: ${tool.description || ''}${authNote}${deviceNote}\n  Example parameters:\n  \`\`\`json\n${paramExample}\n\`\`\``;
+    }).join('\n\n');
     
     return `${basePrompt}
-
-You have access to the following tools through the Banbury MCP server:
-
-**Available Tools:**
-${availableTools.map(tool => `- ${tool}`).join('\n')}
-
-**CRITICAL: Tool Usage Instructions**
-When you need to use a tool, you MUST format your request using this EXACT format:
-
-\`\`\`mcp-tool
-{
-  "tool": "tool_name",
-  "parameters": {
-    "param1": "value1",
-    "param2": "value2"
+\nYou have access to the following tools through the Banbury MCP server.\n\n**IMPORTANT**: For Banbury tools, authentication and environment are handled automatically. You don't need to ask users for tokens or environment details.\n\n**Available Tools and Usage Examples:**\n${toolDetails}\n\n**CRITICAL: Tool Usage Instructions**\nWhen you need to use a tool, you MUST format your request using this EXACT format:\n\n\`\`\`mcp-tool\n{\n  "tool": "tool_name",\n  "parameters": { /* only user-facing parameters */ }\n}\n\`\`\`\n\n**IMPORTANT**: \n- Authentication (tokens, environment) is handled automatically\n- Device names are auto-detected when possible\n- Only ask users for the essential parameters they control (like task descriptions, file paths, etc.)\n- You MUST use the exact \`\`\`mcp-tool code block format above\n\n**Common Usage Examples:**\n- User says "get scanned folders" → Use banbury-get-scanned-folders with empty parameters {}\n- User says "add task to process files" → Use banbury-add-task with {"task_description": "process files"}\n- User says "get device info" → Use banbury-get-device-info (will auto-detect device)\n\nAlways explain what you're doing before calling tools, and interpret the results for the user in a helpful way.`;
   }
-}
-\`\`\`
 
-**IMPORTANT**: You MUST use the exact \`\`\`mcp-tool code block format above. Simply mentioning a tool name will NOT execute it. You must use the code block format.
-
-**Tool Parameter Examples:**
-- banbury-get-scanned-folders: \`{"environment": "dev"}\` (device_name is optional)
-- banbury-add-task: \`{"task_description": "Your task here", "environment": "dev"}\`
-- banbury-get-device-info: \`{"device_name": "device_name_here", "environment": "dev"}\`
-- banbury-get-sessions: \`{"environment": "dev"}\`
-
-**Common Use Cases:**
-- To get scanned folders: Use "banbury-get-scanned-folders" (no parameters needed - device will be auto-detected)
-- To get random files: First use "banbury-get-scanned-folders", then "banbury-get-files" with specific paths
-- To add a task: Use "banbury-add-task" with a task_description
-- To get device info: Use "banbury-get-device-info" with a device_name
-- To get sessions: Use "banbury-get-sessions"
-- For math: Use "add" with parameters a and b
-- For entertainment: Use "get-joke"
-
-**Example of correct tool usage:**
-User: "Get scanned folders"
-You should respond with:
-I'll get the scanned folders for you using the banbury-get-scanned-folders tool.
-
-\`\`\`mcp-tool
-{
-  "tool": "banbury-get-scanned-folders",
-  "parameters": {
-    "environment": "dev"
-  }
-}
-\`\`\`
-
-Then wait for the tool result before continuing your response.
-
-Always explain what you're doing before calling tools, and interpret the results for the user in a helpful way.`;
+  /**
+   * Get the system prompt, initializing it if needed
+   */
+  public async getSystemPrompt(): Promise<string> {
+    if (!this.systemPrompt) {
+      this.systemPrompt = await this.buildSystemPrompt();
+    }
+    return this.systemPrompt;
   }
 
   /**
@@ -120,7 +132,7 @@ Always explain what you're doing before calling tools, and interpret the results
    */
   public setMcpClient(mcpClient: CloudMcpClient | null) {
     this.mcpClient = mcpClient;
-    this.systemPrompt = this.buildSystemPrompt();
+    this.systemPrompt = null; // Will be rebuilt on next getSystemPrompt()
   }
 
   /**
@@ -140,13 +152,15 @@ Always explain what you're doing before calling tools, and interpret the results
     callbacks: StreamCallback = {}
   ): Promise<string> {
     try {
-      // Clear executed tool calls for new conversation
       this.executedToolCalls.clear();
-      
       // Add system prompt if not present
-      const messagesWithSystem = messages[0]?.role === 'system' 
-        ? messages 
-        : [{ role: 'system' as const, content: this.systemPrompt }, ...messages];
+      let messagesWithSystem;
+      if (messages[0]?.role === 'system') {
+        messagesWithSystem = messages;
+      } else {
+        const prompt = await this.getSystemPrompt();
+        messagesWithSystem = [{ role: 'system' as const, content: prompt }, ...messages];
+      }
 
       let fullResponse = '';
       let pendingToolCalls: ToolCall[] = [];
@@ -227,17 +241,12 @@ Always explain what you're doing before calling tools, and interpret the results
     // Actual execution happens after streaming completes
     const toolCalls = this.extractToolCalls(response);
     
-    if (toolCalls.length > 0) {
-      console.log(`🔄 detectAndExecuteToolCalls found ${toolCalls.length} tool calls (will execute after streaming)`);
-    }
-    
     for (const toolCall of toolCalls) {
       // Generate a unique key for this tool call based on content, not ID
       const toolKey = `${toolCall.function.name}_${toolCall.function.arguments}`;
       
       // Check if we've already processed this exact tool call
       if (!this.executedToolCalls.has(toolKey)) {
-        console.log(`📋 Detected tool call: ${toolCall.function.name}`, JSON.parse(toolCall.function.arguments));
         this.executedToolCalls.add(toolKey);
         callbacks.onToolCall?.(toolCall);
         // Don't execute here - just notify
@@ -261,9 +270,7 @@ Always explain what you're doing before calling tools, and interpret the results
     // Execute all tool calls
     const toolResults = await Promise.all(
       toolCalls.map(async (toolCall) => {
-        console.log(`🛠️ Executing tool: ${toolCall.function.name}`);
         const result = await this.executeToolCall(toolCall);
-        console.log(`✅ Tool completed: ${toolCall.function.name}`, result);
         callbacks.onToolResult?.(result);
         return { toolCall, result };
       })
@@ -285,8 +292,6 @@ Always explain what you're doing before calling tools, and interpret the results
 
     // Continue conversation with tool results
     const newMessages = [...messages, assistantMessage, ...toolMessages];
-    
-    console.log(`🔄 Continuing conversation with tool results`, newMessages.length, 'messages');
     
     // Generate follow-up response with tool results
     const followUpResponse = await this.chatStream(newMessages, {
@@ -335,46 +340,61 @@ Always explain what you're doing before calling tools, and interpret the results
     // Also look for natural language tool mentions as fallback
     if (toolCalls.length === 0) {
       const naturalLanguagePatterns = [
-        // Pattern for "banbury-get-scanned-folders" tool mention
-        /(?:use|call|execute)\s+(?:the\s+)?["']?banbury-get-scanned-folders["']?\s+tool(?:\s+without\s+(?:any\s+)?parameters)?/i,
-        // Pattern for other banbury tools
-        /(?:use|call|execute)\s+(?:the\s+)?["']?(banbury-[a-z-]+)["']?\s+tool/i
+        // Pattern for scanned folders requests
+        /(?:get|show|list|fetch|retrieve)\s+(?:the\s+)?scanned\s+folders?/i,
+        // Pattern for device info requests  
+        /(?:get|show|fetch|retrieve)\s+(?:the\s+)?device\s+(?:info|information)/i,
+        // Pattern for adding tasks
+        /(?:add|create)\s+(?:a\s+)?(?:task|sample\s+task)/i,
+        // Pattern for getting files
+        /(?:get|show|list|fetch|retrieve)\s+(?:random\s+)?files?/i,
+        // Pattern for getting sessions
+        /(?:get|show|list|fetch|retrieve)\s+(?:the\s+)?sessions?/i
       ];
 
       for (const pattern of naturalLanguagePatterns) {
         const naturalMatch = text.match(pattern);
         if (naturalMatch) {
-          console.log('🔍 Detected natural language tool call:', naturalMatch[0]);
+          let toolName = '';
+          let defaultParams = {};
           
-          let toolName = 'banbury-get-scanned-folders'; // Default for the first pattern
-          if (naturalMatch[1]) {
-            toolName = naturalMatch[1]; // Extracted tool name from second pattern
+          // Determine which tool to call based on the matched pattern
+          if (pattern.source.includes('scanned')) {
+            toolName = 'banbury-get-scanned-folders';
+            defaultParams = {}; // No parameters needed - authentication handled automatically
+          } else if (pattern.source.includes('device')) {
+            toolName = 'banbury-get-device-info';
+            defaultParams = {};
+          } else if (pattern.source.includes('task')) {
+            toolName = 'banbury-add-task';
+            defaultParams = { task_description: 'Sample task' };
+          } else if (pattern.source.includes('files')) {
+            toolName = 'banbury-get-random-files';
+            defaultParams = {};
+          } else if (pattern.source.includes('sessions')) {
+            toolName = 'banbury-get-sessions';
+            defaultParams = {};
           }
           
-          // Create a tool call with default parameters
-          const defaultParams = toolName === 'banbury-get-scanned-folders' 
-            ? { environment: 'dev' }
-            : { environment: 'dev' };
-          
-          const toolArgs = JSON.stringify(defaultParams);
-          const toolId = `call_natural_${toolName}_${Date.now()}`;
-          
-          toolCalls.push({
-            id: toolId,
-            type: 'function',
-            function: {
-              name: toolName,
-              arguments: toolArgs
-            }
-          });
-          
-          console.log('✅ Created tool call from natural language:', { toolName, defaultParams });
-          break; // Only create one tool call per response
+          if (toolName) {
+            const toolArgs = JSON.stringify(defaultParams);
+            const toolId = `call_natural_${toolName}_${Date.now()}`;
+            
+            toolCalls.push({
+              id: toolId,
+              type: 'function',
+              function: {
+                name: toolName,
+                arguments: toolArgs
+              }
+            });
+            
+            break; // Only create one tool call per response
+          }
         }
       }
     }
 
-    console.log(`🔧 Extracted ${toolCalls.length} tool calls from response`, toolCalls.map(tc => tc.function.name));
     return toolCalls;
   }
 
@@ -420,13 +440,6 @@ Always explain what you're doing before calling tools, and interpret the results
         onError: reject
       });
     });
-  }
-
-  /**
-   * Get available tools from MCP client
-   */
-  public getAvailableTools(): string[] {
-    return this.mcpClient?.getAvailableTools() || [];
   }
 
   /**

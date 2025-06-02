@@ -15,6 +15,8 @@ export type Config = {
   semi_local: boolean;
   url: string;
   url_ws: string;
+  url_mcp: string;
+  token: string;
 }
 
 export const config: Config = {
@@ -56,6 +58,28 @@ export const config: Config = {
       return 'ws://192.168.50.72:8080/ws/consumer/';
     } else {
       return 'ws://0.0.0.0:8080/ws/consumer/';
+    }
+  },
+  get url_mcp() {
+    if (this.prod) {
+      return 'http://54.224.116.254:8080/api';
+    } else if (this.dev) {
+      return 'http://localhost:3001';
+    } else if (this.semi_local) {
+      return 'http://192.168.50.72:8080/api';
+    } else {
+      return 'http://0.0.0.0:8080/api';
+    }
+  },
+  get token() {
+    if (this.prod) {
+      return process.env.BANBURY_PROD_TOKEN || '';
+    } else if (this.dev) {
+      return process.env.BANBURY_DEV_TOKEN || '';
+    } else if (this.semi_local) {
+      return process.env.BANBURY_SEMI_LOCAL_TOKEN || '';
+    } else {
+      return process.env.BANBURY_DEFAULT_TOKEN || '';
     }
   }
 }

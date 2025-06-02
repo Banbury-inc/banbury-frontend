@@ -18,7 +18,7 @@ export class OllamaClient {
     private defaultModel: string;
     private webSearchService: WebSearchService;
 
-    constructor(baseUrl: string = 'http://localhost:11434', defaultModel: string = 'llava') {
+    constructor(baseUrl: string = 'http://localhost:11434', defaultModel: string = 'llama2:latest') {
         this.client = new Ollama({
             host: baseUrl
         });
