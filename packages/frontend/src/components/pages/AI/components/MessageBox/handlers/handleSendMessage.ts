@@ -32,6 +32,7 @@ export const handleSendMessage = async (
   setIsStreaming: (isStreaming: boolean) => void, 
   setStreamingMessage: (streamingMessage: string) => void, 
   setStreamingThinking: (streamingThinking: string) => void, 
+  setStreamingToolCalls: (toolCalls: any[]) => void,
   abortControllerRef: React.MutableRefObject<AbortController | null>, 
   currentModel: string, 
   useWebSearch: boolean, 
@@ -67,6 +68,7 @@ export const handleSendMessage = async (
     setIsStreaming(true);
     setStreamingMessage('');
     setStreamingThinking('');
+    setStreamingToolCalls([]);
 
     try {
       if (useWebSearch) {
@@ -88,6 +90,60 @@ export const handleSendMessage = async (
         userMessage.searchInfo = { duration: parseFloat(duration.toFixed(1)) };
       }
 
+      // Check if we're using Enhanced AI client (has chatStream method)
+      if (ollamaClient.chatStream && typeof ollamaClient.chatStream === 'function') {
+        // Use Enhanced AI client with streaming callbacks
+        const messageHistory = [...messages, userMessage].map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
+        let currentMessage = '';
+        let activeToolCalls: any[] = [];
+
+        const response = await ollamaClient.chatStream(messageHistory, {
+          onToken: (token: string) => {
+            if (abortControllerRef.current?.signal.aborted) return;
+            currentMessage += token;
+            setStreamingMessage(currentMessage);
+          },
+          onThinking: (thinking: string) => {
+            if (abortControllerRef.current?.signal.aborted) return;
+            setStreamingThinking(thinking);
+          },
+          onToolCall: (toolCall: any) => {
+            if (abortControllerRef.current?.signal.aborted) return;
+            activeToolCalls.push(toolCall);
+            setStreamingToolCalls([...activeToolCalls]);
+          },
+          onToolResult: (result: any) => {
+            if (abortControllerRef.current?.signal.aborted) return;
+            // Keep tool calls visible throughout the conversation
+            // Don't remove them when completed
+          },
+          onComplete: (fullResponse: string) => {
+            if (abortControllerRef.current?.signal.aborted) return;
+            // Keep tool calls visible - don't clear them
+            const { thinking, cleanContent } = extractThinkingContent(fullResponse);
+            const assistantMessage: ExtendedChatMessage = {
+              role: 'assistant',
+              content: cleanContent,
+              thinking
+            };
+            const updatedMessages = [...messages, userMessage, assistantMessage];
+            setMessages(updatedMessages);
+            saveConversation(updatedMessages, currentConversation, setCurrentConversation);
+          },
+          onError: (error: Error) => {
+            console.error('Enhanced AI client error:', error);
+            showAlert('Error', ['Failed to send message', error.message], 'error');
+          }
+        });
+        
+        return; // Exit early since Enhanced AI client handles everything
+      }
+
+      // Fallback to regular Ollama client
       const response = await ollamaClient.chat([...messages, userMessage], {
         stream: true,
         model: currentModel,
@@ -166,6 +222,7 @@ export const handleSendMessage = async (
       setIsStreaming(false);
       setStreamingMessage('');
       setStreamingThinking('');
+      setStreamingToolCalls([]);
       abortControllerRef.current = null;
     }
   };

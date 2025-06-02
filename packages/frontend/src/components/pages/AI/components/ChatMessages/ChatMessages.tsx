@@ -58,11 +58,34 @@ const ThinkingDot = styled(Box)(({ theme }) => ({
   }
 }));
 
+const ToolCallIndicator = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  padding: theme.spacing(1, 2),
+  backgroundColor: theme.palette.primary.dark,
+  borderRadius: theme.spacing(2),
+  marginBottom: theme.spacing(1),
+  width: 'fit-content',
+  animation: 'fadeIn 0.3s ease-in-out',
+  '@keyframes fadeIn': {
+    '0%': {
+      opacity: 0,
+      transform: 'translateY(5px)'
+    },
+    '100%': {
+      opacity: 1,
+      transform: 'translateY(0)'
+    }
+  }
+}));
+
 interface ChatMessagesProps {
   messages: ExtendedChatMessage[];
   isLoading: boolean;
   streamingMessage: string;
   streamingThinking: string;
+  streamingToolCalls: any[];
   isStreaming: boolean;
   isSearching: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -73,6 +96,7 @@ export default function ChatMessages({
   isLoading,
   streamingMessage,
   streamingThinking,
+  streamingToolCalls,
   isStreaming,
   isSearching,
   messagesEndRef,
@@ -169,6 +193,18 @@ export default function ChatMessages({
                   <span role="img" aria-label="searching">🔍</span>
                   Searching the web...
                 </SearchingIndicator>
+              )}
+              {streamingToolCalls.length > 0 && (
+                <Box sx={{ mb: 1 }}>
+                  {streamingToolCalls.map((toolCall, index) => (
+                    <ToolCallIndicator key={index}>
+                      <span role="img" aria-label="tool">🔧</span>
+                      <Typography variant="body2" sx={{ color: 'primary.contrastText', fontWeight: 500 }}>
+                        Calling {toolCall.function?.name || toolCall.tool}...
+                      </Typography>
+                    </ToolCallIndicator>
+                  ))}
+                </Box>
               )}
               <MessageBubble
                 isUser={false}

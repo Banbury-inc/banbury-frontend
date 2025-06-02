@@ -39,6 +39,7 @@ export default function AI() {
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingToolCalls, setStreamingToolCalls] = useState<any[]>([]);
   const [mcpToolsEnabled, setMcpToolsEnabled] = useState<boolean>(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<any | null>(null);
@@ -125,6 +126,7 @@ export default function AI() {
       setCurrentConversation,
       setStreamingMessage,
       setStreamingThinking,
+      setStreamingToolCalls,
       saveConversationWrapper
     );
   };
@@ -268,6 +270,7 @@ export default function AI() {
               isLoading={isLoading}
               streamingMessage={streamingMessage}
               streamingThinking={streamingThinking}
+              streamingToolCalls={streamingToolCalls}
               isStreaming={isStreaming}
               isSearching={isSearching}
               messagesEndRef={messagesEndRef}
@@ -282,6 +285,7 @@ export default function AI() {
             setIsStreaming={setIsStreaming}
             setStreamingMessage={setStreamingMessage}
             setStreamingThinking={setStreamingThinking}
+            setStreamingToolCalls={setStreamingToolCalls}
             abortControllerRef={abortControllerRef}
             currentModel={currentModel}
             setIsSearching={setIsSearching}

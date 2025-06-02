@@ -43,6 +43,7 @@ interface MessageBoxProps {
   setIsStreaming: (isStreaming: boolean) => void;
   setStreamingMessage: (message: string) => void;
   setStreamingThinking: (thinking: string) => void;
+  setStreamingToolCalls: (toolCalls: any[]) => void;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
   currentModel: string;
   setIsSearching: (isSearching: boolean) => void;
@@ -62,6 +63,7 @@ export default function MessageBox({
   setIsStreaming,
   setStreamingMessage,
   setStreamingThinking,
+  setStreamingToolCalls,
   abortControllerRef,
   currentModel,
   setIsSearching,
@@ -122,6 +124,7 @@ export default function MessageBox({
       setIsStreaming,
       setStreamingMessage,
       setStreamingThinking,
+      setStreamingToolCalls,
       abortControllerRef,
       currentModel,
       useWebSearch,

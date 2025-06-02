@@ -6,7 +6,7 @@ export const handleStopGeneration = async (
   setIsStreaming: (isStreaming: boolean) => void, 
   setIsLoading: (isLoading: boolean) => void, 
   setIsSearching: (isSearching: boolean) => void, 
-  streamingMessage: string, messages: ExtendedChatMessage[], setMessages: React.Dispatch<React.SetStateAction<ExtendedChatMessage[]>>, currentConversation: any, setCurrentConversation: (conversation: any) => void, setStreamingMessage: (streamingMessage: string) => void, setStreamingThinking: (streamingThinking: string) => void, saveConversation: (messages: ExtendedChatMessage[]) => void) => {
+  streamingMessage: string, messages: ExtendedChatMessage[], setMessages: React.Dispatch<React.SetStateAction<ExtendedChatMessage[]>>, currentConversation: any, setCurrentConversation: (conversation: any) => void, setStreamingMessage: (streamingMessage: string) => void, setStreamingThinking: (streamingThinking: string) => void, setStreamingToolCalls: (toolCalls: any[]) => void, saveConversation: (messages: ExtendedChatMessage[]) => void) => {
     if (abortControllerRef.current) {
       // Abort the current request
       abortControllerRef.current.abort();
@@ -32,6 +32,7 @@ export const handleStopGeneration = async (
       // Clear streaming states
       setStreamingMessage('');
       setStreamingThinking('');
+      setStreamingToolCalls([]);
       
       // Clean up the abort controller
       abortControllerRef.current = null;
