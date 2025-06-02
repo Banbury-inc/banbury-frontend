@@ -95,7 +95,8 @@ export const handleSendMessage = async (
         signal: abortControllerRef.current.signal
       });
 
-      if (Symbol.asyncIterator in response) {
+      // Check if response is an object and has asyncIterator
+      if (response && typeof response === 'object' && Symbol.asyncIterator in response) {
         // Handle streaming response
         let completeMessage = '';
         try {
@@ -132,8 +133,18 @@ export const handleSendMessage = async (
         }
       } else {
         // Handle non-streaming response (fallback)
-        const chatResponse = response as unknown as ChatResponse;
-        const { thinking, cleanContent } = extractThinkingContent(chatResponse.message.content);
+        let responseContent = '';
+        
+        // Check if response is a string (direct content)
+        if (typeof response === 'string') {
+          responseContent = response;
+        } else {
+          // Handle object response
+          const chatResponse = response as unknown as ChatResponse;
+          responseContent = chatResponse.message?.content || '';
+        }
+        
+        const { thinking, cleanContent } = extractThinkingContent(responseContent);
         const assistantMessage: ExtendedChatMessage = {
           role: 'assistant',
           content: cleanContent,

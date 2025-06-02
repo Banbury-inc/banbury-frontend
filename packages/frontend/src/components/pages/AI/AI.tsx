@@ -4,9 +4,13 @@ import {
   Card,
   CardContent,
   Stack,
+  Chip,
+  Typography,
 } from '@mui/material';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { OllamaClient } from '@banbury/core/src/ai';
+import { EnhancedAIClient } from '@banbury/core/src/ai/EnhancedAIClient';
+import { useMcpClient } from '../../../hooks/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
 import { saveConversation } from './handlers/handleSaveConversation';
@@ -21,8 +25,6 @@ import { handleDragOver } from './components/DragDropOverlay/handlers/handleDrag
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
 import { Conversation, ExtendedChatMessage } from '@banbury/core/src/types';
 
-
-
 export default function AI() {
   const { showAlert } = useAlert();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
@@ -32,18 +34,45 @@ export default function AI() {
   const [currentModel, setCurrentModel] = useState<string>('llava');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
+  const [enhancedAIClient, setEnhancedAIClient] = useState<EnhancedAIClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [mcpToolsEnabled, setMcpToolsEnabled] = useState<boolean>(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<any | null>(null);
+
+  // Initialize MCP client
+  const {
+    client: mcpClient,
+    isConnected: mcpConnected,
+    isAuthenticated: mcpAuthenticated,
+    error: mcpError,
+    availableTools,
+    addTask
+  } = useMcpClient();
 
   useEffect(() => {
     // Initialize Ollama client
     const client = new OllamaClient('http://localhost:11434', currentModel);
     setOllamaClient(client);
-  }, [currentModel]);
+
+    // Initialize Enhanced AI client with MCP integration
+    const enhancedClient = new EnhancedAIClient(
+      'http://localhost:11434',
+      currentModel,
+      mcpToolsEnabled ? mcpClient : null
+    );
+    setEnhancedAIClient(enhancedClient);
+  }, [currentModel, mcpClient, mcpToolsEnabled]);
+
+  useEffect(() => {
+    // Update enhanced AI client when MCP client changes
+    if (enhancedAIClient) {
+      enhancedAIClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
+    }
+  }, [enhancedAIClient, mcpClient, mcpToolsEnabled]);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
@@ -67,7 +96,6 @@ export default function AI() {
   const handleRefreshDeviceInfo = () => {
     fetchDeviceInfo();
   };
-
 
   const handleSelectConversation = (conversation: Conversation) => {
     setCurrentConversation(conversation);
@@ -102,6 +130,16 @@ export default function AI() {
     );
   };
 
+  const toggleMcpTools = () => {
+    setMcpToolsEnabled(!mcpToolsEnabled);
+    showAlert(
+      mcpToolsEnabled ? 'MCP Tools Disabled' : 'MCP Tools Enabled',
+      [mcpToolsEnabled 
+        ? 'The AI will no longer have access to Banbury tools' 
+        : 'The AI now has access to Banbury tools for enhanced functionality']
+    );
+  };
+
   return (
     <Box sx={{
       width: '100%',
@@ -119,6 +157,8 @@ export default function AI() {
     onDrop={(e) => handleDrop(e, setIsDragging, showAlert)}
     >
       <DragDropOverlay isDragging={isDragging} />
+      
+      {/* AI Toolbar with MCP integration */}
       <AIToolbar
         currentModel={currentModel}
         setCurrentModel={setCurrentModel}
@@ -128,6 +168,72 @@ export default function AI() {
         currentConversation={currentConversation}
         handleNewChat={handleNewChat}
       />
+
+      {/* MCP Status and Controls */}
+      <Box sx={{ 
+        p: 1, 
+        borderBottom: 1, 
+        borderColor: 'divider',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        flexWrap: 'wrap'
+      }}>
+        <Chip
+          label={mcpToolsEnabled ? 'MCP Tools: ON' : 'MCP Tools: OFF'}
+          color={mcpToolsEnabled ? 'success' : 'default'}
+          size="small"
+          onClick={toggleMcpTools}
+          sx={{ cursor: 'pointer' }}
+        />
+        
+        {mcpToolsEnabled && (
+          <>
+            <Chip
+              label={mcpConnected ? 'Connected' : 'Disconnected'}
+              color={mcpConnected ? 'success' : 'error'}
+              size="small"
+            />
+            
+            {mcpConnected && (
+              <Chip
+                label={mcpAuthenticated ? 'Authenticated' : 'Not Authenticated'}
+                color={mcpAuthenticated ? 'success' : 'warning'}
+                size="small"
+              />
+            )}
+            
+            {mcpAuthenticated && (
+              <>
+                <Typography variant="caption" sx={{ mx: 1 }}>
+                  Tools: {availableTools.length}
+                </Typography>
+                
+                <Chip
+                  label="Get Random Files"
+                  size="small"
+                  onClick={() => mcpClient?.callTool({ tool: 'banbury-get-scanned-folders', parameters: { count: 10 } })}
+                  sx={{ cursor: 'pointer' }}
+                />
+                
+                <Chip
+                  label="Add Sample Task"
+                  size="small"
+                  onClick={() => mcpClient?.callTool({ tool: 'add', parameters: { description: 'Process recently accessed files' } })}
+                  sx={{ cursor: 'pointer' }}
+                />
+              </>
+            )}
+          </>
+        )}
+
+        {mcpError && (
+          <Typography variant="caption" color="error" sx={{ ml: 'auto' }}>
+            MCP Error: {mcpError}
+          </Typography>
+        )}
+      </Box>
+
       <Stack
         direction="row"
         spacing={0}
@@ -180,7 +286,7 @@ export default function AI() {
             currentModel={currentModel}
             setIsSearching={setIsSearching}
             showAlert={showAlert}
-            ollamaClient={ollamaClient}
+            ollamaClient={mcpToolsEnabled ? enhancedAIClient : ollamaClient}
             currentConversation={currentConversation}
             setCurrentConversation={setCurrentConversation}
             handleStopGeneration={handleStopGenerationWrapper}
