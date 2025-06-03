@@ -1,9 +1,30 @@
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Paper, Collapse, IconButton, Chip, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import BuildIcon from '@mui/icons-material/Build';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import { Text } from '../../../../common/Text/Text';
 import MessageBubble from '../MessageBubble/MessageBuuble';
 import { ExtendedChatMessage } from "@banbury/core/src/types";
+
+interface ToolCall {
+  id: string;
+  type: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+interface ToolResult {
+  success: boolean;
+  content: Array<{ type: string; text: string }>;
+  error?: string;
+}
 
 const SearchingIndicator = styled(Typography)`
   @keyframes fadeIn {
@@ -58,6 +79,39 @@ const ThinkingDot = styled(Box)(({ theme }) => ({
   }
 }));
 
+const SectionIndicator = styled(Typography)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(0.5),
+  marginBottom: theme.spacing(0.5),
+  alignSelf: 'flex-start',
+  marginLeft: theme.spacing(1),
+  color: theme.palette.text.secondary,
+  animation: 'fadeIn 0.3s ease-in-out',
+  '@keyframes fadeIn': {
+    '0%': {
+      opacity: 0,
+      transform: 'translateY(5px)'
+    },
+    '100%': {
+      opacity: 1,
+      transform: 'translateY(0)'
+    }
+  }
+}));
+
+const SectionHeader = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  cursor: 'pointer',
+  padding: theme.spacing(0.5),
+  borderRadius: theme.spacing(1),
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
 
 
 interface ChatMessagesProps {
@@ -83,6 +137,174 @@ export default function ChatMessages({
   isSearching,
   messagesEndRef,
 }: ChatMessagesProps) {
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+
+  const toggleSection = (sectionKey: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
+
+  const renderThinkingSection = (thinking: string, messageIndex: number) => {
+    const sectionKey = `thinking-${messageIndex}`;
+    const isExpanded = expandedSections[sectionKey] || false;
+
+    return (
+      <Box sx={{ mb: 0.5 }}>
+        <SectionIndicator
+          variant="caption"
+          onClick={() => toggleSection(sectionKey)}
+          sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+        >
+          <PsychologyIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+          <span>Thinking Process</span>
+          <IconButton size="small" sx={{ ml: 0.5, p: 0.25 }}>
+            {isExpanded ? <ExpandLessIcon sx={{ fontSize: 12 }} /> : <ExpandMoreIcon sx={{ fontSize: 12 }} />}
+          </IconButton>
+        </SectionIndicator>
+        <Collapse in={isExpanded}>
+          <Box sx={{ ml: 3, mb: 1 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                whiteSpace: 'pre-wrap',
+                color: 'text.secondary',
+                fontSize: '0.875rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {thinking}
+            </Typography>
+          </Box>
+        </Collapse>
+      </Box>
+    );
+  };
+
+  const renderToolCall = (toolCall: ToolCall, index: number) => {
+    let args;
+    try {
+      args = JSON.parse(toolCall.function.arguments);
+    } catch {
+      args = toolCall.function.arguments;
+    }
+
+    const sectionKey = `toolCallParams-${index}`;
+    const isExpanded = expandedSections[sectionKey] || false;
+
+    return (
+      <Box key={toolCall.id || index} sx={{ mb: 0.5 }}>
+        <SectionIndicator
+          variant="caption"
+          onClick={typeof args === 'object' ? () => toggleSection(sectionKey) : undefined}
+          sx={{ 
+            cursor: typeof args === 'object' ? 'pointer' : 'default',
+            '&:hover': typeof args === 'object' ? { opacity: 0.8 } : {}
+          }}
+        >
+          <BuildIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+          <span>{toolCall.function.name}</span>
+          <Chip 
+            label="Tool" 
+            size="small" 
+            variant="outlined" 
+            sx={{ 
+              fontSize: '0.6rem',
+              height: 16,
+              ml: 0.5,
+              '& .MuiChip-label': { px: 0.5 }
+            }} 
+          />
+          {typeof args === 'object' && (
+            <IconButton 
+              size="small" 
+              sx={{ ml: 0.5, p: 0.25 }}
+            >
+              {isExpanded ? <ExpandLessIcon sx={{ fontSize: 12 }} /> : <ExpandMoreIcon sx={{ fontSize: 12 }} />}
+            </IconButton>
+          )}
+        </SectionIndicator>
+        {typeof args === 'object' && (
+          <Collapse in={isExpanded}>
+            <Box sx={{ ml: 3, mb: 1 }}>
+              <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                {JSON.stringify(args, null, 2)}
+              </Typography>
+            </Box>
+          </Collapse>
+        )}
+      </Box>
+    );
+  };
+
+  const renderToolCallsSection = (toolCalls: ToolCall[], messageIndex: number) => {
+    return (
+      <Box sx={{ mb: 0.5 }}>
+        {toolCalls.map(renderToolCall)}
+      </Box>
+    );
+  };
+
+  const renderToolResult = (result: ToolResult, index: string | number) => {
+    const isError = !result.success;
+    const sectionKey = `toolResult-${index}`;
+    const isExpanded = expandedSections[sectionKey] || false;
+    
+    return (
+      <Box key={index} sx={{ mb: 0.5 }}>
+        <SectionIndicator
+          variant="caption"
+          onClick={() => toggleSection(sectionKey)}
+          sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+        >
+          {isError ? (
+            <ErrorIcon sx={{ fontSize: 14, color: 'error.main' }} />
+          ) : (
+            <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
+          )}
+          <span>Result</span>
+          <Chip 
+            label={isError ? "Error" : "Success"} 
+            size="small" 
+            color={isError ? "error" : "success"}
+            variant="outlined"
+            sx={{ 
+              fontSize: '0.6rem',
+              height: 16,
+              ml: 0.5,
+              '& .MuiChip-label': { px: 0.5 }
+            }}
+          />
+          <IconButton 
+            size="small" 
+            sx={{ ml: 0.5, p: 0.25 }}
+          >
+            {isExpanded ? <ExpandLessIcon sx={{ fontSize: 12 }} /> : <ExpandMoreIcon sx={{ fontSize: 12 }} />}
+          </IconButton>
+        </SectionIndicator>
+        <Collapse in={isExpanded}>
+          <Box sx={{ ml: 3, mb: 1 }}>
+            <Typography variant="caption" sx={{ 
+              whiteSpace: 'pre-wrap',
+              fontSize: '0.65rem',
+              color: 'text.secondary'
+            }}>
+              {isError ? result.error : result.content.map(c => c.text).join('\n')}
+            </Typography>
+          </Box>
+        </Collapse>
+      </Box>
+    );
+  };
+
+  const renderToolResultsSection = (toolResults: ToolResult[], messageIndex: number) => {
+    return (
+      <Box sx={{ mb: 0.5 }}>
+        {toolResults.map((result, index) => renderToolResult(result, `${messageIndex}-${index}`))}
+      </Box>
+    );
+  };
   return (
     <Box sx={{
       maxWidth: '1000px',
@@ -118,14 +340,20 @@ export default function ChatMessages({
       )}
       {messages.map((message, index) => (
         <React.Fragment key={index}>
+          {/* Render thinking section outside the bubble for assistant messages */}
+          {message.role === 'assistant' && message.thinking && renderThinkingSection(message.thinking, index)}
+          
+          {/* Render tool calls section outside the bubble for assistant messages */}
+          {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && renderToolCallsSection(message.toolCalls, index)}
+          
+          {/* Render tool results section outside the bubble for assistant messages */}
+          {message.role === 'assistant' && message.toolResults && message.toolResults.length > 0 && renderToolResultsSection(message.toolResults, index)}
+          
           <MessageBubble
             isUser={message.role === 'user'}
             elevation={1}
             content={message.content}
-            thinking={message.thinking}
             images={message.images}
-            toolCalls={message.toolCalls}
-            toolResults={message.toolResults}
           />
 
           {message.searchInfo && message.role === 'user' && (
@@ -178,15 +406,23 @@ export default function ChatMessages({
             </SearchingIndicator>
           )}
           {(streamingMessage || streamingThinking || streamingToolCalls.length > 0) && isStreaming && (
-            <MessageBubble
-              isUser={false}
-              elevation={1}
-              content={streamingMessage}
-              thinking={streamingThinking}
-              toolCalls={streamingToolCalls}
-              toolResults={streamingToolResults}
-              isStreaming={true}
-            />
+            <>
+              {/* Render streaming thinking section outside the bubble */}
+              {streamingThinking && renderThinkingSection(streamingThinking, -1)}
+              
+              {/* Render streaming tool calls section outside the bubble */}
+              {streamingToolCalls.length > 0 && renderToolCallsSection(streamingToolCalls, -1)}
+              
+              {/* Render streaming tool results section outside the bubble */}
+              {streamingToolResults.length > 0 && renderToolResultsSection(streamingToolResults, -1)}
+              
+              <MessageBubble
+                isUser={false}
+                elevation={1}
+                content={streamingMessage}
+                isStreaming={true}
+              />
+            </>
           )}
         </>
       )}

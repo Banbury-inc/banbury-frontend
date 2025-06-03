@@ -91,6 +91,7 @@ export default function AI() {
     // Update LangChain AI client when MCP client changes
     if (langChainClient) {
       langChainClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
+      langChainClient.setWebSearchEnabled(webSearchEnabled);
     }
   }, [enhancedAIClient, langChainClient, mcpClient, mcpToolsEnabled, webSearchEnabled]);
 
