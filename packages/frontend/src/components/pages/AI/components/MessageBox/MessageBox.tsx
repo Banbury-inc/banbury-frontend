@@ -4,9 +4,8 @@ import {
   Send as SendIcon,
   Stop as StopIcon,
   Image as ImageIcon,
-  Language as LanguageIcon,
   Cancel as CancelIcon,
-  SmartToy as SmartToyIcon,
+  Language as LanguageIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { AlertColor } from '@mui/material';
@@ -45,6 +44,7 @@ interface MessageBoxProps {
   setStreamingMessage: (message: string) => void;
   setStreamingThinking: (thinking: string) => void;
   setStreamingToolCalls: (toolCalls: any[]) => void;
+  setStreamingToolResults: (toolResults: any[]) => void;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
   currentModel: string;
   setIsSearching: (isSearching: boolean) => void;
@@ -53,6 +53,9 @@ interface MessageBoxProps {
   currentConversation: any;
   setCurrentConversation: (conversation: any) => void;
   handleStopGeneration: () => void;
+  langChainOptions?: {};
+  webSearchEnabled?: boolean;
+  setWebSearchEnabled?: (enabled: boolean) => void;
 }
 
 export default function MessageBox({
@@ -65,6 +68,7 @@ export default function MessageBox({
   setStreamingMessage,
   setStreamingThinking,
   setStreamingToolCalls,
+  setStreamingToolResults,
   abortControllerRef,
   currentModel,
   setIsSearching,
@@ -73,12 +77,13 @@ export default function MessageBox({
   currentConversation,
   setCurrentConversation,
   handleStopGeneration,
+  langChainOptions,
+  webSearchEnabled = false,
+  setWebSearchEnabled,
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const [useWebSearch, setUseWebSearch] = useState(false);
-  const [agentMode, setAgentMode] = useState(true); // Agent mode enabled by default
   
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,16 +132,17 @@ export default function MessageBox({
       setStreamingMessage,
       setStreamingThinking,
       setStreamingToolCalls,
+      setStreamingToolResults,
       abortControllerRef,
       currentModel,
-      useWebSearch,
+      false, // useWebSearch no longer needed - handled by AI client as tool
       setIsSearching,
       showAlert,
       ollamaClient,
       isLoading,
       currentConversation,
       setCurrentConversation,
-      agentMode
+      langChainOptions
     );
   };
 
@@ -223,42 +229,8 @@ export default function MessageBox({
               ref={fileInputRef}
               onChange={(e) => handleImageUpload(e, setSelectedImages, showAlert)}
             />
-            <Tooltip title="Agent Mode">
-              <ToolbarButton
-                onClick={() => setAgentMode(!agentMode)}
-                size="small"
-                sx={{
-                  minWidth: 0,
-                  width: 36,
-                  height: 36,
-                  borderRadius: 2,
-                  backgroundColor: agentMode ? 'rgba(66,133,244,0.15)' : 'background.paper',
-                  '&:hover': {
-                    backgroundColor: agentMode ? 'rgba(66,133,244,0.22)' : (theme) => theme.palette.action.hover,
-                  },
-                }}
-              >
-                <SmartToyIcon sx={{ fontSize: '1.1rem', color: agentMode ? 'primary.main' : 'text.secondary' }} />
-              </ToolbarButton>
-            </Tooltip>
-            <Tooltip title="Web Search">
-              <ToolbarButton
-                onClick={() => setUseWebSearch(!useWebSearch)}
-                size="small"
-                sx={{
-                  minWidth: 0,
-                  width: 36,
-                  height: 36,
-                  borderRadius: 2,
-                  backgroundColor: useWebSearch ? 'rgba(66,133,244,0.15)' : 'background.paper',
-                  '&:hover': {
-                    backgroundColor: useWebSearch ? 'rgba(66,133,244,0.22)' : (theme) => theme.palette.action.hover,
-                  },
-                }}
-              >
-                <LanguageIcon sx={{ fontSize: '1.1rem', color: useWebSearch ? 'primary.main' : 'text.secondary' }} />
-              </ToolbarButton>
-            </Tooltip>
+
+
             <Tooltip title="Upload Image">
               <ToolbarButton
                 onClick={() => fileInputRef.current?.click()}
@@ -274,6 +246,27 @@ export default function MessageBox({
                 <ImageIcon sx={{ fontSize: '1.1rem' }} />
               </ToolbarButton>
             </Tooltip>
+            {setWebSearchEnabled && (
+              <Tooltip title="Web Search Tool - Allow AI to search the web when needed">
+                <ToolbarButton
+                  onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                  disabled={isLoading}
+                  size="small"
+                  sx={{
+                    minWidth: 0,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 2,
+                    backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.15)' : 'background.paper',
+                    '&:hover': {
+                      backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
+                    },
+                  }}
+                >
+                  <LanguageIcon sx={{ fontSize: '1.1rem', color: webSearchEnabled ? 'info.main' : 'text.secondary' }} />
+                </ToolbarButton>
+              </Tooltip>
+            )}
             <ToolbarButton
               onClick={isStreaming ? handleStopGeneration : handleSendClick}
               disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}

@@ -223,7 +223,19 @@ export interface ExtendedChatMessage extends ChatMessage {
   searchInfo?: {
     duration: number;
   };
-  agentMode?: boolean;
+  toolCalls?: Array<{
+    id: string;
+    type: string;
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  toolResults?: Array<{
+    success: boolean;
+    content: Array<{ type: string; text: string }>;
+    error?: string;
+  }>;
 }
 
 export interface ChatMessage {

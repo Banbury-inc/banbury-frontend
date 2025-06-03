@@ -12,6 +12,8 @@ export const handleLoadModels = async (ollamaClient: OllamaClient, setDownloaded
         name: model.name,
         category: 'Downloaded', // We can categorize downloaded models differently or derive from name
         size: formatBytes(model.size || 0), // Format the size consistently
+        tools: false, // Default to false, can be enhanced later to detect tool capabilities
+        thinking: false, // Default to false, can be enhanced later to detect thinking capabilities
         isDownloaded: true
       }));
       setDownloadedModels(localModels);

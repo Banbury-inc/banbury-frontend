@@ -2,7 +2,7 @@ import React from 'react';
 import { ExtendedChatMessage, ChatResponse } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
-import { WebSearchService, WebSearchResult } from '@banbury/core/src/ai/web-search';
+
 
 // Local implementation to avoid import issues
 export const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
@@ -33,6 +33,7 @@ export const handleSendMessage = async (
   setStreamingMessage: (streamingMessage: string) => void, 
   setStreamingThinking: (streamingThinking: string) => void, 
   setStreamingToolCalls: (toolCalls: any[]) => void,
+  setStreamingToolResults: (toolResults: any[]) => void,
   abortControllerRef: React.MutableRefObject<AbortController | null>, 
   currentModel: string, 
   useWebSearch: boolean, 
@@ -42,7 +43,7 @@ export const handleSendMessage = async (
   isLoading: boolean,
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
-  agentMode: boolean = false
+  langChainOptions?: {}
 ) => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
 
@@ -70,44 +71,9 @@ export const handleSendMessage = async (
     setStreamingMessage('');
     setStreamingThinking('');
     setStreamingToolCalls([]);
+    setStreamingToolResults([]);
 
     try {
-      // Handle agent mode prompting
-      if (agentMode) {
-        // Enhance the user message with agent instructions
-        const agentPrompt = `You are an AI agent with access to tools and capabilities. 
-        Analyze the user's request and determine the best approach to help them. 
-        You can use tools, search the web, and break down complex tasks into steps.
-        Be proactive and suggest follow-up actions when appropriate.
-        
-        User request: ${inputMessage.trim()}`;
-        
-        userMessage.content = agentPrompt;
-        userMessage.agentMode = true;
-      }
-
-      if (useWebSearch) {
-        setIsSearching(true);
-        const startTime = Date.now();
-        // Modify the user's message to include web search results
-        const webSearchService = new WebSearchService();
-        const searchResults = await webSearchService.search(inputMessage.trim());
-        const duration = ((Date.now() - startTime) / 1000);
-        setIsSearching(false);
-        
-        // Format search results into a context string
-        const searchContext = searchResults.map((result: WebSearchResult) => 
-          `[${result.title}]\n${result.snippet}\nSource: ${result.link}`
-        ).join('\n\n');
-
-        // Add search results and duration as context to the user message
-        if (agentMode) {
-          userMessage.content += `\n\n<context>${searchContext}</context>`;
-        } else {
-          userMessage.content = `<context>${searchContext}</context>\n${inputMessage.trim()}`;
-        }
-        userMessage.searchInfo = { duration: parseFloat(duration.toFixed(1)) };
-      }
 
       // Check if we're using Enhanced AI client (has chatStream method)
       if (ollamaClient.chatStream && typeof ollamaClient.chatStream === 'function') {
@@ -119,8 +85,12 @@ export const handleSendMessage = async (
 
         let currentMessage = '';
         let activeToolCalls: any[] = [];
+        let activeToolResults: any[] = [];
 
-        const response = await ollamaClient.chatStream(messageHistory, {
+        // Prepare LangChain options if we're using LangChain client
+        const options = langChainOptions ? {} : undefined;
+
+        await ollamaClient.chatStream(messageHistory, {
           onToken: (token: string) => {
             if (abortControllerRef.current?.signal.aborted) return;
             currentMessage += token;
@@ -137,28 +107,42 @@ export const handleSendMessage = async (
           },
           onToolResult: (result: any) => {
             if (abortControllerRef.current?.signal.aborted) return;
-            // Keep tool calls visible throughout the conversation
-            // Don't remove them when completed
+            activeToolResults.push(result);
+            setStreamingToolResults([...activeToolResults]);
+            // Keep tool results visible throughout the conversation
           },
+
           onComplete: (fullResponse: string) => {
             if (abortControllerRef.current?.signal.aborted) return;
             // Keep tool calls visible - don't clear them
             const { thinking, cleanContent } = extractThinkingContent(fullResponse);
-            const assistantMessage: ExtendedChatMessage = {
-              role: 'assistant',
-              content: cleanContent,
-              thinking,
-              agentMode: agentMode
-            };
-            const updatedMessages = [...messages, userMessage, assistantMessage];
-            setMessages(updatedMessages);
-            saveConversation(updatedMessages, currentConversation, setCurrentConversation);
+            
+            // Only create a message if there's actual content or thinking
+            if (cleanContent.trim().length > 0 || thinking || activeToolCalls.length > 0) {
+              const assistantMessage: ExtendedChatMessage = {
+                role: 'assistant',
+                content: cleanContent,
+                thinking,
+                toolCalls: activeToolCalls.length > 0 ? activeToolCalls : undefined,
+                toolResults: activeToolResults.length > 0 ? activeToolResults : undefined
+              };
+              const updatedMessages = [...messages, userMessage, assistantMessage];
+              setMessages(updatedMessages);
+              saveConversation(updatedMessages, currentConversation, setCurrentConversation);
+            }
+            
+            // Clear streaming states immediately to prevent double rendering
+            setStreamingMessage('');
+            setStreamingThinking('');
+            setStreamingToolCalls([]);
+            setStreamingToolResults([]);
+            setIsLoading(false);
+            setIsStreaming(false);
           },
           onError: (error: Error) => {
-            console.error('Enhanced AI client error:', error);
             showAlert('Error', ['Failed to send message', error.message], 'error');
           }
-        }, { agentMode });
+        }, options);
         
         return; // Exit early since Enhanced AI client handles everything
       }
@@ -201,8 +185,7 @@ export const handleSendMessage = async (
           const assistantMessage: ExtendedChatMessage = {
             role: 'assistant',
             content: cleanContent,
-            thinking,
-            agentMode: agentMode
+            thinking
           };
           const updatedMessages = [...messages, userMessage, assistantMessage];
           setMessages(updatedMessages);
@@ -225,8 +208,7 @@ export const handleSendMessage = async (
         const assistantMessage: ExtendedChatMessage = {
           role: 'assistant',
           content: cleanContent,
-          thinking,
-          agentMode: agentMode
+          thinking
         };
         const updatedMessages = [...messages, userMessage, assistantMessage];
         setMessages(updatedMessages);
@@ -245,6 +227,7 @@ export const handleSendMessage = async (
       setStreamingMessage('');
       setStreamingThinking('');
       setStreamingToolCalls([]);
+      setStreamingToolResults([]);
       abortControllerRef.current = null;
     }
   };

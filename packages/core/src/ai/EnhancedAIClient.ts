@@ -1,5 +1,6 @@
 import { OllamaClient } from './index';
 import { CloudMcpClient, McpToolCall, McpToolResult } from './CloudMcpClient';
+import { WebSearchService, WebSearchResult } from './web-search';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -32,18 +33,29 @@ export interface StreamCallback {
 export class EnhancedAIClient {
   private ollamaClient: OllamaClient;
   private mcpClient: CloudMcpClient | null;
+  private webSearchService: WebSearchService;
   private systemPrompt: string | null = null;
   private currentModel: string;
   private executedToolCalls: Set<string> = new Set(); // Track executed tool calls
+  private webSearchEnabled: boolean = false;
 
   constructor(
     ollamaBaseUrl: string = 'http://localhost:11434',
-    model: string = 'llama2:latest',
+    model: string = 'qwen3:latest',
     mcpClient: CloudMcpClient | null = null
   ) {
     this.ollamaClient = new OllamaClient(ollamaBaseUrl, model);
     this.mcpClient = mcpClient;
+    this.webSearchService = new WebSearchService();
     this.currentModel = model;
+  }
+
+  /**
+   * Enable or disable web search functionality
+   */
+  public setWebSearchEnabled(enabled: boolean) {
+    this.webSearchEnabled = enabled;
+    this.systemPrompt = null; // Will be rebuilt on next getSystemPrompt()
   }
 
   /**
@@ -51,16 +63,45 @@ export class EnhancedAIClient {
    */
   private async buildSystemPrompt(): Promise<string> {
     const basePrompt = `You are Banbury AI, an intelligent assistant with access to the Banbury system and its tools.`;
-    if (!this.mcpClient) {
+    
+    let toolsPrompt = '';
+    
+    // Add web search tool if enabled
+    if (this.webSearchEnabled) {
+      toolsPrompt += `
+**Web Search Tool:**
+- **web_search**: Search the web for current information, news, facts, or any query that requires up-to-date information
+  Example parameters:
+  \`\`\`json
+  {
+    "query": "search query here",
+    "maxResults": 5
+  }
+  \`\`\`
+
+**When to use web search:**
+- User asks for current news, events, or recent information
+- Questions about current stock prices, weather, sports scores
+- Any query that requires real-time or recent data
+- When your knowledge might be outdated
+
+`;
+    }
+    
+    if (!this.mcpClient && !this.webSearchEnabled) {
       return basePrompt;
     }
+    
     let availableTools: any[] = [];
-    try {
-      availableTools = await this.mcpClient.fetchAvailableTools();
-    } catch (e) {
-      // fallback if fetch fails
-      return basePrompt + '\n\n(Note: Unable to fetch available tools from server.)';
+    if (this.mcpClient) {
+      try {
+        availableTools = await this.mcpClient.fetchAvailableTools();
+      } catch (e) {
+        // fallback if fetch fails
+        toolsPrompt += '\n\n(Note: Unable to fetch available tools from server.)';
+      }
     }
+    
     // Generate tool usage examples from inputSchema
     const toolDetails = availableTools.map(tool => {
       let paramExample = '{}';
@@ -113,8 +154,23 @@ export class EnhancedAIClient {
       return `- **${tool.name}**: ${tool.description || ''}${authNote}${deviceNote}\n  Example parameters:\n  \`\`\`json\n${paramExample}\n\`\`\``;
     }).join('\n\n');
     
-    return `${basePrompt}
-\nYou have access to the following tools through the Banbury MCP server.\n\n**IMPORTANT**: For Banbury tools, authentication and environment are handled automatically. You don't need to ask users for tokens or environment details.\n\n**Available Tools and Usage Examples:**\n${toolDetails}\n\n**CRITICAL: Tool Usage Instructions**\nWhen you need to use a tool, you MUST format your request using this EXACT format:\n\n\`\`\`mcp-tool\n{\n  "tool": "tool_name",\n  "parameters": { /* only user-facing parameters */ }\n}\n\`\`\`\n\n**IMPORTANT**: \n- Authentication (tokens, environment) is handled automatically\n- Device names are auto-detected when possible\n- Only ask users for the essential parameters they control (like task descriptions, file paths, etc.)\n- You MUST use the exact \`\`\`mcp-tool code block format above\n\n**Common Usage Examples:**\n- User says "get scanned folders" → Use banbury-get-scanned-folders with empty parameters {}\n- User says "add task to process files" → Use banbury-add-task with {"task_description": "process files"}\n- User says "get device info" → Use banbury-get-device-info (will auto-detect device)\n\nAlways explain what you're doing before calling tools, and interpret the results for the user in a helpful way.`;
+    let finalPrompt = basePrompt;
+    
+    if (toolsPrompt || toolDetails) {
+      finalPrompt += '\nYou have access to the following tools:';
+      
+      if (toolsPrompt) {
+        finalPrompt += '\n' + toolsPrompt;
+      }
+      
+      if (toolDetails) {
+        finalPrompt += `\n**Banbury MCP Tools:**\n**IMPORTANT**: For Banbury tools, authentication and environment are handled automatically. You don't need to ask users for tokens or environment details.\n\n**Available Tools and Usage Examples:**\n${toolDetails}`;
+      }
+      
+      finalPrompt += `\n\n**CRITICAL: Tool Usage Instructions**\nWhen you need to use a tool, you MUST format your request using this EXACT format:\n\n\`\`\`mcp-tool\n{\n  "tool": "tool_name",\n  "parameters": { /* only user-facing parameters */ }\n}\n\`\`\`\n\n**IMPORTANT**: \n- Authentication (tokens, environment) is handled automatically for Banbury tools\n- Device names are auto-detected when possible\n- Only ask users for the essential parameters they control (like task descriptions, file paths, etc.)\n- You MUST use the exact \`\`\`mcp-tool code block format above\n- For web search, use {"query": "search terms", "maxResults": 5}\n\n**Common Usage Examples:**\n- User says "get scanned folders" → Use banbury-get-scanned-folders with empty parameters {}\n- User says "add task to process files" → Use banbury-add-task with {"task_description": "process files"}\n- User says "get device info" → Use banbury-get-device-info (will auto-detect device)\n- User asks "latest NFL news" → Use web_search with {"query": "latest NFL news", "maxResults": 5}\n\nAlways explain what you're doing before calling tools, and interpret the results for the user in a helpful way.`;
+    }
+    
+    return finalPrompt;
   }
 
   /**
@@ -145,12 +201,136 @@ export class EnhancedAIClient {
   }
 
   /**
+   * Process thinking content for real-time streaming
+   */
+  private processThinkingContent(
+    fullResponse: string, 
+    token: string, 
+    currentThinkingContent: string, 
+    isInThinking: boolean
+  ): {
+    isInThinking: boolean;
+    currentThinkingContent: string;
+    visibleContent: string;
+    newThinkingContent?: string;
+    newVisibleContent?: string;
+  } {
+    let newThinkingContent: string | undefined;
+    let newVisibleContent: string | undefined;
+    
+    // Check if this token contains the start of a thinking block
+    if (!isInThinking && token.includes('<think')) {
+      isInThinking = true;
+      // Find where the thinking starts in this token
+      const thinkStartMatch = token.match(/<think(?:ing)?>/);
+      if (thinkStartMatch) {
+        const beforeThink = token.substring(0, thinkStartMatch.index!);
+        const afterThink = token.substring(thinkStartMatch.index! + thinkStartMatch[0].length);
+        
+        // Send any content before the thinking tag as visible
+        if (beforeThink) {
+          newVisibleContent = beforeThink;
+        }
+        
+        // Check if this token also contains the end of thinking
+        if (afterThink.includes('</think')) {
+          const endMatch = afterThink.match(/<\/think(?:ing)?>/);
+          if (endMatch) {
+            // Complete thinking block in this single token
+            const thinkingContent = afterThink.substring(0, endMatch.index!);
+            newThinkingContent = thinkingContent;
+            isInThinking = false;
+            
+            // Any content after the closing tag is visible
+            const afterEnd = afterThink.substring(endMatch.index! + endMatch[0].length);
+            if (afterEnd) {
+              newVisibleContent = (newVisibleContent || '') + afterEnd;
+            }
+          } else {
+            // Start of thinking, accumulate
+            currentThinkingContent = afterThink;
+            newThinkingContent = currentThinkingContent;
+          }
+        } else {
+          // Start of thinking, accumulate
+          currentThinkingContent = afterThink;
+          newThinkingContent = currentThinkingContent;
+        }
+      }
+    } else if (isInThinking) {
+      // We're in thinking mode, check if this token ends it
+      if (token.includes('</think')) {
+        const endMatch = token.match(/<\/think(?:ing)?>/);
+        if (endMatch) {
+          // End of thinking
+          const beforeTag = token.substring(0, endMatch.index!);
+          currentThinkingContent += beforeTag;
+          newThinkingContent = currentThinkingContent;
+          isInThinking = false;
+          
+          // Any content after the closing tag is visible
+          const afterTag = token.substring(endMatch.index! + endMatch[0].length);
+          if (afterTag) {
+            newVisibleContent = afterTag;
+          }
+          
+          // Reset thinking content for next block
+          currentThinkingContent = '';
+        } else {
+          // Still in thinking, accumulate content
+          currentThinkingContent += token;
+          newThinkingContent = currentThinkingContent;
+        }
+      } else {
+        // Still in thinking, accumulate content
+        currentThinkingContent += token;
+        newThinkingContent = currentThinkingContent;
+      }
+    } else {
+      // Not in thinking, this is visible content
+      newVisibleContent = token;
+    }
+    
+    // Calculate visible content by removing all thinking blocks
+    const visibleContent = fullResponse.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/g, '').trim();
+    
+    return {
+      isInThinking,
+      currentThinkingContent,
+      visibleContent,
+      newThinkingContent,
+      newVisibleContent
+    };
+  }
+
+  /**
+   * Check if response has incomplete thinking blocks
+   */
+  private hasIncompleteThinking(response: string): boolean {
+    const openTags = (response.match(/<think(?:ing)?>/g) || []).length;
+    const closeTags = (response.match(/<\/think(?:ing)?>/g) || []).length;
+    return openTags > closeTags;
+  }
+
+  /**
+   * Extract complete thinking content from response
+   */
+  private extractCompleteThinking(response: string): string {
+    const thinkingMatches = response.match(/<think(?:ing)?>([\s\S]*?)<\/think(?:ing)?>/g);
+    if (thinkingMatches) {
+      return thinkingMatches.map(match => 
+        match.replace(/<\/?think(?:ing)?>/g, '')
+      ).join('\n').trim();
+    }
+    return '';
+  }
+
+  /**
    * Chat with streaming response and tool calling
    */
   public async chatStream(
     messages: AIMessage[],
-    callbacks: StreamCallback = {},
-    options: { agentMode?: boolean } = {}
+    callbacks: StreamCallback = {}
   ): Promise<string> {
     try {
       this.executedToolCalls.clear();
@@ -159,33 +339,11 @@ export class EnhancedAIClient {
       if (messages[0]?.role === 'system') {
         messagesWithSystem = messages;
       } else {
-        let prompt = await this.getSystemPrompt();
-        
-        // Enhance prompt for agent mode
-        if (options.agentMode) {
-          prompt += `\n\n**AGENT MODE ACTIVATED**\n
-You are now operating in Agent Mode. This means:
-1. Be proactive and autonomous in solving the user's problem
-2. Break down complex tasks into smaller steps
-3. Use available tools to gather information and take actions
-4. Explain your reasoning and planning process
-5. Suggest follow-up actions and ask relevant questions
-6. Take initiative to explore different approaches if one doesn't work
-7. Provide comprehensive analysis and recommendations
-
-When in agent mode, you should:
-- Start by analyzing the user's request thoroughly
-- Create a plan of action with clear steps  
-- Execute tools strategically to gather information
-- Synthesize findings and provide actionable insights
-- Anticipate user needs and offer proactive suggestions`;
-        }
-        
+        const prompt = await this.getSystemPrompt();
         messagesWithSystem = [{ role: 'system' as const, content: prompt }, ...messages];
       }
 
       let fullResponse = '';
-      let pendingToolCalls: ToolCall[] = [];
 
       // Convert messages to Ollama format
       const ollamaMessages = messagesWithSystem.map(msg => ({
@@ -202,40 +360,59 @@ When in agent mode, you should:
       });
 
       // Handle streaming response
+      let isInThinking = false;
+      let currentThinkingContent = '';
+      let visibleContent = '';
+      
       for await (const chunk of response as any) {
         if (chunk.message?.content) {
           const token = chunk.message.content;
           fullResponse += token;
           
-          // Check for thinking tags and handle appropriately
-          if (fullResponse.includes('<thinking>') && fullResponse.includes('</thinking>')) {
-            const thinkingMatch = fullResponse.match(/<thinking>([\s\S]*?)<\/thinking>/);
-            if (thinkingMatch) {
-              callbacks.onThinking?.(thinkingMatch[1]);
-            }
-            // Remove thinking content from the visible response
-            const visibleContent = fullResponse.replace(/<thinking>[\s\S]*?<\/thinking>/g, '');
-            callbacks.onToken?.(visibleContent.slice(fullResponse.length - token.length));
-          } else {
-            callbacks.onToken?.(token);
+          // Handle real-time thinking detection and streaming
+          const thinkingResult = this.processThinkingContent(fullResponse, token, currentThinkingContent, isInThinking);
+          isInThinking = thinkingResult.isInThinking;
+          currentThinkingContent = thinkingResult.currentThinkingContent;
+          visibleContent = thinkingResult.visibleContent;
+          
+          // Stream thinking content if we're in thinking mode
+          if (thinkingResult.newThinkingContent) {
+            callbacks.onThinking?.(thinkingResult.newThinkingContent);
+          }
+          
+          // Stream visible content (non-thinking) if available
+          if (thinkingResult.newVisibleContent) {
+            callbacks.onToken?.(thinkingResult.newVisibleContent);
           }
 
-          // Collect tool calls but don't execute them yet during streaming
-          const currentToolCalls = this.extractToolCalls(fullResponse);
-          pendingToolCalls = currentToolCalls;
-          
-          // Also provide immediate feedback about detected tool calls
-          this.detectAndExecuteToolCalls(fullResponse, callbacks);
+          // Don't detect or show tool calls during streaming - wait until completely done
         }
 
         if (chunk.done) {
+          // Final processing - extract complete thinking and clean content
+          const finalThinking = this.extractCompleteThinking(fullResponse);
+          const finalCleanContent = fullResponse.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/g, '').trim();
+          
+          // Send final thinking if we haven't sent it yet
+          if (finalThinking && !currentThinkingContent) {
+            callbacks.onThinking?.(finalThinking);
+          }
+          
+          // Only execute tools from the clean content (after thinking is completely done)
+          const finalToolCalls = this.extractToolCalls(finalCleanContent);
+          
           // Now execute tool calls and continue conversation if any were found
-          if (pendingToolCalls.length > 0) {
-            console.log(`🔄 Executing ${pendingToolCalls.length} tool calls after streaming completed`);
+          if (finalToolCalls.length > 0) {
+            console.log(`🔄 Executing ${finalToolCalls.length} tool calls after streaming completed`);
+            
+            // First, notify UI about detected tool calls
+            this.notifyToolCallsDetected(finalToolCalls, callbacks);
+            
+            // Then execute them
             const enhancedResponse = await this.executeToolCallsAndContinue(
               messagesWithSystem,
               fullResponse,
-              pendingToolCalls,
+              finalToolCalls,
               callbacks
             );
             callbacks.onComplete?.(enhancedResponse);
@@ -256,25 +433,12 @@ When in agent mode, you should:
   }
 
   /**
-   * Detect and execute tool calls in streaming response
+   * Notify UI about detected tool calls
    */
-  private detectAndExecuteToolCalls(response: string, callbacks: StreamCallback) {
-    // This method is now only used for immediate feedback during streaming
-    // Actual execution happens after streaming completes
-    const toolCalls = this.extractToolCalls(response);
-    
+  private notifyToolCallsDetected(toolCalls: ToolCall[], callbacks: StreamCallback) {
+    // Notify UI about each tool call for display
     for (const toolCall of toolCalls) {
-      // Generate a unique key for this tool call based on content, not ID
-      const toolKey = `${toolCall.function.name}_${toolCall.function.arguments}`;
-      
-      // Check if we've already processed this exact tool call
-      if (!this.executedToolCalls.has(toolKey)) {
-        this.executedToolCalls.add(toolKey);
-        callbacks.onToolCall?.(toolCall);
-        // Don't execute here - just notify
-      } else {
-        console.log(`⏭️ Skipping already detected tool call: ${toolCall.function.name}`);
-      }
+      callbacks.onToolCall?.(toolCall);
     }
   }
 
@@ -424,16 +588,50 @@ When in agent mode, you should:
    * Execute a single tool call
    */
   private async executeToolCall(toolCall: ToolCall): Promise<McpToolResult> {
-    if (!this.mcpClient) {
-      return {
-        success: false,
-        content: [{ type: 'text', text: 'MCP client not available' }],
-        error: 'MCP client not available'
-      };
-    }
-
     try {
       const parameters = JSON.parse(toolCall.function.arguments);
+      
+      // Handle web search tool
+      if (toolCall.function.name === 'web_search') {
+        if (!this.webSearchEnabled) {
+          return {
+            success: false,
+            content: [{ type: 'text', text: 'Web search is not enabled' }],
+            error: 'Web search is not enabled'
+          };
+        }
+        
+        const query = parameters.query || '';
+        const maxResults = parameters.maxResults || 5;
+        
+        if (!query) {
+          return {
+            success: false,
+            content: [{ type: 'text', text: 'Search query is required' }],
+            error: 'Search query is required'
+          };
+        }
+        
+        const searchResults = await this.webSearchService.search(query, maxResults);
+        const resultText = searchResults.map(result => 
+          `**${result.title}**\n${result.snippet}\nSource: ${result.link}`
+        ).join('\n\n');
+        
+        return {
+          success: true,
+          content: [{ type: 'text', text: `Web search results for "${query}":\n\n${resultText}` }]
+        };
+      }
+      
+      // Handle MCP tools
+      if (!this.mcpClient) {
+        return {
+          success: false,
+          content: [{ type: 'text', text: 'MCP client not available' }],
+          error: 'MCP client not available'
+        };
+      }
+
       const mcpCall: McpToolCall = {
         tool: toolCall.function.name,
         parameters

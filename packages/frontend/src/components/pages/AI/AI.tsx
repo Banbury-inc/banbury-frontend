@@ -4,12 +4,11 @@ import {
   Card,
   CardContent,
   Stack,
-  Chip,
-  Typography,
 } from '@mui/material';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { EnhancedAIClient } from '@banbury/core/src/ai/EnhancedAIClient';
+import { LangChainAIClient } from '@banbury/core/src/ai/LangChainAIClient';
 import { useMcpClient } from './handlers/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
@@ -24,6 +23,13 @@ import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDra
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
 import { Conversation, ExtendedChatMessage } from '@banbury/core/src/types';
+import { AVAILABLE_MODELS } from './components/AIToolbar/ModelSelectorButton/constants';
+
+// Helper function to determine if a model supports thinking mode
+const getModelThinkingMode = (modelName: string): boolean => {
+  const modelInfo = AVAILABLE_MODELS.find(model => model.name === modelName);
+  return modelInfo?.thinking || false;
+};
 
 export default function AI() {
   const { showAlert } = useAlert();
@@ -31,26 +37,26 @@ export default function AI() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [streamingThinking, setStreamingThinking] = useState<string>('');
-  const [currentModel, setCurrentModel] = useState<string>('llama2:latest');
+  const [currentModel, setCurrentModel] = useState<string>('qwen3:latest');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [enhancedAIClient, setEnhancedAIClient] = useState<EnhancedAIClient | null>(null);
+  const [langChainClient, setLangChainClient] = useState<LangChainAIClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingToolCalls, setStreamingToolCalls] = useState<any[]>([]);
-  const [mcpToolsEnabled, setMcpToolsEnabled] = useState<boolean>(true);
+  const [streamingToolResults, setStreamingToolResults] = useState<any[]>([]);
+  const [mcpToolsEnabled] = useState<boolean>(true);
+
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<any | null>(null);
 
   // Initialize MCP client
   const {
     client: mcpClient,
-    isConnected: mcpConnected,
-    isAuthenticated: mcpAuthenticated,
-    error: mcpError,
-    availableTools,
   } = useMcpClient();
 
   useEffect(() => {
@@ -65,14 +71,28 @@ export default function AI() {
       mcpToolsEnabled ? mcpClient : null
     );
     setEnhancedAIClient(enhancedClient);
+
+    // Initialize LangChain AI client with MCP integration
+    const langChainAiClient = new LangChainAIClient(
+      'http://localhost:11434',
+      currentModel,
+      mcpToolsEnabled ? mcpClient : null
+    );
+    setLangChainClient(langChainAiClient);
   }, [currentModel, mcpClient, mcpToolsEnabled]);
 
   useEffect(() => {
     // Update enhanced AI client when MCP client changes
     if (enhancedAIClient) {
       enhancedAIClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
+      enhancedAIClient.setWebSearchEnabled(webSearchEnabled);
     }
-  }, [enhancedAIClient, mcpClient, mcpToolsEnabled]);
+    
+    // Update LangChain AI client when MCP client changes
+    if (langChainClient) {
+      langChainClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
+    }
+  }, [enhancedAIClient, langChainClient, mcpClient, mcpToolsEnabled, webSearchEnabled]);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
@@ -127,6 +147,7 @@ export default function AI() {
       setStreamingMessage,
       setStreamingThinking,
       setStreamingToolCalls,
+      setStreamingToolResults,
       saveConversationWrapper
     );
   };
@@ -195,6 +216,7 @@ export default function AI() {
               streamingMessage={streamingMessage}
               streamingThinking={streamingThinking}
               streamingToolCalls={streamingToolCalls}
+              streamingToolResults={streamingToolResults}
               isStreaming={isStreaming}
               isSearching={isSearching}
               messagesEndRef={messagesEndRef}
@@ -210,14 +232,18 @@ export default function AI() {
             setStreamingMessage={setStreamingMessage}
             setStreamingThinking={setStreamingThinking}
             setStreamingToolCalls={setStreamingToolCalls}
+            setStreamingToolResults={setStreamingToolResults}
             abortControllerRef={abortControllerRef}
             currentModel={currentModel}
             setIsSearching={setIsSearching}
             showAlert={showAlert}
-            ollamaClient={mcpToolsEnabled ? enhancedAIClient : ollamaClient}
+            ollamaClient={getModelThinkingMode(currentModel) ? langChainClient : (mcpToolsEnabled ? enhancedAIClient : ollamaClient)}
             currentConversation={currentConversation}
             setCurrentConversation={setCurrentConversation}
             handleStopGeneration={handleStopGenerationWrapper}
+            langChainOptions={{}}
+            webSearchEnabled={webSearchEnabled}
+            setWebSearchEnabled={setWebSearchEnabled}
           />
         </Card>
       </Stack>

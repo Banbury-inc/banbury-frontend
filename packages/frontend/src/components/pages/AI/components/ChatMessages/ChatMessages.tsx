@@ -58,27 +58,7 @@ const ThinkingDot = styled(Box)(({ theme }) => ({
   }
 }));
 
-const ToolCallIndicator = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(1),
-  padding: theme.spacing(1, 2),
-  backgroundColor: theme.palette.primary.dark,
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(1),
-  width: 'fit-content',
-  animation: 'fadeIn 0.3s ease-in-out',
-  '@keyframes fadeIn': {
-    '0%': {
-      opacity: 0,
-      transform: 'translateY(5px)'
-    },
-    '100%': {
-      opacity: 1,
-      transform: 'translateY(0)'
-    }
-  }
-}));
+
 
 interface ChatMessagesProps {
   messages: ExtendedChatMessage[];
@@ -86,6 +66,7 @@ interface ChatMessagesProps {
   streamingMessage: string;
   streamingThinking: string;
   streamingToolCalls: any[];
+  streamingToolResults?: any[];
   isStreaming: boolean;
   isSearching: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -97,6 +78,7 @@ export default function ChatMessages({
   streamingMessage,
   streamingThinking,
   streamingToolCalls,
+  streamingToolResults = [],
   isStreaming,
   isSearching,
   messagesEndRef,
@@ -142,22 +124,10 @@ export default function ChatMessages({
             content={message.content}
             thinking={message.thinking}
             images={message.images}
+            toolCalls={message.toolCalls}
+            toolResults={message.toolResults}
           />
-          {message.agentMode && message.role === 'assistant' && (
-            <SearchingIndicator
-              variant="caption"
-              sx={{
-                alignSelf: 'flex-start',
-                ml: 1,
-                mb: 1,
-                color: 'secondary.main',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-            </SearchingIndicator>
-          )}
+
           {message.searchInfo && message.role === 'user' && (
             <SearchingIndicator
               variant="caption"
@@ -177,9 +147,9 @@ export default function ChatMessages({
           )}
         </React.Fragment>
       ))}
-      {(isLoading || streamingMessage) && (
+      {(isLoading || (streamingMessage && isStreaming)) && (
         <>
-          {isLoading && !streamingMessage && (
+          {isLoading && !streamingMessage && !isStreaming && (
             <ThinkingIndicator>
               <ThinkingDot />
               <ThinkingDot />
@@ -189,47 +159,7 @@ export default function ChatMessages({
               </Typography>
             </ThinkingIndicator>
           )}
-          {streamingMessage && (
-            <>
-              {isSearching && (
-                <SearchingIndicator
-                  variant="caption"
-                  sx={{
-                    alignSelf: 'flex-start',
-                    ml: 1,
-                    mb: 1,
-                    color: 'primary.main',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    animation: 'fadeIn 0.3s ease-in-out'
-                  }}
-                >
-                  <span role="img" aria-label="searching">🔍</span>
-                  Searching the web...
-                </SearchingIndicator>
-              )}
-              {streamingToolCalls.length > 0 && (
-                <Box sx={{ mb: 1 }}>
-                  {streamingToolCalls.map((toolCall, index) => (
-                    <ToolCallIndicator key={index}>
-                      <span role="img" aria-label="tool">🔧</span>
-                      <Typography variant="body2" sx={{ color: 'primary.contrastText', fontWeight: 500 }}>
-                        Calling {toolCall.function?.name || toolCall.tool}...
-                      </Typography>
-                    </ToolCallIndicator>
-                  ))}
-                </Box>
-              )}
-              <MessageBubble
-                isUser={false}
-                elevation={1}
-                content={streamingMessage}
-                thinking={streamingThinking}
-              />
-            </>
-          )}
-          {!streamingMessage && isSearching && (
+          {isSearching && (
             <SearchingIndicator
               variant="caption"
               sx={{
@@ -243,9 +173,20 @@ export default function ChatMessages({
                 animation: 'fadeIn 0.3s ease-in-out'
               }}
             >
-              <span role="img" aria-label="searching"></span>
+              <span role="img" aria-label="searching">🔍</span>
               Searching the web...
             </SearchingIndicator>
+          )}
+          {(streamingMessage || streamingThinking || streamingToolCalls.length > 0) && isStreaming && (
+            <MessageBubble
+              isUser={false}
+              elevation={1}
+              content={streamingMessage}
+              thinking={streamingThinking}
+              toolCalls={streamingToolCalls}
+              toolResults={streamingToolResults}
+              isStreaming={true}
+            />
           )}
         </>
       )}

@@ -571,7 +571,7 @@ export class OllamaService {
     } catch (error) {
       useAlert().showAlert('Failed to load config', [error instanceof Error ? error.message : String(error)]);
     }
-    return { selectedModel: 'llama3.2:latest' }; // Default model
+    return { selectedModel: 'qwen3:latest' }; // Default model
   }
 
   public async getDownloadedModels(): Promise<string[]> {
@@ -596,7 +596,7 @@ export class OllamaService {
     }
 
     // Otherwise, use the first downloaded model or default to llama3.2:latest
-    return downloadedModels[0] || 'llama3.2:latest';
+    return downloadedModels[0] || 'qwen3:latest';
   }
 
   public async setSelectedModel(modelName: string): Promise<void> {
