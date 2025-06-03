@@ -6,6 +6,7 @@ import {
   Image as ImageIcon,
   Language as LanguageIcon,
   Cancel as CancelIcon,
+  SmartToy as SmartToyIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { AlertColor } from '@mui/material';
@@ -77,6 +78,7 @@ export default function MessageBox({
   const [inputMessage, setInputMessage] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [useWebSearch, setUseWebSearch] = useState(false);
+  const [agentMode, setAgentMode] = useState(true); // Agent mode enabled by default
   
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +135,8 @@ export default function MessageBox({
       ollamaClient,
       isLoading,
       currentConversation,
-      setCurrentConversation
+      setCurrentConversation,
+      agentMode
     );
   };
 
@@ -220,6 +223,24 @@ export default function MessageBox({
               ref={fileInputRef}
               onChange={(e) => handleImageUpload(e, setSelectedImages, showAlert)}
             />
+            <Tooltip title="Agent Mode">
+              <ToolbarButton
+                onClick={() => setAgentMode(!agentMode)}
+                size="small"
+                sx={{
+                  minWidth: 0,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                  backgroundColor: agentMode ? 'rgba(66,133,244,0.15)' : 'background.paper',
+                  '&:hover': {
+                    backgroundColor: agentMode ? 'rgba(66,133,244,0.22)' : (theme) => theme.palette.action.hover,
+                  },
+                }}
+              >
+                <SmartToyIcon sx={{ fontSize: '1.1rem', color: agentMode ? 'primary.main' : 'text.secondary' }} />
+              </ToolbarButton>
+            </Tooltip>
             <Tooltip title="Web Search">
               <ToolbarButton
                 onClick={() => setUseWebSearch(!useWebSearch)}

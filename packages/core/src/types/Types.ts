@@ -223,6 +223,7 @@ export interface ExtendedChatMessage extends ChatMessage {
   searchInfo?: {
     duration: number;
   };
+  agentMode?: boolean;
 }
 
 export interface ChatMessage {

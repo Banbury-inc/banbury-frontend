@@ -149,7 +149,8 @@ export class EnhancedAIClient {
    */
   public async chatStream(
     messages: AIMessage[],
-    callbacks: StreamCallback = {}
+    callbacks: StreamCallback = {},
+    options: { agentMode?: boolean } = {}
   ): Promise<string> {
     try {
       this.executedToolCalls.clear();
@@ -158,7 +159,28 @@ export class EnhancedAIClient {
       if (messages[0]?.role === 'system') {
         messagesWithSystem = messages;
       } else {
-        const prompt = await this.getSystemPrompt();
+        let prompt = await this.getSystemPrompt();
+        
+        // Enhance prompt for agent mode
+        if (options.agentMode) {
+          prompt += `\n\n**AGENT MODE ACTIVATED**\n
+You are now operating in Agent Mode. This means:
+1. Be proactive and autonomous in solving the user's problem
+2. Break down complex tasks into smaller steps
+3. Use available tools to gather information and take actions
+4. Explain your reasoning and planning process
+5. Suggest follow-up actions and ask relevant questions
+6. Take initiative to explore different approaches if one doesn't work
+7. Provide comprehensive analysis and recommendations
+
+When in agent mode, you should:
+- Start by analyzing the user's request thoroughly
+- Create a plan of action with clear steps  
+- Execute tools strategically to gather information
+- Synthesize findings and provide actionable insights
+- Anticipate user needs and offer proactive suggestions`;
+        }
+        
         messagesWithSystem = [{ role: 'system' as const, content: prompt }, ...messages];
       }
 

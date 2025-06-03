@@ -131,15 +131,6 @@ export default function AI() {
     );
   };
 
-  const toggleMcpTools = () => {
-    setMcpToolsEnabled(!mcpToolsEnabled);
-    showAlert(
-      mcpToolsEnabled ? 'MCP Tools Disabled' : 'MCP Tools Enabled',
-      [mcpToolsEnabled 
-        ? 'The AI will no longer have access to Banbury tools' 
-        : 'The AI now has access to Banbury tools for enhanced functionality']
-    );
-  };
 
   return (
     <Box sx={{
@@ -159,7 +150,6 @@ export default function AI() {
     >
       <DragDropOverlay isDragging={isDragging} />
       
-      {/* AI Toolbar with MCP integration */}
       <AIToolbar
         currentModel={currentModel}
         setCurrentModel={setCurrentModel}
@@ -169,72 +159,6 @@ export default function AI() {
         currentConversation={currentConversation}
         handleNewChat={handleNewChat}
       />
-
-      {/* MCP Status and Controls */}
-      <Box sx={{ 
-        p: 1, 
-        borderBottom: 1, 
-        borderColor: 'divider',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-        flexWrap: 'wrap'
-      }}>
-        <Chip
-          label={mcpToolsEnabled ? 'MCP Tools: ON' : 'MCP Tools: OFF'}
-          color={mcpToolsEnabled ? 'success' : 'default'}
-          size="small"
-          onClick={toggleMcpTools}
-          sx={{ cursor: 'pointer' }}
-        />
-        
-        {mcpToolsEnabled && (
-          <>
-            <Chip
-              label={mcpConnected ? 'Connected' : 'Disconnected'}
-              color={mcpConnected ? 'success' : 'error'}
-              size="small"
-            />
-            
-            {mcpConnected && (
-              <Chip
-                label={mcpAuthenticated ? 'Authenticated' : 'Not Authenticated'}
-                color={mcpAuthenticated ? 'success' : 'warning'}
-                size="small"
-              />
-            )}
-            
-            {mcpAuthenticated && (
-              <>
-                <Typography variant="caption" sx={{ mx: 1 }}>
-                  Tools: {availableTools.length}
-                </Typography>
-                
-                <Chip
-                  label="Get Random Files"
-                  size="small"
-                  onClick={() => mcpClient?.callTool({ tool: 'banbury-get-scanned-folders', parameters: { count: 10 } }).then(result => {
-                  })}
-                  sx={{ cursor: 'pointer' }}
-                />
-                
-                <Chip
-                  label="Add Sample Task"
-                  size="small"
-                  onClick={() => mcpClient?.callTool({ tool: 'add', parameters: { description: 'Process recently accessed files' } })}
-                  sx={{ cursor: 'pointer' }}
-                />
-              </>
-            )}
-          </>
-        )}
-
-        {mcpError && (
-          <Typography variant="caption" color="error" sx={{ ml: 'auto' }}>
-            MCP Error: {mcpError}
-          </Typography>
-        )}
-      </Box>
 
       <Stack
         direction="row"

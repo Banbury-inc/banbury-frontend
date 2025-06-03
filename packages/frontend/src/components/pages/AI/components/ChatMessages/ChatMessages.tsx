@@ -143,6 +143,21 @@ export default function ChatMessages({
             thinking={message.thinking}
             images={message.images}
           />
+          {message.agentMode && message.role === 'assistant' && (
+            <SearchingIndicator
+              variant="caption"
+              sx={{
+                alignSelf: 'flex-start',
+                ml: 1,
+                mb: 1,
+                color: 'secondary.main',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+            </SearchingIndicator>
+          )}
           {message.searchInfo && message.role === 'user' && (
             <SearchingIndicator
               variant="caption"

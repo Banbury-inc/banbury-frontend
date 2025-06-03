@@ -41,7 +41,8 @@ export const handleSendMessage = async (
   ollamaClient: any, 
   isLoading: boolean,
   currentConversation: any,
-  setCurrentConversation: (conversation: any) => void
+  setCurrentConversation: (conversation: any) => void,
+  agentMode: boolean = false
 ) => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
 
@@ -71,6 +72,20 @@ export const handleSendMessage = async (
     setStreamingToolCalls([]);
 
     try {
+      // Handle agent mode prompting
+      if (agentMode) {
+        // Enhance the user message with agent instructions
+        const agentPrompt = `You are an AI agent with access to tools and capabilities. 
+        Analyze the user's request and determine the best approach to help them. 
+        You can use tools, search the web, and break down complex tasks into steps.
+        Be proactive and suggest follow-up actions when appropriate.
+        
+        User request: ${inputMessage.trim()}`;
+        
+        userMessage.content = agentPrompt;
+        userMessage.agentMode = true;
+      }
+
       if (useWebSearch) {
         setIsSearching(true);
         const startTime = Date.now();
@@ -86,7 +101,11 @@ export const handleSendMessage = async (
         ).join('\n\n');
 
         // Add search results and duration as context to the user message
-        userMessage.content = `<context>${searchContext}</context>\n${inputMessage.trim()}`;
+        if (agentMode) {
+          userMessage.content += `\n\n<context>${searchContext}</context>`;
+        } else {
+          userMessage.content = `<context>${searchContext}</context>\n${inputMessage.trim()}`;
+        }
         userMessage.searchInfo = { duration: parseFloat(duration.toFixed(1)) };
       }
 
@@ -128,7 +147,8 @@ export const handleSendMessage = async (
             const assistantMessage: ExtendedChatMessage = {
               role: 'assistant',
               content: cleanContent,
-              thinking
+              thinking,
+              agentMode: agentMode
             };
             const updatedMessages = [...messages, userMessage, assistantMessage];
             setMessages(updatedMessages);
@@ -138,7 +158,7 @@ export const handleSendMessage = async (
             console.error('Enhanced AI client error:', error);
             showAlert('Error', ['Failed to send message', error.message], 'error');
           }
-        });
+        }, { agentMode });
         
         return; // Exit early since Enhanced AI client handles everything
       }
@@ -181,7 +201,8 @@ export const handleSendMessage = async (
           const assistantMessage: ExtendedChatMessage = {
             role: 'assistant',
             content: cleanContent,
-            thinking
+            thinking,
+            agentMode: agentMode
           };
           const updatedMessages = [...messages, userMessage, assistantMessage];
           setMessages(updatedMessages);
@@ -204,7 +225,8 @@ export const handleSendMessage = async (
         const assistantMessage: ExtendedChatMessage = {
           role: 'assistant',
           content: cleanContent,
-          thinking
+          thinking,
+          agentMode: agentMode
         };
         const updatedMessages = [...messages, userMessage, assistantMessage];
         setMessages(updatedMessages);
