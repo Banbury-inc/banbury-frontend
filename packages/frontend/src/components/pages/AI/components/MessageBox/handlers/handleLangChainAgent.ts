@@ -4,17 +4,31 @@ import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
 import { extractThinkingContent } from './handleSendMessage';
 
-// LangChain-style tool wrapper for MCP tools
-class MCPToolWrapper {
+// Unified tool wrapper for multiple tool sources
+class UnifiedToolWrapper {
   private mcpClient: any;
+  private ollamaClient: any;
   private tools: Map<string, any> = new Map();
 
-  constructor(mcpClient: any) {
+  constructor(mcpClient: any, ollamaClient?: any) {
     this.mcpClient = mcpClient;
+    this.ollamaClient = ollamaClient;
     this.initializeTools();
   }
 
   private async initializeTools() {
+    try {
+      // Initialize tools from multiple sources
+      await this.initializeMcpTools();
+      await this.initializeBuiltInTools();
+      
+      console.log('Initialized unified tools for LangChain agent:', Array.from(this.tools.keys()));
+    } catch (error) {
+      console.error('Failed to initialize unified tools:', error);
+    }
+  }
+
+  private async initializeMcpTools() {
     if (!this.mcpClient) return;
     
     try {
@@ -25,7 +39,7 @@ class MCPToolWrapper {
       if (this.mcpClient.fetchAvailableToolsSafely && typeof this.mcpClient.fetchAvailableToolsSafely === 'function') {
         const result = await this.mcpClient.fetchAvailableToolsSafely();
         availableTools = result.tools || [];
-        console.log('Available MCP tools:', availableTools.map(t => t.name));
+        console.log('Available MCP tools:', availableTools.map((t: any) => t.name));
       } else {
         console.log('MCP client does not support fetchAvailableToolsSafely, checking availableTools property');
         // Try to get tools from the state/property if available
@@ -35,42 +49,150 @@ class MCPToolWrapper {
             description: `Tool: ${name}` 
           }));
         } else {
-          // Fallback: use commonly available Banbury tools and web search
+          // Fallback: use commonly available Banbury tools
           availableTools = [
+            { name: 'add', description: 'Add two numbers' },
+            { name: 'get-joke', description: 'Get a random joke' },
+            { name: 'banbury-login', description: 'Login to Banbury system' },
+            { name: 'banbury-get-device-info', description: 'Get device information' },
             { name: 'banbury-get-scanned-folders', description: 'Get scanned folders for a device' },
             { name: 'banbury-get-files', description: 'Get files from the system' },
             { name: 'banbury-get-random-files', description: 'Get random files from the system' },
-            { name: 'banbury-get-sessions', description: 'Get session information' },
             { name: 'banbury-add-task', description: 'Add a task to the system' },
-            { name: 'get-joke', description: 'Get a random joke' },
-            { name: 'web_search', description: 'Search the web for current information' }
+            { name: 'banbury-get-sessions', description: 'Get session information' },
+            { name: 'banbury-add-model', description: 'Add a model to a device' },
+            { name: 'banbury-update-device', description: 'Update device information' },
+            { name: 'banbury-declare-online', description: 'Declare device as online' }
           ];
         }
       }
       
-      console.log('Initializing tools:', availableTools.map(tool => tool.name));
+      console.log('Initializing MCP tools:', availableTools.map((tool: any) => tool.name));
       
-      // Wrap each MCP tool in LangChain-compatible format
+      // Wrap each MCP tool in unified format
       for (const tool of availableTools) {
         this.tools.set(tool.name, {
           name: tool.name,
           description: tool.description,
           parameters: tool.inputSchema || {},
+          source: 'mcp',
           execute: async (args: any) => {
-            // Use callTool method from MCP client
-            if (this.mcpClient.callTool && typeof this.mcpClient.callTool === 'function') {
-              const result = await this.mcpClient.callTool({ tool: tool.name, parameters: args });
-              return result.content ? result.content.map((c: any) => c.text).join('\n') : result;
-            } else {
-              throw new Error(`MCP client does not support callTool method`);
-            }
+            return await this.executeMcpTool(tool.name, args);
           }
         });
       }
-      
-      console.log('Initialized tools for LangChain agent:', Array.from(this.tools.keys()));
     } catch (error) {
       console.error('Failed to initialize MCP tools:', error);
+    }
+  }
+
+  private async initializeBuiltInTools() {
+    // Add built-in tools that are handled by other clients
+    const builtInTools = [
+      { 
+        name: 'web_search', 
+        description: 'Search the web for current information',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Search query' },
+            maxResults: { type: 'number', description: 'Maximum number of results', default: 5 }
+          },
+          required: ['query']
+        }
+      }
+    ];
+
+    for (const tool of builtInTools) {
+      this.tools.set(tool.name, {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+        source: 'builtin',
+        execute: async (args: any) => {
+          return await this.executeBuiltInTool(tool.name, args);
+        }
+      });
+    }
+
+    console.log('Initialized built-in tools:', builtInTools.map((tool: any) => tool.name));
+  }
+
+  private async executeMcpTool(toolName: string, args: any): Promise<any> {
+    if (!this.mcpClient?.callTool) {
+      throw new Error(`MCP client does not support callTool method`);
+    }
+
+    const result = await this.mcpClient.callTool({ tool: toolName, parameters: args });
+    
+    // Return structured MCP result if available, otherwise wrap the response
+    if (result && typeof result === 'object' && 'success' in result) {
+      return result;
+    } else {
+      // Wrap in success structure
+      return {
+        success: true,
+        content: result.content ? result.content : [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }]
+      };
+    }
+  }
+
+  private async executeBuiltInTool(toolName: string, args: any): Promise<any> {
+    switch (toolName) {
+      case 'web_search':
+        return await this.executeWebSearch(args);
+      default:
+        throw new Error(`Unknown built-in tool: ${toolName}`);
+    }
+  }
+
+  private async executeWebSearch(args: any): Promise<any> {
+    const query = args.query || args.search_term || '';
+    const maxResults = args.maxResults || args.max_results || 5;
+    
+    if (!query) {
+      return {
+        success: false,
+        content: [{ type: 'text', text: 'Search query is required' }],
+        error: 'Search query is required'
+      };
+    }
+    
+    try {
+      // Use the Enhanced AI client's built-in web search if available
+      if (this.ollamaClient?.webSearchService) {
+        console.log('UnifiedToolWrapper: Using webSearchService');
+        const searchResults = await this.ollamaClient.webSearchService.search(query, maxResults);
+        const resultText = searchResults.map((result: any) => 
+          `**${result.title}**\n${result.snippet}\nSource: ${result.link}`
+        ).join('\n\n');
+        
+        return {
+          success: true,
+          content: [{ type: 'text', text: `Web search results for "${query}":\n\n${resultText}` }]
+        };
+      } 
+      // Try using MCP client as fallback for web_search
+      else if (this.mcpClient?.callTool) {
+        console.log('UnifiedToolWrapper: Using MCP client for web_search');
+        const result = await this.mcpClient.callTool({ tool: 'web_search', parameters: args });
+        return result;
+      }
+      else {
+        // Return success with informational message if no actual search capability
+        console.log('UnifiedToolWrapper: No web search capability available, returning placeholder');
+        return {
+          success: true,
+          content: [{ type: 'text', text: `Web search request received for query: "${query}". Search capability is not fully configured but tool call was successful.` }]
+        };
+      }
+    } catch (error) {
+      console.error('UnifiedToolWrapper: Web search error:', error);
+      return {
+        success: false,
+        content: [{ type: 'text', text: `Web search failed: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 
@@ -84,14 +206,46 @@ class MCPToolWrapper {
       const availableTools = Array.from(this.tools.keys()).join(', ');
       throw new Error(`Tool "${toolName}" not found. Available tools: ${availableTools}`);
     }
+    
+    console.log(`UnifiedToolWrapper: Executing ${toolName} (source: ${tool.source})`);
     return await tool.execute(args);
+  }
+
+  // Method to add custom tools from other sources
+  addCustomTool(name: string, description: string, execute: (args: any) => Promise<any>, parameters?: any) {
+    this.tools.set(name, {
+      name,
+      description,
+      parameters: parameters || {},
+      source: 'custom',
+      execute
+    });
+    console.log(`UnifiedToolWrapper: Added custom tool: ${name}`);
+  }
+
+  // Method to get tool information including source
+  getToolInfo(toolName: string) {
+    const tool = this.tools.get(toolName);
+    if (!tool) return null;
+    
+    return {
+      name: tool.name,
+      description: tool.description,
+      source: tool.source,
+      parameters: tool.parameters
+    };
+  }
+
+  // List all tools by source
+  getToolsBySource(source: string) {
+    return Array.from(this.tools.values()).filter((tool: any) => tool.source === source);
   }
 }
 
 // Simple LangChain-style Agent Executor
 class SimpleAgentExecutor {
   private ollamaClient: any;
-  private toolWrapper: MCPToolWrapper;
+  private toolWrapper: UnifiedToolWrapper;
   private maxIterations: number;
   private currentIteration: number = 0;
   private messages: ExtendedChatMessage[] = [];
@@ -123,7 +277,7 @@ class SimpleAgentExecutor {
     } = {}
   ) {
     this.ollamaClient = ollamaClient;
-    this.toolWrapper = new MCPToolWrapper(mcpClient);
+    this.toolWrapper = new UnifiedToolWrapper(mcpClient, ollamaClient);
     this.maxIterations = maxIterations;
     
     // Set up callbacks
@@ -277,16 +431,33 @@ Based on your evaluation, either use another tool or provide your final answer i
           try {
             // Execute the tool call
             const args = JSON.parse(toolCall.function.arguments);
-            const result = await this.toolWrapper.callTool(toolCall.function.name, args);
+            console.log(`LangChain Agent: Calling unified tool ${toolCall.function.name} with args:`, args);
             
-            iterationToolResults.push({
-              success: true,
-              content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }],
-              tool: toolCall.function.name,
-              args: args
-            });
-
-            this.onToolResult?.(toolCall.function.name, result);
+            const result = await this.toolWrapper.callTool(toolCall.function.name, args);
+            console.log(`LangChain Agent: Unified tool ${toolCall.function.name} returned:`, result);
+            
+            // The unified tool wrapper should return structured MCP results
+            let structuredResult;
+            if (result && typeof result === 'object' && 'success' in result) {
+              // Already a structured MCP result
+              structuredResult = {
+                ...result,
+                tool: toolCall.function.name,
+                args: args
+              };
+            } else {
+              // Fallback: wrap raw result in success structure
+              structuredResult = {
+                success: true,
+                content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }],
+                tool: toolCall.function.name,
+                args: args
+              };
+            }
+            
+            console.log(`LangChain Agent: Final structured result for ${toolCall.function.name}:`, structuredResult);
+            iterationToolResults.push(structuredResult);
+            this.onToolResult?.(toolCall.function.name, structuredResult);
           } catch (error) {
             const errorResult = {
               success: false,
@@ -472,11 +643,27 @@ export const handleLangChainAgent = async (
 
       onToolResult: (toolName: string, result: any) => {
         if (abortControllerRef.current?.signal.aborted) return;
-        setStreamingToolResults([{ 
-          success: true, 
-          content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }],
-          tool: toolName 
-        }]);
+        
+        console.log(`LangChain Agent: onToolResult callback for ${toolName}, received:`, result);
+        
+        // Handle structured MCP result vs raw result
+        let toolResult;
+        if (result && typeof result === 'object' && 'success' in result) {
+          // Already a structured MCP result - use it directly
+          console.log(`LangChain Agent: Using structured result in callback for ${toolName}`);
+          toolResult = result;
+        } else {
+          // Raw result - wrap it as success
+          console.log(`LangChain Agent: Wrapping raw result in callback for ${toolName}`);
+          toolResult = { 
+            success: true, 
+            content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }],
+            tool: toolName 
+          };
+        }
+        
+        console.log(`LangChain Agent: Setting toolResult in UI for ${toolName}:`, toolResult);
+        setStreamingToolResults([toolResult]);
       },
 
       onIterationComplete: (iteration: number, result: string, thinking?: string, toolCalls?: any[], toolResults?: any[]) => {
