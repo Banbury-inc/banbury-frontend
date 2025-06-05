@@ -209,9 +209,6 @@ export default function ChatMessages({
                 <ThinkingDot />
                 <ThinkingDot />
               </Box>
-              <Typography variant="caption" sx={{ ml: 0.5, color: 'primary.main', fontStyle: 'italic' }}>
-                streaming...
-              </Typography>
             </>
           )}
           <IconButton size="small" sx={{ ml: 0.5, p: 0.25 }}>
@@ -518,9 +515,6 @@ export default function ChatMessages({
                       <ThinkingDot />
                       <ThinkingDot />
                     </Box>
-                    <Typography variant="caption" sx={{ ml: 0.5, color: 'primary.main', fontStyle: 'italic' }}>
-                      streaming...
-                    </Typography>
                   </SectionIndicator>
                   <Box sx={{ ml: 3, mb: 1 }}>
                     <Typography 
@@ -561,12 +555,15 @@ export default function ChatMessages({
               {/* Render streaming tool results section outside the bubble */}
               {streamingToolResults.length > 0 && renderToolResultsSection(streamingToolResults, -1)}
               
-              <MessageBubble
-                isUser={false}
-                elevation={1}
-                content={streamingMessage}
-                isStreaming={true}
-              />
+              {/* Only show message bubble after thinking is complete */}
+              {!streamingThinking && streamingMessage && (
+                <MessageBubble
+                  isUser={false}
+                  elevation={1}
+                  content={streamingMessage}
+                  isStreaming={true}
+                />
+              )}
             </>
           )}
         </>
