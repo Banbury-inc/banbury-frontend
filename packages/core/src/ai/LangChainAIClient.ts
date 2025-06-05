@@ -3,7 +3,7 @@ import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/
 import { tool } from '@langchain/core/tools';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { CloudMcpClient, McpToolCall, McpToolResult } from './CloudMcpClient';
+import { CloudMcpClient, McpToolResult } from './CloudMcpClient';
 import { ToolCall } from './EnhancedAIClient';
 import { WebSearchService } from './web-search';
 import fs from 'fs';
@@ -198,7 +198,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     );
 
     const sessionsTool = tool(
-      async ({}) => {
+      async () => {
         if (!this.mcpClient) {
           return 'MCP client not available';
         }
@@ -364,7 +364,6 @@ Your thinking process should clearly indicate whether tools are needed and why.`
           const items = fs.readdirSync(resolvedPath, { withFileTypes: true });
           
           const result = items.map(item => {
-            const itemPath = path.join(directory_path, item.name);
             return `${item.isDirectory() ? 'DIR' : 'FILE'}: ${item.name}`;
           });
           
@@ -475,7 +474,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
                 try {
                   searchRecursive(itemFullPath);
                 } catch (error) {
-                  // Skip directories we can't access
+                  console.error(`Error reading directory ${itemFullPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
                 }
               } else {
                 let matches = true;
@@ -587,7 +586,6 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   public async chatStream(
     messages: LangChainMessage[],
     callbacks: LangChainStreamCallback = {},
-    options: LangChainOptions = {}
   ): Promise<string> {
     try {
       // Convert messages to LangChain format
@@ -957,7 +955,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Non-streaming chat
    */
-  public async chat(messages: LangChainMessage[], options?: LangChainOptions): Promise<string> {
+  public async chat(messages: LangChainMessage[]): Promise<string> {
     return new Promise((resolve, reject) => {
       let fullResponse = '';
       
@@ -965,14 +963,14 @@ Your thinking process should clearly indicate whether tools are needed and why.`
         onToken: (token) => fullResponse += token,
         onComplete: () => resolve(fullResponse),
         onError: reject
-      }, options);
+      });
     });
   }
 
   /**
    * Create a prompt template chain (for advanced chaining)
    */
-  public createPromptChain(template: string, inputVariables: string[] = []) {
+  public createPromptChain(template: string) {
     const promptTemplate = ChatPromptTemplate.fromTemplate(template);
     return promptTemplate.pipe(this.llm);
   }
@@ -983,7 +981,6 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   public async chatWithImages(
     messages: LangChainMessage[],
     callbacks?: LangChainStreamCallback,
-    options?: LangChainOptions
   ): Promise<string> {
     // Convert messages to support image content
     const multimodalMessages = messages.map(msg => {
@@ -1008,7 +1005,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
 
     // Use regular chat flow but with multimodal messages
     if (callbacks) {
-      return this.chatStream(messages, callbacks, options);
+      return this.chatStream(messages, callbacks);
     } else {
       const response = await this.llm.invoke(multimodalMessages);
       return response.content as string;

@@ -1,6 +1,6 @@
 import { OllamaClient } from './index';
 import { CloudMcpClient, McpToolCall, McpToolResult } from './CloudMcpClient';
-import { WebSearchService, WebSearchResult } from './web-search';
+import { WebSearchService } from './web-search';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -96,11 +96,10 @@ export class EnhancedAIClient {
     
     let availableTools: any[] = [];
     if (this.mcpClient) {
-      try {
-        availableTools = await this.mcpClient.fetchAvailableTools();
-      } catch (e) {
-        // fallback if fetch fails
-        toolsPrompt += '\n\n(Note: Unable to fetch available tools from server.)';
+      const result = await this.mcpClient.fetchAvailableToolsSafely();
+      availableTools = result.tools;
+      if (result.error) {
+        toolsPrompt += '\n\n(Note: MCP tools unavailable - continuing without tool support.)';
       }
     }
     
@@ -306,15 +305,6 @@ export class EnhancedAIClient {
   }
 
   /**
-   * Check if response has incomplete thinking blocks
-   */
-  private hasIncompleteThinking(response: string): boolean {
-    const openTags = (response.match(/<think(?:ing)?>/g) || []).length;
-    const closeTags = (response.match(/<\/think(?:ing)?>/g) || []).length;
-    return openTags > closeTags;
-  }
-
-  /**
    * Extract complete thinking content from response
    */
   private extractCompleteThinking(response: string): string {
@@ -364,7 +354,6 @@ export class EnhancedAIClient {
       // Handle streaming response
       let isInThinking = false;
       let currentThinkingContent = '';
-      let visibleContent = '';
       let hasNotifiedThinkingStart = false;
       
       for await (const chunk of response as any) {
@@ -377,7 +366,6 @@ export class EnhancedAIClient {
           const thinkingResult = this.processThinkingContent(fullResponse, token, currentThinkingContent, isInThinking);
           isInThinking = thinkingResult.isInThinking;
           currentThinkingContent = thinkingResult.currentThinkingContent;
-          visibleContent = thinkingResult.visibleContent;
           
           // Notify when thinking starts
           if (!wasInThinking && isInThinking && !hasNotifiedThinkingStart) {

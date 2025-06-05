@@ -3,7 +3,6 @@ import os from 'os';
 import { CONFIG } from '../config';
 import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
 import { SessionsTable } from '../types';
-import { ObjectId } from 'mongodb';
 
 export async function addTask(
   task_description: string,
@@ -46,7 +45,7 @@ export async function addTask(
     console.error('Error fetching data:', error);
     // Return a fallback task with a temporary ID
     const taskInfo = {
-      _id: new ObjectId().toString(),
+      _id: '',
       device_id: '',
       username: '',
       task_type: '',

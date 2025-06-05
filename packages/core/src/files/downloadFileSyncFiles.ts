@@ -96,25 +96,18 @@ export async function downloadFileSyncFiles(
 
           switch (error) {
             case 'file_not_found':
-              // console.log(`File ${file_name} not found on ${source_device}`);
               break;
             case 'device_offline':
-              // console.log(`Device ${source_device} is offline`);
               break;
             case 'permission_denied':
-              // console.log(`Permission denied to download ${file_name}`);
               break;
             case 'transfer_failed':
-              // console.log(`Transfer failed for ${file_name}`);
               break;
             case 'connection_error':
-              // console.log(`Connection error with ${source_device}`);
               break;
             case 'timeout':
-              // console.log(`Download timeout for ${file_name}`);
               break;
             default:
-            // console.log(`Unknown error occurred while downloading ${file_name}`);
           }
         }
       }

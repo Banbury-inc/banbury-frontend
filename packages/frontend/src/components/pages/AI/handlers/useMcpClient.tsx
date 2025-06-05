@@ -49,12 +49,14 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
         error: null
       }));
       // Fetch available tools asynchronously and update state
-      client.fetchAvailableTools().then(tools => {
-        setState(prev => ({
-          ...prev,
-          availableTools: tools.map((t: any) => t.name)
-        }));
-      });
+      client.fetchAvailableToolsSafely()
+        .then(result => {
+          setState(prev => ({
+            ...prev,
+            availableTools: result.tools.map((t: any) => t.name),
+            error: result.error ? `Tools unavailable: ${result.error}` : null
+          }));
+        });
 
       return client;
     } catch (error) {

@@ -24,13 +24,7 @@ import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDra
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
 import { Conversation, DeviceInfo, ExtendedChatMessage } from '@banbury/core/src/types';
-import { AVAILABLE_MODELS } from './components/AIToolbar/ModelSelectorButton/constants';
 
-// Helper function to determine if a model supports thinking mode
-const getModelThinkingMode = (modelName: string): boolean => {
-  const modelInfo = AVAILABLE_MODELS.find(model => model.name === modelName);
-  return modelInfo?.thinking || false;
-};
 
 export default function AI() {
   const { showAlert } = useAlert();
@@ -41,7 +35,6 @@ export default function AI() {
   const [streamingThinking, setStreamingThinking] = useState<string>('');
   const [currentModel, setCurrentModel] = useState<string>('qwen3:latest');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
   const [enhancedAIClient, setEnhancedAIClient] = useState<EnhancedAIClient | null>(null);
   const [langChainClient, setLangChainClient] = useState<LangChainAIClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -64,8 +57,7 @@ export default function AI() {
 
   useEffect(() => {
     // Initialize Ollama client
-    const client = new OllamaClient('http://localhost:11434', currentModel);
-    setOllamaClient(client);
+    new OllamaClient('http://localhost:11434', currentModel);
 
     // Initialize Enhanced AI client with MCP integration
     const enhancedClient = new EnhancedAIClient(

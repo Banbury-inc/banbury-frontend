@@ -122,13 +122,7 @@ export const handleSendMessage = async (
         let activeToolResults: any[] = [];
 
         // Create throttled streaming callbacks for better performance
-        const throttledMessageUpdate = createStreamingThrottle(setStreamingMessage, 16);
-        // Make thinking updates immediate - no throttling
-        const immediateThinkingUpdate = (thinking: string) => {
-          flushSync(() => {
-            setStreamingThinking(thinking);
-          });
-        };
+        createStreamingThrottle(setStreamingMessage, 16);
 
         // Prepare LangChain options if we're using LangChain client
         const options = langChainOptions ? {} : undefined;

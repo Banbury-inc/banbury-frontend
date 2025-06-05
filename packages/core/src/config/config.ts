@@ -29,7 +29,7 @@ export const config: Config = {
   run_device_info_loop: false,
   run_device_predictions_loop: false,
   prod: false,
-  dev: false, 
+  dev: true, 
   semi_local: false,
   get url() {
     //return this.prod ? 'https://banbury-cloud-backend-prod-389236221119.us-east1.run.app/' : 'http://localhost:8080/';
@@ -64,7 +64,7 @@ export const config: Config = {
     if (this.prod) {
       return 'http://54.224.116.254:8080/api';
     } else if (this.dev) {
-      return 'http://localhost:3001';
+      return 'http://www.mcp.prod.banbury.io';
     } else if (this.semi_local) {
       return 'http://192.168.50.72:3001/api';
     } else {

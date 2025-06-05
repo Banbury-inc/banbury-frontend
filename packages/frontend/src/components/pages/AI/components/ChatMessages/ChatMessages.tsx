@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, Collapse, IconButton, Chip, Stack } from '@mui/material';
+import { Box, Typography, Collapse, IconButton, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -99,19 +99,6 @@ const SectionIndicator = styled(Typography)(({ theme }) => ({
     }
   }
 }));
-
-const SectionHeader = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(1),
-  cursor: 'pointer',
-  padding: theme.spacing(0.5),
-  borderRadius: theme.spacing(1),
-  '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-  },
-}));
-
 
 
 interface ChatMessagesProps {
@@ -309,7 +296,7 @@ export default function ChatMessages({
     );
   };
 
-  const renderToolCallsSection = (toolCalls: ToolCall[], messageIndex: number) => {
+  const renderToolCallsSection = (toolCalls: ToolCall[] ) => {
     return (
       <Box sx={{ mb: 0.5 }}>
         {toolCalls.map(renderToolCall)}
@@ -415,7 +402,7 @@ export default function ChatMessages({
           {message.role === 'assistant' && message.thinking && renderThinkingSection(message.thinking, index, false)}
           
           {/* Render tool calls section outside the bubble for assistant messages */}
-          {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && renderToolCallsSection(message.toolCalls, index)}
+          {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && renderToolCallsSection(message.toolCalls)}
           
           {/* Render tool results section outside the bubble for assistant messages */}
           {message.role === 'assistant' && message.toolResults && message.toolResults.length > 0 && renderToolResultsSection(message.toolResults, index)}
@@ -550,7 +537,7 @@ export default function ChatMessages({
               )}
               
               {/* Render streaming tool calls section outside the bubble */}
-              {streamingToolCalls.length > 0 && renderToolCallsSection(streamingToolCalls, -1)}
+              {streamingToolCalls.length > 0 && renderToolCallsSection(streamingToolCalls)}
               
               {/* Render streaming tool results section outside the bubble */}
               {streamingToolResults.length > 0 && renderToolResultsSection(streamingToolResults, -1)}

@@ -176,4 +176,21 @@ export class CloudMcpClient {
     console.error('CloudMcpClient:', finalError);
     throw new Error(finalError);
   }
+
+  /**
+   * Safely fetch available tools with graceful fallback
+   */
+  public async fetchAvailableToolsSafely(): Promise<{ tools: any[], error?: string }> {
+    try {
+      const tools = await this.fetchAvailableTools();
+      return { tools };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn('CloudMcpClient: Tools unavailable, continuing without MCP tools:', errorMessage);
+      return { 
+        tools: [], 
+        error: errorMessage 
+      };
+    }
+  }
 } 
