@@ -48,6 +48,7 @@ export default function AI() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingToolCalls, setStreamingToolCalls] = useState<any[]>([]);
   const [streamingToolResults, setStreamingToolResults] = useState<any[]>([]);
+  const [isPreparingToThink, setIsPreparingToThink] = useState(false);
   const [mcpToolsEnabled] = useState<boolean>(true);
 
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
@@ -98,7 +99,7 @@ export default function AI() {
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingMessage]);
+  }, [messages, streamingMessage, streamingThinking, streamingToolCalls, streamingToolResults, isPreparingToThink]);
 
   useEffect(() => {
     fetchDeviceInfo();
@@ -149,6 +150,7 @@ export default function AI() {
       setStreamingThinking,
       setStreamingToolCalls,
       setStreamingToolResults,
+      setIsPreparingToThink,
       saveConversationWrapper
     );
   };
@@ -220,6 +222,7 @@ export default function AI() {
               streamingToolResults={streamingToolResults}
               isStreaming={isStreaming}
               isSearching={isSearching}
+              isPreparingToThink={isPreparingToThink}
               messagesEndRef={messagesEndRef}
             />
           </CardContent>
@@ -234,11 +237,12 @@ export default function AI() {
             setStreamingThinking={setStreamingThinking}
             setStreamingToolCalls={setStreamingToolCalls}
             setStreamingToolResults={setStreamingToolResults}
+            setIsPreparingToThink={setIsPreparingToThink}
             abortControllerRef={abortControllerRef}
             currentModel={currentModel}
             setIsSearching={setIsSearching}
             showAlert={showAlert}
-            ollamaClient={getModelThinkingMode(currentModel) ? langChainClient : (mcpToolsEnabled ? enhancedAIClient : ollamaClient)}
+            ollamaClient={enhancedAIClient}
             currentConversation={currentConversation}
             setCurrentConversation={setCurrentConversation}
             handleStopGeneration={handleStopGenerationWrapper}

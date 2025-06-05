@@ -148,23 +148,15 @@ export class CloudMcpClient {
     }
     // Try /tools endpoint
     const endpoints = [`${this.config.baseUrl}/tools`];
-    console.log('CloudMcpClient: Attempting to fetch available tools from endpoints:', endpoints);
     let lastError: any = null;
     for (const url of endpoints) {
       try {
-        console.log(`CloudMcpClient: Trying endpoint: ${url}`);
         const response = await fetch(url, {
           method: 'GET',
           headers,
         });
-        console.log(`CloudMcpClient: Response from ${url}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok
-        });
         if (response.ok) {
           const data = await response.json();
-          console.log('CloudMcpClient: Successfully fetched tools:', data);
           return data.tools || [];
         } else {
           const errorText = await response.text();

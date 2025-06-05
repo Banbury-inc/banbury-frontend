@@ -13,6 +13,8 @@ import os from 'os';
 export interface LangChainStreamCallback {
   onToken?: (token: string) => void;
   onThinking?: (thinking: string) => void;
+  onThinkingStart?: () => void;
+  onThinkingEnd?: () => void;
   onToolCall?: (toolCall: ToolCall) => void;
   onToolResult?: (result: McpToolResult) => void;
   onComplete?: (fullResponse: string) => void;
@@ -648,6 +650,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     let visibleContentSent = '';
     let currentThinking = '';
     let isInThinking = false;
+    let hasNotifiedThinkingStart = false;
     let finalMessageObject: any = null;
     
     const stream = await modelWithTools.stream(messages);
@@ -662,6 +665,10 @@ Your thinking process should clearly indicate whether tools are needed and why.`
       
       if (thinkingStartIndex !== -1 && thinkingEndIndex === -1) {
         // We're entering thinking mode
+        if (!hasNotifiedThinkingStart) {
+          callbacks.onThinkingStart?.();
+          hasNotifiedThinkingStart = true;
+        }
         isInThinking = true;
         
         // Send any visible content before thinking tag
@@ -687,6 +694,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
         
         // Send final thinking content
         callbacks.onThinking?.(thinkingContent.trim());
+        callbacks.onThinkingEnd?.();
         isInThinking = false;
         
         // Send any visible content after thinking tag

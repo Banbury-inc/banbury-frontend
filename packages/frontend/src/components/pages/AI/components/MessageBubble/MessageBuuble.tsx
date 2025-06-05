@@ -103,7 +103,7 @@ const CodeBlock: React.FC<{ language: string; code: string }> = ({ language, cod
   </Box>
 );
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ 
+const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({ 
   isUser, 
   elevation = 2, 
   content, 
@@ -170,19 +170,26 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           {isStreaming && (
             <Box sx={{ 
               display: 'inline-block', 
-              animation: 'blink 1s infinite',
+              marginLeft: 0.5,
+              animation: 'blink 0.8s infinite',
               '@keyframes blink': {
                 '0%, 50%': { opacity: 1 },
                 '51%, 100%': { opacity: 0 },
               }
             }}>
-              ▌
+              <Box component="span" sx={{ 
+                color: 'primary.main',
+                fontSize: '1em',
+                fontWeight: 'bold'
+              }}>
+                ▌
+              </Box>
             </Box>
           )}
         </Box>
       )}
     </MessageBubbleRoot>
   );
-};
+});
 
 export default MessageBubble;

@@ -21,6 +21,8 @@ export interface ToolCall {
 export interface StreamCallback {
   onToken?: (token: string) => void;
   onThinking?: (thinking: string) => void;
+  onThinkingStart?: () => void;
+  onThinkingEnd?: () => void;
   onToolCall?: (toolCall: ToolCall) => void;
   onToolResult?: (result: McpToolResult) => void;
   onComplete?: (fullResponse: string) => void;
@@ -363,6 +365,7 @@ export class EnhancedAIClient {
       let isInThinking = false;
       let currentThinkingContent = '';
       let visibleContent = '';
+      let hasNotifiedThinkingStart = false;
       
       for await (const chunk of response as any) {
         if (chunk.message?.content) {
@@ -370,10 +373,22 @@ export class EnhancedAIClient {
           fullResponse += token;
           
           // Handle real-time thinking detection and streaming
+          const wasInThinking = isInThinking;
           const thinkingResult = this.processThinkingContent(fullResponse, token, currentThinkingContent, isInThinking);
           isInThinking = thinkingResult.isInThinking;
           currentThinkingContent = thinkingResult.currentThinkingContent;
           visibleContent = thinkingResult.visibleContent;
+          
+          // Notify when thinking starts
+          if (!wasInThinking && isInThinking && !hasNotifiedThinkingStart) {
+            callbacks.onThinkingStart?.();
+            hasNotifiedThinkingStart = true;
+          }
+          
+          // Notify when thinking ends
+          if (wasInThinking && !isInThinking) {
+            callbacks.onThinkingEnd?.();
+          }
           
           // Stream thinking content if we're in thinking mode
           if (thinkingResult.newThinkingContent) {
@@ -403,7 +418,6 @@ export class EnhancedAIClient {
           
           // Now execute tool calls and continue conversation if any were found
           if (finalToolCalls.length > 0) {
-            console.log(`🔄 Executing ${finalToolCalls.length} tool calls after streaming completed`);
             
             // First, notify UI about detected tool calls
             this.notifyToolCallsDetected(finalToolCalls, callbacks);
@@ -451,7 +465,6 @@ export class EnhancedAIClient {
     toolCalls: ToolCall[],
     callbacks: StreamCallback
   ): Promise<string> {
-    console.log(`🚀 Executing ${toolCalls.length} tool calls and continuing conversation`);
     
     // Execute all tool calls
     const toolResults = await Promise.all(

@@ -45,6 +45,7 @@ interface MessageBoxProps {
   setStreamingThinking: (thinking: string) => void;
   setStreamingToolCalls: (toolCalls: any[]) => void;
   setStreamingToolResults: (toolResults: any[]) => void;
+  setIsPreparingToThink: (isPreparingToThink: boolean) => void;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
   currentModel: string;
   setIsSearching: (isSearching: boolean) => void;
@@ -69,6 +70,7 @@ export default function MessageBox({
   setStreamingThinking,
   setStreamingToolCalls,
   setStreamingToolResults,
+  setIsPreparingToThink,
   abortControllerRef,
   currentModel,
   setIsSearching,
@@ -133,6 +135,7 @@ export default function MessageBox({
       setStreamingThinking,
       setStreamingToolCalls,
       setStreamingToolResults,
+      setIsPreparingToThink,
       abortControllerRef,
       currentModel,
       false, // useWebSearch no longer needed - handled by AI client as tool

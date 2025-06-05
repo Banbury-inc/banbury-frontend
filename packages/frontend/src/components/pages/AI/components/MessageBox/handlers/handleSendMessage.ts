@@ -1,8 +1,8 @@
 import React from 'react';
+import { flushSync } from 'react-dom';
 import { ExtendedChatMessage, ChatResponse } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
-
 
 // Local implementation to avoid import issues
 export const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
@@ -21,6 +21,34 @@ export const extractThinkingContent = (content: string): { thinking?: string; cl
   return { cleanContent: content };
 };
 
+// Helper function to throttle streaming updates for better performance
+const createStreamingThrottle = (callback: (value: string) => void, delay: number = 16) => {
+  let lastUpdate = 0;
+  let pending = false;
+  let latestValue = '';
+
+  return (value: string) => {
+    latestValue = value;
+    const now = Date.now();
+    
+    if (now - lastUpdate >= delay) {
+      lastUpdate = now;
+      flushSync(() => {
+        callback(latestValue);
+      });
+    } else if (!pending) {
+      pending = true;
+      setTimeout(() => {
+        pending = false;
+        lastUpdate = Date.now();
+        flushSync(() => {
+          callback(latestValue);
+        });
+      }, delay - (now - lastUpdate));
+    }
+  };
+};
+
 export const handleSendMessage = async (
   inputMessage: string, 
   selectedImages: string[], 
@@ -34,6 +62,7 @@ export const handleSendMessage = async (
   setStreamingThinking: (streamingThinking: string) => void, 
   setStreamingToolCalls: (toolCalls: any[]) => void,
   setStreamingToolResults: (toolResults: any[]) => void,
+  setIsPreparingToThink: (isPreparingToThink: boolean) => void,
   abortControllerRef: React.MutableRefObject<AbortController | null>, 
   currentModel: string, 
   useWebSearch: boolean, 
@@ -69,9 +98,14 @@ export const handleSendMessage = async (
     setIsLoading(true);
     setIsStreaming(true);
     setStreamingMessage('');
-    setStreamingThinking('');
+    setStreamingThinking(''); // This will be set to thinking content later
     setStreamingToolCalls([]);
     setStreamingToolResults([]);
+    
+    // Show immediate thinking indicator for models that support thinking
+    flushSync(() => {
+      setIsPreparingToThink(true);
+    });
 
     try {
 
@@ -87,28 +121,58 @@ export const handleSendMessage = async (
         let activeToolCalls: any[] = [];
         let activeToolResults: any[] = [];
 
+        // Create throttled streaming callbacks for better performance
+        const throttledMessageUpdate = createStreamingThrottle(setStreamingMessage, 16);
+        // Make thinking updates immediate - no throttling
+        const immediateThinkingUpdate = (thinking: string) => {
+          flushSync(() => {
+            setStreamingThinking(thinking);
+          });
+        };
+
         // Prepare LangChain options if we're using LangChain client
         const options = langChainOptions ? {} : undefined;
 
         await ollamaClient.chatStream(messageHistory, {
           onToken: (token: string) => {
             if (abortControllerRef.current?.signal.aborted) return;
-            currentMessage += token;
-            setStreamingMessage(currentMessage);
+            // Clear preparing to think state when we get first token
+            flushSync(() => {
+              setIsPreparingToThink(false);
+              currentMessage += token;
+              setStreamingMessage(currentMessage);
+            });
           },
           onThinking: (thinking: string) => {
             if (abortControllerRef.current?.signal.aborted) return;
-            setStreamingThinking(thinking);
+            // Clear preparing to think state when we get thinking content
+            flushSync(() => {
+              setIsPreparingToThink(false);
+              setStreamingThinking(thinking);
+            });
+          },
+          onThinkingStart: () => {
+            if (abortControllerRef.current?.signal.aborted) return;
+            flushSync(() => {
+              setIsPreparingToThink(false);
+            });
+          },
+          onThinkingEnd: () => {
+            if (abortControllerRef.current?.signal.aborted) return;
           },
           onToolCall: (toolCall: any) => {
             if (abortControllerRef.current?.signal.aborted) return;
             activeToolCalls.push(toolCall);
-            setStreamingToolCalls([...activeToolCalls]);
+            flushSync(() => {
+              setStreamingToolCalls([...activeToolCalls]);
+            });
           },
           onToolResult: (result: any) => {
             if (abortControllerRef.current?.signal.aborted) return;
             activeToolResults.push(result);
-            setStreamingToolResults([...activeToolResults]);
+            flushSync(() => {
+              setStreamingToolResults([...activeToolResults]);
+            });
             // Keep tool results visible throughout the conversation
           },
 
@@ -136,6 +200,7 @@ export const handleSendMessage = async (
             setStreamingThinking('');
             setStreamingToolCalls([]);
             setStreamingToolResults([]);
+            setIsPreparingToThink(false);
             setIsLoading(false);
             setIsStreaming(false);
           },
@@ -159,17 +224,28 @@ export const handleSendMessage = async (
       if (response && typeof response === 'object' && Symbol.asyncIterator in response) {
         // Handle streaming response
         let completeMessage = '';
+        
+        // Create throttled updates for fallback streaming
+        const throttledFallbackMessage = createStreamingThrottle(setStreamingMessage, 16);
+        const immediateFallbackThinking = (thinking: string) => {
+          flushSync(() => {
+            setStreamingThinking(thinking);
+          });
+        };
+        
         try {
           for await (const chunk of response as AsyncIterable<ChatResponse>) {
             // Check if the request was aborted
             if (abortControllerRef.current?.signal.aborted) {
               break;
             }
+            // Clear preparing to think state when we get first chunk
+            setIsPreparingToThink(false);
             completeMessage += chunk.message.content;
             const { thinking, cleanContent } = extractThinkingContent(completeMessage);
-            setStreamingMessage(cleanContent);
+            throttledFallbackMessage(cleanContent);
             if (thinking) {
-              setStreamingThinking(thinking);
+              immediateFallbackThinking(thinking);
             }
           }
         } catch (error) {
@@ -228,6 +304,7 @@ export const handleSendMessage = async (
       setStreamingThinking('');
       setStreamingToolCalls([]);
       setStreamingToolResults([]);
+      setIsPreparingToThink(false);
       abortControllerRef.current = null;
     }
   };

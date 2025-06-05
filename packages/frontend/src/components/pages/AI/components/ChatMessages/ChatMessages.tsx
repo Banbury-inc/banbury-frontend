@@ -123,6 +123,7 @@ interface ChatMessagesProps {
   streamingToolResults?: any[];
   isStreaming: boolean;
   isSearching: boolean;
+  isPreparingToThink: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -135,9 +136,11 @@ export default function ChatMessages({
   streamingToolResults = [],
   isStreaming,
   isSearching,
+  isPreparingToThink,
   messagesEndRef,
 }: ChatMessagesProps) {
   const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({});
+  const [streamingThinkingSections, setStreamingThinkingSections] = useState<Set<string>>(new Set());
 
   const toggleSection = (sectionKey: string) => {
     setExpandedSections(prev => ({
@@ -146,9 +149,49 @@ export default function ChatMessages({
     }));
   };
 
-  const renderThinkingSection = (thinking: string, messageIndex: number) => {
+  // Track when streaming thinking starts and stops
+  React.useEffect(() => {
+    const streamingKey = 'thinking--1'; // Key for streaming thinking section
+    
+    if (streamingThinking && isStreaming) {
+      // Thinking has started streaming - mark as streaming and auto-expand
+      setStreamingThinkingSections(prev => new Set(prev).add(streamingKey));
+      setExpandedSections(prev => ({
+        ...prev,
+        [streamingKey]: true // Force expansion when thinking starts
+      }));
+    }
+  }, [streamingThinking, isStreaming]);
+
+  // Handle thinking completion
+  React.useEffect(() => {
+    const streamingKey = 'thinking--1';
+    
+    // When streaming stops and we had thinking content, clean up the streaming state
+    if (!isStreaming && streamingThinkingSections.has(streamingKey)) {
+      // Remove from streaming sections immediately
+      setStreamingThinkingSections(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(streamingKey);
+        return newSet;
+      });
+      
+      // Auto-collapse after a delay to let user see the completed thinking
+      setTimeout(() => {
+        setExpandedSections(prev => ({
+          ...prev,
+          [streamingKey]: false
+        }));
+      }, 5000); // 5 second delay before auto-collapse
+    }
+  }, [isStreaming, streamingThinkingSections]);
+
+  const renderThinkingSection = (thinking: string, messageIndex: number, isStreaming: boolean = false) => {
     const sectionKey = `thinking-${messageIndex}`;
-    const isExpanded = expandedSections[sectionKey] || false;
+    const isStreamingThinking = streamingThinkingSections.has(sectionKey);
+    
+    // Always expand when streaming or when there's thinking content
+    const isExpanded = isStreaming || isStreamingThinking || expandedSections[sectionKey] || (isStreaming && thinking.length > 0);
 
     return (
       <Box sx={{ mb: 0.5 }}>
@@ -159,6 +202,18 @@ export default function ChatMessages({
         >
           <PsychologyIcon sx={{ fontSize: 14, color: 'primary.main' }} />
           <span>Thinking Process</span>
+          {isStreaming && (
+            <>
+              <Box sx={{ display: 'flex', gap: 0.25, ml: 0.5 }}>
+                <ThinkingDot />
+                <ThinkingDot />
+                <ThinkingDot />
+              </Box>
+              <Typography variant="caption" sx={{ ml: 0.5, color: 'primary.main', fontStyle: 'italic' }}>
+                streaming...
+              </Typography>
+            </>
+          )}
           <IconButton size="small" sx={{ ml: 0.5, p: 0.25 }}>
             {isExpanded ? <ExpandLessIcon sx={{ fontSize: 12 }} /> : <ExpandMoreIcon sx={{ fontSize: 12 }} />}
           </IconButton>
@@ -175,6 +230,25 @@ export default function ChatMessages({
               }}
             >
               {thinking}
+              {isStreaming && (
+                <Box component="span" sx={{ 
+                  display: 'inline-block',
+                  marginLeft: 0.5,
+                  animation: 'blink 0.8s infinite',
+                  '@keyframes blink': {
+                    '0%, 50%': { opacity: 1 },
+                    '51%, 100%': { opacity: 0 },
+                  }
+                }}>
+                  <Box component="span" sx={{ 
+                    color: 'primary.main',
+                    fontSize: '1em',
+                    fontWeight: 'bold'
+                  }}>
+                    ▌
+                  </Box>
+                </Box>
+              )}
             </Typography>
           </Box>
         </Collapse>
@@ -341,7 +415,7 @@ export default function ChatMessages({
       {messages.map((message, index) => (
         <React.Fragment key={index}>
           {/* Render thinking section outside the bubble for assistant messages */}
-          {message.role === 'assistant' && message.thinking && renderThinkingSection(message.thinking, index)}
+          {message.role === 'assistant' && message.thinking && renderThinkingSection(message.thinking, index, false)}
           
           {/* Render tool calls section outside the bubble for assistant messages */}
           {message.role === 'assistant' && message.toolCalls && message.toolCalls.length > 0 && renderToolCallsSection(message.toolCalls, index)}
@@ -405,10 +479,81 @@ export default function ChatMessages({
               Searching the web...
             </SearchingIndicator>
           )}
-          {(streamingMessage || streamingThinking || streamingToolCalls.length > 0) && isStreaming && (
+          {(streamingMessage || streamingThinking || streamingToolCalls.length > 0 || isPreparingToThink) && isStreaming && (
             <>
-              {/* Render streaming thinking section outside the bubble */}
-              {streamingThinking && renderThinkingSection(streamingThinking, -1)}
+              {/* Show immediate thinking indicator when preparing to think */}
+              {isPreparingToThink && !streamingThinking && !streamingMessage && (
+                <SectionIndicator
+                  variant="caption"
+                  sx={{
+                    alignSelf: 'flex-start',
+                    ml: 1,
+                    mb: 1,
+                    color: 'primary.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    animation: 'fadeIn 0.3s ease-in-out'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', gap: 0.25, ml: 0.5 }}>
+                    <ThinkingDot />
+                    <ThinkingDot />
+                    <ThinkingDot />
+                  </Box>
+                </SectionIndicator>
+              )}
+              
+              {/* Render streaming thinking section outside the bubble - ALWAYS SHOW when content exists */}
+              {streamingThinking && (
+                <Box sx={{ mb: 0.5 }}>
+                  <SectionIndicator
+                    variant="caption"
+                    sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+                  >
+                    <PsychologyIcon sx={{ fontSize: 14, color: 'primary.main' }} />
+                    <span>Thinking Process</span>
+                    <Box sx={{ display: 'flex', gap: 0.25, ml: 0.5 }}>
+                      <ThinkingDot />
+                      <ThinkingDot />
+                      <ThinkingDot />
+                    </Box>
+                    <Typography variant="caption" sx={{ ml: 0.5, color: 'primary.main', fontStyle: 'italic' }}>
+                      streaming...
+                    </Typography>
+                  </SectionIndicator>
+                  <Box sx={{ ml: 3, mb: 1 }}>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        whiteSpace: 'pre-wrap',
+                        color: 'text.secondary',
+                        fontSize: '0.875rem',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {streamingThinking}
+                      <Box component="span" sx={{ 
+                        display: 'inline-block',
+                        marginLeft: 0.5,
+                        animation: 'blink 0.8s infinite',
+                        '@keyframes blink': {
+                          '0%, 50%': { opacity: 1 },
+                          '51%, 100%': { opacity: 0 },
+                        }
+                      }}>
+                        <Box component="span" sx={{ 
+                          color: 'primary.main',
+                          fontSize: '1em',
+                          fontWeight: 'bold'
+                        }}>
+                          ▌
+                        </Box>
+                      </Box>
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
               
               {/* Render streaming tool calls section outside the bubble */}
               {streamingToolCalls.length > 0 && renderToolCallsSection(streamingToolCalls, -1)}
