@@ -156,11 +156,19 @@ export default function SignIn() {
             }
           } catch (error) {
             console.error('Google OAuth token validation failed:', error);
-            // Clear the invalid Google OAuth session
-            localStorage.removeItem('googleOAuthSession');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('authUsername');
-            localStorage.removeItem('deviceId');
+            // Only clear the session if we're not in the middle of onboarding
+            const pendingAuth = localStorage.getItem('pendingAuthEmail');
+            if (!pendingAuth) {
+              // Clear the invalid Google OAuth session
+              localStorage.removeItem('googleOAuthSession');
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('authUsername');
+              localStorage.removeItem('deviceId');
+            } else {
+              // Just clear the Google OAuth flag but preserve auth data for onboarding
+              localStorage.removeItem('googleOAuthSession');
+              console.warn('Token validation failed but preserving auth data for onboarding completion');
+            }
           }
         }
         
@@ -528,10 +536,13 @@ export default function SignIn() {
         setGlobalAxiosAuthToken(authToken, email);
         localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
       } else {
-        console.error('No auth token found during onboarding completion');
+        console.warn('No auth token found during onboarding completion. User may need to re-authenticate.');
+        // Instead of failing, we'll still complete onboarding but the user may need to log in again
+        // This handles cases where the token was cleared during validation
       }
       
       localStorage.setItem('authUsername', email);
+      localStorage.setItem(`onboarding_${email}`, 'true'); // Always mark onboarding as complete
       localStorage.removeItem('pendingAuthEmail'); // Clean up the temporary storage
     }
     

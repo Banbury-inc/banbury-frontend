@@ -15,6 +15,7 @@ export const handleLoadModels = async (ollamaClient: OllamaClient, setDownloaded
         size: formatBytes(model.size || 0), // Format the size consistently
         tools: false, // Default to false, can be enhanced later to detect tool capabilities
         thinking: false, // Default to false, can be enhanced later to detect thinking capabilities
+        vision: false, // Default to false, can be enhanced later to detect vision capabilities
         isDownloaded: true
       }));
       setDownloadedModels(localModels);
