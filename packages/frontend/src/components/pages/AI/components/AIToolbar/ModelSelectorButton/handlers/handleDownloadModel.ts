@@ -1,6 +1,6 @@
 import { ipcRenderer } from 'electron';
 
-export const handleDownloadModel = async (modelName: string, loadModels: () => void, onRefreshDeviceInfo: () => void, setDownloadProgress: (updateFunction: (prev: Record<string, string>) => Record<string, string>) => void) => {
+export const handleDownloadModel = async (modelName: string, loadModels: () => void, setDownloadProgress: (updateFunction: (prev: Record<string, string>) => Record<string, string>) => void) => {
     try {
       setDownloadProgress((prev: Record<string, string>) => ({
         ...prev,
@@ -17,10 +17,6 @@ export const handleDownloadModel = async (modelName: string, loadModels: () => v
           delete newProgress[modelName];
           return newProgress;
         });
-
-        if (onRefreshDeviceInfo) {
-          onRefreshDeviceInfo();
-        }
       } else {
         setDownloadProgress((prev: Record<string, string>) => {
           const newProgress = { ...prev };

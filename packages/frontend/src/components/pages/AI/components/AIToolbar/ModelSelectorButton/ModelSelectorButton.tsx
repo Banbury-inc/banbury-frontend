@@ -8,16 +8,12 @@ import { handleLoadModels } from './handlers/handleLoadModels';
 import { handleDownloadModel } from './handlers/handleDownloadModel';
 import { handleDeleteModel } from './handlers/handleDeleteModel';
 import { handleSyncModelsWithBackend } from './handlers/handleSyncModelsWithBackend';
-
-interface DeviceInfo {
-  downloaded_models?: string[];
-  [key: string]: any;
-}
+import { DeviceInfo } from '@banbury/core/src/types';
 
 interface ModelSelectorButtonProps {
   currentModel: string;
   onModelChange: (model: string) => void;
-  deviceInfo?: DeviceInfo | null;
+  deviceInfo?: DeviceInfo;
   onRefreshDeviceInfo?: () => void;
 }
 
@@ -37,7 +33,6 @@ export default function ModelSelectorButton({
   const [downloadProgress, setDownloadProgress] = useState<{ [key: string]: string }>({});
   const [deletingModels, setDeletingModels] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
-  const [deviceExistsInBackend, setDeviceExistsInBackend] = useState<boolean | null>(null);
 
   const open = Boolean(anchorEl);
   const ollamaClient = new OllamaClient('http://localhost:11434');
@@ -51,12 +46,7 @@ export default function ModelSelectorButton({
     setLoading
   );
 
-  const syncModelsWithBackend = (localModels: ModelInfo[]) => handleSyncModelsWithBackend(
-    localModels, 
-    deviceExistsInBackend || false, 
-    deviceInfo, 
-    setDeviceExistsInBackend
-  );
+  const syncModelsWithBackend = (localModels: ModelInfo[]) => handleSyncModelsWithBackend(localModels, deviceInfo, onRefreshDeviceInfo || (() => {}));
 
   const handleModelSelect = (model: string) => {
     onModelChange(model);
@@ -66,8 +56,7 @@ export default function ModelSelectorButton({
   const handleDownloadModelWrapper = (modelName: string) => handleDownloadModel(
     modelName, 
     loadModels, 
-    onRefreshDeviceInfo || (() => {}), 
-    setDownloadProgress
+    setDownloadProgress,
   );
 
   const handleDeleteModelWrapper = (modelName: string) => handleDeleteModel(
@@ -99,12 +88,6 @@ export default function ModelSelectorButton({
     }
   }, [open]);
 
-  useEffect(() => {
-    // Sync models when deviceInfo becomes available
-    if (deviceInfo && downloadedModels.length > 0) {
-      syncModelsWithBackend(downloadedModels);
-    }
-  }, [deviceInfo]);
 
   useEffect(() => {
     // Listen for model download progress updates

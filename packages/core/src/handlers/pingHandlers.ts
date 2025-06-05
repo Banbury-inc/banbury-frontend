@@ -15,6 +15,7 @@ export async function small_ping_request(username: string, senderSocket: net.Soc
   const date_added = DateUtils.get_current_date_and_time();
 
   const device_info_json: SmallDeviceInfoType = {
+    _id: '',
     user,
     device_number,
     device_name,
@@ -59,6 +60,7 @@ export async function ping_request(username: string, senderSocket: net.Socket): 
   const online = true;
 
   const device_info_json: DeviceInfoType = {
+    _id: '',
     user,
     device_number,
     device_name,
@@ -87,7 +89,8 @@ export async function ping_request(username: string, senderSocket: net.Socket): 
     device_priority,
     sync_status,
     optimization_status,
-    online
+    online,
+    downloaded_models: [],
   };
 
   await banbury.networking.sendDeviceInfo(senderSocket, device_info_json);

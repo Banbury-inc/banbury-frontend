@@ -6,6 +6,7 @@ import {
   Stack,
 } from '@mui/material';
 import { useAlert } from '../../../renderer/context/AlertContext';
+import { useAuth } from '../../../renderer/context/AuthContext';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { EnhancedAIClient } from '@banbury/core/src/ai/EnhancedAIClient';
 import { LangChainAIClient } from '@banbury/core/src/ai/LangChainAIClient';
@@ -22,7 +23,7 @@ import { handleDragEnter } from './components/DragDropOverlay/handlers/handleDra
 import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDragLeave';
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
-import { Conversation, ExtendedChatMessage } from '@banbury/core/src/types';
+import { Conversation, DeviceInfo, ExtendedChatMessage } from '@banbury/core/src/types';
 import { AVAILABLE_MODELS } from './components/AIToolbar/ModelSelectorButton/constants';
 
 // Helper function to determine if a model supports thinking mode
@@ -33,6 +34,7 @@ const getModelThinkingMode = (modelName: string): boolean => {
 
 export default function AI() {
   const { showAlert } = useAlert();
+  const { updates, setUpdates } = useAuth();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
@@ -53,7 +55,7 @@ export default function AI() {
 
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const [deviceInfo, setDeviceInfo] = useState<any | null>(null);
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
 
   // Initialize MCP client
   const {
@@ -117,6 +119,8 @@ export default function AI() {
 
   const handleRefreshDeviceInfo = () => {
     fetchDeviceInfo();
+    // Trigger global update to refresh device info in other components (like Devices page)
+    setUpdates(updates + 1);
   };
 
   const handleSelectConversation = (conversation: Conversation) => {

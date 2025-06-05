@@ -63,6 +63,7 @@ export interface SessionsTable {
 }
 
 export interface DeviceInfo {
+  _id: string;
   user: string;
   device_number: number;
   device_name: string;
@@ -92,9 +93,11 @@ export interface DeviceInfo {
   sync_status: boolean;
   optimization_status: boolean;
   online: boolean;
+  downloaded_models: string[];
 }
 
 export interface SmallDeviceInfo {
+  _id: string;
   user: string;
   device_number: number;
   device_name: string;
