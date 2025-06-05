@@ -123,6 +123,7 @@ export const handleSendMessage = async (
 
         // Create throttled streaming callbacks for better performance
         const throttledStreamingMessage = createStreamingThrottle(setStreamingMessage, 16);
+        const throttledStreamingThinking = createStreamingThrottle(setStreamingThinking, 16);
 
         // Prepare LangChain options if we're using LangChain client
         const options = langChainOptions || undefined;
@@ -142,8 +143,8 @@ export const handleSendMessage = async (
             // Clear preparing to think state when we get thinking content
             flushSync(() => {
               setIsPreparingToThink(false);
-              setStreamingThinking(thinking);
             });
+            throttledStreamingThinking(thinking);
           },
           onThinkingStart: () => {
             if (abortControllerRef.current?.signal.aborted) return;
