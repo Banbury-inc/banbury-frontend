@@ -47,6 +47,7 @@ export default function AI() {
   const [mcpToolsEnabled] = useState<boolean>(true);
 
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
+  const [isAgentMode, setIsAgentMode] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
 
@@ -245,6 +246,9 @@ export default function AI() {
             langChainOptions={{}}
             webSearchEnabled={webSearchEnabled}
             setWebSearchEnabled={setWebSearchEnabled}
+            isAgentMode={isAgentMode}
+            setIsAgentMode={setIsAgentMode}
+            mcpClient={mcpClient}
           />
         </Card>
       </Stack>

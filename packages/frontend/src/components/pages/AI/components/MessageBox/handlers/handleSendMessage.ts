@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { ExtendedChatMessage, ChatResponse } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
+import { handleLangChainAgent } from './handleLangChainAgent';
 
 // Local implementation to avoid import issues
 export const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
@@ -72,9 +73,40 @@ export const handleSendMessage = async (
   isLoading: boolean,
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
-  langChainOptions?: {}
+  langChainOptions?: {},
+  isAgentMode?: boolean,
+  mcpClient?: any
 ) => {
     if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
+
+    // If agent mode is enabled, delegate to the LangChain agent handler
+    if (isAgentMode) {
+      return handleLangChainAgent(
+        inputMessage,
+        selectedImages,
+        messages,
+        setMessages,
+        setInputMessage,
+        setSelectedImages,
+        setIsLoading,
+        setIsStreaming,
+        setStreamingMessage,
+        setStreamingThinking,
+        setStreamingToolCalls,
+        setStreamingToolResults,
+        setIsPreparingToThink,
+        abortControllerRef,
+        currentModel,
+        setIsSearching,
+        showAlert,
+        ollamaClient,
+        isLoading,
+        currentConversation,
+        setCurrentConversation,
+        langChainOptions,
+        mcpClient
+      );
+    }
 
     // Clean up any existing abort controller before starting a new request
     if (abortControllerRef.current) {

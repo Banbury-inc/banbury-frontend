@@ -305,9 +305,18 @@ export default function ChatMessages({
   };
 
   const renderToolResult = (result: ToolResult, index: string | number) => {
+    // Defensive check to prevent errors
+    if (!result || typeof result !== 'object') {
+      return null;
+    }
+
     const isError = !result.success;
     const sectionKey = `toolResult-${index}`;
     const isExpanded = expandedSections[sectionKey] || false;
+    
+    // Ensure content is properly formatted
+    const content = result.content || [];
+    const hasValidContent = Array.isArray(content) && content.length > 0;
     
     return (
       <Box key={index} sx={{ mb: 0.5 }}>
@@ -348,7 +357,12 @@ export default function ChatMessages({
               fontSize: '0.65rem',
               color: 'text.secondary'
             }}>
-              {isError ? result.error : result.content.map(c => c.text).join('\n')}
+              {isError 
+                ? (result.error || 'Unknown error') 
+                : (hasValidContent 
+                    ? content.map(c => c?.text || c).join('\n') 
+                    : 'No content available')
+              }
             </Typography>
           </Box>
         </Collapse>
@@ -357,9 +371,14 @@ export default function ChatMessages({
   };
 
   const renderToolResultsSection = (toolResults: ToolResult[], messageIndex: number) => {
+    // Defensive check to prevent errors
+    if (!Array.isArray(toolResults) || toolResults.length === 0) {
+      return null;
+    }
+
     return (
       <Box sx={{ mb: 0.5 }}>
-        {toolResults.map((result, index) => renderToolResult(result, `${messageIndex}-${index}`))}
+        {toolResults.map((result, index) => renderToolResult(result, `${messageIndex}-${index}`)).filter(Boolean)}
       </Box>
     );
   };
