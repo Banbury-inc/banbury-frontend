@@ -63,6 +63,7 @@ function Copyright(props: any) {
 let deviceInfoProcessStarted = false;
 function maybeStartDeviceInfoProcess(username: string, deviceId: string) {
   if (!deviceInfoProcessStarted && username && deviceId) {
+    console.log('Starting periodic device info process for:', username, 'with deviceId:', deviceId);
     startPeriodicDeviceInfoProcess(deviceId);
     deviceInfoProcessStarted = true;
   }
