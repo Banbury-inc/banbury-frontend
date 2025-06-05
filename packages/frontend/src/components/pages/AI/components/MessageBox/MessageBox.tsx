@@ -86,7 +86,7 @@ export default function MessageBox({
   langChainOptions,
   webSearchEnabled = false,
   setWebSearchEnabled,
-  isAgentMode = false,
+  isAgentMode = true,
   setIsAgentMode,
   mcpClient,
 }: MessageBoxProps) {
@@ -269,13 +269,13 @@ export default function MessageBox({
                     width: 36,
                     height: 36,
                     borderRadius: 2,
-                    backgroundColor: isAgentMode ? 'rgba(156,39,176,0.15)' : 'background.paper',
+                    backgroundColor: isAgentMode ? 'rgba(33,150,243,0.15)' : 'background.paper',
                     '&:hover': {
-                      backgroundColor: isAgentMode ? 'rgba(156,39,176,0.22)' : (theme) => theme.palette.action.hover,
+                      backgroundColor: isAgentMode ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
                     },
                   }}
                 >
-                  <SmartToyIcon sx={{ fontSize: '1.1rem', color: isAgentMode ? 'secondary.main' : 'text.secondary' }} />
+                  <SmartToyIcon sx={{ fontSize: '1.1rem', color: isAgentMode ? 'info.main' : 'text.secondary' }} />
                 </ToolbarButton>
               </Tooltip>
             )}

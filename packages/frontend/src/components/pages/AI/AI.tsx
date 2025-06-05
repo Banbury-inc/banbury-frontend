@@ -47,7 +47,7 @@ export default function AI() {
   const [mcpToolsEnabled] = useState<boolean>(true);
 
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
-  const [isAgentMode, setIsAgentMode] = useState<boolean>(false);
+  const [isAgentMode, setIsAgentMode] = useState<boolean>(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
 
