@@ -484,7 +484,7 @@ test.describe('Files tests', () => {
     const largeGridViewOption = viewPopover.locator('[data-testid="view-option-large_grid"]');
     await expect(largeGridViewOption).toBeVisible({ timeout: 10000 });
     await largeGridViewOption.click();
-    await page.waitForTimeout(500); // Wait for click to register and view to change
+    await page.waitForTimeout(1000); // Wait for click to register and view to change
     
     // Verify the view has changed
     const fileList = page.locator('[data-testid="file-list"]');

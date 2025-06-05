@@ -1,54 +1,43 @@
 import { ModelInfo } from "../constants";
-import { handleAddModelToBackend } from "./handleAddModelFromBackend";
-import { handleRemoveModelFromBackend } from "./handleRemoveModelFromBackend";
-import os from "os";
+import banbury from '@banbury/core';
+import { DeviceInfo } from "@banbury/core/src/types";
 
-export const handleSyncModelsWithBackend = async (localModels: ModelInfo[], deviceExistsInBackend: boolean, deviceInfo: any, setDeviceExistsInBackend: (exists: boolean) => void) => {
+
+// Flag to prevent multiple simultaneous syncs
+let isSyncing = false;
+
+export const handleSyncModelsWithBackend = async (localModels: ModelInfo[], deviceInfo: DeviceInfo | undefined, onRefreshDeviceInfo: () => void) => {
     try {
-      console.info('DEBUG: syncModelsWithBackend called');
-      
-      // If no device info is available, cannot sync
-      if (!deviceInfo) {
-        console.info('DEBUG: No device info available, skipping sync');
+      // Prevent multiple simultaneous syncs
+      if (isSyncing) {
         return;
       }
       
-      const deviceName = os.hostname();
-      console.info(`DEBUG: Device name: ${deviceName}`);
-      console.info('DEBUG: Device exists in backend:', deviceExistsInBackend);
+      isSyncing = true;
       
-      if (!deviceExistsInBackend) {
-        console.info('DEBUG: Device does not exist in backend, creating');
-        try {
-          // Try to create/register the device first
-          // This could be an API call to register the device if needed
-          setDeviceExistsInBackend(true);
-        } catch (error) {
-          console.error('DEBUG: Failed to register device:', error);
-          return;
-        }
+      // If no device info is available, cannot sync
+      if (!deviceInfo) {
+        return;
       }
+
+      const deviceId = deviceInfo._id;
       
       const backendModels = Array.isArray(deviceInfo.downloaded_models) ? deviceInfo.downloaded_models : [];
       const localModelNames = localModels.map((model: ModelInfo) => model.name);
       
-      console.info('DEBUG: Local models:', localModelNames);
-      console.info('DEBUG: Backend models:', backendModels);
-      
       // Find models to add (in local but not in backend)
       const modelsToAdd = localModelNames.filter(modelName => !backendModels.includes(modelName));
-      console.info('DEBUG: Models to add to backend:', modelsToAdd);
       
       // Find models to remove (in backend but not in local)
       const modelsToRemove = backendModels.filter((modelName: string) => !localModelNames.includes(modelName));
-      console.info('DEBUG: Models to remove from backend:', modelsToRemove);
+      
+      let hasChanges = false;
       
       // Add models to backend
       for (const modelName of modelsToAdd) {
         try {
-          console.info(`DEBUG: Calling addModelToBackend for: ${modelName}`);
-          const result = await handleAddModelToBackend(deviceName, modelName);
-          console.info(`Successfully added model ${modelName} to backend:`, result);
+          await banbury.ai.addDownloadedModel(modelName, deviceId);
+          hasChanges = true;
         } catch (error) {
           console.error(`Failed to add model ${modelName} to backend:`, error);
         }
@@ -57,16 +46,21 @@ export const handleSyncModelsWithBackend = async (localModels: ModelInfo[], devi
       // Remove models from backend
       for (const modelName of modelsToRemove) {
         try {
-          console.info(`DEBUG: Calling removeModelFromBackend for: ${modelName}`);
-          const result = await handleRemoveModelFromBackend(deviceName, modelName);
-          console.info(`Successfully removed model ${modelName} from backend:`, result);
+          await banbury.ai.removeDownloadedModel(modelName, deviceId);
+          hasChanges = true;
         } catch (error) {
           console.error(`Failed to remove model ${modelName} from backend:`, error);
         }
       }
-      
-      console.info('DEBUG: Model sync completed');
+
+      // Only refresh if there were actual changes
+      if (hasChanges) {
+        onRefreshDeviceInfo();
+      }
     } catch (error) {
       console.error('Error syncing models with backend:', error);
+    } finally {
+      // Always reset the syncing flag
+      isSyncing = false;
     }
   };

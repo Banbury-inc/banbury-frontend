@@ -15,6 +15,7 @@ export async function updateDevice(username: any) {
         const date_added = DateUtils.get_current_date_and_time();
 
         const device_info_json: SmallDeviceInfo = {
+          _id: '',
           user,
           device_number,
           device_name,

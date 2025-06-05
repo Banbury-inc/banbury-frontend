@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, Stack, Grid } from '@mui/material';
+
 import ConversationsButton from './ConversationsButton';
 import ModelSelectorButton from './ModelSelectorButton/ModelSelectorButton';
 import { Conversation } from '@banbury/core/src/types';
@@ -60,6 +61,8 @@ export default function AIToolbar({
                 onRefreshDeviceInfo={handleRefreshDeviceInfo}
               />
             </Grid>
+
+
           </Grid>
         </Stack>
       </CardContent>

@@ -6,7 +6,11 @@ import {
   Stack,
 } from '@mui/material';
 import { useAlert } from '../../../renderer/context/AlertContext';
+import { useAuth } from '../../../renderer/context/AuthContext';
 import { OllamaClient } from '@banbury/core/src/ai';
+import { EnhancedAIClient } from '@banbury/core/src/ai/EnhancedAIClient';
+import { LangChainAIClient } from '@banbury/core/src/ai/LangChainAIClient';
+import { useMcpClient } from './handlers/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
 import { saveConversation } from './handlers/handleSaveConversation';
@@ -19,36 +23,77 @@ import { handleDragEnter } from './components/DragDropOverlay/handlers/handleDra
 import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDragLeave';
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
-import { Conversation, ExtendedChatMessage } from '@banbury/core/src/types';
-
+import { Conversation, DeviceInfo, ExtendedChatMessage } from '@banbury/core/src/types';
 
 
 export default function AI() {
   const { showAlert } = useAlert();
+  const { updates, setUpdates } = useAuth();
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [streamingThinking, setStreamingThinking] = useState<string>('');
-  const [currentModel, setCurrentModel] = useState<string>('llava');
+  const [currentModel, setCurrentModel] = useState<string>('qwen3:latest');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [ollamaClient, setOllamaClient] = useState<OllamaClient | null>(null);
+  const [enhancedAIClient, setEnhancedAIClient] = useState<EnhancedAIClient | null>(null);
+  const [langChainClient, setLangChainClient] = useState<LangChainAIClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingToolCalls, setStreamingToolCalls] = useState<any[]>([]);
+  const [streamingToolResults, setStreamingToolResults] = useState<any[]>([]);
+  const [isPreparingToThink, setIsPreparingToThink] = useState(false);
+  const [mcpToolsEnabled] = useState<boolean>(true);
+
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const [deviceInfo, setDeviceInfo] = useState<any | null>(null);
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
+
+  // Initialize MCP client
+  const {
+    client: mcpClient,
+  } = useMcpClient();
 
   useEffect(() => {
     // Initialize Ollama client
-    const client = new OllamaClient('http://localhost:11434', currentModel);
-    setOllamaClient(client);
-  }, [currentModel]);
+    new OllamaClient('http://localhost:11434', currentModel);
+
+    // Initialize Enhanced AI client with MCP integration
+    const enhancedClient = new EnhancedAIClient(
+      'http://localhost:11434',
+      currentModel,
+      mcpToolsEnabled ? mcpClient : null
+    );
+    setEnhancedAIClient(enhancedClient);
+
+    // Initialize LangChain AI client with MCP integration
+    const langChainAiClient = new LangChainAIClient(
+      'http://localhost:11434',
+      currentModel,
+      mcpToolsEnabled ? mcpClient : null
+    );
+    setLangChainClient(langChainAiClient);
+  }, [currentModel, mcpClient, mcpToolsEnabled]);
+
+  useEffect(() => {
+    // Update enhanced AI client when MCP client changes
+    if (enhancedAIClient) {
+      enhancedAIClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
+      enhancedAIClient.setWebSearchEnabled(webSearchEnabled);
+    }
+    
+    // Update LangChain AI client when MCP client changes
+    if (langChainClient) {
+      langChainClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
+      langChainClient.setWebSearchEnabled(webSearchEnabled);
+    }
+  }, [enhancedAIClient, langChainClient, mcpClient, mcpToolsEnabled, webSearchEnabled]);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingMessage]);
+  }, [messages, streamingMessage, streamingThinking, streamingToolCalls, streamingToolResults, isPreparingToThink]);
 
   useEffect(() => {
     fetchDeviceInfo();
@@ -66,8 +111,9 @@ export default function AI() {
 
   const handleRefreshDeviceInfo = () => {
     fetchDeviceInfo();
+    // Trigger global update to refresh device info in other components (like Devices page)
+    setUpdates(updates + 1);
   };
-
 
   const handleSelectConversation = (conversation: Conversation) => {
     setCurrentConversation(conversation);
@@ -98,9 +144,13 @@ export default function AI() {
       setCurrentConversation,
       setStreamingMessage,
       setStreamingThinking,
+      setStreamingToolCalls,
+      setStreamingToolResults,
+      setIsPreparingToThink,
       saveConversationWrapper
     );
   };
+
 
   return (
     <Box sx={{
@@ -119,6 +169,7 @@ export default function AI() {
     onDrop={(e) => handleDrop(e, setIsDragging, showAlert)}
     >
       <DragDropOverlay isDragging={isDragging} />
+      
       <AIToolbar
         currentModel={currentModel}
         setCurrentModel={setCurrentModel}
@@ -128,6 +179,7 @@ export default function AI() {
         currentConversation={currentConversation}
         handleNewChat={handleNewChat}
       />
+
       <Stack
         direction="row"
         spacing={0}
@@ -162,8 +214,11 @@ export default function AI() {
               isLoading={isLoading}
               streamingMessage={streamingMessage}
               streamingThinking={streamingThinking}
+              streamingToolCalls={streamingToolCalls}
+              streamingToolResults={streamingToolResults}
               isStreaming={isStreaming}
               isSearching={isSearching}
+              isPreparingToThink={isPreparingToThink}
               messagesEndRef={messagesEndRef}
             />
           </CardContent>
@@ -176,14 +231,20 @@ export default function AI() {
             setIsStreaming={setIsStreaming}
             setStreamingMessage={setStreamingMessage}
             setStreamingThinking={setStreamingThinking}
+            setStreamingToolCalls={setStreamingToolCalls}
+            setStreamingToolResults={setStreamingToolResults}
+            setIsPreparingToThink={setIsPreparingToThink}
             abortControllerRef={abortControllerRef}
             currentModel={currentModel}
             setIsSearching={setIsSearching}
             showAlert={showAlert}
-            ollamaClient={ollamaClient}
+            ollamaClient={enhancedAIClient}
             currentConversation={currentConversation}
             setCurrentConversation={setCurrentConversation}
             handleStopGeneration={handleStopGenerationWrapper}
+            langChainOptions={{}}
+            webSearchEnabled={webSearchEnabled}
+            setWebSearchEnabled={setWebSearchEnabled}
           />
         </Card>
       </Stack>

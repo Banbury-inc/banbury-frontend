@@ -11,11 +11,13 @@ import * as analytics from './analytics';
 import * as auth from './auth';
 import { config } from './config';
 import * as users from './users';
+import * as ai from './ai';
 
 /**
  * The main entry point for the neuranet library.
  */
 export const banbury = {
+  ai,
   middleware,
   auth,
   device,

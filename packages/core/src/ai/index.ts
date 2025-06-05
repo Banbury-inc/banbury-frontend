@@ -2,6 +2,9 @@ import { Ollama } from 'ollama';
 import { WebSearchService, WebSearchResult } from './web-search';
 import { ChatMessage } from '../types';
 
+export * from './addDownloadedModel';
+export * from './removeDownloadedModel';
+
 // Re-export ChatMessage for external use
 export { ChatMessage };
 
@@ -18,7 +21,7 @@ export class OllamaClient {
     private defaultModel: string;
     private webSearchService: WebSearchService;
 
-    constructor(baseUrl: string = 'http://localhost:11434', defaultModel: string = 'llava') {
+    constructor(baseUrl: string = 'http://localhost:11434', defaultModel: string = 'qwen3:latest') {
         this.client = new Ollama({
             host: baseUrl
         });
