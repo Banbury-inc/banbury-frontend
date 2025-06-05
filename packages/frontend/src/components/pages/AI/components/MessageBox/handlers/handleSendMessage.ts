@@ -122,10 +122,10 @@ export const handleSendMessage = async (
         let activeToolResults: any[] = [];
 
         // Create throttled streaming callbacks for better performance
-        createStreamingThrottle(setStreamingMessage, 16);
+        const throttledStreamingMessage = createStreamingThrottle(setStreamingMessage, 16);
 
         // Prepare LangChain options if we're using LangChain client
-        const options = langChainOptions ? {} : undefined;
+        const options = langChainOptions || undefined;
 
         await ollamaClient.chatStream(messageHistory, {
           onToken: (token: string) => {
@@ -133,9 +133,9 @@ export const handleSendMessage = async (
             // Clear preparing to think state when we get first token
             flushSync(() => {
               setIsPreparingToThink(false);
-              currentMessage += token;
-              setStreamingMessage(currentMessage);
             });
+            currentMessage += token;
+            throttledStreamingMessage(currentMessage);
           },
           onThinking: (thinking: string) => {
             if (abortControllerRef.current?.signal.aborted) return;
