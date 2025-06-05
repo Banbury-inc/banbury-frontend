@@ -6,6 +6,7 @@ import {
   Image as ImageIcon,
   Cancel as CancelIcon,
   Language as LanguageIcon,
+  SmartToy as SmartToyIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { AlertColor } from '@mui/material';
@@ -57,6 +58,9 @@ interface MessageBoxProps {
   langChainOptions?: {};
   webSearchEnabled?: boolean;
   setWebSearchEnabled?: (enabled: boolean) => void;
+  isAgentMode?: boolean;
+  setIsAgentMode?: (enabled: boolean) => void;
+  mcpClient?: any;
 }
 
 export default function MessageBox({
@@ -82,6 +86,9 @@ export default function MessageBox({
   langChainOptions,
   webSearchEnabled = false,
   setWebSearchEnabled,
+  isAgentMode = true,
+  setIsAgentMode,
+  mcpClient,
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
@@ -145,7 +152,9 @@ export default function MessageBox({
       isLoading,
       currentConversation,
       setCurrentConversation,
-      langChainOptions
+      langChainOptions,
+      isAgentMode,
+      mcpClient
     );
   };
 
@@ -249,6 +258,27 @@ export default function MessageBox({
                 <ImageIcon sx={{ fontSize: '1.1rem' }} />
               </ToolbarButton>
             </Tooltip>
+            {setIsAgentMode && (
+              <Tooltip title={`${isAgentMode ? 'LangChain Agent' : 'Chat'} Mode - ${isAgentMode ? 'AI uses LangChain framework to analyze tool results and iterate to solve problems step-by-step' : 'Direct chat responses'}`}>
+                <ToolbarButton
+                  onClick={() => setIsAgentMode(!isAgentMode)}
+                  disabled={isLoading}
+                  size="small"
+                  sx={{
+                    minWidth: 0,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 2,
+                    backgroundColor: isAgentMode ? 'rgba(33,150,243,0.15)' : 'background.paper',
+                    '&:hover': {
+                      backgroundColor: isAgentMode ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
+                    },
+                  }}
+                >
+                  <SmartToyIcon sx={{ fontSize: '1.1rem', color: isAgentMode ? 'info.main' : 'text.secondary' }} />
+                </ToolbarButton>
+              </Tooltip>
+            )}
             {setWebSearchEnabled && (
               <Tooltip title="Web Search Tool - Allow AI to search the web when needed">
                 <ToolbarButton
