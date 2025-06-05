@@ -82,9 +82,11 @@ export class AllocationService {
         sync_storage_capacity_gb: device.sync_storage_capacity_gb || 0,
         score: device.score || 0
       }));
+    console.log('Devices list after filtering:', devicesList);
 
     // Filter out devices where use_device_in_file_sync is false
     devicesList = devicesList.filter(device => device.use_device_in_file_sync === true);
+    console.log('Devices list after filtering:', devicesList);
     
     // Sort devices by score (descending)
     devicesList.sort((a, b) => b.score - a.score);
@@ -110,9 +112,28 @@ export class AllocationService {
       device.used_capacity = 0; // Initialize used capacity in gigabytes
     }
 
+    console.log('Files to allocate:', sortedFiles.map(f => ({
+      _id: f._id,
+      file_name: f.file_name,
+      file_size: f.file_size,
+      file_size_gb: this.bytesToGigabytes(f.file_size || 0)
+    })));
+    
+    console.log('Devices available for allocation:', devicesList.map(d => ({
+      device_name: d.device_name,
+      sync_storage_capacity_gb: d.sync_storage_capacity_gb,
+      used_capacity: d.used_capacity
+    })));
+
     for (const file of sortedFiles) {
       const fileSizeGb = this.bytesToGigabytes(file.file_size || 0); // Convert file size to gigabytes
+      console.log(`\nAllocating file ${file.file_name} (${fileSizeGb.toFixed(3)} GB):`);
+      
+      let fileAllocated = false;
       for (const device of devicesList) {
+        const availableSpace = device.sync_storage_capacity_gb - (device.used_capacity || 0);
+        console.log(`  Device ${device.device_name}: ${availableSpace.toFixed(3)} GB available, needs ${fileSizeGb.toFixed(3)} GB`);
+        
         if ((device.used_capacity || 0) + fileSizeGb <= device.sync_storage_capacity_gb) {
           // Store both file name and ID
           device.files!.push({
@@ -120,8 +141,16 @@ export class AllocationService {
             file_name: file.file_name || '',
           });
           device.used_capacity = (device.used_capacity || 0) + fileSizeGb;
-          // Continue to the next device even if the file has been added
+          console.log(`    ✅ Allocated to ${device.device_name} (now using ${device.used_capacity.toFixed(3)} GB)`);
+          fileAllocated = true;
+          // Continue to the next device even if the file has been added - this allows file replication
+        } else {
+          console.log(`    ❌ Not enough space on ${device.device_name}`);
         }
+      }
+      
+      if (!fileAllocated) {
+        console.log(`  ⚠️ File ${file.file_name} could not be allocated to any device`);
       }
     }
 
@@ -202,18 +231,23 @@ export class AllocationService {
    */
   generateFileDeviceMappings(allocatedDevices: Device[]): FileDeviceMapping[] {
     const fileMappings: { [fileId: string]: FileDeviceMapping } = {};
+    console.log('Generating file device mappings for', allocatedDevices.length, 'devices');
 
     // Iterate through each device and its allocated files
     for (const device of allocatedDevices) {
+      console.log(`Processing device: ${device.device_name}, device_id: ${device.device_id}, files: ${device.files?.length || 0}`);
       const deviceId = device.device_id;
       if (!deviceId) {
+        console.log(`Skipping device ${device.device_name} - no device_id`);
         continue;
       }
 
       // Go through each file allocated to this device
       for (const fileInfo of device.files || []) {
+        console.log(`Processing file: ${fileInfo.file_id} for device ${device.device_name}`);
         const fileId = fileInfo.file_id;
         if (!fileId) {
+          console.log('Skipping file - no file_id');
           continue;
         }
 
@@ -227,9 +261,11 @@ export class AllocationService {
         
         // Add this device's ID to the file's proposed devices
         fileMappings[fileId].proposed_device_ids.push(deviceId);
+        console.log(`Added device ${deviceId} to file ${fileId}`);
       }
     }
 
+    console.log('Final file mappings:', Object.values(fileMappings));
     // Convert the dictionary to a list
     return Object.values(fileMappings);
   }

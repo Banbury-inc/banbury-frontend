@@ -313,15 +313,37 @@ export async function pipeline() {
         
         if (Array.isArray(fileSyncData) && fileSyncData.length > 0) {
             // Transform scored devices to DevicePredictions format
+            console.log('Available device data:', deviceData.map(d => ({ _id: d._id, device_name: d.device_name })));
+            console.log('Scored devices:', scoredDevices.map(s => ({ device_name: s.device_name, score: s.score })));
+            
             const devicePredictions: DevicePredictions = {
                 device_predictions: scoredDevices.map(scoredDevice => {
                     const deviceMeta = deviceData.find((d: any) => d.device_name === scoredDevice.device_name);
+                    console.log(`Matching device ${scoredDevice.device_name}:`, deviceMeta ? { _id: deviceMeta._id, device_name: deviceMeta.device_name } : 'NOT FOUND');
+                    
+                    // Ensure we have a device_id - if not found by name, try to find by index or use a fallback
+                    let device_id = deviceMeta?._id;
+                    if (!device_id) {
+                        // Fallback: try to match with deviceIds array by index if names don't match
+                        const deviceIndex = scoredDevices.findIndex(s => s.device_name === scoredDevice.device_name);
+                        if (deviceIndex >= 0 && deviceIndex < deviceIds.length) {
+                            device_id = deviceIds[deviceIndex];
+                            console.log(`Using fallback device_id for ${scoredDevice.device_name}: ${device_id}`);
+                        }
+                    }
+                    
+                    if (!device_id) {
+                        console.error(`❌ No device_id found for device: ${scoredDevice.device_name}`);
+                    }
+                    
                     return {
                         device_name: scoredDevice.device_name,
-                        device_id: deviceMeta?._id,
+                        device_id: device_id,
                         score: scoredDevice.score || 0,
-                        sync_storage_capacity_gb: deviceMeta?.sync_storage_capacity_gb || 0,
-                        use_device_in_file_sync: deviceMeta?.use_device_in_file_sync || false,
+                        // setting sync storage capacity to 500 for now
+                        sync_storage_capacity_gb: 500,
+                        // setting use device_in_file_sync to true temporarily for now
+                        use_device_in_file_sync: true,
                     };
                 })
             };
@@ -330,7 +352,14 @@ export async function pipeline() {
             allocatedDevices = allocationService.devices(devicePredictions, fileSyncInfo);
             
             // Generate file-device mappings
+            console.log('Allocated devices before mapping:', allocatedDevices.map(d => ({
+                device_name: d.device_name,
+                device_id: d.device_id,
+                files_count: d.files?.length || 0,
+                files: d.files?.map(f => ({ file_id: f.file_id, file_name: f.file_name }))
+            })));
             const fileDeviceMappings = allocationService.generateFileDeviceMappings(allocatedDevices);
+            console.log('Generated file device mappings:', fileDeviceMappings);
             
             console.log(`✅ Allocated ${fileSyncData.length} files across ${allocatedDevices.length} devices`);
             
