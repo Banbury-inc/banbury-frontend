@@ -15,16 +15,11 @@ export async function updateTask(
 
   try {
     const url = `${CONFIG.url}/tasks/update_task/`;
-    const response = await axios.post<{ result: string; taskInfo: SessionsTable }>(url, {
-      _id: taskInfo._id,
-      device_id: taskInfo.device_id,
-      username: taskInfo.username,
-      task_type: taskInfo.task_type,
-      task_device: taskInfo.task_device,
+    const response = await axios.post<{ result: string; task_id: string; message: string }>(url, {
+      task_id: taskInfo._id,
       task_name: taskInfo.task_name,
       task_progress: taskInfo.task_progress,
       task_status: taskInfo.task_status,
-      task_date_modified: new Date().toISOString(),
     },
     {
       headers: {
@@ -35,7 +30,7 @@ export async function updateTask(
     const result = response.data.result;
 
     if (result === 'success') {
-      return response.data.taskInfo;
+      return response.data.message;
     }
     if (result === 'fail') {
       return 'failed';

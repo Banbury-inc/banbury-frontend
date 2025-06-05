@@ -13,7 +13,7 @@ import { DeviceInfo } from '@banbury/core/src/types';
 interface ModelSelectorButtonProps {
   currentModel: string;
   onModelChange: (model: string) => void;
-  deviceInfo?: DeviceInfo;
+  deviceInfo: DeviceInfo | undefined;
   onRefreshDeviceInfo?: () => void;
 }
 

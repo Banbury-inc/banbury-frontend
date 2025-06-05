@@ -1,8 +1,9 @@
 import { ModelInfo } from "../constants";
 import { OllamaClient } from "@banbury/core/src/ai";
 import { formatBytes } from "@banbury/core/src/utils";
+import { DeviceInfo } from "@banbury/core/src/types";
 
-export const handleLoadModels = async (ollamaClient: OllamaClient, setDownloadedModels: (models: ModelInfo[]) => void, deviceInfo: any, syncModelsWithBackend: (localModels: ModelInfo[]) => Promise<void>, setLoading: (loading: boolean) => void) => {
+export const handleLoadModels = async (ollamaClient: OllamaClient, setDownloadedModels: (models: ModelInfo[]) => void, deviceInfo: DeviceInfo | undefined, syncModelsWithBackend: (localModels: ModelInfo[]) => Promise<void>, setLoading: (loading: boolean) => void) => {
     try {
       setLoading(true);
       

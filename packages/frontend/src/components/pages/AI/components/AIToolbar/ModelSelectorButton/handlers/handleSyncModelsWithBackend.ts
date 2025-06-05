@@ -6,7 +6,7 @@ import { DeviceInfo } from "@banbury/core/src/types";
 // Flag to prevent multiple simultaneous syncs
 let isSyncing = false;
 
-export const handleSyncModelsWithBackend = async (localModels: ModelInfo[], deviceInfo: DeviceInfo, onRefreshDeviceInfo: () => void) => {
+export const handleSyncModelsWithBackend = async (localModels: ModelInfo[], deviceInfo: DeviceInfo | undefined, onRefreshDeviceInfo: () => void) => {
     try {
       console.log('deviceInfo', deviceInfo);
       // Prevent multiple simultaneous syncs

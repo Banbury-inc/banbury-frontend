@@ -18,6 +18,12 @@ export async function completeTask(
 ) {
   const { token } = loadGlobalAxiosAuthToken();
 
+  // Validate taskInfo exists and has required fields
+  if (!taskInfo || !taskInfo._id) {
+    console.error('Error: taskInfo is undefined or missing _id');
+    return 'invalid_task_info';
+  }
+
   try {
     const url = `${CONFIG.url}/tasks/update_task/`;
     const response = await axios.post<{ result: string; task_id: string; }>(url, {
