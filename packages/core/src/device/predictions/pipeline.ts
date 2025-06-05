@@ -86,23 +86,25 @@ export async function pipeline() {
         
         // for each device id, get the timeseries data
         const timeseriesData = await banbury.device.getTimeseriesData(deviceId);
-        timeseriesResults.push({ deviceId, timeseriesData });
+        // filter timeseries data to only include the last 100 rows
+        const filteredTimeseriesData = timeseriesData.slice(-100);
+        timeseriesResults.push({ deviceId, filteredTimeseriesData });
 
         // Assume timeseriesData is an array of objects with the same keys (metrics)
-        if (!Array.isArray(timeseriesData) || timeseriesData.length < SEQUENCE_LENGTH + 1) {
+        if (!Array.isArray(filteredTimeseriesData) || filteredTimeseriesData.length < SEQUENCE_LENGTH + 1) {
             predictions.push({ deviceId, prediction: null, error: 'Not enough data' });
             continue;
         }
 
         // Get all metric keys (excluding timestamp if present)
-        const metricKeys = Object.keys(timeseriesData[0]).filter(k => k !== 'timestamp' && k !== 'metadata' && k !== '_id');
+        const metricKeys = Object.keys(filteredTimeseriesData[0]).filter(k => k !== 'timestamp' && k !== 'metadata' && k !== '_id');
         
         const devicePrediction: Record<string, { timestamp: string, value: number | null }[] | null> = {};
 
         // Prepare timestamp extrapolation
-        const lastIdx = timeseriesData.length - 1;
-        let lastTimestamp = timeseriesData[lastIdx].timestamp;
-        let prevTimestamp = timeseriesData[lastIdx - 1].timestamp;
+        const lastIdx = filteredTimeseriesData.length - 1;
+        let lastTimestamp = filteredTimeseriesData[lastIdx].timestamp;
+        let prevTimestamp = filteredTimeseriesData[lastIdx - 1].timestamp;
         let lastTsNum = typeof lastTimestamp === 'number' ? lastTimestamp : Date.parse(lastTimestamp);
         let prevTsNum = typeof prevTimestamp === 'number' ? prevTimestamp : Date.parse(prevTimestamp);
         let interval = lastTsNum - prevTsNum;
@@ -113,7 +115,7 @@ export async function pipeline() {
             const key = metricKeys[metricIndex];
             
             // Extract the series for this metric
-            const series = timeseriesData.map((row: any) => Number(row[key])).filter(v => !isNaN(v));
+            const series = filteredTimeseriesData.map((row: any) => Number(row[key])).filter(v => !isNaN(v));
             if (series.length < SEQUENCE_LENGTH + 1) {
                 devicePrediction[key] = null;
                 continue;
@@ -162,7 +164,7 @@ export async function pipeline() {
             
             // Initial sequence is the last SEQUENCE_LENGTH elements from normalized series
             let sequence = normalizedSeries.slice(-SEQUENCE_LENGTH);
-            let lastTimestampRaw = timeseriesData[timeseriesData.length - 1].timestamp;
+            let lastTimestampRaw = filteredTimeseriesData[filteredTimeseriesData.length - 1].timestamp;
             if (typeof lastTimestampRaw === 'string' && !lastTimestampRaw.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(lastTimestampRaw)) {
                 lastTimestampRaw += 'Z';
             }
