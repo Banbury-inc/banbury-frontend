@@ -15,6 +15,7 @@ import { Textbox } from '../../../../common/Textbox/Textbox';
 import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import { handleImageUpload } from './handlers/handleImageUpload';
 import { handleSendMessage } from './handlers/handleSendMessage';
+import { AVAILABLE_MODELS } from '../AIToolbar/ModelSelectorButton/constants';
 
 const HiddenInput = styled('input')({
   display: 'none',
@@ -96,6 +97,10 @@ export default function MessageBox({
   
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if current model supports vision
+  const currentModelInfo = AVAILABLE_MODELS.find(model => model.name === currentModel);
+  const supportsVision = currentModelInfo?.vision ?? false;
 
   // Listen for file drop events
   useEffect(() => {
@@ -243,16 +248,17 @@ export default function MessageBox({
             />
 
 
-            <Tooltip title="Upload Image">
+            <Tooltip title={supportsVision ? "Upload Image" : "Image uploads not supported by this model"}>
               <ToolbarButton
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
+                disabled={isLoading || !supportsVision}
                 size="small"
                 sx={{
                   minWidth: 0,
                   width: 36,
                   height: 36,
                   borderRadius: 2,
+                  opacity: supportsVision ? 1 : 0.5,
                 }}
               >
                 <ImageIcon sx={{ fontSize: '1.1rem' }} />
