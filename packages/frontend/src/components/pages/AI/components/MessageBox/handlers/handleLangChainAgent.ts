@@ -22,7 +22,6 @@ class UnifiedToolWrapper {
       await this.initializeMcpTools();
       await this.initializeBuiltInTools();
       
-      console.log('Initialized unified tools for LangChain agent:', Array.from(this.tools.keys()));
     } catch (error) {
       console.error('Failed to initialize unified tools:', error);
     }
@@ -39,9 +38,7 @@ class UnifiedToolWrapper {
       if (this.mcpClient.fetchAvailableToolsSafely && typeof this.mcpClient.fetchAvailableToolsSafely === 'function') {
         const result = await this.mcpClient.fetchAvailableToolsSafely();
         availableTools = result.tools || [];
-        console.log('Available MCP tools:', availableTools.map((t: any) => t.name));
       } else {
-        console.log('MCP client does not support fetchAvailableToolsSafely, checking availableTools property');
         // Try to get tools from the state/property if available
         if (this.mcpClient.availableTools && Array.isArray(this.mcpClient.availableTools)) {
           availableTools = this.mcpClient.availableTools.map((name: string) => ({ 
@@ -66,8 +63,6 @@ class UnifiedToolWrapper {
           ];
         }
       }
-      
-      console.log('Initializing MCP tools:', availableTools.map((tool: any) => tool.name));
       
       // Wrap each MCP tool in unified format
       for (const tool of availableTools) {
@@ -115,7 +110,6 @@ class UnifiedToolWrapper {
       });
     }
 
-    console.log('Initialized built-in tools:', builtInTools.map((tool: any) => tool.name));
   }
 
   private async executeMcpTool(toolName: string, args: any): Promise<any> {
@@ -161,7 +155,6 @@ class UnifiedToolWrapper {
     try {
       // Use the Enhanced AI client's built-in web search if available
       if (this.ollamaClient?.webSearchService) {
-        console.log('UnifiedToolWrapper: Using webSearchService');
         const searchResults = await this.ollamaClient.webSearchService.search(query, maxResults);
         const resultText = searchResults.map((result: any) => 
           `**${result.title}**\n${result.snippet}\nSource: ${result.link}`
@@ -174,13 +167,11 @@ class UnifiedToolWrapper {
       } 
       // Try using MCP client as fallback for web_search
       else if (this.mcpClient?.callTool) {
-        console.log('UnifiedToolWrapper: Using MCP client for web_search');
         const result = await this.mcpClient.callTool({ tool: 'web_search', parameters: args });
         return result;
       }
       else {
         // Return success with informational message if no actual search capability
-        console.log('UnifiedToolWrapper: No web search capability available, returning placeholder');
         return {
           success: true,
           content: [{ type: 'text', text: `Web search request received for query: "${query}". Search capability is not fully configured but tool call was successful.` }]
@@ -207,7 +198,6 @@ class UnifiedToolWrapper {
       throw new Error(`Tool "${toolName}" not found. Available tools: ${availableTools}`);
     }
     
-    console.log(`UnifiedToolWrapper: Executing ${toolName} (source: ${tool.source})`);
     return await tool.execute(args);
   }
 
@@ -220,7 +210,6 @@ class UnifiedToolWrapper {
       source: 'custom',
       execute
     });
-    console.log(`UnifiedToolWrapper: Added custom tool: ${name}`);
   }
 
   // Method to get tool information including source
@@ -431,10 +420,8 @@ Based on your evaluation, either use another tool or provide your final answer i
           try {
             // Execute the tool call
             const args = JSON.parse(toolCall.function.arguments);
-            console.log(`LangChain Agent: Calling unified tool ${toolCall.function.name} with args:`, args);
             
             const result = await this.toolWrapper.callTool(toolCall.function.name, args);
-            console.log(`LangChain Agent: Unified tool ${toolCall.function.name} returned:`, result);
             
             // The unified tool wrapper should return structured MCP results
             let structuredResult;
@@ -455,7 +442,6 @@ Based on your evaluation, either use another tool or provide your final answer i
               };
             }
             
-            console.log(`LangChain Agent: Final structured result for ${toolCall.function.name}:`, structuredResult);
             iterationToolResults.push(structuredResult);
             this.onToolResult?.(toolCall.function.name, structuredResult);
           } catch (error) {
@@ -644,17 +630,12 @@ export const handleLangChainAgent = async (
       onToolResult: (toolName: string, result: any) => {
         if (abortControllerRef.current?.signal.aborted) return;
         
-        console.log(`LangChain Agent: onToolResult callback for ${toolName}, received:`, result);
-        
         // Handle structured MCP result vs raw result
         let toolResult;
         if (result && typeof result === 'object' && 'success' in result) {
           // Already a structured MCP result - use it directly
-          console.log(`LangChain Agent: Using structured result in callback for ${toolName}`);
           toolResult = result;
         } else {
-          // Raw result - wrap it as success
-          console.log(`LangChain Agent: Wrapping raw result in callback for ${toolName}`);
           toolResult = { 
             success: true, 
             content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }],
@@ -662,7 +643,6 @@ export const handleLangChainAgent = async (
           };
         }
         
-        console.log(`LangChain Agent: Setting toolResult in UI for ${toolName}:`, toolResult);
         setStreamingToolResults([toolResult]);
       },
 
