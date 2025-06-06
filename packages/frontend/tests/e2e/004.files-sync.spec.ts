@@ -67,8 +67,7 @@ test.describe('Files sync tests', () => {
     const isErrorVisible = await errorAlert.isVisible();
     
     if (isSuccessVisible) {
-      const alertText = await successAlert.textContent();
-      console.log('Delete alert text:', alertText);
+      await successAlert.textContent();
       // Be more flexible with the message text as it might vary
       await expect(successAlert).toContainText(/Delete.*success|completed|removed/i, { timeout: 10000 });
       await expect(successAlert).not.toBeVisible({ timeout: 10000 });
