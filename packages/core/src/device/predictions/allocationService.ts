@@ -140,10 +140,7 @@ export class AllocationService {
     for (const file of sortedFiles) {
       const fileSizeGb = this.bytesToGigabytes(file.file_size || 0); // Convert file size to gigabytes
       
-      let fileAllocated = false;
       for (const device of devicesList) {
-        const availableSpace = (device.sync_storage_capacity_gb || 100) - (device.used_capacity || 0);
-        
         if ((device.used_capacity || 0) + fileSizeGb <= (device.sync_storage_capacity_gb || 100)) {
           // Store both file name and ID
           device.files!.push({
@@ -151,7 +148,6 @@ export class AllocationService {
             file_name: file.file_name || '',
           });
           device.used_capacity = (device.used_capacity || 0) + fileSizeGb;
-          fileAllocated = true;
           // Continue to the next device even if the file has been added - this allows file replication
         }
       }

@@ -3,7 +3,7 @@ import banbury from '../..';
 import axios from 'axios';
 import { CONFIG } from '../../config';
 import { ScoringService, type DevicePerformanceData } from './scoringService';
-import { AllocationService, type Device, type DeviceWithPreferences, type DevicePredictions, type FileSyncInfo } from './allocationService';
+import { AllocationService, type DeviceWithPreferences, type DevicePredictions, type FileSyncInfo } from './allocationService';
 import { getSyncFiles } from '../../files/getSyncFiles';
 
 function chunkArray<T>(arr: T[], size: number): T[][] {

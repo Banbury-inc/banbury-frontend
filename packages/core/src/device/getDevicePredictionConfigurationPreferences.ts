@@ -14,6 +14,7 @@ export async function getDevicePredictionConfigurationPreferences(): Promise<Dev
       return [];
     }
   } catch (e) {
+    console.error("Error fetching device prediction configuration preferences:", e);
     return [];
   }
 } 

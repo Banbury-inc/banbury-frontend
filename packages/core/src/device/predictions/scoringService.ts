@@ -18,7 +18,7 @@
  * ```
  */
 
-import { getSettings, type UserSettings, type SettingsResponse } from '../../settings/getSettings';
+import { getSettings } from '../../settings/getSettings';
 
 // Types and interfaces
 export interface DevicePerformanceData {
