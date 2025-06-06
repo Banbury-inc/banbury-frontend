@@ -583,11 +583,31 @@ test.describe('Files tests', () => {
       await expect(addToSyncButton).toBeEnabled({ timeout: 10000 });
       await addToSyncButton.click();
 
-      // 8. Verify we get an alert that the file was added to sync
-      const alert = page.locator('[data-testid="alert-success"]');
-      await expect(alert).toBeVisible({ timeout: 100000 });
-      await expect(alert).toContainText('File added to sync', { timeout: 10000 });
-      await expect(alert).not.toBeVisible({ timeout: 10000 });
+      // 8. Wait for either success or error alert to appear
+      const successAlert = page.locator('[data-testid="alert-success"]');
+      const errorAlert = page.locator('[data-testid="alert-error"]');
+      
+      // Wait for either success or error alert with extended timeout
+      await Promise.race([
+        expect(successAlert).toBeVisible({ timeout: 60000 }),
+        expect(errorAlert).toBeVisible({ timeout: 60000 })
+      ]);
+
+      // Check which alert appeared and handle accordingly
+      const isSuccessVisible = await successAlert.isVisible();
+      const isErrorVisible = await errorAlert.isVisible();
+      
+      if (isSuccessVisible) {
+        await expect(successAlert).toContainText('File added to sync', { timeout: 10000 });
+        await expect(successAlert).not.toBeVisible({ timeout: 10000 });
+      } else if (isErrorVisible) {
+        // Log the error message for debugging
+        const errorText = await errorAlert.textContent();
+        console.error('Sync operation failed:', errorText);
+        throw new Error(`Test failed due to sync error: ${errorText}`);
+      } else {
+        throw new Error('Neither success nor error alert appeared within timeout period');
+      }
       
       // 10. Deselect the file
       await firstFileRow.click();

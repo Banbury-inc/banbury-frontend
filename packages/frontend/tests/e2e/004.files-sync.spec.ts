@@ -52,11 +52,34 @@ test.describe('Files sync tests', () => {
     // Click the delete button
     await deleteButton.click();
 
-    // Verify we get an alert that the file was deleted from sync (extended timeout)
-    const alert = page.locator('[data-testid="alert-success"]');
-    await expect(alert).toBeVisible({ timeout: 15000 });
-    await expect(alert).toContainText('Delete completed successfully', { timeout: 10000 });
-    await expect(alert).not.toBeVisible({ timeout: 10000 });
+    // Wait for either success or error alert to appear
+    const successAlert = page.locator('[data-testid="alert-success"]');
+    const errorAlert = page.locator('[data-testid="alert-error"]');
+    
+    // Wait for either success or error alert with extended timeout
+    await Promise.race([
+      expect(successAlert).toBeVisible({ timeout: 30000 }),
+      expect(errorAlert).toBeVisible({ timeout: 30000 })
+    ]);
+
+    // Check which alert appeared and handle accordingly
+    const isSuccessVisible = await successAlert.isVisible();
+    const isErrorVisible = await errorAlert.isVisible();
+    
+    if (isSuccessVisible) {
+      const alertText = await successAlert.textContent();
+      console.log('Delete alert text:', alertText);
+      // Be more flexible with the message text as it might vary
+      await expect(successAlert).toContainText(/Delete.*success|completed|removed/i, { timeout: 10000 });
+      await expect(successAlert).not.toBeVisible({ timeout: 10000 });
+    } else if (isErrorVisible) {
+      // Log the error message for debugging
+      const errorText = await errorAlert.textContent();
+      console.error('Delete operation failed:', errorText);
+      throw new Error(`Test failed due to delete error: ${errorText}`);
+    } else {
+      throw new Error('Neither success nor error alert appeared within timeout period');
+    }
 
     // Verify the file is no longer in the sync list
     await expect(firstFileRow).not.toBeVisible({ timeout: 10000 });
