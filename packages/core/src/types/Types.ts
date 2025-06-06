@@ -96,6 +96,25 @@ export interface DeviceInfo {
   downloaded_models: string[];
 }
 
+export interface DevicePredictionsTable {
+  _id: string;
+  user_id: string;
+  device_id: string;
+  updated_at: string;
+  use_device_in_file_sync: boolean;
+  use_files_available_for_download: boolean;
+  use_files_needed: boolean;
+  use_predicted_cpu_usage: boolean;
+  use_predicted_download_speed: boolean;
+  use_predicted_gpu_usage: boolean;
+  use_predicted_ram_usage: boolean;
+  use_predicted_upload_speed: boolean;
+  score: number;
+  files_needed: string[];
+  files_available_for_download: string[];
+  sync_storage_capacity_gb: number;
+}
+
 export interface SmallDeviceInfo {
   _id: string;
   user: string;

@@ -1,12 +1,23 @@
+import { DevicePredictionsTable } from "../../types";
+import { getDevicePredictionConfigurationPreferences } from "../getDevicePredictionConfigurationPreferences";
+
 // Types and interfaces
 export interface Device {
   device_name: string;
   device_id?: string;
   score: number;
-  sync_storage_capacity_gb: number;
-  use_device_in_file_sync?: boolean;
   files?: AllocatedFile[];
   used_capacity?: number;
+}
+
+export interface DeviceWithPreferences extends Device {
+  device_id: string;
+  device_name: string;
+  score: number;
+  files?: AllocatedFile[];
+  used_capacity?: number;
+  sync_storage_capacity_gb: number;
+  use_device_in_file_sync?: boolean;
 }
 
 export interface AllocatedFile {
@@ -33,13 +44,6 @@ export interface FileDeviceMapping {
   file_id: string;
   proposed_device_ids: string[];
 }
-
-// Example data
-const devices: Device[] = [
-  { device_name: "Device A", score: 90, sync_storage_capacity_gb: 500 },
-  { device_name: "Device B", score: 80, sync_storage_capacity_gb: 300 },
-  { device_name: "Device C", score: 70, sync_storage_capacity_gb: 450 }
-];
 
 export class AllocationService {
   constructor() {
@@ -70,9 +74,32 @@ export class AllocationService {
    * @returns A list of device dictionaries, updated with allocated files
    *          and used capacity.
    */
-  devices(fetchedDevicePredictions: DevicePredictions, fileSyncInfo: FileSyncInfo[]): Device[] {
+  async devices(fetchedDevicePredictions: DevicePredictions, fileSyncInfo: FileSyncInfo[]): Promise<DeviceWithPreferences[]> {
     // Extract the list of devices from the nested dictionary
-    let devicesList = fetchedDevicePredictions.device_predictions || [];
+    let devicesList: DeviceWithPreferences[] = fetchedDevicePredictions.device_predictions as unknown as DeviceWithPreferences[];
+
+    // get the device_predictions_preferences from the backend
+    const devicePredictionPreferences = await getDevicePredictionConfigurationPreferences();
+
+
+    // Handle both old and new structure
+    const preferencesArray = Array.isArray(devicePredictionPreferences) 
+      ? devicePredictionPreferences 
+      : (devicePredictionPreferences as any)?.device_predictions || [];
+
+    // add the device predictions to the devicesList
+    devicesList = devicesList.map(device => {
+      const matchingPreference = preferencesArray.find(
+        (prediction: DevicePredictionsTable) => prediction.device_id === device.device_id
+      );
+      
+      if (matchingPreference) {
+        const mergedDevice = { ...device, ...matchingPreference };
+        return mergedDevice;
+      }
+      
+      return device;
+    });
     
     // Filter out devices with None storage capacity and set default values
     devicesList = devicesList
@@ -82,11 +109,9 @@ export class AllocationService {
         sync_storage_capacity_gb: device.sync_storage_capacity_gb || 0,
         score: device.score || 0
       }));
-    console.log('Devices list after filtering:', devicesList);
 
     // Filter out devices where use_device_in_file_sync is false
     devicesList = devicesList.filter(device => device.use_device_in_file_sync === true);
-    console.log('Devices list after filtering:', devicesList);
     
     // Sort devices by score (descending)
     devicesList.sort((a, b) => b.score - a.score);
@@ -112,45 +137,23 @@ export class AllocationService {
       device.used_capacity = 0; // Initialize used capacity in gigabytes
     }
 
-    console.log('Files to allocate:', sortedFiles.map(f => ({
-      _id: f._id,
-      file_name: f.file_name,
-      file_size: f.file_size,
-      file_size_gb: this.bytesToGigabytes(f.file_size || 0)
-    })));
-    
-    console.log('Devices available for allocation:', devicesList.map(d => ({
-      device_name: d.device_name,
-      sync_storage_capacity_gb: d.sync_storage_capacity_gb,
-      used_capacity: d.used_capacity
-    })));
-
     for (const file of sortedFiles) {
       const fileSizeGb = this.bytesToGigabytes(file.file_size || 0); // Convert file size to gigabytes
-      console.log(`\nAllocating file ${file.file_name} (${fileSizeGb.toFixed(3)} GB):`);
       
       let fileAllocated = false;
       for (const device of devicesList) {
-        const availableSpace = device.sync_storage_capacity_gb - (device.used_capacity || 0);
-        console.log(`  Device ${device.device_name}: ${availableSpace.toFixed(3)} GB available, needs ${fileSizeGb.toFixed(3)} GB`);
+        const availableSpace = (device.sync_storage_capacity_gb || 100) - (device.used_capacity || 0);
         
-        if ((device.used_capacity || 0) + fileSizeGb <= device.sync_storage_capacity_gb) {
+        if ((device.used_capacity || 0) + fileSizeGb <= (device.sync_storage_capacity_gb || 100)) {
           // Store both file name and ID
           device.files!.push({
             file_id: String(file._id),
             file_name: file.file_name || '',
           });
           device.used_capacity = (device.used_capacity || 0) + fileSizeGb;
-          console.log(`    ✅ Allocated to ${device.device_name} (now using ${device.used_capacity.toFixed(3)} GB)`);
           fileAllocated = true;
           // Continue to the next device even if the file has been added - this allows file replication
-        } else {
-          console.log(`    ❌ Not enough space on ${device.device_name}`);
         }
-      }
-      
-      if (!fileAllocated) {
-        console.log(`  ⚠️ File ${file.file_name} could not be allocated to any device`);
       }
     }
 
@@ -173,9 +176,9 @@ export class AllocationService {
     fetchedDevicePredictions: DevicePredictions, 
     fileSyncInfo: FileInfo[], 
     deviceCapacityCap: number
-  ): Device[] {
+  ): DeviceWithPreferences[] {
     // Extract the list of devices from the nested dictionary
-    const devicesList = fetchedDevicePredictions.device_predictions || [];
+    const devicesList = fetchedDevicePredictions.device_predictions as unknown as DeviceWithPreferences[] || [];
     
     // Sort devices by score (descending)
     devicesList.sort((a, b) => b.score - a.score);
@@ -205,7 +208,7 @@ export class AllocationService {
     for (const file of fileSyncInfo) {
       const fileSizeGb = this.bytesToGigabytes(file.file_size || 0); // Convert file size to gigabytes
       for (const device of devicesList) {
-        if ((device.used_capacity || 0) + fileSizeGb <= device.sync_storage_capacity_gb) {
+        if ((device.used_capacity || 0) + fileSizeGb <= (device.sync_storage_capacity_gb || deviceCapacityCap)) {
           // Store both file name and ID
           device.files!.push({
             file_id: String(file._id),
@@ -229,25 +232,20 @@ export class AllocationService {
    * @returns A list of dictionaries, each containing a 'file_id' and a
    *          list of 'proposed_device_ids' for that file.
    */
-  generateFileDeviceMappings(allocatedDevices: Device[]): FileDeviceMapping[] {
+  generateFileDeviceMappings(allocatedDevices: DeviceWithPreferences[]): FileDeviceMapping[] {
     const fileMappings: { [fileId: string]: FileDeviceMapping } = {};
-    console.log('Generating file device mappings for', allocatedDevices.length, 'devices');
 
     // Iterate through each device and its allocated files
     for (const device of allocatedDevices) {
-      console.log(`Processing device: ${device.device_name}, device_id: ${device.device_id}, files: ${device.files?.length || 0}`);
       const deviceId = device.device_id;
       if (!deviceId) {
-        console.log(`Skipping device ${device.device_name} - no device_id`);
         continue;
       }
 
       // Go through each file allocated to this device
       for (const fileInfo of device.files || []) {
-        console.log(`Processing file: ${fileInfo.file_id} for device ${device.device_name}`);
         const fileId = fileInfo.file_id;
         if (!fileId) {
-          console.log('Skipping file - no file_id');
           continue;
         }
 
@@ -261,11 +259,8 @@ export class AllocationService {
         
         // Add this device's ID to the file's proposed devices
         fileMappings[fileId].proposed_device_ids.push(deviceId);
-        console.log(`Added device ${deviceId} to file ${fileId}`);
       }
     }
-
-    console.log('Final file mappings:', Object.values(fileMappings));
     // Convert the dictionary to a list
     return Object.values(fileMappings);
   }

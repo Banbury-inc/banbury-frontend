@@ -29,6 +29,8 @@ export interface DevicePerformanceData {
   predicted_cpu_usage: number;
   predicted_ram_usage: number;
   score?: number;
+  sync_storage_capacity_gb?: number;
+  use_device_in_file_sync?: boolean;
 }
 
 /**
@@ -142,8 +144,7 @@ export async function main(): Promise<void> {
   ];
 
   try {
-    const result = await scoringService.devices(performanceData);
-    console.log('Scored devices:', result);
+    await scoringService.devices(performanceData);
   } catch (error) {
     console.error('Error in scoring service:', error);
   }

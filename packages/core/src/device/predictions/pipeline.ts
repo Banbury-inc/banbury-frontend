@@ -3,7 +3,7 @@ import banbury from '../..';
 import axios from 'axios';
 import { CONFIG } from '../../config';
 import { ScoringService, type DevicePerformanceData } from './scoringService';
-import { AllocationService, type Device, type DevicePredictions, type FileSyncInfo } from './allocationService';
+import { AllocationService, type Device, type DeviceWithPreferences, type DevicePredictions, type FileSyncInfo } from './allocationService';
 import { getSyncFiles } from '../../files/getSyncFiles';
 
 function chunkArray<T>(arr: T[], size: number): T[][] {
@@ -30,7 +30,6 @@ function createSequences(data: number[], sequenceLength: number): { inputs: numb
 }
 
 export async function pipeline() {
-    console.log('running pipeline');
     // get every device id that is owned by the user
     const deviceData = await banbury.device.fetchDeviceData();
 
@@ -41,7 +40,6 @@ export async function pipeline() {
 
     // Get device IDs
     const deviceIds = deviceData.map((device: any) => device._id);
-    console.log('deviceIds', deviceIds);
 
     // Check if predictions were made recently (within the last 10 minutes)
     try {
@@ -57,31 +55,28 @@ export async function pipeline() {
                 const latestTimestamp = new Date(Math.max(...timestamps));
                 const currentTime = new Date();
                 const timeDiffMinutes = (currentTime.getTime() - latestTimestamp.getTime()) / (1000 * 60);
-                console.log('timeDiffMinutes', timeDiffMinutes);
-                // if (timeDiffMinutes < 10) {
-                //     hasRecentPredictions = true;
-                //     break; // Exit the loop as soon as we find one device with recent predictions
-                // }
+                if (timeDiffMinutes < 10) {
+                    hasRecentPredictions = true;
+                    break; // Exit the loop as soon as we find one device with recent predictions
+                }
             }
         }
         
         // Skip pipeline if any device has predictions less than 10 minutes old
         if (hasRecentPredictions) {
-            console.log('hasRecentPredictions', hasRecentPredictions);
             return { skipped: true, reason: 'Recent predictions available' };
         }
     } catch (error) {
         // If there's an error checking the last prediction time, continue with the pipeline
-        console.warn('⚠️ Error checking last prediction time, continuing with pipeline:', error);
+        console.error('⚠️ Error checking last prediction time, continuing with pipeline:', error);
     }
 
     const timeseriesResults: any[] = [];
     const predictions: any[] = [];
-    const FUTURE_STEPS = 100; // Number of future time steps to predict
+    const FUTURE_STEPS = 1000; // Number of future time steps to predict
     const SEQUENCE_LENGTH = 5; // Length of sequences for LSTM
 
     for (let deviceIndex = 0; deviceIndex < deviceIds.length; deviceIndex++) {
-        console.log('deviceIndex', deviceIndex);
         const deviceId = deviceIds[deviceIndex];
         
         // for each device id, get the timeseries data
@@ -111,7 +106,6 @@ export async function pipeline() {
         if (!interval || interval <= 0) interval = 60000; // fallback to 1 minute if invalid
 
         for (let metricIndex = 0; metricIndex < metricKeys.length; metricIndex++) {
-            console.log('metricIndex', metricIndex);
             const key = metricKeys[metricIndex];
             
             // Extract the series for this metric
@@ -175,8 +169,6 @@ export async function pipeline() {
             
             // Show prediction progress in chunks
             for (let i = 0; i < FUTURE_STEPS; i++) {
-                console.log('i', i);
-                // Show progress updates periodically
                 
                 // Reshape the sequence for the LSTM input [batch, timesteps, features]
                 const inputTensor = tf.tensor3d([sequence.map(val => [val])], [1, SEQUENCE_LENGTH, 1]);
@@ -218,8 +210,6 @@ export async function pipeline() {
         predictions.push({ deviceId, prediction: devicePrediction });
     }
 
-    console.log('done with predictions');
-
     // Flatten predictions for all devices as snapshots per timestamp
     const flatPredictions: any[] = [];
     for (const { deviceId, prediction } of predictions) {
@@ -232,7 +222,6 @@ export async function pipeline() {
         const metricArrays = Object.values(prediction).filter(arr => Array.isArray(arr)) as { timestamp: string, value: number | null }[][];
         if (metricArrays.length === 0) continue;
         const timestamps = metricArrays[0].map(item => item.timestamp);
-        console.log('timestamps')
 
         for (let i = 0; i < timestamps.length; i++) {
             const snapshot: any = {
@@ -264,7 +253,6 @@ export async function pipeline() {
     }
 
     // SCORING SERVICE - Calculate device scores based on predicted performance
-    console.log('🔢 Calculating device scores...');
     const scoringService = new ScoringService();
     
     // Transform prediction data to match ScoringService input format
@@ -296,15 +284,13 @@ export async function pipeline() {
     let scoredDevices: DevicePerformanceData[] = [];
     try {
         scoredDevices = await scoringService.devices(performanceData);
-        console.log(`✅ Calculated scores for ${scoredDevices.length} devices`);
     } catch (error) {
-        console.warn('⚠️ Error calculating device scores, continuing without scores:', error);
+        console.error('⚠️ Error calculating device scores, continuing without scores:', error);
     }
 
     // ALLOCATION SERVICE - Allocate files to devices based on scores and capacity
-    console.log('📁 Allocating files to devices...');
     const allocationService = new AllocationService();
-    let allocatedDevices: Device[] = [];
+    let allocatedDevices: DeviceWithPreferences[] = [];
     
     try {
         // Fetch file sync information
@@ -313,13 +299,10 @@ export async function pipeline() {
         
         if (Array.isArray(fileSyncData) && fileSyncData.length > 0) {
             // Transform scored devices to DevicePredictions format
-            console.log('Available device data:', deviceData.map(d => ({ _id: d._id, device_name: d.device_name })));
-            console.log('Scored devices:', scoredDevices.map(s => ({ device_name: s.device_name, score: s.score })));
             
             const devicePredictions: DevicePredictions = {
                 device_predictions: scoredDevices.map(scoredDevice => {
                     const deviceMeta = deviceData.find((d: any) => d.device_name === scoredDevice.device_name);
-                    console.log(`Matching device ${scoredDevice.device_name}:`, deviceMeta ? { _id: deviceMeta._id, device_name: deviceMeta.device_name } : 'NOT FOUND');
                     
                     // Ensure we have a device_id - if not found by name, try to find by index or use a fallback
                     let device_id = deviceMeta?._id;
@@ -328,7 +311,6 @@ export async function pipeline() {
                         const deviceIndex = scoredDevices.findIndex(s => s.device_name === scoredDevice.device_name);
                         if (deviceIndex >= 0 && deviceIndex < deviceIds.length) {
                             device_id = deviceIds[deviceIndex];
-                            console.log(`Using fallback device_id for ${scoredDevice.device_name}: ${device_id}`);
                         }
                     }
                     
@@ -340,28 +322,15 @@ export async function pipeline() {
                         device_name: scoredDevice.device_name,
                         device_id: device_id,
                         score: scoredDevice.score || 0,
-                        // setting sync storage capacity to 500 for now
-                        sync_storage_capacity_gb: 500,
-                        // setting use device_in_file_sync to true temporarily for now
-                        use_device_in_file_sync: true,
                     };
                 })
             };
             
             const fileSyncInfo: FileSyncInfo[] = [{ files: fileSyncData }];
-            allocatedDevices = allocationService.devices(devicePredictions, fileSyncInfo);
+            allocatedDevices = await allocationService.devices(devicePredictions, fileSyncInfo);
             
             // Generate file-device mappings
-            console.log('Allocated devices before mapping:', allocatedDevices.map(d => ({
-                device_name: d.device_name,
-                device_id: d.device_id,
-                files_count: d.files?.length || 0,
-                files: d.files?.map(f => ({ file_id: f.file_id, file_name: f.file_name }))
-            })));
             const fileDeviceMappings = allocationService.generateFileDeviceMappings(allocatedDevices);
-            console.log('Generated file device mappings:', fileDeviceMappings);
-            
-            console.log(`✅ Allocated ${fileSyncData.length} files across ${allocatedDevices.length} devices`);
             
             // Update proposed device IDs for each file individually
             try {
@@ -377,15 +346,12 @@ export async function pipeline() {
                 });
                 
                 await Promise.all(updatePromises);
-                console.log(`✅ Updated proposed device IDs for ${fileDeviceMappings.length} files`);
             } catch (allocationError) {
                 console.error('❌ Failed to update file allocation mappings:', allocationError);
             }
-        } else {
-            console.log('ℹ️ No files to sync, skipping allocation');
         }
     } catch (error) {
-        console.warn('⚠️ Error in file allocation, continuing without allocation:', error);
+        console.error('⚠️ Error in file allocation, continuing without allocation:', error);
     }
 
     // Send in batches of 1000, concurrently
@@ -412,6 +378,3 @@ export async function pipeline() {
         allocatedDevices: allocatedDevices.length > 0 ? allocatedDevices : undefined
     };
 }
-
-// ✅ SCORING SERVICE - Implemented above
-// ✅ ALLOCATION SERVICE - Implemented above
