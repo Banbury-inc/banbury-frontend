@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { visuallyHidden } from '@mui/utils';
 import { DatabaseData, Order, HeadCell, EnhancedTableProps } from '../../types';
+import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 import { formatFileSize } from '../../utils/formatFileSize';
 import { formatDate } from '../../utils/formatDate';
 
@@ -28,7 +29,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Name', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '30%'
   },
   { 
@@ -37,7 +38,7 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Size', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '10%'
   },
   { 
@@ -46,16 +47,16 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Kind', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '15%'
   },
   { 
-    id: 'device_name', 
+    id: 'original_device', 
     numeric: false, 
     label: 'Location', 
     isVisibleOnSmallScreen: true, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
     width: '15%'
   },
   { 
@@ -64,7 +65,16 @@ const getHeadCells = (): HeadCell[] => [
     label: 'Status', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
-    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    visibleIn: ['files', 'sync', 'shared', 'cloud', 'google_drive'],
+    width: '10%'
+  },
+  { 
+    id: 'is_public', 
+    numeric: false, 
+    label: 'Visibility', 
+    isVisibleOnSmallScreen: true, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files'],
     width: '10%'
   },
   { 
@@ -78,21 +88,22 @@ const getHeadCells = (): HeadCell[] => [
   },
   { 
     id: 'date_uploaded', 
-    numeric: false, 
+    numeric: true, 
     label: 'Date Uploaded', 
+    isVisibleOnSmallScreen: true, 
+    isVisibleNotOnCloudSync: true,
+    visibleIn: ['files', 'sync', 'shared', 'cloud'],
+    width: '10%'
+  },
+  { 
+    id: 'date_modified', 
+    numeric: true, 
+    label: 'Date Modified', 
     isVisibleOnSmallScreen: false, 
     isVisibleNotOnCloudSync: true,
     visibleIn: ['files', 'sync', 'shared', 'cloud'],
     width: '10%'
   },
-  // { 
-  //   id: 'is_public', 
-  //   numeric: false, 
-  //   label: 'Visibility', 
-  //   isVisibleOnSmallScreen: false, 
-  //   isVisibleNotOnCloudSync: true,
-  //   visibleIn: ['files']
-  // },
   // { 
   //   id: 'original_device', 
   //   numeric: false, 
@@ -120,16 +131,33 @@ const getHeadCells = (): HeadCell[] => [
 ];
 
 interface EnhancedTableHeadProps extends EnhancedTableProps {
-  columnVisibility?: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
+  columnVisibility?: Partial<Record<AvailableTableColumns, boolean>>;
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
 }
 
 function EnhancedTableHead(props: EnhancedTableHeadProps) {
   const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort, currentView } = props;
   const isSmallScreen = useMediaQuery('(max-width:960px)');
   const headCells = getHeadCells();
-  const createSortHandler = (property: keyof DatabaseData) => (event: React.MouseEvent<unknown>) => {
-    onRequestSort(event, property);
+  
+  // Map AvailableTableColumns to DatabaseData keys for sorting
+  const mapToDataKey = (column: AvailableTableColumns): keyof DatabaseData => {
+    const mapping: Record<AvailableTableColumns, keyof DatabaseData> = {
+      'file_name': 'file_name',
+      'file_size': 'file_size',
+      'kind': 'kind',
+      'original_device': 'original_device',
+      'available': 'available',
+      'file_priority': 'file_priority',
+      'date_uploaded': 'date_uploaded',
+      'date_modified': 'date_modified',
+      'is_public': 'is_public'
+    };
+    return mapping[column];
+  };
+
+  const createSortHandler = (property: AvailableTableColumns) => (event: React.MouseEvent<unknown>) => {
+    onRequestSort(event, mapToDataKey(property));
   };
 
   return (
@@ -159,26 +187,26 @@ function EnhancedTableHead(props: EnhancedTableHeadProps) {
           .filter((headCell: HeadCell) => {
             const isVisibleOnCurrentScreen = !isSmallScreen || headCell.isVisibleOnSmallScreen;
             const isVisibleInCurrentView = !headCell.visibleIn || headCell.visibleIn.includes(currentView || 'files');
-            const isColumnVisible = !props.columnVisibility || props.columnVisibility[headCell.id];
+            const isColumnVisible = !props.columnVisibility || (props.columnVisibility as any)[headCell.id] !== false;
             return isVisibleOnCurrentScreen && isVisibleInCurrentView && isColumnVisible;
           })
           .map((headCell: HeadCell, index: number) => (
             <TableCell
               key={`${headCell.id}-${index}`}
               align={headCell.numeric ? 'right' : 'left'}
-              sortDirection={orderBy === headCell.id ? order : false}
+              sortDirection={orderBy === mapToDataKey(headCell.id) ? order : false}
               sx={{
                 backgroundColor: 'background.paper',
                 width: headCell.width || 'auto',
               }}
             >
               <TableSortLabel
-                active={orderBy === headCell.id}
-                direction={orderBy === headCell.id ? order : 'asc'}
+                active={orderBy === mapToDataKey(headCell.id)}
+                direction={orderBy === mapToDataKey(headCell.id) ? order : 'asc'}
                 onClick={createSortHandler(headCell.id)}
               >
                 {headCell.label}
-                {orderBy === headCell.id ? (
+                {orderBy === mapToDataKey(headCell.id) ? (
                   <Box component="span" sx={visuallyHidden}>
                     {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
                   </Box>
@@ -212,6 +240,15 @@ function getComparator(
 }
 
 function descendingComparator(a: DatabaseData, b: DatabaseData, orderBy: keyof DatabaseData) {
+  // Always prioritize folders first, regardless of sort column
+  const aIsFolder = a.kind === 'Folder' || a.file_type === 'directory' || a.kind === 'Device';
+  const bIsFolder = b.kind === 'Folder' || b.file_type === 'directory' || b.kind === 'Device';
+  
+  // If one is folder and other is file, folder comes first (regardless of sort order)
+  if (aIsFolder && !bIsFolder) return -1;
+  if (!aIsFolder && bIsFolder) return 1;
+  
+  // If both are same type (both folders or both files), apply normal sorting
   const aValue = a[orderBy] || '';
   const bValue = b[orderBy] || '';
   
@@ -242,8 +279,8 @@ interface FileTableProps {
   isSelected: (id: string | number) => boolean;
   setHoveredRowId: (id: string | number | null) => void;
   handlePriorityChange: (row: any, newValue: number | null) => void;
-  columnVisibility: { [key: string]: boolean };
-  currentView?: 'files' | 'sync' | 'shared' | 'cloud';
+  columnVisibility: Partial<Record<AvailableTableColumns, boolean>>;
+  currentView?: 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive';
 }
 
 const FileTable: React.FC<FileTableProps> = ({
@@ -296,7 +333,7 @@ const FileTable: React.FC<FileTableProps> = ({
           onSelectAllClick={onSelectAllClick}
           onRequestSort={onRequestSort}
           rowCount={fileRows.length}
-          currentView={currentView}
+          currentView={currentView as 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive'}
           columnVisibility={columnVisibility}
         />
         <TableBody>
@@ -323,7 +360,7 @@ const FileTable: React.FC<FileTableProps> = ({
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
-                {columnVisibility.device_name && (
+                {columnVisibility.original_device && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
@@ -333,7 +370,22 @@ const FileTable: React.FC<FileTableProps> = ({
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
                 )}
+                {columnVisibility.file_priority && (
+                  <TableCell>
+                    <Skeleton variant="text" width="100%" />
+                  </TableCell>
+                )}
                 {columnVisibility.date_uploaded && (
+                  <TableCell>
+                    <Skeleton variant="text" width="100%" />
+                  </TableCell>
+                )}
+                {columnVisibility.date_modified && (
+                  <TableCell>
+                    <Skeleton variant="text" width="100%" />
+                  </TableCell>
+                )}
+                {columnVisibility.is_public && (
                   <TableCell>
                     <Skeleton variant="text" width="100%" />
                   </TableCell>
@@ -354,7 +406,7 @@ const FileTable: React.FC<FileTableProps> = ({
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
-                    key={`row-${row.id || `${row.file_path}-${row.device_name}-${index}`}`}
+                    key={`row-${row.id || `${row.file_path}-${row.original_device}-${index}`}`}
                     selected={isItemSelected}
                     onMouseEnter={() => setHoveredRowId(row.id)}
                     onMouseLeave={() => setHoveredRowId(null)}
@@ -424,7 +476,7 @@ const FileTable: React.FC<FileTableProps> = ({
                       </TableCell>
                     )}
 
-                    {columnVisibility.device_name && (
+                    {columnVisibility.original_device && (
                       <TableCell
                         align="left"
                         sx={{
@@ -434,7 +486,7 @@ const FileTable: React.FC<FileTableProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {row.device_name}
+                        {row.original_device}
                       </TableCell>
                     )}
 
@@ -459,6 +511,20 @@ const FileTable: React.FC<FileTableProps> = ({
                       </TableCell>
                     )}
 
+                    {columnVisibility.is_public && (
+                      <TableCell
+                        padding="normal"
+                        align="left"
+                        sx={{
+                          borderBottomColor: '#424242',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {row.is_public ? 'Public' : 'Private'}
+                      </TableCell>
+                    )}
                     {columnVisibility.file_priority && (currentView === 'files' || currentView === 'sync') && (
                       <TableCell
                         align="left"
@@ -472,7 +538,7 @@ const FileTable: React.FC<FileTableProps> = ({
                         }}
                       >
                         <Rating
-                          name={`priority-${row.id || `${row.file_path}-${row.device_name}-${index}`}`}
+                          name={`priority-${row.id || `${row.file_path}-${row.original_device}-${index}`}`}
                           value={Number(row.file_priority) || 0}
                           max={3}
                           onChange={(_event, newValue) => handlePriorityChange(row, newValue)}
@@ -505,7 +571,7 @@ const FileTable: React.FC<FileTableProps> = ({
                         {formatDate(row.date_uploaded)}
                       </TableCell>
                     )}
-                    {columnVisibility.is_public && (
+                    {columnVisibility.date_modified && (
                       <TableCell
                         padding="normal"
                         align="right"
@@ -516,7 +582,7 @@ const FileTable: React.FC<FileTableProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {row.is_public}
+                        {formatDate(row.date_modified)}
                       </TableCell>
                     )}
 

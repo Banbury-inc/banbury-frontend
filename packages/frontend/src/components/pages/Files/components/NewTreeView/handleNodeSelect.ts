@@ -1,4 +1,4 @@
-import { DatabaseData } from "./types";
+import { DatabaseData } from "@banbury/core/src/types";
 
 export const handleNodeSelect = (
   setFilePath: (filePath: string) => void,
@@ -37,6 +37,20 @@ export const handleNodeSelect = (
     // Handle Cloud node specially
     else if (selectedNode.id === 'Cloud') {
       newFilePath = 'Core/Cloud';
+      setFilePathDevice('');
+    }
+    // Handle Google Drive node specially
+    else if (selectedNode.id === 'GoogleDrive') {
+      newFilePath = 'Core/GoogleDrive';
+      setFilePathDevice('');
+    }
+    // Handle Google Drive files and folders
+    else if (selectedNode.source === 'google_drive' || selectedNode.file_path?.includes('Core/GoogleDrive/')) {
+      if (selectedNode.file_path && selectedNode.file_path.includes('Core/GoogleDrive/')) {
+        newFilePath = selectedNode.file_path;
+      } else {
+        newFilePath = `Core/GoogleDrive/${selectedNode.file_name}`;
+      }
       setFilePathDevice('');
     }
     // Don't set path for main Devices, Sync, or Shared nodes

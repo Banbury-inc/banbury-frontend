@@ -4,10 +4,7 @@ import NeuraNet_Logo from '/static/NeuraNet_Icons/web/icon-512.png';
 import Button from '@mui/material/Button';
 import axios from 'axios';
 import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
-import Checkbox from '@mui/material/Checkbox';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
@@ -24,8 +21,11 @@ import Onboarding from './components/Onboarding';
 import http from 'http';
 import os from 'os';
 import { initAuthState } from '@banbury/core/src/auth';
-import { Link as RouterLink } from 'react-router-dom';
 import { startPeriodicDeviceInfoProcess } from '@banbury/core/src/device/startPeriodicDeviceInfoProcess';
+import { setGlobalAxiosAuthToken } from '@banbury/core/src/middleware/axiosGlobalHeader';
+import { Textbox } from '../../common/Textbox/Textbox';
+import { Text, TextLink } from '../../common/Text/Text';
+import { Checkbox } from '../../common/Checkbox/Checkbox';
 
 interface Message {
   type: string;
@@ -107,13 +107,77 @@ export default function SignIn() {
       try {
         setLoading(true);
         
-        // Use the new initAuthState function
+        // Check if this is a Google OAuth session
+        const isGoogleOAuth = localStorage.getItem('googleOAuthSession') === 'true';
+        const authUsername = localStorage.getItem('authUsername');
+        const authToken = localStorage.getItem('authToken');
+        
+        if (isGoogleOAuth && authUsername && authToken) {
+          // For Google OAuth, we have a real JWT token, so we can validate it normally
+          try {
+            // Try to validate the token with the backend
+            const response = await axios.get(`${banbury.config.url}/authentication/validate-token/`, {
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+            
+            if (response.data.valid) {
+              // Token is valid, proceed with login
+              setUsername(authUsername);
+              
+              // Set up axios headers for authenticated requests
+              setGlobalAxiosAuthToken(authToken, authUsername);
+              
+              // Create deviceId if missing
+              const currentDeviceId = localStorage.getItem('deviceId');
+              if (!currentDeviceId) {
+                localStorage.setItem('deviceId', `${authUsername}-${os.hostname()}`);
+              }
+              
+              // Check onboarding status - use email if available, otherwise username
+              const email = localStorage.getItem('authUsername'); // For Google OAuth, this is the email
+              const hasCompletedOnboarding = email ? localStorage.getItem(`onboarding_${email}`) : null;
+              if (!hasCompletedOnboarding && email) {
+                localStorage.setItem('pendingAuthEmail', email);
+                setShowOnboarding(true);
+                setLoading(false);
+                return;
+              }
+              
+              setIsAuthenticated(true);
+              setShowMain(true);
+              const deviceName = os.hostname();
+              if (authUsername) {
+                maybeStartDeviceInfoProcess(authUsername, deviceName);
+              }
+              setLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error('Google OAuth token validation failed:', error);
+            // Only clear the session if we're not in the middle of onboarding
+            const pendingAuth = localStorage.getItem('pendingAuthEmail');
+            if (!pendingAuth) {
+              // Clear the invalid Google OAuth session
+              localStorage.removeItem('googleOAuthSession');
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('authUsername');
+              localStorage.removeItem('deviceId');
+            } else {
+              // Just clear the Google OAuth flag but preserve auth data for onboarding
+              localStorage.removeItem('googleOAuthSession');
+              console.warn('Token validation failed but preserving auth data for onboarding completion');
+            }
+          }
+        }
+        
+        // Use the new initAuthState function for regular (non-Google OAuth) sessions
         const authState = await initAuthState();
         
         if (authState.isAuthenticated && authState.username) {
           // Token is valid, proceed with auto-login
           setUsername(authState.username);
-          localStorage.setItem('authToken', authState.username);
           localStorage.setItem('authUsername', authState.username);
           
           // Create deviceId if missing
@@ -163,21 +227,27 @@ export default function SignIn() {
 
       if (email && password) {
         const result = await banbury.auth.login(email, password);
-        if (result.success && result.deviceId) {
+        if (result.success && result.deviceId && result.token) {
+          // Store the actual token, not the email
+          localStorage.setItem('authToken', result.token);
+          localStorage.setItem('deviceId', result.deviceId);
+          localStorage.setItem('authUsername', email);
+          
+          // Ensure the token is set in axios headers before proceeding
+          setGlobalAxiosAuthToken(result.token, email);
+          
+          // Wait a moment to ensure the token is properly set
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           // Check if this is the user's first login
           const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
           
           if (!hasCompletedOnboarding) {
             localStorage.setItem('pendingAuthEmail', email);
-            localStorage.setItem('deviceId', result.deviceId);
-            localStorage.setItem('authUsername', email);
             setUsername(email);
             setShowOnboarding(true);
           } else {
             setUsername(email);
-            localStorage.setItem('authToken', email);
-            localStorage.setItem('deviceId', result.deviceId);
-            localStorage.setItem('authUsername', email);
             setIsAuthenticated(true);
             setShowMain(true);
             maybeStartDeviceInfoProcess(email, result.deviceId);
@@ -197,65 +267,254 @@ export default function SignIn() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    setTokenError(null); // Clear any token errors on new login attempt
+    setTokenError(null);
+    setincorrect_login(false);
+    setserver_offline(false);
+
+    let actualPort: number | null = null;
+
     try {
-      // Create HTTP server before initiating OAuth flow
-      const server = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
-        // Set CORS headers
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      // Create a simple HTTP server to handle the OAuth callback
+      const createCallbackServer = (port: number): Promise<http.Server> => {
+        return new Promise((resolve, reject) => {
+          const server = http.createServer(async (req, res) => {
+            // Set CORS headers
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+            res.setHeader('Content-Type', 'text/html');
 
-        if (req.url?.includes('/authentication/auth/callback')) {
-          const code = new URL(req.url, 'http://localhost:3000').searchParams.get('code');
+            if (req.url?.includes('/authentication/auth/callback')) {
+              const url = new URL(req.url, `http://localhost:${port}`);
+              const code = url.searchParams.get('code');
 
-          if (code) {
-            try {
-              const response = await axios.get(`${banbury.config.url}/authentication/auth/callback?code=${code}`);
-              if (response.data.success) {
-                const email = response.data.user.email;
-                // Get device ID from the response if available
-                const deviceId = response.data.user.deviceId;
+              if (code) {
+                try {
+                  // Call our backend's callback endpoint
+                  const response = await axios.get(`${banbury.config.url}/authentication/auth/callback?code=${code}`);
+                  
+                  if (response.data.success && response.data.token) {
+                    const userData = response.data.user;
+                    const email = userData.email;
+                    const username = userData.username;
+                    const token = response.data.token;
+                    
+                    // Store the proper JWT token and authentication data
+                    localStorage.setItem('authToken', token);
+                    localStorage.setItem('authUsername', username);
+                    localStorage.setItem('deviceId', `${username}-${os.hostname()}`);
+                    
+                    // Set up axios headers for authenticated requests
+                    setGlobalAxiosAuthToken(token, username);
+                    
+                    // Mark this as a Google OAuth session
+                    localStorage.setItem('googleOAuthSession', 'true');
+                    
+                    // Store success flag for polling
+                    localStorage.setItem('googleAuthSuccess', 'true');
+                    localStorage.setItem('googleAuthEmail', email);
+                    localStorage.setItem('googleAuthUsername', username);
+                    localStorage.setItem('googleAuthToken', token);
+
+                    // Send success response
+                    res.writeHead(200);
+                    res.end(`
+                      <html>
+                        <head><title>Authentication Successful</title></head>
+                        <body>
+                          <h1>Authentication Successful!</h1>
+                          <p>Redirecting back to the application...</p>
+                          <script>
+                            setTimeout(() => {
+                              window.close();
+                            }, 2000);
+                          </script>
+                        </body>
+                      </html>
+                    `);
+                  } else {
+                    localStorage.setItem('googleAuthError', response.data.error || 'Authentication failed');
+                    throw new Error(response.data.error || 'Authentication failed');
+                  }
+                } catch (error: any) {
+                  console.error('Callback Error:', error);
+                  localStorage.setItem('googleAuthError', error.message || 'Authentication failed');
+                  
+                  res.writeHead(500);
+                  res.end(`
+                    <html>
+                      <head><title>Authentication Failed</title></head>
+                      <body>
+                        <h1>Authentication Failed</h1>
+                        <p>Please try again.</p>
+                        <script>
+                          setTimeout(() => {
+                            window.close();
+                          }, 3000);
+                        </script>
+                      </body>
+                    </html>
+                  `);
+                }
+              } else {
+                localStorage.setItem('googleAuthError', 'No authorization code received');
+                res.writeHead(400);
+                res.end(`
+                  <html>
+                    <head><title>Authentication Error</title></head>
+                    <body>
+                      <h1>Authentication Error</h1>
+                      <p>No authorization code received.</p>
+                      <script>
+                        setTimeout(() => {
+                          window.close();
+                        }, 3000);
+                      </script>
+                    </body>
+                  </html>
+                `);
+              }
+
+              // Close server after handling request
+              setTimeout(() => {
+                if (server) {
+                  server.close();
+                }
+              }, 3000);
+            }
+          });
+
+          server.on('error', (err: NodeJS.ErrnoException) => {
+            if (err.code === 'EADDRINUSE') {
+              reject(new Error(`Port ${port} is in use`));
+            } else {
+              reject(err);
+            }
+          });
+
+          server.listen(port, () => {
+            actualPort = port;
+            resolve(server);
+          });
+        });
+      };
+
+      // Try to start server on port 3000 (or fallback ports)
+      const ports = [3000, 3001, 3002];
+      let serverStarted = false;
+
+      for (const port of ports) {
+        try {
+          await createCallbackServer(port);
+          serverStarted = true;
+          actualPort = port;
+          break;
+        } catch (err) {
+          console.error(err);
+          continue;
+        }
+      }
+
+      if (!serverStarted || !actualPort) {
+        throw new Error('Failed to start callback server on any available port.');
+      }
+
+      // Get the Google auth URL with the correct redirect URI
+      const redirectUri = `http://localhost:${actualPort}/authentication/auth/callback`;
+      const response = await axios.get(`${banbury.config.url}/authentication/google?redirect_uri=${encodeURIComponent(redirectUri)}`);
+      const authUrl = response.data.authUrl;
+      
+      // Open the auth URL in the default browser
+      await shell.openExternal(authUrl);
+
+      // Poll for authentication result
+      const pollForResult = () => {
+        return new Promise<void>((resolve, reject) => {
+          const checkInterval = setInterval(() => {
+            const authSuccess = localStorage.getItem('googleAuthSuccess');
+            const authError = localStorage.getItem('googleAuthError');
+            
+            if (authSuccess === 'true') {
+              clearInterval(checkInterval);
+              
+              // Get stored auth data
+              const email = localStorage.getItem('googleAuthEmail');
+              const username = localStorage.getItem('googleAuthUsername');
+              const token = localStorage.getItem('googleAuthToken');
+              const deviceId = localStorage.getItem('deviceId');
+              
+              if (email && username && token && deviceId) {
+                // Set up axios headers for authenticated requests
+                setGlobalAxiosAuthToken(token, username);
                 
+                // Update component state with username (not email)
+                setUsername(username);
+                setIsAuthenticated(true);
+
+                // Clear any token errors since this is a valid Google OAuth session
+                setTokenError(null);
+
+                // Check onboarding status using email
                 const hasCompletedOnboarding = localStorage.getItem(`onboarding_${email}`);
                 
                 if (!hasCompletedOnboarding) {
                   localStorage.setItem('pendingAuthEmail', email);
-                  localStorage.setItem('deviceId', deviceId);
-                  localStorage.setItem('authUsername', email);
-                  setUsername(email);
                   setShowOnboarding(true);
                 } else {
-                  setUsername(email);
-                  localStorage.setItem('authToken', email);
-                  localStorage.setItem('deviceId', deviceId);
-                  localStorage.setItem('authUsername', email);
-                  setIsAuthenticated(true);
                   setShowMain(true);
-                  maybeStartDeviceInfoProcess(email, deviceId);
+                  maybeStartDeviceInfoProcess(username, deviceId);
                 }
               }
-            } catch (error) {
-              console.error('Callback Error:', error);
-              setserver_offline(true);
-              res.writeHead(500, { 'Content-Type': 'text/plain' });
-              res.end('Authentication failed');
+
+              // Clean up temporary flags
+              localStorage.removeItem('googleAuthSuccess');
+              localStorage.removeItem('googleAuthEmail');
+              localStorage.removeItem('googleAuthUsername');
+              localStorage.removeItem('googleAuthToken');
+              localStorage.removeItem('googleAuthError');
+              
+              resolve();
+            } else if (authError) {
+              clearInterval(checkInterval);
+              
+              // Clean up
+              localStorage.removeItem('googleAuthSuccess');
+              localStorage.removeItem('googleAuthEmail');
+              localStorage.removeItem('googleAuthUsername');
+              localStorage.removeItem('googleAuthToken');
+              localStorage.removeItem('googleAuthError');
+              
+              reject(new Error(authError));
             }
-          }
+          }, 1000); // Check every second
 
-          // Close the server after handling the callback
-          server.close();
-        }
-      });
+          // Timeout after 5 minutes
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            
+            // Clean up
+            localStorage.removeItem('googleAuthSuccess');
+            localStorage.removeItem('googleAuthEmail');
+            localStorage.removeItem('googleAuthUsername');
+            localStorage.removeItem('googleAuthToken');
+            localStorage.removeItem('googleAuthError');
+            
+            reject(new Error('Authentication timeout'));
+          }, 300000);
+        });
+      };
 
-      // Start listening before opening OAuth URL
-      server.listen(3000, async () => {
-        const response = await axios.get(`${banbury.config.url}/authentication/google`);
-        shell.openExternal(response.data.authUrl);
-      });
+      // Wait for authentication to complete
+      await pollForResult();
 
-    } catch (error) {
-      console.error('OAuth Error:', error);
-      setserver_offline(true);
+    } catch (error: any) {
+      console.error('Google auth error:', error);
+      if (error.message.includes('Failed to start callback server')) {
+        setTokenError('Failed to start authentication server. Please try again.');
+      } else if (error.message === 'Authentication timeout') {
+        setTokenError('Authentication timed out. Please try again.');
+      } else {
+        setserver_offline(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -268,9 +527,22 @@ export default function SignIn() {
     
     if (email) {
       setUsername(email);
-      localStorage.setItem('authToken', email);
-      localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
+      
+      // Get the actual auth token (should already be set from login)
+      const authToken = localStorage.getItem('authToken');
+      
+      if (authToken) {
+        // Ensure the token is set in axios headers
+        setGlobalAxiosAuthToken(authToken, email);
+        localStorage.setItem(`onboarding_${email}`, 'true'); // Store onboarding completion per user
+      } else {
+        console.warn('No auth token found during onboarding completion. User may need to re-authenticate.');
+        // Instead of failing, we'll still complete onboarding but the user may need to log in again
+        // This handles cases where the token was cleared during validation
+      }
+      
       localStorage.setItem('authUsername', email);
+      localStorage.setItem(`onboarding_${email}`, 'true'); // Always mark onboarding as complete
       localStorage.removeItem('pendingAuthEmail'); // Clean up the temporary storage
     }
     
@@ -329,53 +601,35 @@ export default function SignIn() {
             {/* </Avatar> */}
             {/* <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 157.2, height: 137.2 }} /> */}
             <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 50, height: 50 }} />
-            <Typography component="h1" variant="h5">
+            <Text className="text-2xl font-semibold mb-4 text-center">
               Sign in
-            </Typography>
+            </Text>
             <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Username"
+
+            <Text className="block font-medium mb-1">
+             Username
+            </Text>
+              <Textbox
+                className='w-full mb-4'
+                type="email"
                 name="email"
                 autoComplete="email"
-                size='medium'
                 autoFocus
-                InputProps={{
-                  // style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
-
-                }}
-                InputLabelProps={{
-                  required: false, // Remove the asterisk
-                  // style: { fontSize: '1.7rem' }, // Adjusts the label font size
-                }}
               />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
+
+            <Text className="block font-medium mb-1">
+             Password
+            </Text>
+              <Textbox
+                className='w-full mb-2'
                 type="password"
-                size='medium'
-                id="password"
+                name="password"
                 autoComplete="current-password"
-                InputProps={{
-                  // style: { fontSize: '1.3rem' }, // Adjusts text font size inside the input box
-                }}
-                InputLabelProps={{
-                  required: false, // Remove the asterisk
-                  // style: { fontSize: '1.3rem' }, // Adjusts the label font size
-                }}
-
               />
-              <FormControlLabel
-                control={<Checkbox value="remember" color="primary" />}
-                // label="Remember me"
-                label={<Typography style={{ fontSize: '15px' }}>Remember me</Typography>}
-              />
+              <div className="flex items-center mb-2">
+                <Checkbox id="remember" name="remember" className="mr-2" />
+                <Text className="text-sm">Remember me</Text>
+              </div>
 
               <Button
                 type="submit"
@@ -388,9 +642,9 @@ export default function SignIn() {
                 {loading ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
 
-              <Typography variant="body2" align="center" sx={{ my: 1 }}>
+              <Text className="text-sm text-center mb-2 mt-2">
                 - OR -
-              </Typography>
+              </Text>
 
 
               <Button
@@ -398,7 +652,7 @@ export default function SignIn() {
                 variant="outlined"
                 startIcon={<GoogleIcon />}
                 onClick={handleGoogleLogin}
-                sx={{ mt: 3, mb: 2 }}
+                sx={{ mt: 1, mb: 2 }}
                 disabled={loading}
               >
                 Sign in with Google
@@ -406,16 +660,18 @@ export default function SignIn() {
               <Grid container>
                 <Grid item xs>
                   {/* <Link href="/register" variant="body2"> */}
-                  <Link variant="body2" onClick={() => {
+                  <TextLink href="/register" className="text-sm text-center mb-2 mt-2" onClick={() => {
                     // setredirect_to_register(true);
                   }}>
                     Forgot password?
-                  </Link>
+                  </TextLink>
                 </Grid>
                 <Grid item>
-                  <Link component={RouterLink} to="/register" variant="body2">
+                  <TextLink href="/register" className="text-sm text-center mb-2 mt-2" onClick={() => {
+                    // setredirect_to_register(true);
+                  }}>
                     {"Don't have an account? Sign Up"}
-                  </Link>
+                  </TextLink>
                 </Grid>
                 <Grid container justifyContent="center">
                   <Grid item>

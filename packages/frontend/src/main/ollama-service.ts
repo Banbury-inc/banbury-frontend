@@ -509,6 +509,42 @@ export class OllamaService {
     }
   }
 
+  public async deleteModel(modelName: string): Promise<void> {
+    const isResponsive = await this.checkOllamaAPI();
+    if (!isResponsive) {
+      await this.start();
+
+      const isNowResponsive = await this.checkOllamaAPI();
+      if (!isNowResponsive) {
+        this.sendError('Service Error', 'Ollama service failed to start');
+        throw new Error('Ollama service failed to start');
+      }
+    }
+
+    try {
+      const response = await axios.delete('http://localhost:11434/api/delete', {
+        headers: { 'Content-Type': 'application/json' },
+        data: { name: modelName }
+      });
+
+      if (response.status === 200) {
+        // Success
+        return;
+      } else if (response.status === 404) {
+        throw new Error(`Model "${modelName}" not found`);
+      } else {
+        throw new Error(`Failed to delete model: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        throw new Error(`Model "${modelName}" not found`);
+      }
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.sendError('Delete Error', `Failed to delete model ${modelName}: ${errorMsg}`);
+      throw error;
+    }
+  }
+
   public async stop(): Promise<void> {
     // Don't kill the process if it's a system Ollama
     if (this.ollamaProcess && !this.isSystemOllama) {
@@ -535,7 +571,7 @@ export class OllamaService {
     } catch (error) {
       useAlert().showAlert('Failed to load config', [error instanceof Error ? error.message : String(error)]);
     }
-    return { selectedModel: 'llama3.2:latest' }; // Default model
+    return { selectedModel: 'qwen3:latest' }; // Default model
   }
 
   public async getDownloadedModels(): Promise<string[]> {
@@ -560,7 +596,7 @@ export class OllamaService {
     }
 
     // Otherwise, use the first downloaded model or default to llama3.2:latest
-    return downloadedModels[0] || 'llama3.2:latest';
+    return downloadedModels[0] || 'qwen3:latest';
   }
 
   public async setSelectedModel(modelName: string): Promise<void> {

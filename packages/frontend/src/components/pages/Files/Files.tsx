@@ -6,7 +6,6 @@ import Checkbox from '@mui/material/Checkbox';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import TablePagination from '@mui/material/TablePagination';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { shell } from 'electron';
 import fs from 'fs';
@@ -19,29 +18,23 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import { handlers } from '../../../renderer/handlers';
 import banbury from '@banbury/core';
 import FileTreeView from './components/NewTreeView/FileTreeView';
-import NewInputFileUploadButton from './components/UploadFileButton';
 import { fetchDeviceData } from '@banbury/core/src/device/fetchDeviceData';
 import { FileBreadcrumbs } from './components/FileBreadcrumbs';
 import { DatabaseData, Order } from './types/index';
-import ShareFileButton from '../../../components/common/ShareFileButton/ShareFileButton';
-import AddFileToSyncButton from '../../../components/common/AddFileToSyncButton';
 import Dialog from '@mui/material/Dialog';
-import SyncButton from '../../../components/common/SyncButton/SyncButton';
-import DownloadFileButton from '../../../components/common/DownloadFileButton/DownloadFileButton';
-import DeleteFileButton from '../../../components/common/DeleteFileBtton/DeleteFileButton';
 import { styled } from '@mui/material/styles';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import FolderIcon from '@mui/icons-material/Folder';
-import ChangeViewButton, { ViewType as FileViewType } from './components/ChangeViewButton/ChangeViewButton';
-import ToggleColumnsButton from './components/ToggleColumnsButton/ToggleColumnsButton';
+import { useAllFileData } from './hooks/useAllFileData';
+import FilesToolbar from './components/FilesToolbar/FilesToolbar';
 import { formatFileSize } from './utils/formatFileSize';
 import FileTable from './components/Table/Table';
-import NavigateBackButton from './components/NavigateBackButton/NavigateBackButton';
-import NavigateForwardButton from './components/NavigateForwardButton/NavigateForwardButton';
-import _ViewSelector from './components/ViewSelector/ViewSelector';
-import RemoveFileFromSyncButton from '../Sync/components/remove_file_from_sync_button/remove_file_from_sync_button';
-import S3UploadButton from './components/S3UploadButton';
-import { useAllFileData } from './hooks/useAllFileData';
+import { ViewType as FileViewType } from './components/FilesToolbar/ChangeViewButton/ChangeViewButton';
+import FileViewerTabs from '../../common/FileViewer/FileViewerTabs';
+import { isImageFile, isPdfFile, isViewableInApp, isWordFile, isExcelFile, isCsvFile, isCodeFile, isVideoFile } from './utils/fileUtils';
+import GoogleDriveFilesList from './components/GoogleDriveFilesList/GoogleDriveFilesList';
+import FileThumbnail from './components/FileThumbnail/FileThumbnail';
+import { googleDriveService, GoogleDriveFileRow } from './services/googleDriveService';
+import { TaskInfo } from '@banbury/core/src/types/Types';
+import { AvailableTableColumns } from '@banbury/core/src/types/Types';
 
 const ResizeHandle = styled('div')(({ theme }) => ({
   position: 'absolute',
@@ -90,11 +83,7 @@ export default function Files() {
     tasks,
     setTasks,
     username,
-    files,
-    sync_files,
     devices,
-    setFirstname,
-    setLastname,
     setPhoneNumber: _setPhoneNumber,
     setEmail: _setEmail,
     setDevices,
@@ -111,19 +100,33 @@ export default function Files() {
   const [filePath, setFilePath] = useState<string>('');
   const [_backHistory, setBackHistory] = useState<string[]>([]);
   const [_forwardHistory, setForwardHistory] = useState<string[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>({
+  const [columnVisibility, setColumnVisibility] = useState<Partial<Record<AvailableTableColumns, boolean>>>({
     file_name: true,
     file_size: true,
     kind: true,
-    device_name: true,
+    original_device: true,
     available: true,
+    is_public: false,
     file_priority: true,
     date_uploaded: true,
-    is_public: true,
-    original_device: true,
-    owner: true,
-    date_modified: true
+    date_modified: false,
   });
+
+  // File viewer tabs state
+  const [openTabs, setOpenTabs] = useState<Array<{
+    id: string;
+    fileName: string;
+    filePath: string;
+    fileType: string;
+  }>>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [showFileViewer, setShowFileViewer] = useState(false);
+
+  // Add Google Drive state
+  const [googleDriveFiles, setGoogleDriveFiles] = useState<GoogleDriveFileRow[]>([]);
+  const [isGoogleDriveLoading, setIsGoogleDriveLoading] = useState(false);
+  const [googleDriveError, setGoogleDriveError] = useState<string | null>(null);
+  const [googleDriveEnabled, setGoogleDriveEnabled] = useState(false);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -156,13 +159,15 @@ export default function Files() {
     dragStartWidth.current = fileTreeWidth;
   };
 
-  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' => {
+  const getCurrentContext = (): 'files' | 'sync' | 'shared' | 'cloud' | 'google_drive' => {
     if (filePath.includes('Core/Sync') || filePath === 'Sync') {
       return 'sync';
     } else if (filePath.includes('Core/Shared') || filePath === 'Shared') {
       return 'shared';
     } else if (filePath.includes('Core/Cloud') || filePath === 'Cloud') {
       return 'cloud';
+    } else if (filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive') {
+      return 'google_drive';
     }
     return 'files';
   };
@@ -172,14 +177,7 @@ export default function Files() {
   const { isLoading, fileRows } = useAllFileData(
     username,
     filePath,
-    filePathDevice,
     currentContext,
-    setFirstname,
-    setLastname,
-    files,
-    sync_files,
-    devices || [],
-    setDevices,
     updates
   );
 
@@ -234,20 +232,67 @@ export default function Files() {
     const file_name = file.file_name;
     const file_path = file.file_path;
     
+    // Special handling for Google Drive files
+    if (file.source === 'google_drive' || file.google_drive_id) {
+      try {
+        const task_description = 'Downloading ' + file_name;
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
+        setTaskbox_expanded(true);
+        
+        // Import the download function
+        const { downloadAndSaveGoogleDriveFile } = await import('@banbury/core/src/files/googleDrive');
+        
+        // Use the Google Drive file ID and save directly to BCloud directory
+        // Extract original Google Drive ID if it's a prefixed ID
+        let fileId = file.google_drive_id || file.id;
+        if (typeof fileId === 'string' && fileId.startsWith('gdrive-')) {
+          fileId = fileId.replace('gdrive-', '');
+        }
+        const savedFilePath = await downloadAndSaveGoogleDriveFile(fileId.toString(), file_name);
+        
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
+        
+        // Check if it's a viewable file type and open in the in-app viewer
+        if (isViewableInApp(file_name)) {
+          openFileInTab(file_name, savedFilePath, file.kind || getFileType(file_name));
+        } else {
+          // For non-viewable files, use the system default application
+          shell.openPath(savedFilePath);
+        }
+        
+        showAlert('Download completed successfully', [`The Google Drive file "${file_name}" has been downloaded to the BCloud directory`], 'success');
+        return;
+      } catch (error) {
+        console.error('Error downloading Google Drive file:', error);
+        showAlert('Download failed', [`Failed to download "${file_name}". Please try again.`], 'error');
+        return;
+      }
+    }
+    
     // Special handling for S3 files
     if (file.is_s3) {
       try {
         const task_description = 'Downloading ' + file_name;
-        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
         setTaskbox_expanded(true);
+        
+        // Extract original file ID for S3 operations
+        let originalFileId = file._id;
+        if (typeof file.id === 'string' && file.id.includes('-')) {
+          // For composite IDs like "file-originalId-deviceName", extract the originalId part
+          const parts = file.id.split('-');
+          if (parts.length >= 3) {
+            originalFileId = parts[1]; // Get the original ID part
+          }
+        }
         
         // Use the direct save function instead of browser download
         await banbury.files.saveS3FileToBCloud(
-          file.id.toString(),
+          originalFileId?.toString() || file.id.toString(),
           file_name
         );
         
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         
         showAlert('Download completed successfully', [`The file "${file_name}" has been downloaded successfully`], 'success');
         return;
@@ -274,41 +319,53 @@ export default function Files() {
       }
       
       if (fileFound) {
-        shell.openPath(file_path);
+        // Check if it's a viewable file type and open in the in-app viewer
+        if (isViewableInApp(file_name)) {
+          openFileInTab(file_name, file_path, file.kind || getFileType(file_name));
+        } else {
+          // For non-viewable files, use the system default application
+          shell.openPath(file_path);
+        }
       }
       
       if (!fileFound && !folderFound) {
         console.error(`File '${file_name}' not found in directory, searching other devices`);
 
         const task_description = 'Opening ' + selectedFileNames.join(', ');
-        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
         setTaskbox_expanded(true);
         const response = await handlers.files.downloadFile(
           selectedFileNames,
           selectedDeviceNames,
           selectedFileInfo,
-          taskInfo,
+          taskInfo as unknown as TaskInfo,
           websocket as unknown as WebSocket,
         );
         
         if (response === 'No file selected') {
-          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks || [], setTasks);
           showAlert('No file selected', ['Please select a file to download'], 'warning');
         }
         if (response === 'file_not_found') {
-          await banbury.sessions.failTask(taskInfo, 'File not found', tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, 'File not found', tasks || [], setTasks);
           showAlert('File not found', [`The file "${file_name}" could not be found on the selected device.`], 'error');
         }
         if (response === 'File not available') {
-          await banbury.sessions.failTask(taskInfo, response, tasks, setTasks);
+          await banbury.sessions.failTask(taskInfo, response, tasks || [], setTasks);
           showAlert('File not available', ['The selected file is not currently available for download.'], 'error');
         }
         if (response === 'success') {
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
           const directory_name: string = 'BCloud';
           const directory_path: string = path.join(os.homedir(), directory_name);
           const file_save_path: string = path.join(directory_path, file_name ?? '');
-          shell.openPath(file_save_path);
+          
+          // Check if the downloaded file is viewable and open in the in-app viewer
+          if (isViewableInApp(file_name)) {
+            openFileInTab(file_name, file_save_path, file.kind || getFileType(file_name));
+          } else {
+            shell.openPath(file_save_path);
+          }
 
           // Create a file watcher
           const watcher = fs.watch(file_save_path, (eventType: string) => {
@@ -347,17 +404,33 @@ export default function Files() {
     }
     setSelected(newSelected);
 
+    // Determine which data source to use based on current context
+    let dataSource: any[] = [];
+    
+    if (currentContext === 'google_drive') {
+      // For Google Drive, convert googleDriveFiles to match the expected format
+      dataSource = googleDriveFiles.map(file => ({
+        ...file,
+        id: `gdrive-${file.id}`, // Use prefixed ID to match selection
+        google_drive_id: file.id // Keep original ID
+      }));
+    } else {
+      // For other contexts, use fileRows
+      dataSource = fileRows;
+    }
+
     const newSelectedFileNames = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.file_name)
+      .map((id) => dataSource.find((file) => file.id === id)?.file_name)
       .filter((name) => name !== undefined) as string[];
     const newSelectedDeviceNames = newSelected
-      .map((id) => fileRows.find((file) => file.id === id)?.device_name)
+      .map((id) => dataSource.find((file) => file.id === id)?.device_name)
       .filter((name) => name !== undefined) as string[];
     setSelectedFileNames(newSelectedFileNames);
     setSelectedDeviceNames(newSelectedDeviceNames);
+    
     // Get file info for selected files and update selectedFileInfo state
     const newSelectedFileInfo = newSelected
-      .map((id) => fileRows.find((file) => file.id === id))
+      .map((id) => dataSource.find((file) => file.id === id))
       .filter((file) => file !== undefined);
     setSelectedFileInfo(newSelectedFileInfo);
   };
@@ -377,7 +450,7 @@ export default function Files() {
     if (newValue === null) return;
 
     const task_description = 'Updating File Priority';
-    const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+    const taskInfo = await banbury.sessions.addTask(task_description, tasks || [], setTasks);
     setTaskbox_expanded(true);
 
     const newPriority = newValue;
@@ -385,7 +458,7 @@ export default function Files() {
     const result = await banbury.files.updateFilePriority(row._id, newPriority);
 
     if (result === 'success') {
-      await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+      await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
       setUpdates(updates + 1);
     }
   };
@@ -401,7 +474,7 @@ export default function Files() {
     setIsShareModalOpen(false);
   };
 
-  const handleColumnVisibilityChange = (columnId: string, isVisible: boolean) => {
+  const handleColumnVisibilityChange = (columnId: AvailableTableColumns, isVisible: boolean) => {
     setColumnVisibility(prev => ({
       ...prev,
       [columnId]: isVisible
@@ -409,25 +482,75 @@ export default function Files() {
   };
 
   const getColumnOptions = () => {
-    return [
-      { id: 'file_name', label: 'Name', visible: columnVisibility.file_name },
-      { id: 'file_size', label: 'Size', visible: columnVisibility.file_size },
-      { id: 'kind', label: 'Kind', visible: columnVisibility.kind },
-      { id: 'device_name', label: 'Location', visible: columnVisibility.device_name },
-      { id: 'file_priority', label: 'Priority', visible: columnVisibility.file_priority },
-      { id: 'available', label: 'Status', visible: columnVisibility.available },
-      { id: 'date_uploaded', label: 'Date Uploaded', visible: columnVisibility.date_uploaded },
-      //{ id: 'is_public', label: 'Visibility', visible: columnVisibility.is_public },
-      // { id: 'original_device', label: 'Original Device', visible: columnVisibility.original_device },
-      // { id: 'owner', label: 'Owner', visible: columnVisibility.owner },
-      // { id: 'date_modified', label: 'Last Modified', visible: columnVisibility.date_modified }
+    // Define which columns to show and their display labels (based on AvailableTableColumns)
+    const columnLabels: Record<AvailableTableColumns, string> = {
+      file_name: 'File Name',
+      file_size: 'File Size',
+      kind: 'Kind',
+      original_device: 'Location',
+      available: 'Status',
+      file_priority: 'Priority',
+      date_uploaded: 'Date Uploaded',
+      date_modified: 'Date Modified',
+      is_public: 'Visibility',
+    };
+
+    // Define which columns should be available for toggling (AvailableTableColumns)
+    const availableColumns: AvailableTableColumns[] = [
+      'file_name',
+      'file_size',
+      'kind',
+      'original_device',
+      'available',
+      'file_priority',
+      'date_uploaded',
+      'date_modified',
+      'is_public'
     ];
+
+    return availableColumns.map((columnId) => ({
+      id: columnId,
+      label: columnLabels[columnId],
+      isVisible: columnVisibility[columnId] ?? true // Default to visible if not set
+    }));
   };
   
   const handleFinish = () => {
     setSelected([]);
     setSelectedFileNames([]);
     setUpdates(updates + 1);
+  };
+
+  // Tab management functions
+  const openFileInTab = (fileName: string, filePath: string, fileType: string) => {
+    const tabId = `${filePath}_${Date.now()}`;
+    const newTab = {
+      id: tabId,
+      fileName,
+      filePath,
+      fileType
+    };
+    
+    setOpenTabs(prev => [...prev, newTab]);
+    setActiveTab(tabId);
+    setShowFileViewer(true);
+  };
+
+  const closeTab = (tabId: string) => {
+    setOpenTabs(prev => {
+      const newTabs = prev.filter(tab => tab.id !== tabId);
+      if (newTabs.length === 0) {
+        setShowFileViewer(false);
+        setActiveTab(null);
+      } else if (activeTab === tabId) {
+        setActiveTab(newTabs[newTabs.length - 1].id);
+      }
+      return newTabs;
+    });
+  };
+
+  const switchTab = (tabId: string) => {
+    setActiveTab(tabId);
   };
 
   // Add effect to fetch cloud files specifically when Cloud node is selected
@@ -445,6 +568,77 @@ export default function Files() {
     fetchCloudFiles();
   }, [filePath, username]);
 
+  // Add Google Drive file fetching effect
+  useEffect(() => {
+    const fetchGoogleDriveFiles = async () => {
+      if (!username) return;
+
+      // Check if Google Drive is enabled
+      try {
+        const isEnabled = await googleDriveService.isGoogleDriveEnabled();
+        setGoogleDriveEnabled(isEnabled);
+        
+        if (!isEnabled) {
+          setGoogleDriveFiles([]);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking Google Drive status:', error);
+        setGoogleDriveEnabled(false);
+        setGoogleDriveFiles([]);
+        return;
+      }
+
+      // If we're specifically viewing a Google Drive path, fetch those files
+      if (filePath.includes('Core/GoogleDrive') || filePath === 'GoogleDrive') {
+        setIsGoogleDriveLoading(true);
+        setGoogleDriveError(null);
+
+        try {
+          const folderId = googleDriveService.extractFolderId(filePath);
+          const result = await googleDriveService.getFiles(folderId || undefined, filePath, username);
+          setGoogleDriveFiles(result.files);
+        } catch (error: any) {
+          console.error('Error fetching Google Drive files:', error);
+          setGoogleDriveError(error.message || 'Failed to load Google Drive files');
+          setGoogleDriveFiles([]);
+        } finally {
+          setIsGoogleDriveLoading(false);
+        }
+      } else if (googleDriveFiles.length === 0 && !isGoogleDriveLoading) {
+        // Fetch root Google Drive files for tree display when not currently viewing Google Drive
+        // This ensures the tree shows the expandable arrow right away
+        setIsGoogleDriveLoading(true);
+        setGoogleDriveError(null);
+
+        try {
+          const result = await googleDriveService.getFiles(undefined, 'Core/GoogleDrive', username);
+          setGoogleDriveFiles(result.files);
+        } catch (error: any) {
+          console.error('Error fetching root Google Drive files:', error);
+          setGoogleDriveError(error.message || 'Failed to load Google Drive files');
+          setGoogleDriveFiles([]);
+        } finally {
+          setIsGoogleDriveLoading(false);
+        }
+      }
+    };
+
+    fetchGoogleDriveFiles();
+  }, [filePath]);
+
+  // Helper function to get file type
+  const getFileType = (fileName: string): string => {
+    if (isImageFile(fileName)) return 'Image';
+    if (isPdfFile(fileName)) return 'PDF';
+    if (isWordFile(fileName)) return 'Word Document';
+    if (isExcelFile(fileName)) return 'Excel Spreadsheet';
+    if (isCsvFile(fileName)) return 'CSV File';
+    if (isCodeFile(fileName)) return 'Code File';
+    if (isVideoFile(fileName)) return 'Video File';
+    return 'Document';
+  };
+
   return (
     <Box sx={{
       width: '100%',
@@ -453,119 +647,35 @@ export default function Files() {
       flexDirection: 'column'
     }}>
       <Card variant="outlined" sx={{ borderTop: 0, borderLeft: 0, borderBottom: 0 }}>
-        <CardContent sx={{ paddingBottom: '4px !important', paddingTop: '8px !important' }}>
-          <Stack spacing={2} direction="row" sx={{ flexWrap: 'nowrap' }}>
-            <Grid container alignItems="center">
-              <Grid item>
-                <NavigateBackButton
-                  backHistory={_backHistory}
-                  setBackHistory={setBackHistory}
-                  filePath={filePath}
-                  setFilePath={setFilePath}
-                  setForwardHistory={setForwardHistory}
-                />
-              </Grid>
-              <Grid item>
-                <NavigateForwardButton
-                  backHistory={_backHistory}
-                  setBackHistory={setBackHistory}
-                  forwardHistory={_forwardHistory}
-                  setForwardHistory={setForwardHistory}
-                  filePath={filePath}
-                  setFilePath={setFilePath}
-                />
-              </Grid>
-
-              <Grid item paddingRight={1} paddingLeft={1}>
-                <Tooltip title="Upload">
-                  <NewInputFileUploadButton />
-                </Tooltip>
-              </Grid>
-              <Grid item paddingRight={1}>
-                <DownloadFileButton
-                  selectedFileNames={selectedFileNames}
-                  selectedFileInfo={selectedFileInfo}
-                  selectedDeviceNames={selectedDeviceNames}
-                  setSelectedFiles={setSelectedFileNames}
-                  setSelected={setSelected}
-                  setTaskbox_expanded={setTaskbox_expanded}
-                  tasks={tasks || []}
-                  setTasks={setTasks}
-                  websocket={websocket as WebSocket}
-                />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <S3UploadButton 
-                  filePath={filePath}
-                  onUploadComplete={() => {
-                    // Force refresh by updating the updates counter
-                    setUpdates(Date.now());
-                    // If we're in Cloud view, directly fetch cloud files
-                    if (filePath === 'Core/Cloud' && username) {
-                      banbury.files.listS3Files()
-                        .catch((error) => {
-                          console.error('Error refreshing cloud files after upload:', error);
-                        });
-                    }
-                  }}
-                />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <DeleteFileButton
-                  selectedFileNames={selectedFileNames}
-                  filePath={filePath}
-                  setSelectedFileNames={setSelectedFileNames}
-                  updates={updates}
-                  setUpdates={setUpdates}
-                  setSelected={setSelected}
-                  setTaskbox_expanded={setTaskbox_expanded}
-                  tasks={tasks || []}
-                  setTasks={setTasks}
-                />
-              </Grid>
-              
-              {!isShared && (
-                <Grid item paddingRight={1}>
-                  <Tooltip title="Add to Sync">
-                    <AddFileToSyncButton selectedFileNames={selectedFileNames} />
-                  </Tooltip>
-                </Grid>
-              )}
-              
-              {isCloudSync && (
-                <Grid item paddingRight={1}>
-                  <RemoveFileFromSyncButton
-                    selectedFileNames={selectedFileNames}
-                    onFinish={handleFinish}
-                  />
-                </Grid>
-              )}
-              
-              <Grid item paddingRight={1}>
-                <SyncButton />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <ShareFileButton
-                  selectedFileNames={selectedFileNames}
-                  selectedFileInfo={selectedFileInfo}
-                  onShare={() => handleShareModalOpen()}
-                />
-              </Grid>
-              <Grid item paddingRight={1}>
-                <ToggleColumnsButton
-                  columnOptions={getColumnOptions()}
-                  onColumnVisibilityChange={handleColumnVisibilityChange}
-                />
-              </Grid>
-              <Grid item>
-                <ChangeViewButton
-                  currentView={viewType}
-                  onViewChange={setViewType}
-                />
-              </Grid>
-            </Grid>
-          </Stack>
-        </CardContent>
+        <FilesToolbar
+          _backHistory={_backHistory}
+          setBackHistory={setBackHistory}
+          _forwardHistory={_forwardHistory}
+          setForwardHistory={setForwardHistory}
+          filePath={filePath}
+          setFilePath={setFilePath}
+          setTaskbox_expanded={setTaskbox_expanded}
+          selectedFileNames={selectedFileNames}
+          selectedFileInfo={selectedFileInfo}
+          selectedDeviceNames={selectedDeviceNames}
+          setSelectedFileNames={setSelectedFileNames}
+          setSelected={setSelected}
+          tasks={tasks}
+          setTasks={setTasks}
+          websocket={websocket as WebSocket}
+          updates={updates}
+          setUpdates={setUpdates}
+          isShared={isShared}
+          isCloudSync={isCloudSync}
+          handleFinish={handleFinish}
+          handleShareModalOpen={handleShareModalOpen}
+          getColumnOptions={getColumnOptions}
+          columnVisibility={columnVisibility}
+          handleColumnVisibilityChange={handleColumnVisibilityChange}
+          viewType={viewType}
+          setViewType={setViewType}
+          username={username}
+        />
       </Card>
       
       <Stack
@@ -618,6 +728,8 @@ export default function Files() {
                   setFilePathDevice={setFilePathDevice}
                   setBackHistory={setBackHistory}
                   setForwardHistory={setForwardHistory}
+                  googleDriveFiles={googleDriveFiles}
+                  googleDriveEnabled={googleDriveEnabled}
                 />
               </Box>
             </CardContent>
@@ -633,10 +745,11 @@ export default function Files() {
           sx={{
             flexGrow: 1,
             height: '100%',
-            width: '100%',
+            width: showFileViewer ? '60%' : '100%',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            transition: 'width 0.3s ease'
           }}
         >
           <CardContent
@@ -672,7 +785,34 @@ export default function Files() {
                 flexDirection: 'column',
                 transition: 'all 0.2s ease-in-out' // Smooth transition for view changes
               }}>
-                {fileRows.length === 0 ? (
+                {currentContext === 'google_drive' ? (
+                  <GoogleDriveFilesList
+                    filePath={filePath}
+                    filePathDevice={filePathDevice}
+                    viewType={viewType}
+                    order={order}
+                    orderBy={orderBy}
+                    selected={selected}
+                    page={page}
+                    rowsPerPage={rowsPerPage}
+                    hoveredRowId={hoveredRowId}
+                    devices={devices || []}
+                    onRequestSort={handleRequestSort}
+                    onSelectAllClick={handleSelectAllClick}
+                    handleClick={handleClick}
+                    handleFileNameClick={handleFileNameClick}
+                    isSelected={isSelected}
+                    setHoveredRowId={setHoveredRowId}
+                    handlePriorityChange={handlePriorityChange}
+                    columnVisibility={columnVisibility}
+                    setFilePath={setFilePath}
+                    updates={updates}
+                    googleDriveFiles={googleDriveFiles}
+                    isGoogleDriveLoading={isGoogleDriveLoading}
+                    googleDriveError={googleDriveError}
+                    googleDriveEnabled={googleDriveEnabled}
+                  />
+                ) : fileRows.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 5 }}>
                     <FolderOpenIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h5" color="textSecondary">
@@ -747,19 +887,19 @@ export default function Files() {
                                       justifyContent: 'center',
                                       alignItems: 'center',
                                       p: 1,
-                                      bgcolor: 'background.default',
-                                      border: '1px solid',
-                                      borderColor: 'divider',
-                                      borderRadius: '8px',
                                       m: 1,
-                                      minHeight: '60px'
+                                      minHeight: '80px'
                                     }}
                                   >
-                                    {row.kind === 'Folder' ? (
-                                      <FolderIcon sx={{ fontSize: 30, color: 'primary.main' }} />
-                                    ) : (
-                                      <InsertDriveFileIcon sx={{ fontSize: 30, color: 'text.secondary' }} />
-                                    )}
+                                    <FileThumbnail
+                                      fileName={row.file_name}
+                                      fileKind={row.kind as 'Folder' | 'File'}
+                                      thumbnailLink={row.thumbnail_link}
+                                      filePath={row.file_path}
+                                      size={viewType === 'grid' ? 'medium' : 'large'}
+                                      isGoogleDrive={row.source === 'google_drive'}
+                                      fileId={row.google_drive_id || row.id?.toString()}
+                                    />
                                   </Box>
                                   <CardContent sx={{ flexGrow: 1, pt: 0.5, px: 1.5, pb: 1 }}>
                                     <Typography variant="body2" noWrap>
@@ -816,17 +956,51 @@ export default function Files() {
                 )}
               </Box>
             </div>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25, 50, 100]}
-              component="div"
-              count={fileRows.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
+            {currentContext !== 'google_drive' && (
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25, 50, 100]}
+                component="div"
+                count={fileRows.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            )}
           </CardContent>
         </Card>
+
+        {/* File Viewer Pane */}
+        {showFileViewer && (
+          <Card
+            variant="outlined"
+            sx={{
+              width: '40%',
+              height: '100%',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              borderLeft: 0
+            }}
+          >
+            <CardContent sx={{
+              height: '100%',
+              width: '100%',
+              overflow: 'hidden',
+              padding: 0,
+              '&:last-child': { pb: 0 },
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <FileViewerTabs
+                openTabs={openTabs}
+                activeTab={activeTab}
+                onCloseTab={closeTab}
+                onSwitchTab={switchTab}
+              />
+            </CardContent>
+          </Card>
+        )}
       </Stack>
       <Dialog
         open={isShareModalOpen}

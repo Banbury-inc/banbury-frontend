@@ -1,6 +1,7 @@
 import banbury from '@banbury/core';
 import * as DateUtils from '../../../../../core/src/utils/dateUtils';
 import axios from 'axios'
+import { SmallDeviceInfo } from '@banbury/core/src/types';
 
 export async function updateDevice(username: any) {
   return new Promise((resolve, _reject) => {
@@ -13,26 +14,8 @@ export async function updateDevice(username: any) {
         const files = await banbury.device.directory_info();
         const date_added = DateUtils.get_current_date_and_time();
 
-        interface SmallDeviceInfo {
-          user: string;
-          device_number: number;
-          device_name: string;
-          files: FileInfo[];
-          date_added: string;
-        }
-
-        interface FileInfo {
-          File_Type: string;
-          File_Name: string;
-          Kind: string;
-          Date_Uploaded: string;
-          File_Size: number;
-          File_Priority: number;
-          File_Path: string;
-          Original_Device: string;
-        }
-
         const device_info_json: SmallDeviceInfo = {
+          _id: '',
           user,
           device_number,
           device_name,

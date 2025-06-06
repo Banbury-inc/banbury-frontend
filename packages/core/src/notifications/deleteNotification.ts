@@ -1,5 +1,17 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
+import { NotificationsTable } from '../types';
+
+// Type for delete notification request payload
+export interface DeleteNotificationRequest {
+    notification_id: string;
+}
+
+// Type for delete notification response
+export interface DeleteNotificationResponse {
+    result: 'success' | 'fail';
+    notification?: NotificationsTable;
+}
 
 export async function deleteNotification(
     notification_id: string,
@@ -7,9 +19,10 @@ export async function deleteNotification(
 
     const url = `${CONFIG.url}/notifications/delete_notification/`;
 
-    const response = await axios.post<{ result: string }>(url, {
+    const response = await axios.post<DeleteNotificationResponse>(url, {
         notification_id: notification_id,
-    });
+    } as DeleteNotificationRequest);
+    
     const result = response.data.result;
 
     if (result === 'success') {
@@ -19,7 +32,7 @@ export async function deleteNotification(
         return 'failed';
     }
     else {
-        return 'task_add failed';
+        return 'delete_notification failed';
     }
 }
 

@@ -1,9 +1,10 @@
 import axios from 'axios';
 import os from 'os';
 import { CONFIG } from '../config';
+import { FileInfo } from '../types';
 
 export async function addFiles(
-  filesInfo: any) {
+  filesInfo: FileInfo[]) {
 
   const device_name = os.hostname();
 

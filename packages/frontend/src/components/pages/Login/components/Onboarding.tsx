@@ -12,7 +12,6 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../../renderer/context/AuthContext';
-import { handlers } from '../../../../renderer/handlers';
 import path from 'path';
 import os from 'os';
 import { banbury } from '@banbury/core';
@@ -94,18 +93,18 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
       try {
         // Make sure we're using the correct endpoint
-        const response = await handlers.devices.addDevice(username);
+        const response = await banbury.device.addDevice(username);
         const result = response.result;
 
         if (result === 'success') {
           setDeviceAdded(true);
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
           handleNext();
         } else if (result === 'error' && response.message === 'Device already exists.') {
           // If device already exists, we can consider that a success
           setDeviceAdded(true);
           setDeviceExistsAlert(true);
-          await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+          await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         } else {
           throw new Error('Failed to add device: ' + result);
         }
@@ -133,7 +132,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         await banbury.sessions.failTask(
           taskInfo,
           errorMessage,
-          tasks,
+          tasks || [],
           setTasks
         );
       }
@@ -163,19 +162,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
 
       await banbury.device.addScannedFolder(defaultDirectory);
-      await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+      await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
       
       // Start a new task for scanning
       const scanTaskDescription = 'Scanning files in the default sync directory';
       const scanTaskInfo = await banbury.sessions.addTask(scanTaskDescription, tasks, setTasks);
       
       // Call scanFolder with progress callback
-      await banbury.device.scanFolder(defaultDirectory, (progress, speed) => {
+      banbury.device.scanFolder(defaultDirectory, async (progress, speed) => {
         if (scanTaskInfo) {
           // Update task progress
           scanTaskInfo.task_progress = progress;
-          scanTaskInfo.task_message = `Scanning: ${speed}`;
-          banbury.sessions.updateTask(scanTaskInfo);
+          scanTaskInfo.task_name = `Scanning: ${speed}`;
+          await banbury.sessions.updateTask(scanTaskInfo);
         }
       });
       

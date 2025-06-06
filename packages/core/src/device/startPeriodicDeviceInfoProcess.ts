@@ -45,5 +45,5 @@ export function startPeriodicDeviceInfoProcess(
   runPipeline();
 
   // Repeat every 1 hour
-  setInterval(runPipeline, 60 * 60 * 1000);
+  setInterval(runPipeline, 1 * 60 * 60 * 1000);
 }

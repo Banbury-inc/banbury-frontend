@@ -15,6 +15,8 @@ export type Config = {
   semi_local: boolean;
   url: string;
   url_ws: string;
+  url_mcp: string;
+  token: string;
 }
 
 export const config: Config = {
@@ -27,7 +29,7 @@ export const config: Config = {
   run_device_info_loop: false,
   run_device_predictions_loop: false,
   prod: false,
-  dev: true,
+  dev: true, 
   semi_local: false,
   get url() {
     //return this.prod ? 'https://banbury-cloud-backend-prod-389236221119.us-east1.run.app/' : 'http://localhost:8080/';
@@ -56,6 +58,28 @@ export const config: Config = {
       return 'ws://192.168.50.72:8080/ws/consumer/';
     } else {
       return 'ws://0.0.0.0:8080/ws/consumer/';
+    }
+  },
+  get url_mcp() {
+    if (this.prod) {
+      return 'http://54.224.116.254:8080/api';
+    } else if (this.dev) {
+      return 'http://www.mcp.prod.banbury.io';
+    } else if (this.semi_local) {
+      return 'http://192.168.50.72:3001/api';
+    } else {
+      return 'http://localhost:3001';
+    }
+  },
+  get token() {
+    if (this.prod) {
+      return process.env.BANBURY_PROD_TOKEN || '';
+    } else if (this.dev) {
+      return process.env.BANBURY_DEV_TOKEN || '';
+    } else if (this.semi_local) {
+      return process.env.BANBURY_SEMI_LOCAL_TOKEN || '';
+    } else {
+      return process.env.BANBURY_DEFAULT_TOKEN || '';
     }
   }
 }

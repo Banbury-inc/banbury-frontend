@@ -41,7 +41,7 @@ export default function AddScannedFolderButton({ fetchDevices }: NewScannedFolde
       const addResult = await addScannedFolder(absoluteFolderPath);
 
       if (addResult === 'success') {
-        await banbury.sessions.completeTask(taskInfo, tasks, setTasks);
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
         // Trigger a refresh of the devices to reflect the new folder
         await fetchDevices(); // Use the passed fetchDevices function
       }

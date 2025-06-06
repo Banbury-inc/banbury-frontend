@@ -5,6 +5,7 @@ export * from './removeFiles';
 export * from './searchFile';
 export * from './updateFilePriority';
 export * from './getDownloadQueue';
+export * from './getSyncFiles';
 export * from './downloadFileSyncFiles';
 export * from './runPipeline';
 export * from './addDeviceIdtoFileSyncFiles';
@@ -14,5 +15,7 @@ export * from './makeFilePrivate';
 export * from './uploadToS3';
 export * from './listS3Files';
 export * from './downloadS3File';
+export * from './deleteS3File';
+export * from './googleDrive';
 
 export const cancel_download_request = cancelDownloadRequestInternal;

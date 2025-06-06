@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
 import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
+import { SessionsTable } from '../types';
 
 /**
  *
@@ -10,17 +11,23 @@ import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
  * @param setTasks
  */
 export async function completeTask(
-  taskInfo: any,
-  tasks: any,
-  setTasks: any
+  taskInfo: SessionsTable,
+  tasks: SessionsTable[],
+  setTasks: (tasks: SessionsTable[]) => void
 
 ) {
   const { token } = loadGlobalAxiosAuthToken();
 
+  // Validate taskInfo exists and has required fields
+  if (!taskInfo || !taskInfo._id) {
+    console.error('Error: taskInfo is undefined or missing _id');
+    return 'invalid_task_info';
+  }
+
   try {
     const url = `${CONFIG.url}/tasks/update_task/`;
     const response = await axios.post<{ result: string; task_id: string; }>(url, {
-      task_id: taskInfo.task_id,
+      task_id: taskInfo._id,
       task_name: taskInfo.task_name,
       task_progress: 100,
       task_status: 'complete',

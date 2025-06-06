@@ -1,16 +1,11 @@
 import axios from 'axios';
 import { CONFIG } from '../config';
 import { loadGlobalAxiosAuthToken } from '../middleware/axiosGlobalHeader';
+import { NotificationsTable } from '../types';
 
 export async function addNotification(
     friend_username: string,
-    notification: {
-        type: string;
-        title: string;
-        description: string;
-        timestamp: Date;
-        read: boolean;
-    },
+    notification: Omit<NotificationsTable, '_id'>,
 ) {
     const { token } = loadGlobalAxiosAuthToken();
     const url = `${CONFIG.url}/notifications/add_notification/${friend_username}/`;

@@ -12,7 +12,7 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, InputAdornment, Badge, Avatar, Tabs, Tab } from '@mui/material';
-import { handlers } from '../../../renderer/handlers';
+import { banbury } from '@banbury/core';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -27,7 +27,7 @@ interface SearchResult {
   id: number;
   first_name: string;
   last_name: string;
-  status: string;
+  online: string;
   username: string;
 }
 
@@ -84,7 +84,7 @@ export default function Friends() {
   useEffect(() => {
     if (selectedFriend) {
       setIsLoadingFriendInfo(true);
-      handlers.users.getFriendUserInfo(selectedFriend?.username || '')
+      banbury.users.getFriendUserInfo(selectedFriend?.username || '')
         .then(response => {
           if (response && response) {
             setFriendInfo(response);
@@ -101,7 +101,7 @@ export default function Friends() {
 
 
   useEffect(() => {
-    handlers.users.getFriends(username || '')
+    banbury.users.getFriends()
       .then(response => {
         if (response && response.data) {
           setFriends(response.data.friends);
@@ -115,7 +115,7 @@ export default function Friends() {
 
 
   useEffect(() => {
-    handlers.users.getFriendRequests(username || '')
+    banbury.users.getFriendRequests()
       .then(response => {
         if (response && response.data) {
           setFriendRequests(response.data.friend_requests);
@@ -133,7 +133,7 @@ export default function Friends() {
     setSearchQuery(query);
     if (query.trim()) {
       try {
-        const response = await handlers.users.typeahead(query);
+        const response = await banbury.users.typeahead(query);
         if (response?.data) {
           setSearchResults(response.data.users || []);
         } else {
@@ -153,7 +153,7 @@ export default function Friends() {
     setIsLoadingFriends(true);
     setFollowDialog('friends');
     try {
-      const response = await handlers.users.getUserFriends(selectedFriend.username);
+      const response = await banbury.users.getUserFriends(selectedFriend.username);
       if (response?.data?.friends?.friends) {
         setFollowList(response.data.friends.friends);
       } else {
@@ -177,10 +177,13 @@ export default function Friends() {
   // Add WebSocket effect
   useEffect(() => {
     const connectWebSocket = async () => {
-      const socket = await handlers.devices.connect(
+      const tasks = [
+        { task_name: 'connection', task_device: os.hostname(), task_status: 'pending' }
+      ];
+      const socket = await banbury.device.connect(
         username || '',
         os.hostname(),
-        { task_name: 'connection', task_device: os.hostname(), task_status: 'pending' },
+        tasks.map(task => task.task_name),
         () => { }
       );
 
@@ -189,7 +192,7 @@ export default function Friends() {
           const data = JSON.parse(event.data);
           if (data.request_type === "friend_request") {
             // Reload friend requests
-            handlers.users.getFriendRequests(username || '')
+            banbury.users.getFriendRequests()
               .then(response => {
                 if (response && response.data) {
                   setFriendRequests(response.data.friend_requests);
@@ -213,13 +216,13 @@ export default function Friends() {
   // Update the friend request accept handler
   const handleAcceptFriendRequest = async (requestUsername: string) => {
     try {
-      await handlers.users.acceptFriendRequest(username || '', requestUsername);
+      await banbury.users.acceptFriendRequest(requestUsername);
       setUpdates(prevUpdates => [...prevUpdates, 'friend_request_accepted']);
 
       // Refresh both friends and requests lists
       const [friendsResponse, requestsResponse] = await Promise.all([
-        handlers.users.getFriends(username || ''),
-        handlers.users.getFriendRequests(username || '')
+        banbury.users.getFriends(),
+        banbury.users.getFriendRequests()
       ]);
 
       if (friendsResponse?.data) {
@@ -239,8 +242,8 @@ export default function Friends() {
   // Update the friend request reject handler
   const handleRejectFriendRequest = async (requestUsername: string) => {
     try {
-      await handlers.users.rejectFriendRequest(username || '', requestUsername);
-      const response = await handlers.users.getFriendRequests(username || '');
+      await banbury.users.rejectFriendRequest(username || '', requestUsername);
+      const response = await banbury.users.getFriendRequests();
       if (response?.data) {
         setFriendRequests(response.data.friend_requests);
       }
@@ -254,7 +257,7 @@ export default function Friends() {
   // Update the send friend request handler
   const handleSendFriendRequest = async (requestUsername: string) => {
     try {
-      await handlers.users.sendFriendRequest(requestUsername);
+      await banbury.users.sendFriendRequest(requestUsername);
       setUpdates(prevUpdates => [...prevUpdates, 'friend_request_sent']);
       showAlert('Success', ['Friend request sent'], 'success');
     } catch (error) {
@@ -266,7 +269,7 @@ export default function Friends() {
   // Update the remove friend handler
   const handleRemoveFriend = async (friendUsername: string) => {
     try {
-      await handlers.users.removeFriend(username || '', friendUsername);
+      await banbury.users.removeFriend(username || '', friendUsername);
       setUpdates(prevUpdates => [...prevUpdates, 'friend_removed']);
       setSelectedFriend(null);
       showAlert('Success', ['Friend removed successfully'], 'success');

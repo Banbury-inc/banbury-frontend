@@ -37,9 +37,10 @@ const currentPlatform = platform() as 'win32' | 'darwin' | 'linux';
 const config: PlaywrightTestConfig = {
   testDir: './tests/e2e',
   timeout: 180000, // 3 minutes
-  retries: 2,
+  retries: 0,
   workers: 1,
   headless: true,
+  maxFailures: 1, // Stop after one failure
   globalSetup: path.join(__dirname, 'tests/e2e/global-setup.ts'),
   globalTeardown: path.join(__dirname, 'tests/e2e/global-teardown.ts'),
   reporter: [['html', { outputFolder: './tests/playwright-report' }], ['list']],

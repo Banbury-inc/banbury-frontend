@@ -1,6 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import _fs from 'fs'
-import { waitForWebsocketConnection, ensureLoggedInAndOnboarded, wrapWithRecovery } from './utils/test-user'
+import { ensureLoggedInAndOnboarded, wrapWithRecovery } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
 import * as path from 'path'
 
@@ -10,8 +10,10 @@ let page: Page;
 test.describe('Files tests', () => {
 
   test.beforeAll(async () => {
-    // Get the shared context
+    // Get the shared context and ensure it's initialized
     const sharedContext = getSharedContext();
+    await sharedContext.initialize();
+    
     page = sharedContext.window!;
     if (!page) {
       throw new Error('Page is not initialized');
@@ -443,6 +445,27 @@ test.describe('Files tests', () => {
   });
 
 
+  test('add to button is clickable and opens popover', async () => {
+    const addToButton = page.locator('[data-testid="add-to-button"]');
+    await expect(addToButton).toBeVisible({ timeout: 10000 });
+    await expect(addToButton).toBeEnabled({ timeout: 10000 });
+    
+    // Click the button
+    await addToButton.click();
+
+    // Verify the popover is visible
+    const addToPopover = page.locator('[data-testid="add-to-popover"]');
+    await expect(addToPopover).toBeVisible({ timeout: 10000 });
+
+    // Click outside the popover to close it
+    await page.locator('body').click({ position: { x: 0, y: 0 }, force: true });
+
+    // Verify the popover is hidden
+    await expect(addToPopover).not.toBeVisible({ timeout: 10000 });
+  });
+
+
+
   test('change view button can change to large grid view', async () => {
     // Wait a moment for any previous popovers to fully close
     await page.waitForTimeout(500);
@@ -461,7 +484,7 @@ test.describe('Files tests', () => {
     const largeGridViewOption = viewPopover.locator('[data-testid="view-option-large_grid"]');
     await expect(largeGridViewOption).toBeVisible({ timeout: 10000 });
     await largeGridViewOption.click();
-    await page.waitForTimeout(500); // Wait for click to register and view to change
+    await page.waitForTimeout(1000); // Wait for click to register and view to change
     
     // Verify the view has changed
     const fileList = page.locator('[data-testid="file-list"]');
@@ -474,6 +497,15 @@ test.describe('Files tests', () => {
     // Verify the view attribute
     await expect(fileList).toHaveAttribute('data-view', 'large_grid', { timeout: 10000 });
     await page.waitForTimeout(500); // Wait for any animations to complete
+
+    // change back to list view
+    await viewButton.click();
+    await page.waitForTimeout(100); // Wait for click to register
+    const listViewOption = viewPopover.locator('[data-testid="view-option-list"]');
+    await expect(listViewOption).toBeVisible({ timeout: 10000 });
+    await listViewOption.click();
+    await page.waitForTimeout(500); // Wait for click to register and view to change
+
   });
 
 
@@ -495,22 +527,6 @@ test.describe('Files tests', () => {
 
 
   test('download button downloads a file', async () => {
-    // Use the recovery wrapper to handle login/onboarding issues automatically
-    await wrapWithRecovery(page, async () => {
-      // Only run this test if we have files available
-      const hasFiles = await page.evaluate(() => {
-        const fileItems = document.querySelectorAll('[data-testid="file-item"]');
-        return fileItems.length > 0;
-      });
-
-      if (!hasFiles) {
-        console.info('Skipping download test: No files available');
-        test.skip();
-        return;
-      }
-      
-      // Wait for websocket connection
-      await waitForWebsocketConnection(page);
       
       // 1. Select a file by clicking its checkbox
       const firstFileRow = page.locator('[data-testid="file-item"]').first();
@@ -538,13 +554,121 @@ test.describe('Files tests', () => {
       // 9. Close the popover
       await downloadProgressButton.click();
       await expect(popover).not.toBeVisible({ timeout: 10000 });
+    
+  });
+
+  test('add to button can add a file to sync', async () => {
+
+      
+      // 1. Select a file by clicking its checkbox
+      const firstFileRow = page.locator('[data-testid="file-item"]').first();
+      await firstFileRow.click();
+      
+      // 2. Wait for add to button to be enabled
+      const addToButton = page.locator('[data-testid="add-to-button"]');
+      await expect(addToButton).toBeVisible({ timeout: 10000 });
+      await expect(addToButton).toBeEnabled({ timeout: 10000 });
+      
+      // 3. Click the add to button
+      await addToButton.click();
+      
+      // 6. Wait for add to popover to appear
+      const addToPopover = page.locator('[data-testid="add-to-popover"]');
+      await expect(addToPopover).toBeVisible({ timeout: 10000 });
+
+
+      // 7. Click the add to sync button
+      const addToSyncButton = addToPopover.locator('[data-testid="add-to-sync-button"]');
+      await expect(addToSyncButton).toBeVisible({ timeout: 10000 });
+      await expect(addToSyncButton).toBeEnabled({ timeout: 10000 });
+      await addToSyncButton.click();
+
+      // 8. Wait for either success or error alert to appear
+      const successAlert = page.locator('[data-testid="alert-success"]');
+      const errorAlert = page.locator('[data-testid="alert-error"]');
+      
+      // Wait for either success or error alert with extended timeout
+      await Promise.race([
+        expect(successAlert).toBeVisible({ timeout: 60000 }),
+        expect(errorAlert).toBeVisible({ timeout: 60000 })
+      ]);
+
+      // Check which alert appeared and handle accordingly
+      const isSuccessVisible = await successAlert.isVisible();
+      const isErrorVisible = await errorAlert.isVisible();
+      
+      if (isSuccessVisible) {
+        await expect(successAlert).toContainText('File added to sync', { timeout: 10000 });
+        await expect(successAlert).not.toBeVisible({ timeout: 10000 });
+      } else if (isErrorVisible) {
+        // Log the error message for debugging
+        const errorText = await errorAlert.textContent();
+        console.error('Sync operation failed:', errorText);
+        throw new Error(`Test failed due to sync error: ${errorText}`);
+      } else {
+        throw new Error('Neither success nor error alert appeared within timeout period');
+      }
       
       // 10. Deselect the file
       await firstFileRow.click();
-    });
+
+  });
+    
+  test('add to button can add a file to cloud', async () => {
+      
+      // 1. Select a file by clicking its checkbox
+      const firstFileRow = page.locator('[data-testid="file-item"]').first();
+      await firstFileRow.click();
+      
+      // 2. Wait for add to button to be enabled
+      const addToButton = page.locator('[data-testid="add-to-button"]');
+      await expect(addToButton).toBeVisible({ timeout: 10000 });
+      await expect(addToButton).toBeEnabled({ timeout: 10000 });
+      
+      // 3. Click the add to button
+      await addToButton.click();
+      
+      // 4. Wait for add to popover to appear
+      const addToPopover = page.locator('[data-testid="add-to-popover"]');
+      await expect(addToPopover).toBeVisible({ timeout: 10000 });
+
+      // 5. Click the add to cloud button
+      const addToCloudButton = addToPopover.locator('[data-testid="add-to-cloud-button"]');
+      await expect(addToCloudButton).toBeVisible({ timeout: 10000 });
+      await expect(addToCloudButton).toBeEnabled({ timeout: 10000 });
+      await addToCloudButton.click();
+
+      // 6. Wait for cloud upload to complete - this may take longer than sync operations
+      // Check for either success or error alert to handle both cases
+      const successAlert = page.locator('[data-testid="alert-success"]');
+      const errorAlert = page.locator('[data-testid="alert-error"]');
+      
+      // Wait for either success or error alert to appear with extended timeout for cloud operations
+      await Promise.race([
+        expect(successAlert).toBeVisible({ timeout: 60000 }),
+        expect(errorAlert).toBeVisible({ timeout: 60000 })
+      ]);
+
+      // Check which alert appeared and verify the appropriate message
+      const isSuccessVisible = await successAlert.isVisible();
+      const isErrorVisible = await errorAlert.isVisible();
+      
+      if (isSuccessVisible) {
+        await expect(successAlert).toContainText('All files successfully uploaded to Cloud.', { timeout: 10000 });
+        await expect(successAlert).not.toBeVisible({ timeout: 10000 });
+      } else if (isErrorVisible) {
+        // Log the error message for debugging
+        const errorText = await errorAlert.textContent();
+        console.error('Cloud upload failed:', errorText);
+        throw new Error(`Test failed due to cloud upload error: ${errorText}`);
+      } else {
+        throw new Error('Neither success nor error alert appeared within timeout period');
+      }
+      
+      // 7. Deselect the file
+      await firstFileRow.click();
+
   });
 
+
 });
-
-
-

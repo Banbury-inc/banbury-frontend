@@ -3,15 +3,16 @@ import { CONFIG } from '../config';
 import { downloadFile } from '../files/downloadFile';
 import path from 'path';
 import fs from 'fs';
+import { FileInfo, SessionsTable } from '../types';
 
 
 export async function downloadFileSyncFiles(
   download_queue: {
-    files: any[];
+    files: FileInfo[];
     files_available_for_download: number;
   },
-  tasks: any[] | null,
-  setTasks: any,
+  tasks: SessionsTable[] | null,
+  setTasks: (tasks: SessionsTable[]) => void,
   websocket: WebSocket,
 ) {
 
@@ -59,7 +60,7 @@ export async function downloadFileSyncFiles(
     const file = download_queue.files[i];
 
     const file_name = file.file_name;
-    const source_device = file.device_name;
+    const source_device = file.device_id;
 
     // Check if file already exists in destination path
     const destination_path = path.join(CONFIG.download_destination, file_name);
@@ -71,7 +72,7 @@ export async function downloadFileSyncFiles(
 
       // Attempt to download file from source device
       try {
-        const result = await downloadFile( [file_name], [source_device], file, download_task, websocket as unknown as WebSocket);
+        const result = await downloadFile( [file_name], [source_device], [file], download_task, websocket as unknown as WebSocket);
 
         if (result === 'success') {
           downloaded_files.push(file_name);
@@ -87,7 +88,7 @@ export async function downloadFileSyncFiles(
           await banbury.sessions.failTask(
             download_task,
             error, // Pass the specific error message
-            tasks,
+            tasks || [],
             setTasks
           );
 
@@ -95,25 +96,18 @@ export async function downloadFileSyncFiles(
 
           switch (error) {
             case 'file_not_found':
-              // console.log(`File ${file_name} not found on ${source_device}`);
               break;
             case 'device_offline':
-              // console.log(`Device ${source_device} is offline`);
               break;
             case 'permission_denied':
-              // console.log(`Permission denied to download ${file_name}`);
               break;
             case 'transfer_failed':
-              // console.log(`Transfer failed for ${file_name}`);
               break;
             case 'connection_error':
-              // console.log(`Connection error with ${source_device}`);
               break;
             case 'timeout':
-              // console.log(`Download timeout for ${file_name}`);
               break;
             default:
-            // console.log(`Unknown error occurred while downloading ${file_name}`);
           }
         }
       }

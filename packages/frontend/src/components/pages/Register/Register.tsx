@@ -2,7 +2,8 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import { useState } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
+import { Textbox } from '../../common/Textbox/Textbox';
+import { Text, TextLink } from '../../common/Text/Text';
 import Link from '@mui/material/Link';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
@@ -11,10 +12,9 @@ import Container from '@mui/material/Container';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from "../../../renderer/themes/theme";
 import SignIn from '../Login/Login';
-import { handlers } from '../../../renderer/handlers';
 import NeuraNet_Logo from '../../../../static/NeuraNet_Icons/web/icon-512.png';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Link as MuiLink } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import banbury from '@banbury/core';
 
 function Copyright(props: any) {
   return (
@@ -46,14 +46,18 @@ export default function SignUp() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     try {
-      const result = await handlers.users.registerUser(
-        data.get('username') as string,
-        data.get('password') as string,
-        data.get('firstName') as string,
-        data.get('lastName') as string,
-        data.get('phone_number') as string,
-        data.get('email') as string,
-        data.get('picture') as string
+      const result = await banbury.users.registerUser(
+        {
+          id: 0, // Server will assign actual ID
+          username: data.get('username') as string,
+          password: data.get('password') as string,
+          first_name: data.get('firstName') as string,
+          last_name: data.get('lastName') as string,
+          email: data.get('email') as string,
+          phone_number: '',
+          devices: [],
+          online: 'offline',
+        }
       );
       if (result === 'success') {
         setregistration_success(true);
@@ -84,79 +88,46 @@ export default function SignUp() {
           >
 
             <img src={NeuraNet_Logo} alt="Logo" style={{ marginTop: 100, marginBottom: 20, width: 50, height: 50 }} />
-            <Typography component="h1" variant="h5">
+            <Text className="text-2xl font-semibold mb-4 text-center">
               Sign up
-            </Typography>
+            </Text>
             <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
-              <Grid container spacing={2}>
+              <Grid container spacing={2 as number}>
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    autoComplete="given-name"
+                  <Text className="block font-medium mb-1">First Name</Text>
+                  <Textbox
+                    className="w-full mb-2"
+                    type="text"
                     name="firstName"
-                    required
-                    fullWidth
-                    id="firstName"
-                    label="First Name"
-                    size='small'
+                    autoComplete="given-name"
                     autoFocus
-                    InputProps={{
-                      style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
-                    }}
-                    InputLabelProps={{
-                      style: { fontSize: '1.3rem' }, // Adjusts the label font size
-                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="lastName"
-                    label="Last Name"
+                  <Text className="block font-medium mb-1">Last Name</Text>
+                  <Textbox
+                    className="w-full mb-2"
+                    type="text"
                     name="lastName"
-                    size='small'
                     autoComplete="family-name"
-                    InputProps={{
-                      style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
-                    }}
-                    InputLabelProps={{
-                      style: { fontSize: '1.3rem' }, // Adjusts the label font size
-                    }}
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="username"
-                    label="Username"
+                  <Text className="block font-medium mb-1">Username</Text>
+                  <Textbox
+                    className="w-full mb-2"
+                    type="text"
                     name="username"
-                    size='small'
                     autoComplete="username"
-                    InputProps={{
-                      style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
-                    }}
-                    InputLabelProps={{
-                      style: { fontSize: '1.3rem' }, // Adjusts the label font size
-                    }}
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField
-                    required
-                    fullWidth
-                    name="password"
-                    label="Password"
+                  <Text className="block font-medium mb-1">Password</Text>
+                  <Textbox
+                    className="w-full mb-2"
                     type="password"
-                    size='small'
-                    id="password"
+                    name="password"
                     autoComplete="new-password"
-                    InputProps={{
-                      style: { fontSize: '1.7rem' }, // Adjusts text font size inside the input box
-                    }}
-                    InputLabelProps={{
-                      style: { fontSize: '1.3rem' }, // Adjusts the label font size
-                    }}
                   />
                 </Grid>
               </Grid>
@@ -170,9 +141,9 @@ export default function SignUp() {
               </Button>
               <Grid container justifyContent="flex-end">
                 <Grid item>
-                  <MuiLink component={RouterLink} to="/login" variant="body2">
+                  <TextLink href="/login" className="text-sm text-center mb-2 mt-2">
                     Already have an account? Sign in
-                  </MuiLink>
+                  </TextLink>
                 </Grid>
               </Grid>
               <Grid container justifyContent="center">

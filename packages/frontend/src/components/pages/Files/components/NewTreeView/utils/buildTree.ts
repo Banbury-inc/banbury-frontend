@@ -1,4 +1,5 @@
-import { DatabaseData } from '../types';
+import { DatabaseData } from '@banbury/core/src/types';
+import { GoogleDriveFileRow } from '@banbury/core/src/types';
 
 export function buildTree(files: DatabaseData[], allDevices: any[] = []): DatabaseData[] {
 
@@ -142,12 +143,12 @@ export function buildTree(files: DatabaseData[], allDevices: any[] = []): Databa
     const filePathParts = file.file_path.split('/').filter(Boolean);
     let currentNode = deviceNode;
 
-    filePathParts.forEach((part, partIndex) => {
+    filePathParts.forEach((part: string, partIndex: number) => {
       // Determine if this part of the path is the last one (i.e., the actual file or the last directory in the path)
       const isLastPart = partIndex === filePathParts.length - 1;
 
       // Check if the current part already exists as a child node of the current directory
-      const existingNode = currentNode!.children?.find(child => child.file_name === part);
+      const existingNode = currentNode!.children?.find((child: DatabaseData) => child.file_name === part);
 
       if (existingNode) {
         // If the part exists, set it as the current node to continue building the path
@@ -168,7 +169,7 @@ export function buildTree(files: DatabaseData[], allDevices: any[] = []): Databa
           // Only use the original file's path for the new node if it's the last part (actual file or directory)
           file_path: isLastPart ? file.file_path : `${currentNode!.file_path}/${part}`,
           kind: isLastPart ? file.kind : 'Folder', // If it's the last part, use the file's kind, otherwise 'Folder'
-          file_parent: currentNode!.id, // Set the current node's ID as the parent
+          file_parent: String(currentNode!.id), // Convert id to string for file_parent
           deviceID: file.deviceID || `undefined-${index}`, // Use the device ID, or a placeholder if undefined
           device_name: file.device_name || `Unnamed Device ${index}`, // Use the device name, or a placeholder if undefined
           children: isLastPart && file.file_type !== 'directory' ? undefined : [], // Initialize children unless it's the last part and not a directory
@@ -229,8 +230,79 @@ export function buildTree(files: DatabaseData[], allDevices: any[] = []): Databa
     });
   }
 
+  // Sort children in each node to put folders first
+  const sortChildrenFoldersFirst = (node: DatabaseData) => {
+    if (node.children && node.children.length > 0) {
+      // Sort children: folders first, then files, both alphabetically
+      node.children.sort((a: DatabaseData, b: DatabaseData) => {
+        const aIsFolder = a.kind === 'Folder' || a.file_type === 'directory' || a.kind === 'Device';
+        const bIsFolder = b.kind === 'Folder' || b.file_type === 'directory' || b.kind === 'Device';
+        
+        // If one is folder and other is file, folder comes first
+        if (aIsFolder && !bIsFolder) return -1;
+        if (!aIsFolder && bIsFolder) return 1;
+        
+        // If both are same type, sort alphabetically
+        return a.file_name.localeCompare(b.file_name);
+      });
+      
+      // Recursively sort children of children
+      node.children.forEach((child: DatabaseData) => sortChildrenFoldersFirst(child));
+    }
+  };
+
+  // Apply sorting to the entire tree
+  sortChildrenFoldersFirst(coreNode);
+
   // Return the tree with "Core" as the root
   return [coreNode];
+}
+
+// Function to build Google Drive tree structure
+export function buildGoogleDriveTree(googleDriveFiles: GoogleDriveFileRow[]): DatabaseData[] {
+  const googleDriveChildren: DatabaseData[] = [];
+  
+  // Convert Google Drive files to DatabaseData format
+  googleDriveFiles.forEach((file) => {
+    const treeNode: DatabaseData = {
+      _id: file.id,
+      id: `gdrive-${file.id}`,
+      file_type: file.kind === 'Folder' ? 'directory' : 'file',
+      file_name: file.file_name,
+      file_size: file.file_size.toString(),
+      file_path: file.file_path,
+      shared_with: [],
+      is_public: file.is_public,
+      kind: file.kind,
+      file_parent: 'GoogleDrive',
+      date_uploaded: file.date_uploaded || '',
+      helpers: 0,
+      available: file.available,
+      deviceID: 'google-drive',
+      device_name: 'Google Drive',
+      children: file.kind === 'Folder' ? [] : undefined,
+      original_device: 'Google Drive',
+      google_drive_id: file.id,
+      source: 'google_drive'
+    };
+    
+    googleDriveChildren.push(treeNode);
+  });
+  
+  // Sort Google Drive files: folders first, then files, both alphabetically
+  googleDriveChildren.sort((a: DatabaseData, b: DatabaseData) => {
+    const aIsFolder = a.kind === 'Folder' || a.file_type === 'directory';
+    const bIsFolder = b.kind === 'Folder' || b.file_type === 'directory';
+    
+    // If one is folder and other is file, folder comes first
+    if (aIsFolder && !bIsFolder) return -1;
+    if (!aIsFolder && bIsFolder) return 1;
+    
+    // If both are same type, sort alphabetically
+    return a.file_name.localeCompare(b.file_name);
+  });
+  
+  return googleDriveChildren;
 }
 
 

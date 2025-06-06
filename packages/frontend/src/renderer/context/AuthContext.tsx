@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import axios from 'axios';
+import { loadGlobalAxiosAuthToken } from '@banbury/core/src/middleware/axiosGlobalHeader';
 
 interface ImageData {
   content_type: string;
@@ -82,6 +83,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
   const [isTokenRefreshFailed, setIsTokenRefreshFailed] = useState(false);
 
+  // Initialize authentication tokens on mount
+  useEffect(() => {
+    const { token, username: storedUsername } = loadGlobalAxiosAuthToken();
+    if (token && storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
+
   const setUsername = (username: string | null) => {
     setUser(username);
   };
@@ -132,6 +141,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('authUsername');
     localStorage.removeItem('deviceId');
+    
+    // Clear Google OAuth session flag
+    localStorage.removeItem('googleOAuthSession');
 
     // Clear all states
     setUsername(null);
@@ -145,8 +157,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       websocket.close();
     }
 
-    // Clear auth header
+    // Clear auth headers
     axios.defaults.headers.common['Authorization'] = '';
+    axios.defaults.headers.common['X-API-Key'] = '';
 
     // Force reload the application
     window.location.reload();
