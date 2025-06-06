@@ -52,6 +52,7 @@ export async function addDevice(username: string) {
         withCredentials: true
       });
 
+
       return response.data;
     } catch (error) {
       console.error('Error in addDevice request:', error);

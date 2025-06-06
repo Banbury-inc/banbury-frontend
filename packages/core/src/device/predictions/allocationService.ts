@@ -1,0 +1,263 @@
+import { DevicePredictionsTable } from "../../types";
+import { getDevicePredictionConfigurationPreferences } from "../getDevicePredictionConfigurationPreferences";
+
+// Types and interfaces
+export interface Device {
+  device_name: string;
+  device_id?: string;
+  score: number;
+  files?: AllocatedFile[];
+  used_capacity?: number;
+}
+
+export interface DeviceWithPreferences extends Device {
+  device_id: string;
+  device_name: string;
+  score: number;
+  files?: AllocatedFile[];
+  used_capacity?: number;
+  sync_storage_capacity_gb: number;
+  use_device_in_file_sync?: boolean;
+}
+
+export interface AllocatedFile {
+  file_id: string;
+  file_name: string;
+}
+
+export interface FileInfo {
+  _id: string;
+  file_name?: string;
+  file_size?: number;
+  file_priority?: number;
+}
+
+export interface FileSyncInfo {
+  files: FileInfo[];
+}
+
+export interface DevicePredictions {
+  device_predictions: Device[];
+}
+
+export interface FileDeviceMapping {
+  file_id: string;
+  proposed_device_ids: string[];
+}
+
+export class AllocationService {
+  constructor() {
+    // Initializes the AllocationService
+  }
+
+  /**
+   * Converts bytes to gigabytes.
+   * @param bytes - The size in bytes.
+   * @returns The size in gigabytes.
+   */
+  bytesToGigabytes(bytes: number): number {
+    return bytes / (1024 ** 3); // Convert bytes to gigabytes
+  }
+
+  /**
+   * Allocates files to devices based on device scores and file priorities.
+   * 
+   * Sorts devices by score (descending) and files by priority (high to low)
+   * and then size (descending). Assigns files to the highest-scoring available
+   * device that has sufficient capacity.
+   * 
+   * @param fetchedDevicePredictions - A dictionary containing device prediction data,
+   *                                   including scores and storage capacities.
+   * @param fileSyncInfo - A list of dictionaries, where the first element
+   *                       contains a list of files to be synced, including
+   *                       their size and priority.
+   * @returns A list of device dictionaries, updated with allocated files
+   *          and used capacity.
+   */
+  async devices(fetchedDevicePredictions: DevicePredictions, fileSyncInfo: FileSyncInfo[]): Promise<DeviceWithPreferences[]> {
+    // Extract the list of devices from the nested dictionary
+    let devicesList: DeviceWithPreferences[] = fetchedDevicePredictions.device_predictions as unknown as DeviceWithPreferences[];
+
+    // get the device_predictions_preferences from the backend
+    const devicePredictionPreferences = await getDevicePredictionConfigurationPreferences();
+
+
+    // Handle both old and new structure
+    const preferencesArray = Array.isArray(devicePredictionPreferences) 
+      ? devicePredictionPreferences 
+      : (devicePredictionPreferences as any)?.device_predictions || [];
+
+    // add the device predictions to the devicesList
+    devicesList = devicesList.map(device => {
+      const matchingPreference = preferencesArray.find(
+        (prediction: DevicePredictionsTable) => prediction.device_id === device.device_id
+      );
+      
+      if (matchingPreference) {
+        const mergedDevice = { ...device, ...matchingPreference };
+        return mergedDevice;
+      }
+      
+      return device;
+    });
+    
+    // Filter out devices with None storage capacity and set default values
+    devicesList = devicesList
+      .filter(device => device.sync_storage_capacity_gb != null)
+      .map(device => ({
+        ...device,
+        sync_storage_capacity_gb: device.sync_storage_capacity_gb || 0,
+        score: device.score || 0
+      }));
+
+    // Filter out devices where use_device_in_file_sync is false
+    devicesList = devicesList.filter(device => device.use_device_in_file_sync === true);
+    
+    // Sort devices by score (descending)
+    devicesList.sort((a, b) => b.score - a.score);
+
+    // Sort files by priority and size (descending)
+    const priorityMap: { [key: number]: number } = { 3: 3, 2: 2, 1: 1 };
+    const sortedFiles = fileSyncInfo[0].files.sort((a, b) => {
+      const aPriority = priorityMap[a.file_priority || 1] || 1;
+      const bPriority = priorityMap[b.file_priority || 1] || 1;
+      const aSize = a.file_size || 0;
+      const bSize = b.file_size || 0;
+      
+      // First sort by priority (descending), then by size (descending)
+      if (aPriority !== bPriority) {
+        return bPriority - aPriority;
+      }
+      return bSize - aSize;
+    });
+
+    // Allocate files to devices
+    for (const device of devicesList) {
+      device.files = [];
+      device.used_capacity = 0; // Initialize used capacity in gigabytes
+    }
+
+    for (const file of sortedFiles) {
+      const fileSizeGb = this.bytesToGigabytes(file.file_size || 0); // Convert file size to gigabytes
+      
+      for (const device of devicesList) {
+        if ((device.used_capacity || 0) + fileSizeGb <= (device.sync_storage_capacity_gb || 100)) {
+          // Store both file name and ID
+          device.files!.push({
+            file_id: String(file._id),
+            file_name: file.file_name || '',
+          });
+          device.used_capacity = (device.used_capacity || 0) + fileSizeGb;
+          // Continue to the next device even if the file has been added - this allows file replication
+        }
+      }
+    }
+
+    return devicesList;
+  }
+
+  /**
+   * Allocates files to devices with a uniform capacity cap.
+   * 
+   * Similar to the `devices` method but applies a specified capacity cap
+   * to all devices before allocation.
+   * 
+   * @param fetchedDevicePredictions - Device prediction data.
+   * @param fileSyncInfo - List of files to be synced.
+   * @param deviceCapacityCap - The storage capacity cap in GB for each device.
+   * @returns A list of device dictionaries, updated with allocated files,
+   *          used capacity, and the applied capacity cap.
+   */
+  devicesWithCapacityCap(
+    fetchedDevicePredictions: DevicePredictions, 
+    fileSyncInfo: FileInfo[], 
+    deviceCapacityCap: number
+  ): DeviceWithPreferences[] {
+    // Extract the list of devices from the nested dictionary
+    const devicesList = fetchedDevicePredictions.device_predictions as unknown as DeviceWithPreferences[] || [];
+    
+    // Sort devices by score (descending)
+    devicesList.sort((a, b) => b.score - a.score);
+
+    // Sort files by priority and size (descending)
+    const priorityMap: { [key: number]: number } = { 3: 3, 2: 2, 1: 1 };
+    fileSyncInfo.sort((a, b) => {
+      const aPriority = priorityMap[a.file_priority || 1];
+      const bPriority = priorityMap[b.file_priority || 1];
+      const aSize = a.file_size || 0;
+      const bSize = b.file_size || 0;
+      
+      // First sort by priority (descending), then by size (descending)
+      if (aPriority !== bPriority) {
+        return bPriority - aPriority;
+      }
+      return bSize - aSize;
+    });
+
+    // Allocate files to devices
+    for (const device of devicesList) {
+      device.sync_storage_capacity_gb = deviceCapacityCap;
+      device.files = [];
+      device.used_capacity = 0; // Initialize used capacity in gigabytes
+    }
+
+    for (const file of fileSyncInfo) {
+      const fileSizeGb = this.bytesToGigabytes(file.file_size || 0); // Convert file size to gigabytes
+      for (const device of devicesList) {
+        if ((device.used_capacity || 0) + fileSizeGb <= (device.sync_storage_capacity_gb || deviceCapacityCap)) {
+          // Store both file name and ID
+          device.files!.push({
+            file_id: String(file._id),
+            file_name: file.file_name || '',
+          });
+          device.used_capacity = (device.used_capacity || 0) + fileSizeGb;
+          break;
+        }
+      }
+    }
+
+    return devicesList;
+  }
+
+  /**
+   * Generates a mapping of files to the devices they are proposed to be stored on.
+   * 
+   * @param allocatedDevices - A list of device dictionaries, output from
+   *                           the allocation methods (`devices` or
+   *                           `devicesWithCapacityCap`).
+   * @returns A list of dictionaries, each containing a 'file_id' and a
+   *          list of 'proposed_device_ids' for that file.
+   */
+  generateFileDeviceMappings(allocatedDevices: DeviceWithPreferences[]): FileDeviceMapping[] {
+    const fileMappings: { [fileId: string]: FileDeviceMapping } = {};
+
+    // Iterate through each device and its allocated files
+    for (const device of allocatedDevices) {
+      const deviceId = device.device_id;
+      if (!deviceId) {
+        continue;
+      }
+
+      // Go through each file allocated to this device
+      for (const fileInfo of device.files || []) {
+        const fileId = fileInfo.file_id;
+        if (!fileId) {
+          continue;
+        }
+
+        // Initialize the list of device IDs if this is the first time seeing this file
+        if (!(fileId in fileMappings)) {
+          fileMappings[fileId] = {
+            file_id: fileId,
+            proposed_device_ids: []
+          };
+        }
+        
+        // Add this device's ID to the file's proposed devices
+        fileMappings[fileId].proposed_device_ids.push(deviceId);
+      }
+    }
+    // Convert the dictionary to a list
+    return Object.values(fileMappings);
+  }
+}
