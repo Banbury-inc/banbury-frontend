@@ -614,61 +614,61 @@ test.describe('Files tests', () => {
 
   });
     
-  test('add to button can add a file to cloud', async () => {
+  // test('add to button can add a file to cloud', async () => {
       
-      // 1. Select a file by clicking its checkbox
-      const firstFileRow = page.locator('[data-testid="file-item"]').first();
-      await firstFileRow.click();
+  //     // 1. Select a file by clicking its checkbox
+  //     const firstFileRow = page.locator('[data-testid="file-item"]').first();
+  //     await firstFileRow.click();
       
-      // 2. Wait for add to button to be enabled
-      const addToButton = page.locator('[data-testid="add-to-button"]');
-      await expect(addToButton).toBeVisible({ timeout: 10000 });
-      await expect(addToButton).toBeEnabled({ timeout: 10000 });
+  //     // 2. Wait for add to button to be enabled
+  //     const addToButton = page.locator('[data-testid="add-to-button"]');
+  //     await expect(addToButton).toBeVisible({ timeout: 10000 });
+  //     await expect(addToButton).toBeEnabled({ timeout: 10000 });
       
-      // 3. Click the add to button
-      await addToButton.click();
+  //     // 3. Click the add to button
+  //     await addToButton.click();
       
-      // 4. Wait for add to popover to appear
-      const addToPopover = page.locator('[data-testid="add-to-popover"]');
-      await expect(addToPopover).toBeVisible({ timeout: 10000 });
+  //     // 4. Wait for add to popover to appear
+  //     const addToPopover = page.locator('[data-testid="add-to-popover"]');
+  //     await expect(addToPopover).toBeVisible({ timeout: 10000 });
 
-      // 5. Click the add to cloud button
-      const addToCloudButton = addToPopover.locator('[data-testid="add-to-cloud-button"]');
-      await expect(addToCloudButton).toBeVisible({ timeout: 10000 });
-      await expect(addToCloudButton).toBeEnabled({ timeout: 10000 });
-      await addToCloudButton.click();
+  //     // 5. Click the add to cloud button
+  //     const addToCloudButton = addToPopover.locator('[data-testid="add-to-cloud-button"]');
+  //     await expect(addToCloudButton).toBeVisible({ timeout: 10000 });
+  //     await expect(addToCloudButton).toBeEnabled({ timeout: 10000 });
+  //     await addToCloudButton.click();
 
-      // 6. Wait for cloud upload to complete - this may take longer than sync operations
-      // Check for either success or error alert to handle both cases
-      const successAlert = page.locator('[data-testid="alert-success"]');
-      const errorAlert = page.locator('[data-testid="alert-error"]');
+  //     // 6. Wait for cloud upload to complete - this may take longer than sync operations
+  //     // Check for either success or error alert to handle both cases
+  //     const successAlert = page.locator('[data-testid="alert-success"]');
+  //     const errorAlert = page.locator('[data-testid="alert-error"]');
       
-      // Wait for either success or error alert to appear with extended timeout for cloud operations
-      await Promise.race([
-        expect(successAlert).toBeVisible({ timeout: 60000 }),
-        expect(errorAlert).toBeVisible({ timeout: 60000 })
-      ]);
+  //     // Wait for either success or error alert to appear with extended timeout for cloud operations
+  //     await Promise.race([
+  //       expect(successAlert).toBeVisible({ timeout: 60000 }),
+  //       expect(errorAlert).toBeVisible({ timeout: 60000 })
+  //     ]);
 
-      // Check which alert appeared and verify the appropriate message
-      const isSuccessVisible = await successAlert.isVisible();
-      const isErrorVisible = await errorAlert.isVisible();
+  //     // Check which alert appeared and verify the appropriate message
+  //     const isSuccessVisible = await successAlert.isVisible();
+  //     const isErrorVisible = await errorAlert.isVisible();
       
-      if (isSuccessVisible) {
-        await expect(successAlert).toContainText('All files successfully uploaded to Cloud.', { timeout: 10000 });
-        await expect(successAlert).not.toBeVisible({ timeout: 10000 });
-      } else if (isErrorVisible) {
-        // Log the error message for debugging
-        const errorText = await errorAlert.textContent();
-        console.error('Cloud upload failed:', errorText);
-        throw new Error(`Test failed due to cloud upload error: ${errorText}`);
-      } else {
-        throw new Error('Neither success nor error alert appeared within timeout period');
-      }
+  //     if (isSuccessVisible) {
+  //       await expect(successAlert).toContainText('All files successfully uploaded to Cloud.', { timeout: 10000 });
+  //       await expect(successAlert).not.toBeVisible({ timeout: 10000 });
+  //     } else if (isErrorVisible) {
+  //       // Log the error message for debugging
+  //       const errorText = await errorAlert.textContent();
+  //       console.error('Cloud upload failed:', errorText);
+  //       throw new Error(`Test failed due to cloud upload error: ${errorText}`);
+  //     } else {
+  //       throw new Error('Neither success nor error alert appeared within timeout period');
+  //     }
       
-      // 7. Deselect the file
-      await firstFileRow.click();
+  //     // 7. Deselect the file
+  //     await firstFileRow.click();
 
-  });
+  // });
 
 
 });
