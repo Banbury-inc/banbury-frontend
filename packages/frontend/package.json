@@ -176,7 +176,6 @@
       "output": "dist",
       "buildResources": "resources"
     },
-    "nativeRebuilder": "sequential",
     "buildDependenciesFromSource": false,
     "win": {
       "target": [
