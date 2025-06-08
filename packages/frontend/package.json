@@ -61,6 +61,7 @@
     "@typescript-eslint/eslint-plugin": "^8.23.0",
     "@typescript-eslint/parser": "^8.23.0",
     "axios-mock-adapter": "^2.1.0",
+
     "chokidar": "^4.0.0",
     "configparser": "^0.3.10",
     "copy-webpack-plugin": "^12.0.2",
@@ -165,6 +166,9 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
+  "optionalDependencies": {
+    "canvas": "^2.11.2"
+  },
   "build": {
     "productName": "Banbury",
     "appId": "com.banbury.cloud",
@@ -172,6 +176,8 @@
       "output": "dist",
       "buildResources": "resources"
     },
+    "nativeRebuilder": "sequential",
+    "buildDependenciesFromSource": false,
     "win": {
       "target": [
         "nsis",
