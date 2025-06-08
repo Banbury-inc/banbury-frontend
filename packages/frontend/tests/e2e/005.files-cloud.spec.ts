@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, Page } from '@playwright/test'
 import _fs from 'fs'
 import { ensureLoggedInAndOnboarded } from './utils/test-user'
 import { getSharedContext } from './utils/test-runner'
