@@ -53,11 +53,7 @@ jobs:
 
   e2e-tests:
     timeout-minutes: 60
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: macos-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -77,75 +73,10 @@ jobs:
           npx playwright install
           npx playwright install-deps
 
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            xvfb \
-            libgtk-3-0 \
-            libx11-xcb1 \
-            libxcb1 \
-            libxss1 \
-            libnss3 \
-            libasound2t64 \
-            libatk1.0-0 \
-            libatk-bridge2.0-0 \
-            libgdk-pixbuf2.0-0 \
-            libgbm1 \
-            libnotify4 \
-            libxtst6 \
-            xauth
-
       - name: Build the app
         run: npm run build
 
-      - name: Setup Chrome sandbox for Linux
-        if: runner.os == 'Linux'
-        run: |
-          CHROME_SANDBOX_PATH="/home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/chrome-sandbox"
-          if [ -f "$CHROME_SANDBOX_PATH" ]; then
-            sudo chown root:root "$CHROME_SANDBOX_PATH"
-            sudo chmod 4755 "$CHROME_SANDBOX_PATH"
-            echo "Chrome sandbox permissions set successfully"
-          else
-            echo "Warning: Chrome sandbox not found at $CHROME_SANDBOX_PATH"
-            echo "Listing contents of electron dist directory:"
-            ls -la /home/runner/work/banbury-frontend/banbury-frontend/node_modules/electron/dist/ || echo "Electron dist directory not found"
-          fi
-
       - name: Run E2E Tests
-        if: runner.os == 'Linux'
-        run: |
-          cd packages/frontend
-          # Start Xvfb
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          sleep 3
-          
-          # Run tests with display
-          DISPLAY=:99 npx playwright test --project=electron
-        env:
-          DISPLAY: ':99'
-          ELECTRON_ENABLE_LOGGING: true
-          DEBUG: electron*,playwright*
-          NODE_ENV: test
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-          ELECTRON_NO_ATTACH_CONSOLE: 1
-          ELECTRON_DISABLE_SANDBOX: 1
-
-      - name: Run E2E Tests (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cd packages/frontend
-          npx playwright test --project=electron
-        env:
-          ELECTRON_ENABLE_LOGGING: true
-          DEBUG: electron*,playwright*
-          NODE_ENV: test
-
-
-      - name: Run E2E Tests (macOS)
-        if: runner.os == 'macOS'
         run: |
           cd packages/frontend
           npx playwright test --project=electron
@@ -157,7 +88,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-${{ matrix.os }}
+          name: playwright-report-macos
           path: packages/frontend/playwright-report/
           retention-days: 30
 
