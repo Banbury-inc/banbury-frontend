@@ -20,13 +20,14 @@ import { useAuth } from '../../../renderer/context/AuthContext';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { Text } from '../../common/Text/Text';
 import { Button } from '../../common/Button/Button';
-import Google_Drive_Icon from '../../../../static/Google_Drive_Icon.png';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
 import { Integration } from '@banbury/core/src/types';
+
+const Google_Drive_Icon = 'https://raw.githubusercontent.com/Banbury-inc/banbury-frontend/dev/packages/frontend/static/Google_Drive_Icon.png'
 
 interface GoogleDriveStatus {
   enabled: boolean;

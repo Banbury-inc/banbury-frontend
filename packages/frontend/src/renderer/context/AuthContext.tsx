@@ -161,9 +161,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     axios.defaults.headers.common['Authorization'] = '';
     axios.defaults.headers.common['X-API-Key'] = '';
 
-    // Force reload the application
-    window.location.reload();
-  }, [websocket]);
+  }, []);
 
   const isAuthenticated = !!username;
 

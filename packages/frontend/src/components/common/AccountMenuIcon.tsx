@@ -40,12 +40,6 @@ export default function AccountMenuIcon() {
     setAnchorEl(null);
   };
 
-  React.useEffect(() => {
-    if (username === null) {
-      navigate('/login');
-    }
-  }, [username, navigate]);
-
   const handleLogout = () => {
     // Remove tokens/credentials from storage
     localStorage.removeItem('accessToken');
@@ -56,8 +50,8 @@ export default function AccountMenuIcon() {
     localStorage.removeItem('authUsername');
     localStorage.removeItem('deviceId');
     localStorage.removeItem('googleOAuthSession');
+
     clearBanburyCredentials();
-    handleClose();
     logout();
   };
 
@@ -136,7 +130,7 @@ export default function AccountMenuIcon() {
       >
         <MenuItem onClick={handleClose}>
           <Avatar sx={{ bgcolor: 'primary.main' }}>
-            {username && !menuImageError ? (
+            {username && !menuImageError && profilePictureUrl ? (
               <img
                 src={profilePictureUrl}
                 alt={username || 'User'}

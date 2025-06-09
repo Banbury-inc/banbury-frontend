@@ -14,6 +14,15 @@ import { handleFileSyncError, handleTransferError } from './errorHandler';
 // Update connection management
 let activeConnection: WebSocket | null = null;
 
+// Add function to cleanup active connections
+export function closeActiveConnection(): void {
+  if (activeConnection) {
+    console.log('Closing active WebSocket connection due to logout');
+    activeConnection.close(1000, 'User logged out');
+    activeConnection = null;
+  }
+}
+
 // Maximum number of connection attempts
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
