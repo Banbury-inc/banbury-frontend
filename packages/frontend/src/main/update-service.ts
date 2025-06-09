@@ -34,26 +34,21 @@ export class UpdateService {
             return;
         }
 
-        // Configure autoUpdater
-        autoUpdater.autoDownload = false;
+        // Configure autoUpdater for automatic download and install
+        autoUpdater.autoDownload = true;  // Automatically download updates
         autoUpdater.autoInstallOnAppQuit = true;
         autoUpdater.logger = electronLog;
         electronLog.transports.file.level = 'debug';
-
 
         // Listen for update events
         autoUpdater.on('checking-for-update', () => {
             this.sendStatusToWindow('Checking for updates...');
         });
 
-        autoUpdater.on('update-available', () => {
-            this.sendStatusToWindow('Update available.');
+        autoUpdater.on('update-available', (info) => {
+            this.sendStatusToWindow(`Update available: v${info.version}`);
             this.mainWindow.webContents.send('update-available');
-        });
-
-        autoUpdater.on('update-not-available', () => {
-            this.sendStatusToWindow('Update not available.');
-            this.mainWindow.webContents.send('update-not-available');
+            // Update will automatically start downloading due to autoDownload = true
         });
 
         autoUpdater.on('error', (err) => {
@@ -63,19 +58,33 @@ export class UpdateService {
         });
 
         autoUpdater.on('download-progress', (progressObj) => {
-            this.sendStatusToWindow(
-                `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`
-            );
+            const message = `Downloading update: ${Math.round(progressObj.percent)}%`;
+            this.sendStatusToWindow(message);
         });
 
-        autoUpdater.on('update-downloaded', () => {
-            this.sendStatusToWindow('Update downloaded; will install on quit');
+        autoUpdater.on('update-downloaded', (info) => {
+            this.sendStatusToWindow(`Update v${info.version} downloaded. Restart to install.`);
             this.mainWindow.webContents.send('update-downloaded');
+            
+            // Show a notification that update is ready to install
+            this.showUpdateReadyNotification(info.version);
         });
     }
 
     private sendStatusToWindow(text: string) {
         this.mainWindow.webContents.send('update-message', text);
+    }
+
+    private showUpdateReadyNotification(version: string) {
+        // Send a more prominent notification to the renderer
+        this.mainWindow.webContents.send('show-alert', {
+            title: 'Update Ready',
+            messages: [
+                `Version ${version} has been downloaded and is ready to install.`,
+                'The update will be installed when you restart the application.'
+            ],
+            variant: 'info'
+        });
     }
 
     public checkForUpdates() {
