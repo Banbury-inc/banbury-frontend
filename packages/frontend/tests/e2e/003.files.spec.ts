@@ -241,7 +241,7 @@ test.describe('Files tests', () => {
         await fileChooser.setFiles(testFilePath);
         fileChooserHandled = true;
       } catch (error) {
-        console.log('File chooser timeout - this might be expected in headless mode');
+        console.error('File chooser timeout - this might be expected in headless mode', error);
         // In headless CI environments, the file chooser might not work properly
         // so we'll skip this part of the test
       }
@@ -256,7 +256,7 @@ test.describe('Files tests', () => {
         await expect(folderItem).toBeVisible({ timeout: 15000 });
       } else {
         // If file chooser didn't work, just verify the UI elements are present
-        console.log('Skipping folder verification due to file chooser limitations in CI');
+        console.error('Skipping folder verification due to file chooser limitations in CI', dummyFolderPath);
       }
 
       if (fileChooserHandled) {
@@ -299,11 +299,7 @@ test.describe('Files tests', () => {
             // Verify the progress reached 100%
             expect(progressValue).toBe(100);
           }
-        } else {
-          console.log('No progress bars found - scanning may have completed immediately');
         }
-      } else {
-        console.log('Skipping scan test since no folder was added');
       }
 
 
@@ -360,7 +356,7 @@ test.describe('Files tests', () => {
           await fileChooser.setFiles(testFilePath);
           fileChooserHandled = true;
         } catch (error) {
-          console.log('File chooser timeout in removal test - this might be expected in headless mode');
+          console.error('File chooser timeout in removal test - this might be expected in headless mode, skipping folder addition', error);
         }
 
         if (fileChooserHandled) {
@@ -368,7 +364,6 @@ test.describe('Files tests', () => {
           await page.waitForTimeout(3000);
         } else {
           // If file chooser didn't work, skip this test
-          console.log('Skipping folder removal test due to file chooser limitations in CI');
           return;
         }
       }
@@ -395,8 +390,6 @@ test.describe('Files tests', () => {
         // Check that the folder is no longer visible
         const remainingFolders = await syncPopover.locator('div').filter({ hasText: firstFolderText || '' }).count();
         expect(remainingFolders).toBe(0);
-      } else {
-        console.log('No folders found to remove - skipping removal verification');
       }
 
       // Click outside the popover to close it
