@@ -167,7 +167,6 @@
     "react-dom": "^18.2.0"
   },
   "optionalDependencies": {
-    "canvas": "^2.11.2"
   },
   "build": {
     "productName": "Banbury",
@@ -177,6 +176,7 @@
       "buildResources": "resources"
     },
     "buildDependenciesFromSource": false,
+    "nodeGypRebuild": false,
     "win": {
       "target": [
         "nsis",
