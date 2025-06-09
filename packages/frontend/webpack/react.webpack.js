@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const path = require("path");
 const threadLoader = require('thread-loader');
 const { EsbuildPlugin } = require('esbuild-loader');
@@ -138,6 +139,14 @@ const config = {
           'content': "default-src 'self' 'unsafe-inline' 'unsafe-eval' http: https: ws: wss:; img-src 'self' data: blob: file: https: *; media-src 'self' data: blob: file: https: *; style-src 'self' 'unsafe-inline' *; connect-src 'self' * ws: wss: http: https:;"
         }
       }
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.join(path.resolve(projectRoot, 'node_modules'), 'pdfjs-dist', 'build', 'pdf.worker.min.js'),
+          to: 'pdf.worker.min.js'
+        }
+      ]
     }),
   ],
 };
