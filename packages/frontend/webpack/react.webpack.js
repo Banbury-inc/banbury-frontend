@@ -145,6 +145,10 @@ const config = {
         {
           from: path.join(path.resolve(projectRoot, 'node_modules'), 'pdfjs-dist', 'build', 'pdf.worker.min.js'),
           to: 'pdf.worker.min.js'
+        },
+        {
+          from: path.resolve(rootPath, 'static'),
+          to: 'static'
         }
       ]
     }),

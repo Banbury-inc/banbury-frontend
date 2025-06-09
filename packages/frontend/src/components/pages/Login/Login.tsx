@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import NeuraNet_Logo from '/static/NeuraNet_Icons/web/icon-512.png';
 import Button from '@mui/material/Button';
 import axios from 'axios';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -26,6 +25,8 @@ import { setGlobalAxiosAuthToken } from '@banbury/core/src/middleware/axiosGloba
 import { Textbox } from '../../common/Textbox/Textbox';
 import { Text, TextLink } from '../../common/Text/Text';
 import { Checkbox } from '../../common/Checkbox/Checkbox';
+
+const NeuraNet_Logo = 'https://raw.githubusercontent.com/Banbury-inc/banbury-frontend/dev/packages/frontend/static/NeuraNet_Icons/web/icon-512.png'
 
 interface Message {
   type: string;
@@ -71,7 +72,7 @@ function maybeStartDeviceInfoProcess(username: string, deviceId: string) {
 export default function SignIn() {
   // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { setUsername, isTokenRefreshFailed, resetTokenRefreshStatus } = useAuth();
+  const { setUsername, isTokenRefreshFailed, resetTokenRefreshStatus, setRedirectToLogin } = useAuth();
   const [incorrect_login, setincorrect_login] = useState(false);
   const [server_offline, setserver_offline] = useState(false);
   const [showMain, setShowMain] = useState<boolean>(false);
@@ -125,6 +126,7 @@ export default function SignIn() {
             if (response.data.valid) {
               // Token is valid, proceed with login
               setUsername(authUsername);
+              setRedirectToLogin(false); // Reset redirect flag on successful authentication
               
               // Set up axios headers for authenticated requests
               setGlobalAxiosAuthToken(authToken, authUsername);
@@ -178,6 +180,7 @@ export default function SignIn() {
         if (authState.isAuthenticated && authState.username) {
           // Token is valid, proceed with auto-login
           setUsername(authState.username);
+          setRedirectToLogin(false); // Reset redirect flag on successful authentication
           localStorage.setItem('authUsername', authState.username);
           
           // Create deviceId if missing
@@ -245,9 +248,11 @@ export default function SignIn() {
           if (!hasCompletedOnboarding) {
             localStorage.setItem('pendingAuthEmail', email);
             setUsername(email);
+            setRedirectToLogin(false); // Reset redirect flag on successful authentication
             setShowOnboarding(true);
           } else {
             setUsername(email);
+            setRedirectToLogin(false); // Reset redirect flag on successful authentication
             setIsAuthenticated(true);
             setShowMain(true);
             maybeStartDeviceInfoProcess(email, result.deviceId);
@@ -448,6 +453,7 @@ export default function SignIn() {
                 
                 // Update component state with username (not email)
                 setUsername(username);
+                setRedirectToLogin(false); // Reset redirect flag on successful authentication
                 setIsAuthenticated(true);
 
                 // Clear any token errors since this is a valid Google OAuth session
@@ -547,6 +553,7 @@ export default function SignIn() {
     }
     
     setShowOnboarding(false); // Explicitly hide onboarding
+    setRedirectToLogin(false); // Reset redirect flag on onboarding completion
     setIsAuthenticated(true);
     setShowMain(true);
     const deviceId = localStorage.getItem('deviceId');
