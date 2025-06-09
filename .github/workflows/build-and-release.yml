@@ -110,6 +110,7 @@ jobs:
           cache: 'npm'
 
       - name: Set app name based on branch
+        shell: bash
         run: |
           if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
             echo "APP_NAME=Banbury - dev" >> $GITHUB_ENV
@@ -321,6 +322,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set artifact suffix
+        shell: bash
         run: |
           if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
             echo "ARTIFACT_SUFFIX=-dev" >> $GITHUB_ENV
@@ -363,6 +365,7 @@ jobs:
 
       - name: Get version from package.json
         id: get_version
+        shell: bash
         run: |
           VERSION=$(jq -r .version ./packages/frontend/package.json)
           if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
@@ -380,6 +383,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create and push a new tag
+        shell: bash
         env:
           TAG_NAME: ${{ env.TAG_NAME }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
