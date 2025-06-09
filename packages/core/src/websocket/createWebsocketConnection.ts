@@ -17,7 +17,6 @@ let activeConnection: WebSocket | null = null;
 // Add function to cleanup active connections
 export function closeActiveConnection(): void {
   if (activeConnection) {
-    console.log('Closing active WebSocket connection due to logout');
     activeConnection.close(1000, 'User logged out');
     activeConnection = null;
   }
