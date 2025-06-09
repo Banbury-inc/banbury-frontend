@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Box,
   Button,
@@ -29,7 +29,7 @@ interface FileViewerTabsProps {
   onSwitchTab: (tabId: string) => void;
 }
 
-const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
+const FileViewerTabs: React.FC<FileViewerTabsProps> = React.memo(({
   openTabs,
   activeTab,
   onCloseTab,
@@ -42,11 +42,11 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
 
   const currentTab = openTabs.find(tab => tab.id === activeTab);
 
-  const handleOpenWithSystemApp = (filePath: string) => {
+  const handleOpenWithSystemApp = useCallback((filePath: string) => {
     shell.openPath(filePath);
-  };
+  }, []);
 
-  const renderFileContent = (tab: FileTab) => {
+  const renderFileContent = useCallback((tab: FileTab) => {
     if (isImageFile(tab.fileName)) {
       return (
         <Box sx={{ 
@@ -181,7 +181,7 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
         </Text>
       </Box>
     );
-  };
+  }, []);
 
   return (
     <Box sx={{ 
@@ -246,6 +246,14 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = ({
       </Box>
     </Box>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if openTabs, activeTab, onCloseTab, or onSwitchTab actually change
+  return (
+    JSON.stringify(prevProps.openTabs) === JSON.stringify(nextProps.openTabs) &&
+    prevProps.activeTab === nextProps.activeTab &&
+    prevProps.onCloseTab === nextProps.onCloseTab &&
+    prevProps.onSwitchTab === nextProps.onSwitchTab
+  );
+});
 
 export default FileViewerTabs; 

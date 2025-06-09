@@ -12,7 +12,7 @@ import fs from 'fs';
 import { stat } from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { handlers } from '../../../renderer/handlers';
@@ -522,7 +522,7 @@ export default function Files() {
   };
 
   // Tab management functions
-  const openFileInTab = (fileName: string, filePath: string, fileType: string) => {
+  const openFileInTab = useCallback((fileName: string, filePath: string, fileType: string) => {
     const tabId = `${filePath}_${Date.now()}`;
     const newTab = {
       id: tabId,
@@ -534,9 +534,9 @@ export default function Files() {
     setOpenTabs(prev => [...prev, newTab]);
     setActiveTab(tabId);
     setShowFileViewer(true);
-  };
+  }, []);
 
-  const closeTab = (tabId: string) => {
+  const closeTab = useCallback((tabId: string) => {
     setOpenTabs(prev => {
       const newTabs = prev.filter(tab => tab.id !== tabId);
       if (newTabs.length === 0) {
@@ -547,11 +547,11 @@ export default function Files() {
       }
       return newTabs;
     });
-  };
+  }, [activeTab]);
 
-  const switchTab = (tabId: string) => {
+  const switchTab = useCallback((tabId: string) => {
     setActiveTab(tabId);
-  };
+  }, []);
 
   // Add effect to fetch cloud files specifically when Cloud node is selected
   useEffect(() => {
