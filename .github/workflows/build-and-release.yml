@@ -93,7 +93,7 @@ jobs:
           retention-days: 30
 
   build:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/prod' || github.ref == 'refs/heads/dev')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     needs: [lint, unit-tests, e2e-tests]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -108,17 +108,6 @@ jobs:
         with:
           node-version: '20.11.0'
           cache: 'npm'
-
-      - name: Set app name based on branch
-        shell: bash
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            echo "APP_NAME=Banbury - dev" >> $GITHUB_ENV
-            echo "APP_SUFFIX=-dev" >> $GITHUB_ENV
-          else
-            echo "APP_NAME=Banbury" >> $GITHUB_ENV
-            echo "APP_SUFFIX=" >> $GITHUB_ENV
-          fi
 
       # Linux-specific setup
       - name: Install Snapcraft
@@ -189,6 +178,7 @@ jobs:
       - name: Notarize macOS App Bundle
         if: runner.os == 'macOS'
         run: |
+          APP_NAME="Banbury"
           cd packages/frontend
           APP_PATH="dist/mac-arm64/${APP_NAME}.app"
           
@@ -229,6 +219,7 @@ jobs:
       - name: Notarize macOS Distribution Files
         if: runner.os == 'macOS'
         run: |
+          APP_NAME="Banbury"
           cd packages/frontend
           
           # Notarize DMG
@@ -284,7 +275,7 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-artifacts${{ env.APP_SUFFIX }}
+          name: ${{ matrix.os }}-artifacts
           path: |
             packages/frontend/dist/**/*
             packages/frontend/dist/**/*.yml
@@ -308,7 +299,7 @@ jobs:
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: core-package${{ env.APP_SUFFIX }}
+          name: core-package
           path: packages/core/dist
           if-no-files-found: error
 
@@ -321,19 +312,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set artifact suffix
-        shell: bash
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            echo "ARTIFACT_SUFFIX=-dev" >> $GITHUB_ENV
-          else
-            echo "ARTIFACT_SUFFIX=" >> $GITHUB_ENV
-          fi
-
       - name: Download Core Package
         uses: actions/download-artifact@v4
         with:
-          name: core-package${{ env.ARTIFACT_SUFFIX }}
+          name: core-package
           path: ./packages/core/dist
         continue-on-error: false
 
@@ -348,65 +330,50 @@ jobs:
       - name: Download Linux Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: ubuntu-latest-artifacts${{ env.ARTIFACT_SUFFIX }}
+          name: ubuntu-latest-artifacts
           path: ./dist
 
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: windows-latest-artifacts${{ env.ARTIFACT_SUFFIX }}
+          name: windows-latest-artifacts
           path: ./dist
 
       - name: Download macOS Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: macos-latest-artifacts${{ env.ARTIFACT_SUFFIX }}
+          name: macos-latest-artifacts
           path: ./dist
 
       - name: Get version from package.json
         id: get_version
-        shell: bash
         run: |
           VERSION=$(jq -r .version ./packages/frontend/package.json)
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            # Add dev suffix and timestamp for dev builds
-            TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-            VERSION="${VERSION}-dev.${TIMESTAMP}"
-            echo "TAG_NAME=v${VERSION}" >> $GITHUB_ENV
-            echo "RELEASE_NAME=Banbury - dev v${VERSION}" >> $GITHUB_ENV
-            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
-          else
-            echo "TAG_NAME=v${VERSION}" >> $GITHUB_ENV
-            echo "RELEASE_NAME=Banbury v${VERSION}" >> $GITHUB_ENV
-            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
-          fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create and push a new tag
-        shell: bash
         env:
-          TAG_NAME: ${{ env.TAG_NAME }}
+          VERSION: ${{ env.VERSION }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           # Check if tag exists
-          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Creating new tag $TAG_NAME"
-            git tag "$TAG_NAME"
-            git push https://$GH_TOKEN@github.com/${{ github.repository }} "$TAG_NAME"
+          if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Creating new tag v$VERSION"
+            git tag "v$VERSION"
+            git push https://$GH_TOKEN@github.com/${{ github.repository }} "v$VERSION"
           else
-            echo "Tag $TAG_NAME already exists, skipping tag creation"
+            echo "Tag v$VERSION already exists, skipping tag creation"
           fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "${{ env.TAG_NAME }}"
-          name: "${{ env.RELEASE_NAME }}"
+          tag_name: "v${{ env.VERSION }}"
           draft: false
-          prerelease: ${{ env.IS_PRERELEASE }}
+          prerelease: false
           files: |
             dist/**/*.AppImage
             dist/**/*.exe
@@ -419,7 +386,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   publish-npm:
-    if: github.ref == 'refs/heads/prod'
     needs: release
     runs-on: ubuntu-latest
     steps:
