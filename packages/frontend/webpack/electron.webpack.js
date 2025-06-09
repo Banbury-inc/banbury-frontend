@@ -20,7 +20,8 @@ const config = {
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
     alias: {
-      'osx-temperature-sensor': false
+      'osx-temperature-sensor': false,
+      'canvas': false
     }
   },
   devtool: process.env.NODE_ENV === 'development' ? 'eval-cheap-module-source-map' : 'source-map',

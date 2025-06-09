@@ -22,10 +22,12 @@ const config = {
     alias: {
       'react': path.resolve('./node_modules/react'),
       'react-dom': path.resolve('./node_modules/react-dom'),
-      'osx-temperature-sensor': false
+      'osx-temperature-sensor': false,
+      'canvas': false
     },
     fallback: {
-      'osx-temperature-sensor': false
+      'osx-temperature-sensor': false,
+      'canvas': false
     }
   },
   entry: path.resolve(rootPath, "src/renderer", "index.tsx"),
