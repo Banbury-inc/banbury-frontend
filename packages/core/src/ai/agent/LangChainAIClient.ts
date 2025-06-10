@@ -50,10 +50,8 @@ export class LangChainAIClient {
   private allTools: any[] = [];
   private toolsMap: Map<string, any> = new Map(); // For quick tool lookup
   private baseUrl: string;
-  private model: string;
-  private llmWithTools: any ;
   private fileSystemRootDir: string;
-  private webSearchEnabled: boolean = false;
+  private webSearchEnabled: boolean = true;
 
   constructor(
     ollamaBaseUrl: string = 'http://localhost:11434',
@@ -62,7 +60,6 @@ export class LangChainAIClient {
     fileSystemRootDir: string = os.homedir() // Default to user's home directory
   ) {
     this.baseUrl = ollamaBaseUrl;
-    this.model = model;
     this.fileSystemRootDir = fileSystemRootDir;
     this.webSearchService = new WebSearchService();
     
@@ -79,7 +76,6 @@ export class LangChainAIClient {
     this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
-    this.llmWithTools = this.llm.bindTools(this.allTools);
   }
 
   private createSystemPrompt(): string {
@@ -480,9 +476,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Update the model
    */
-  public setModel(model: string) {
-    this.model = model;
-    
+  public setModel(model: string) {    
     this.llm = new ChatOllama({
       baseUrl: this.baseUrl,
       model: model,
@@ -495,7 +489,6 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
-    this.llmWithTools = this.llm.bindTools(this.allTools);
   }
 
   /**
@@ -506,7 +499,6 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     this.fileSystemTools = createFileSystemTools(this.fileSystemRootDir);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
-    this.llmWithTools = this.llm.bindTools(this.allTools);
   }
 
   /**
@@ -518,7 +510,6 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
-    this.llmWithTools = this.llm.bindTools(this.allTools);
   }
 
   /**
