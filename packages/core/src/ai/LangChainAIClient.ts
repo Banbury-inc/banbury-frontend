@@ -156,9 +156,6 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 - file_delete_tool: Delete files or directories
 - file_search_tool: Search for files matching patterns${webSearchInfo}
 
-**Security Notice:**
-File system operations are restricted to: ${this.fileSystemRootDir} and its subdirectories for security.
-
 **Core Principles:**
 - Think systematically before deciding whether to use tools
 - Be efficient - don't call tools unnecessarily

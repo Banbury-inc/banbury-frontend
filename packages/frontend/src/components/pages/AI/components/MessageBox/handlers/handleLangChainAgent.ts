@@ -596,7 +596,7 @@ export const handleLangChainAgent = async (
     const agent = new SimpleAgentExecutor(ollamaClient, mcpClient, 5, {
             onIterationStart: (iteration: number) => {
         setIsPreparingToThink(true);
-        setStreamingMessage(`🤖 LangChain Agent - Step ${iteration}/5`);
+        setStreamingMessage(``);
         setStreamingThinking('');
         setStreamingToolCalls([]);
         setStreamingToolResults([]);
@@ -652,7 +652,7 @@ export const handleLangChainAgent = async (
         // Create a permanent message bubble for this iteration
         const iterationMessage: ExtendedChatMessage = {
           role: 'assistant',
-          content: `**🤖 LangChain Agent - Step ${iteration}/5**\n\n${result}`,
+          content: result,
           thinking: thinking,
           toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
           toolResults: toolResults && toolResults.length > 0 ? toolResults : undefined
@@ -674,7 +674,7 @@ export const handleLangChainAgent = async (
         // Create final summary message if needed
         const summaryMessage: ExtendedChatMessage = {
           role: 'assistant',
-          content: `**🎯 Task Completed**\n\n${finalResult}`
+          content: finalResult
         };
 
         currentMessages = [...currentMessages, summaryMessage];
