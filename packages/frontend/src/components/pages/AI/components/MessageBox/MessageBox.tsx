@@ -249,61 +249,67 @@ export default function MessageBox({
 
 
             <Tooltip title={supportsVision ? "Upload Image" : "Image uploads not supported by this model"}>
-              <ToolbarButton
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading || !supportsVision}
-                size="small"
-                sx={{
-                  minWidth: 0,
-                  width: 36,
-                  height: 36,
-                  borderRadius: 2,
-                  opacity: supportsVision ? 1 : 0.5,
-                }}
-              >
-                <ImageIcon sx={{ fontSize: '1.1rem' }} />
-              </ToolbarButton>
-            </Tooltip>
-            {setIsAgentMode && (
-              <Tooltip title={`${isAgentMode ? 'LangChain Agent' : 'Chat'} Mode - ${isAgentMode ? 'AI uses LangChain framework to analyze tool results and iterate to solve problems step-by-step' : 'Direct chat responses'}`}>
+              <span>
                 <ToolbarButton
-                  onClick={() => setIsAgentMode(!isAgentMode)}
-                  disabled={isLoading}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading || !supportsVision}
                   size="small"
                   sx={{
                     minWidth: 0,
                     width: 36,
                     height: 36,
                     borderRadius: 2,
-                    backgroundColor: isAgentMode ? 'rgba(33,150,243,0.15)' : 'background.paper',
-                    '&:hover': {
-                      backgroundColor: isAgentMode ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
-                    },
+                    opacity: supportsVision ? 1 : 0.5,
                   }}
                 >
-                  <SmartToyIcon sx={{ fontSize: '1.1rem', color: isAgentMode ? 'info.main' : 'text.secondary' }} />
+                  <ImageIcon sx={{ fontSize: '1.1rem' }} />
                 </ToolbarButton>
+              </span>
+            </Tooltip>
+            {setIsAgentMode && (
+              <Tooltip title={`${isAgentMode ? 'LangChain Agent' : 'Chat'} Mode - ${isAgentMode ? 'AI uses LangChain framework to analyze tool results and iterate to solve problems step-by-step' : 'Direct chat responses'}`}>
+                <span>
+                  <ToolbarButton
+                    onClick={() => setIsAgentMode(!isAgentMode)}
+                    disabled={isLoading}
+                    size="small"
+                    sx={{
+                      minWidth: 0,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 2,
+                      backgroundColor: isAgentMode ? 'rgba(33,150,243,0.15)' : 'background.paper',
+                      '&:hover': {
+                        backgroundColor: isAgentMode ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <SmartToyIcon sx={{ fontSize: '1.1rem', color: isAgentMode ? 'info.main' : 'text.secondary' }} />
+                  </ToolbarButton>
+                </span>
               </Tooltip>
             )}
             {setWebSearchEnabled && (
               <Tooltip title="Web Search Tool - Allow AI to search the web when needed">
-                <ToolbarButton
-                  onClick={() => setWebSearchEnabled(!webSearchEnabled)}
-                  disabled={isLoading}
-                  size="small"
-                  sx={{
-                    minWidth: 0,
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.15)' : 'background.paper',
-                    '&:hover': {
-                      backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
-                    },
-                  }}
-                >
-                  <LanguageIcon sx={{ fontSize: '1.1rem', color: webSearchEnabled ? 'info.main' : 'text.secondary' }} />
-                </ToolbarButton>
+                <span>
+                  <ToolbarButton
+                    onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                    disabled={isLoading}
+                    size="small"
+                    sx={{
+                      minWidth: 0,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 2,
+                      backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.15)' : 'background.paper',
+                      '&:hover': {
+                        backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <LanguageIcon sx={{ fontSize: '1.1rem', color: webSearchEnabled ? 'info.main' : 'text.secondary' }} />
+                  </ToolbarButton>
+                </span>
               </Tooltip>
             )}
             <ToolbarButton

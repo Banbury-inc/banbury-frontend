@@ -319,21 +319,23 @@ export default function AddToButton({
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Tooltip title="Add To">
-        <Button
-          data-testid="add-to-button"
-          onClick={handleClick}
-          disabled={isAnyLoading}
-          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-        >
-          {isAnyLoading ? (
-            <CircularProgress 
-              size={16} 
-              sx={{ color: '#ffffff' }}
-            />
-          ) : (
-            <FileCopy fontSize="inherit" />
-          )}
-        </Button>
+        <span>
+          <Button
+            data-testid="add-to-button"
+            onClick={handleClick}
+            disabled={isAnyLoading}
+            sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+          >
+            {isAnyLoading ? (
+              <CircularProgress 
+                size={16} 
+                sx={{ color: '#ffffff' }}
+              />
+            ) : (
+              <FileCopy fontSize="inherit" />
+            )}
+          </Button>
+        </span>
       </Tooltip>
       
       <Popover
