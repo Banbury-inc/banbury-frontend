@@ -16,6 +16,7 @@ import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import { handleImageUpload } from './handlers/handleImageUpload';
 import { handleSendMessage } from './handlers/handleSendMessage';
 import { AVAILABLE_MODELS } from '../AIToolbar/ModelSelectorButton/constants';
+import ToolsButton from './ToolsButton';
 
 const HiddenInput = styled('input')({
   display: 'none',
@@ -56,12 +57,14 @@ interface MessageBoxProps {
   currentConversation: any;
   setCurrentConversation: (conversation: any) => void;
   handleStopGeneration: () => void;
-  langChainOptions?: {};
   webSearchEnabled?: boolean;
   setWebSearchEnabled?: (enabled: boolean) => void;
   isAgentMode?: boolean;
   setIsAgentMode?: (enabled: boolean) => void;
   mcpClient?: any;
+  availableTools: any;
+  onToggleTool?: (toolId: string, isEnabled: boolean) => void;
+  toolConfig?: any;
 }
 
 export default function MessageBox({
@@ -84,12 +87,14 @@ export default function MessageBox({
   currentConversation,
   setCurrentConversation,
   handleStopGeneration,
-  langChainOptions,
   webSearchEnabled = false,
   setWebSearchEnabled,
   isAgentMode = true,
   setIsAgentMode,
   mcpClient,
+  availableTools,
+  onToggleTool,
+  toolConfig
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
@@ -133,41 +138,38 @@ export default function MessageBox({
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSendClick = () => {
-    handleSendMessage(
-      inputMessage,
-      selectedImages,
-      messages,
-      setMessages,
-      setInputMessage,
-      setSelectedImages,
-      setIsLoading,
-      setIsStreaming,
-      setStreamingMessage,
-      setStreamingThinking,
-      setStreamingToolCalls,
-      setStreamingToolResults,
-      setIsPreparingToThink,
-      abortControllerRef,
-      currentModel,
-      false, // useWebSearch no longer needed - handled by AI client as tool
-      setIsSearching,
-      showAlert,
-      ollamaClient,
-      isLoading,
-      currentConversation,
-      setCurrentConversation,
-      langChainOptions,
-      isAgentMode,
-      mcpClient
-    );
-  };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSendClick();
-    }
+      handleSendMessage(
+        inputMessage,
+        selectedImages,
+        messages,
+        setMessages,
+        setInputMessage,
+        setSelectedImages,
+        setIsLoading,
+        setIsStreaming,
+        setStreamingMessage,
+        setStreamingThinking,
+        setStreamingToolCalls,
+        setStreamingToolResults,
+        setIsPreparingToThink,
+        abortControllerRef,
+        currentModel,
+        false, // useWebSearch no longer needed - handled by AI client as tool
+        setIsSearching,
+        showAlert,
+        ollamaClient,
+        isLoading,
+        currentConversation,
+        setCurrentConversation,
+        isAgentMode,
+        mcpClient,
+        toolConfig
+      );
+    };
   };
 
   return (
@@ -239,6 +241,10 @@ export default function MessageBox({
             style={{ marginBottom: 16 }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <ToolsButton
+              availableTools={availableTools}
+              onToggleTool={onToggleTool}
+            />
             <HiddenInput
               type="file"
               accept="image/*"
@@ -313,7 +319,33 @@ export default function MessageBox({
               </Tooltip>
             )}
             <ToolbarButton
-              onClick={isStreaming ? handleStopGeneration : handleSendClick}
+              onClick={isStreaming ? handleStopGeneration : () => handleSendMessage(
+                inputMessage,
+                selectedImages,
+                messages,
+                setMessages,
+                setInputMessage,
+                setSelectedImages,
+                setIsLoading,
+                setIsStreaming,
+                setStreamingMessage,
+                setStreamingThinking,
+                setStreamingToolCalls,
+                setStreamingToolResults,
+                setIsPreparingToThink,
+                abortControllerRef,
+                currentModel,
+                false, // useWebSearch no longer needed - handled by AI client as tool
+                setIsSearching,
+                showAlert,
+                ollamaClient,
+                isLoading,
+                currentConversation,
+                setCurrentConversation,
+                isAgentMode,
+                mcpClient,
+                toolConfig
+              )}
               disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
               size="small"
               sx={{
@@ -344,4 +376,4 @@ export default function MessageBox({
       </Box>
     </Box>
   );
-} 
+}

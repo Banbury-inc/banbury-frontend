@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CloudMcpClient, McpToolCall, McpToolResult, McpServerConfig } from '@banbury/core/src/ai/CloudMcpClient';
-import { loadGlobalAxiosCredentials } from '@banbury/core/src/middleware/axiosGlobalHeader';
-import banbury from '@banbury/core';
+import { BanburyMcpClient, McpToolCall, McpToolResult, McpServerConfig } from './BanburyMcpClient';
+import { loadGlobalAxiosCredentials } from '../../../../middleware/axiosGlobalHeader';
+import { config } from '../../../../config/config';
 
 interface UseMcpClientOptions {
   serverUrl?: string;
@@ -10,7 +10,7 @@ interface UseMcpClientOptions {
 }
 
 interface McpClientState {
-  client: CloudMcpClient | null;
+  client: BanburyMcpClient | null;
   isConnected: boolean;
   isAuthenticated: boolean;
   error: string | null;
@@ -26,7 +26,7 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
     availableTools: []
   });
 
-  const serverUrl = banbury.config.url_mcp;
+  const serverUrl = config.url_mcp;
   const apiKey = options.apiKey;
 
   // Initialize MCP client
@@ -37,7 +37,7 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
         ...(apiKey && { apiKey })
       };
 
-      const client = new CloudMcpClient(config);
+      const client = new BanburyMcpClient(config);
       const isAuth = client.isAuthenticated();
       
       setState(prev => ({
