@@ -1,6 +1,6 @@
-import { OllamaClient } from './index';
-import { BanburyMcpClient, McpToolCall, McpToolResult } from './tools/BanburyMcpClient';
-import { WebSearchService } from './web-search';
+import { OllamaClient } from '../index';
+import { BanburyMcpClient, McpToolCall, McpToolResult } from './tools/banburyMCP/BanburyMcpClient';
+import { WebSearchService } from './tools/webSearch';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';

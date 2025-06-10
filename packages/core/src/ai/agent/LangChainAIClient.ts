@@ -3,9 +3,12 @@ import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/
 import { tool } from '@langchain/core/tools';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { BanburyMcpClient, McpToolResult } from './tools/BanburyMcpClient';
-import { ToolCall } from './BasicClient';
-import { WebSearchService } from './web-search';
+import { BanburyMcpClient, McpToolResult } from '../basic/tools/banburyMCP/BanburyMcpClient';
+import { ToolCall } from '../basic/BasicClient';
+import { WebSearchService } from '../basic/tools/webSearch';
+import { createBanburyTools } from './tools/banburyTools';
+import { createFileSystemTools } from './tools/filesystemTools';
+import { createWebSearchTools } from './tools/webSearchTools';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -71,9 +74,9 @@ export class LangChainAIClient {
     
     this.mcpClient = mcpClient;
     this.systemPrompt = this.createSystemPrompt();
-    this.banburyTools = this.createBanburyTools();
-    this.fileSystemTools = this.createFileSystemTools();
-    this.webSearchTools = this.createWebSearchTools();
+    this.banburyTools = createBanburyTools(this.mcpClient);
+    this.fileSystemTools = createFileSystemTools(this.fileSystemRootDir);
+    this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);
@@ -165,406 +168,11 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 Your thinking process should clearly indicate whether tools are needed and why.`;
   }
 
-  /**
-   * Create Banbury tools using proper LangChain tool definitions with Zod schemas
-   */
-  private createBanburyTools() {
-    const deviceInfoTool = tool(
-      async ({ device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-device-info',
-            parameters: { device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-device-info",
-        description: "Get comprehensive device information and status including performance metrics",
-        schema: z.object({
-          device_name: z.string().optional().describe("Device name to query (optional)"),
-        }),
-      }
-    );
 
-    const sessionsTool = tool(
-      async () => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-sessions',
-            parameters: {}
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-sessions",
-        description: "Get current active sessions and task information from the system",
-        schema: z.object({}),
-      }
-    );
 
-    const scannedFoldersTool = tool(
-      async ({ device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-scanned-folders',
-            parameters: { device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-scanned-folders",
-        description: "List all monitored directory locations on the device",
-        schema: z.object({
-          device_name: z.string().optional().describe("Device name to query (optional)"),
-        }),
-      }
-    );
 
-    const randomFilesTool = tool(
-      async ({ count, device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-random-files',
-            parameters: { count, device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-random-files",
-        description: "Get a random sample of files from the monitored system",
-        schema: z.object({
-          count: z.number().default(10).describe("Number of random files to retrieve"),
-          device_name: z.string().optional().describe("Device name to query (optional)"),
-        }),
-      }
-    );
 
-    const addTaskTool = tool(
-      async ({ task_description, device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-add-task',
-            parameters: { task_description, device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-add-task",
-        description: "Create a new task in the system queue",
-        schema: z.object({
-          task_description: z.string().describe("Description of the task to add"),
-          device_name: z.string().optional().describe("Device name to assign task to (optional)"),
-        }),
-      }
-    );
 
-    return [deviceInfoTool, sessionsTool, scannedFoldersTool, randomFilesTool, addTaskTool];
-  }
-
-  /**
-   * Create File System tools using proper LangChain tool definitions with Zod schemas
-   * Following the same pattern as Python's FileManagementToolkit
-   */
-  private createFileSystemTools() {
-    // Helper function to resolve and validate paths
-    const resolvePath = (inputPath: string): string => {
-      // Resolve relative paths against the root directory
-      const resolvedPath = path.isAbsolute(inputPath) 
-        ? inputPath 
-        : path.resolve(this.fileSystemRootDir, inputPath);
-      
-      // Ensure the path is within the allowed root directory
-      if (!resolvedPath.startsWith(this.fileSystemRootDir)) {
-        throw new Error(`Access denied: Path must be within ${this.fileSystemRootDir}`);
-      }
-      
-      return resolvedPath;
-    };
-
-    const readFileTool = tool(
-      async ({ file_path }) => {
-        try {
-          const resolvedPath = resolvePath(file_path);
-          const content = fs.readFileSync(resolvedPath, 'utf-8');
-          return `File contents of ${file_path}:\n\n${content}`;
-        } catch (error) {
-          return `Error reading file ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_read_tool",
-        description: "Read the contents of a file",
-        schema: z.object({
-          file_path: z.string().describe("Path to the file to read"),
-        }),
-      }
-    );
-
-    const writeFileTool = tool(
-      async ({ file_path, text }) => {
-        try {
-          const resolvedPath = resolvePath(file_path);
-          // Ensure the directory exists
-          fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
-          fs.writeFileSync(resolvedPath, text, 'utf-8');
-          return `File written successfully to ${file_path}`;
-        } catch (error) {
-          return `Error writing file ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_write_tool",
-        description: "Write text content to a file",
-        schema: z.object({
-          file_path: z.string().describe("Path to the file to write"),
-          text: z.string().describe("Text content to write to the file"),
-        }),
-      }
-    );
-
-    const listDirectoryTool = tool(
-      async ({ directory_path = "." }) => {
-        try {
-          const resolvedPath = resolvePath(directory_path);
-          const items = fs.readdirSync(resolvedPath, { withFileTypes: true });
-          
-          const result = items.map(item => {
-            return `${item.isDirectory() ? 'DIR' : 'FILE'}: ${item.name}`;
-          });
-          
-          return `Contents of ${directory_path}:\n${result.join('\n')}`;
-        } catch (error) {
-          return `Error listing directory ${directory_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_list_directory_tool",
-        description: "List files and directories in a specified path",
-        schema: z.object({
-          directory_path: z.string().optional().default(".").describe("Path to the directory to list (default: current directory)"),
-        }),
-      }
-    );
-
-    const copyFileTool = tool(
-      async ({ source_path, destination_path }) => {
-        try {
-          const resolvedSource = resolvePath(source_path);
-          const resolvedDest = resolvePath(destination_path);
-          
-          // Ensure destination directory exists
-          fs.mkdirSync(path.dirname(resolvedDest), { recursive: true });
-          fs.copyFileSync(resolvedSource, resolvedDest);
-          
-          return `File copied successfully from ${source_path} to ${destination_path}`;
-        } catch (error) {
-          return `Error copying file: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_copy_tool",
-        description: "Copy a file from source to destination",
-        schema: z.object({
-          source_path: z.string().describe("Path to the source file"),
-          destination_path: z.string().describe("Path to the destination file"),
-        }),
-      }
-    );
-
-    const moveFileTool = tool(
-      async ({ source_path, destination_path }) => {
-        try {
-          const resolvedSource = resolvePath(source_path);
-          const resolvedDest = resolvePath(destination_path);
-          
-          // Ensure destination directory exists
-          fs.mkdirSync(path.dirname(resolvedDest), { recursive: true });
-          fs.renameSync(resolvedSource, resolvedDest);
-          
-          return `File moved successfully from ${source_path} to ${destination_path}`;
-        } catch (error) {
-          return `Error moving file: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_move_tool",
-        description: "Move or rename a file from source to destination",
-        schema: z.object({
-          source_path: z.string().describe("Path to the source file"),
-          destination_path: z.string().describe("Path to the destination file"),
-        }),
-      }
-    );
-
-    const deleteFileTool = tool(
-      async ({ file_path }) => {
-        try {
-          const resolvedPath = resolvePath(file_path);
-          const stats = fs.statSync(resolvedPath);
-          
-          if (stats.isDirectory()) {
-            fs.rmSync(resolvedPath, { recursive: true, force: true });
-            return `Directory ${file_path} deleted successfully`;
-          } else {
-            fs.unlinkSync(resolvedPath);
-            return `File ${file_path} deleted successfully`;
-          }
-        } catch (error) {
-          return `Error deleting ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_delete_tool",
-        description: "Delete a file or directory",
-        schema: z.object({
-          file_path: z.string().describe("Path to the file or directory to delete"),
-        }),
-      }
-    );
-
-    const searchFilesTool = tool(
-      async ({ directory_path = ".", pattern, file_extension }) => {
-        try {
-          const resolvedPath = resolvePath(directory_path);
-          const results: string[] = [];
-          
-          const searchRecursive = (currentPath: string) => {
-            const items = fs.readdirSync(currentPath, { withFileTypes: true });
-            
-            for (const item of items) {
-              const itemFullPath = path.join(currentPath, item.name);
-              const relativePath = path.relative(this.fileSystemRootDir, itemFullPath);
-              
-              if (item.isDirectory()) {
-                try {
-                  searchRecursive(itemFullPath);
-                } catch (error) {
-                  console.error(`Error reading directory ${itemFullPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                }
-              } else {
-                let matches = true;
-                
-                if (pattern && !item.name.toLowerCase().includes(pattern.toLowerCase())) {
-                  matches = false;
-                }
-                
-                if (file_extension && !item.name.toLowerCase().endsWith(file_extension.toLowerCase())) {
-                  matches = false;
-                }
-                
-                if (matches) {
-                  results.push(relativePath);
-                }
-              }
-            }
-          };
-          
-          searchRecursive(resolvedPath);
-          
-          if (results.length === 0) {
-            return `No files found matching the criteria in ${directory_path}`;
-          }
-          
-          return `Found ${results.length} files:\n${results.join('\n')}`;
-        } catch (error) {
-          return `Error searching files: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_search_tool",
-        description: "Search for files in a directory by name pattern or extension",
-        schema: z.object({
-          directory_path: z.string().optional().default(".").describe("Directory to search in"),
-          pattern: z.string().optional().describe("Text pattern to search for in filenames"),
-          file_extension: z.string().optional().describe("File extension to filter by (e.g., '.txt', '.js')"),
-        }),
-      }
-    );
-
-    return [
-      readFileTool,
-      writeFileTool,
-      listDirectoryTool,
-      copyFileTool,
-      moveFileTool,
-      deleteFileTool,
-      searchFilesTool
-    ];
-  }
-
-  /**
-   * Create Web Search tools using proper LangChain tool definitions with Zod schemas
-   */
-  private createWebSearchTools() {
-    if (!this.webSearchEnabled) {
-      return [];
-    }
-
-    const webSearchTool = tool(
-      async ({ query, maxResults = 5 }) => {
-        try {
-          if (!query || query.trim().length === 0) {
-            return 'Error: Search query is required';
-          }
-
-          const searchResults = await this.webSearchService.search(query, maxResults);
-          
-          if (searchResults.length === 0) {
-            return `No web search results found for query: "${query}"`;
-          }
-
-          const resultText = searchResults.map((result, index) => 
-            `**${index + 1}. ${result.title}**\n${result.snippet}\nSource: ${result.link}`
-          ).join('\n\n');
-
-          return `Web search results for "${query}":\n\n${resultText}`;
-        } catch (error) {
-          return `Error performing web search: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "web_search_tool",
-        description: "Search the web for current information, news, facts, or any query that requires up-to-date information",
-        schema: z.object({
-          query: z.string().describe("Search query string"),
-          maxResults: z.number().optional().default(5).describe("Maximum number of results to return (default: 5)"),
-        }),
-      }
-    );
-
-    return [webSearchTool];
-  }
 
   /**
    * Populate tools map for quick lookup during tool execution
@@ -882,9 +490,9 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     });
     
     // Rebuild tools and tools map
-    this.banburyTools = this.createBanburyTools();
-    this.fileSystemTools = this.createFileSystemTools();
-    this.webSearchTools = this.createWebSearchTools();
+    this.banburyTools = createBanburyTools(this.mcpClient);
+    this.fileSystemTools = createFileSystemTools(this.fileSystemRootDir);
+    this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);
@@ -895,7 +503,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    */
   public setFileSystemRoot(rootDir: string) {
     this.fileSystemRootDir = rootDir;
-    this.fileSystemTools = this.createFileSystemTools();
+    this.fileSystemTools = createFileSystemTools(this.fileSystemRootDir);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);
@@ -907,7 +515,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   public setWebSearchEnabled(enabled: boolean) {
     this.webSearchEnabled = enabled;
     this.systemPrompt = this.createSystemPrompt(); // Rebuild system prompt
-    this.webSearchTools = this.createWebSearchTools();
+    this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);

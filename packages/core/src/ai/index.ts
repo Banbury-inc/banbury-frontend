@@ -1,5 +1,5 @@
 import { Ollama } from 'ollama';
-import { WebSearchService, WebSearchResult } from './web-search';
+import { WebSearchService, WebSearchResult } from './basic/tools/webSearch';
 import { ChatMessage } from '../types';
 
 export * from './addDownloadedModel';

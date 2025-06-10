@@ -34,7 +34,7 @@
     "packages/core/src/device/add_uploads_info.ts",
     "packages/core/src/files/downloadFile.ts",
     "packages/core/src/device/fetchDeviceData.ts"
-, "packages/core/src/device/addDevice.ts", "packages/core/src/ai/tools/useMcpClient.tsx"  ],
+, "packages/core/src/device/addDevice.ts", "packages/core/src/ai/basic/tools/banburyMCP/useMcpClient.tsx"  ],
   "exclude": [
     "node_modules",
     "dist"

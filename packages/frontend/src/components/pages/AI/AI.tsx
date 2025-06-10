@@ -8,9 +8,9 @@ import {
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { OllamaClient } from '@banbury/core/src/ai';
-import { BasicClient } from '@banbury/core/src/ai/BasicClient';
-import { LangChainAIClient } from '@banbury/core/src/ai/LangChainAIClient';
-import { useMcpClient } from '@banbury/core/src/ai/tools/useMcpClient';
+import { BasicClient } from '@banbury/core/src/ai/basic/BasicClient';
+import { LangChainAIClient } from '@banbury/core/src/ai/agent/LangChainAIClient';
+import { useMcpClient } from '@banbury/core/src/ai/basic/tools/banburyMCP/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
 import { saveConversation } from './handlers/handleSaveConversation';
@@ -24,7 +24,7 @@ import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDra
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
 import { Conversation, DeviceInfo, ExtendedChatMessage } from '@banbury/core/src/types';
-import { handleToggleTool } from './handlers/handleToggleTool';
+import { handleToggleTool } from './components/MessageBox/handlers/handleToggleTool';
 
 
 export default function AI() {

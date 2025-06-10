@@ -1,5 +1,5 @@
-import { loadGlobalAxiosCredentials } from '../../middleware/axiosGlobalHeader';
-import banbury from '../..';
+import { loadGlobalAxiosCredentials } from '../../../../middleware/axiosGlobalHeader';
+import banbury from '../../../..';
 
 
 export interface McpToolCall {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BanburyMcpClient, McpToolCall, McpToolResult, McpServerConfig } from './BanburyMcpClient';
-import { loadGlobalAxiosCredentials } from '../../middleware/axiosGlobalHeader';
-import banbury from '../../..';
+import { loadGlobalAxiosCredentials } from '../../../../middleware/axiosGlobalHeader';
+import banbury from '../../../../../dist';
 
 interface UseMcpClientOptions {
   serverUrl?: string;
