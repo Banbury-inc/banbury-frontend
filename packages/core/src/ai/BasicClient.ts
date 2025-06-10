@@ -1,5 +1,5 @@
 import { OllamaClient } from './index';
-import { CloudMcpClient, McpToolCall, McpToolResult } from './CloudMcpClient';
+import { BanburyMcpClient, McpToolCall, McpToolResult } from './tools/BanburyMcpClient';
 import { WebSearchService } from './web-search';
 
 export interface AIMessage {
@@ -30,11 +30,11 @@ export interface StreamCallback {
 }
 
 /**
- * Enhanced AI Client that combines Ollama with MCP tool calling capabilities
+ * Basic AI Client that combines Ollama with MCP tool calling capabilities
  */
-export class EnhancedAIClient {
+export class BasicClient {
   private ollamaClient: OllamaClient;
-  private mcpClient: CloudMcpClient | null;
+  private mcpClient: BanburyMcpClient | null;
   private webSearchService: WebSearchService;
   private systemPrompt: string | null = null;
   private currentModel: string;
@@ -44,7 +44,7 @@ export class EnhancedAIClient {
   constructor(
     ollamaBaseUrl: string = 'http://localhost:11434',
     model: string = 'qwen3:latest',
-    mcpClient: CloudMcpClient | null = null
+    mcpClient: BanburyMcpClient | null = null
   ) {
     this.ollamaClient = new OllamaClient(ollamaBaseUrl, model);
     this.mcpClient = mcpClient;
@@ -187,7 +187,7 @@ export class EnhancedAIClient {
   /**
    * Update the MCP client
    */
-  public setMcpClient(mcpClient: CloudMcpClient | null) {
+  public setMcpClient(mcpClient: BanburyMcpClient | null) {
     this.mcpClient = mcpClient;
     this.systemPrompt = null; // Will be rebuilt on next getSystemPrompt()
   }

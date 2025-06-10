@@ -1,5 +1,5 @@
-import { loadGlobalAxiosCredentials } from '../middleware/axiosGlobalHeader';
-import banbury from '..';
+import { loadGlobalAxiosCredentials } from '../../middleware/axiosGlobalHeader';
+import banbury from '../..';
 
 
 export interface McpToolCall {
@@ -21,7 +21,7 @@ export interface McpServerConfig {
 /**
  * Cloud MCP Client for communicating with the Banbury MCP Server
  */
-export class CloudMcpClient {
+export class BanburyMcpClient {
   private config: McpServerConfig;
   private token?: string;
   private username?: string;

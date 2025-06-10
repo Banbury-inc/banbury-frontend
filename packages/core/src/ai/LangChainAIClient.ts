@@ -3,8 +3,8 @@ import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/
 import { tool } from '@langchain/core/tools';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
-import { CloudMcpClient, McpToolResult } from './CloudMcpClient';
-import { ToolCall } from './EnhancedAIClient';
+import { BanburyMcpClient, McpToolResult } from './tools/BanburyMcpClient';
+import { ToolCall } from './BasicClient';
 import { WebSearchService } from './web-search';
 import fs from 'fs';
 import path from 'path';
@@ -38,7 +38,7 @@ export interface LangChainMessage {
  */
 export class LangChainAIClient {
   private llm: ChatOllama;
-  private mcpClient: CloudMcpClient | null;
+  private mcpClient: BanburyMcpClient | null;
   private webSearchService: WebSearchService;
   private systemPrompt: string;
   private banburyTools: any[] = [];
@@ -55,7 +55,7 @@ export class LangChainAIClient {
   constructor(
     ollamaBaseUrl: string = 'http://localhost:11434',
     model: string = 'qwen3:latest',
-    mcpClient: CloudMcpClient | null = null,
+    mcpClient: BanburyMcpClient | null = null,
     fileSystemRootDir: string = os.homedir() // Default to user's home directory
   ) {
     this.baseUrl = ollamaBaseUrl;
@@ -865,7 +865,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Update the MCP client
    */
-  public setMcpClient(mcpClient: CloudMcpClient | null) {
+  public setMcpClient(mcpClient: BanburyMcpClient | null) {
     this.mcpClient = mcpClient;
   }
 

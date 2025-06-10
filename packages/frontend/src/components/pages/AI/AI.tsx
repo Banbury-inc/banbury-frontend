@@ -8,9 +8,9 @@ import {
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { OllamaClient } from '@banbury/core/src/ai';
-import { EnhancedAIClient } from '@banbury/core/src/ai/EnhancedAIClient';
+import { BasicClient } from '@banbury/core/src/ai/BasicClient';
 import { LangChainAIClient } from '@banbury/core/src/ai/LangChainAIClient';
-import { useMcpClient } from './handlers/useMcpClient';
+import { useMcpClient } from '@banbury/core/src/ai/tools/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
 import { saveConversation } from './handlers/handleSaveConversation';
@@ -24,6 +24,7 @@ import { handleDragLeave } from './components/DragDropOverlay/handlers/handleDra
 import { handleDragOver } from './components/DragDropOverlay/handlers/handleDragOver';
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
 import { Conversation, DeviceInfo, ExtendedChatMessage } from '@banbury/core/src/types';
+import { handleToggleTool } from './handlers/handleToggleTool';
 
 
 export default function AI() {
@@ -35,7 +36,7 @@ export default function AI() {
   const [streamingThinking, setStreamingThinking] = useState<string>('');
   const [currentModel, setCurrentModel] = useState<string>('qwen3:latest');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [enhancedAIClient, setEnhancedAIClient] = useState<EnhancedAIClient | null>(null);
+  const [enhancedAIClient, setEnhancedAIClient] = useState<BasicClient | null>(null);
   const [langChainClient, setLangChainClient] = useState<LangChainAIClient | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -102,33 +103,6 @@ export default function AI() {
     },
   ];
 
-  const handleToggleTool = (toolId: string, isEnabled: boolean) => {
-    switch (toolId) {
-      case 'web_search':
-        setWebSearchEnabled(isEnabled);
-        break;
-      case 'banbury':
-        setBanburyEnabled(isEnabled);
-        break;
-      case 'gmail':
-        setGmailEnabled(isEnabled);
-        break;
-      case 'google_calendar':
-        setGoogleCalendarEnabled(isEnabled);
-        break;
-      case 'google_drive':
-        setGoogleDriveEnabled(isEnabled);
-        break;
-      case 'google_tasks':
-        setGoogleTasksEnabled(isEnabled);
-        break;
-      case 'filesystem':
-        setFilesystemEnabled(isEnabled);
-        break;
-      default:
-        console.warn(`Unknown tool ID: ${toolId}`);
-    }
-  };
 
   // Initialize MCP client
   const {
@@ -140,7 +114,7 @@ export default function AI() {
     new OllamaClient('http://localhost:11434', currentModel);
 
     // Initialize Enhanced AI client with MCP integration
-    const enhancedClient = new EnhancedAIClient(
+            const enhancedClient = new BasicClient(
       'http://localhost:11434',
       currentModel,
       mcpToolsEnabled ? mcpClient : null
@@ -328,7 +302,15 @@ export default function AI() {
             setIsAgentMode={setIsAgentMode}
             mcpClient={mcpClient}
             availableTools={availableTools}
-            onToggleTool={handleToggleTool}
+            onToggleTool={(toolId, isEnabled) => handleToggleTool(toolId, isEnabled,
+              setWebSearchEnabled,
+              setBanburyEnabled,
+              setGmailEnabled,
+              setGoogleCalendarEnabled,
+              setGoogleDriveEnabled,
+              setGoogleTasksEnabled,
+              setFilesystemEnabled
+            )}
           />
         </Card>
       </Stack>
