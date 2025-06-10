@@ -87,13 +87,15 @@ const GoogleDriveUploadButton: React.FC<GoogleDriveUploadButtonProps> = ({
         multiple
       />
       <Tooltip title="Upload to Google Drive">
-        <Button
-          onClick={handleButtonClick}
-          disabled={uploading}
-          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-        >
-          <CloudUploadIcon fontSize="inherit" />
-        </Button>
+        <span>
+          <Button
+            onClick={handleButtonClick}
+            disabled={uploading}
+            sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+          >
+            <CloudUploadIcon fontSize="inherit" />
+          </Button>
+        </span>
       </Tooltip>
     </>
   );

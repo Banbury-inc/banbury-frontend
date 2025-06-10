@@ -39,21 +39,23 @@ export default function NavigateBackButton({
 
   return (
     <Tooltip title="Navigate back">
-      <Button
-        data-testid="navigate-back-button"
-        onClick={handleBackNavigation}
-        disabled={backHistory.length === 0}
-        sx={{ 
-          paddingLeft: '4px', 
-          paddingRight: '4px', 
-          minWidth: '30px',
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          }
-        }}
-      >
-        <NavigateBeforeOutlinedIcon fontSize="inherit" />
-      </Button>
+      <span>
+        <Button
+          data-testid="navigate-back-button"
+          onClick={handleBackNavigation}
+          disabled={backHistory.length === 0}
+          sx={{ 
+            paddingLeft: '4px', 
+            paddingRight: '4px', 
+            minWidth: '30px',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            }
+          }}
+        >
+          <NavigateBeforeOutlinedIcon fontSize="inherit" />
+        </Button>
+      </span>
     </Tooltip>
   );
 }

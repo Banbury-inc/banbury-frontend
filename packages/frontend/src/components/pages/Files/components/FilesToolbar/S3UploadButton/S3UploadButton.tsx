@@ -80,13 +80,15 @@ const S3UploadButton: React.FC<S3UploadButtonProps> = ({ filePath = '', onUpload
         multiple
       />
       <Tooltip title="Upload to Cloud">
-        <Button
-          onClick={handleButtonClick}
-          disabled={uploading}
-          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-        >
-          <CloudUploadIcon fontSize="inherit" />
-        </Button>
+        <span>
+          <Button
+            onClick={handleButtonClick}
+            disabled={uploading}
+            sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+          >
+            <CloudUploadIcon fontSize="inherit" />
+          </Button>
+        </span>
       </Tooltip>
     </>
   );

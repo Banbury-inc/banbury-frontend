@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Typography, Box, Skeleton } from '@mui/material';
-import { TreeView, TreeItem } from '@mui/x-tree-view';
+import { SimpleTreeView, TreeItem } from '@mui/x-tree-view';
 import GrainIcon from '@mui/icons-material/Grain';
 import DevicesIcon from '@mui/icons-material/Devices';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -523,14 +523,14 @@ export default function FileTreeView({
           <Skeleton variant="rectangular" height={28} sx={{ mb: 1, ml: 4 }} />
         </>
       ) : (
-        <TreeView
+        <SimpleTreeView
           aria-label="file system navigator"
           sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
           expandedItems={expandedNodes}
-          onExpandedItemsChange={(_event, itemIds) => setExpandedNodes(itemIds)}
+          onExpandedItemsChange={(_event: any, itemIds: any) => setExpandedNodes(itemIds)}
         >
           {renderTreeItems(fileRows)}
-        </TreeView>
+        </SimpleTreeView>
       )}
     </Box>
   )

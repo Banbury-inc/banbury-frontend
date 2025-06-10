@@ -78,7 +78,7 @@ export default function AccountMenuIcon() {
               bgcolor: 'primary.main'
             }}
           >
-            {username && !mainImageError ? (
+            {username && !mainImageError && profilePictureUrl ? (
               <img
                 src={profilePictureUrl}
                 alt={username || 'User'}

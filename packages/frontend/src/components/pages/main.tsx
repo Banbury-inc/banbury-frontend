@@ -254,7 +254,7 @@ export default function PermanentDrawerLeft() {
               pointerEvents: 'auto', 
               zIndex: 1000,
               '& > *': {
-                '-webkit-app-region': 'no-drag'
+                WebkitAppRegion: 'no-drag'
               }
             }}>
               <div className="flex justify-between items-center h-8 bg-[#212121]">
@@ -267,7 +267,7 @@ export default function PermanentDrawerLeft() {
                       display: flex;
                       flex-grow: 1;
                       position: relative;
-                      bg-color: #212121;
+                      background-color: #212121;
                       -webkit-app-region: no-drag;
                     }
                   `}
@@ -301,7 +301,7 @@ export default function PermanentDrawerLeft() {
                     height: '40px',
                     alignItems: 'center',
                     backgroundColor: 'transparent',
-                    '-webkit-app-region': 'no-drag',
+                    WebkitAppRegion: 'no-drag',
                   }}
                 >
                   <AccountMenuIcon />

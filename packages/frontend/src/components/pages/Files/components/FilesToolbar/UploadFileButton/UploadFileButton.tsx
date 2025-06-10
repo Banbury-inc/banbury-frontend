@@ -38,24 +38,26 @@ const NewInputFileUploadButton: React.FC = () => {
 
   return (
     <Tooltip title="Upload file">
-      <LoadingButton 
-        component="label"
-        data-testid="upload-file-button"
-        loading={loading}
-        loadingPosition="end"
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-      >
-        <FileUploadIcon
-          fontSize="inherit"
-        />
-        <VisuallyHiddenInput
-          data-testid="file-input"
-          type="file"
-          onChange={handleFileChange}
-          accept="*/*"
-          disabled={loading}
-        />
-      </LoadingButton>
+      <span>
+        <LoadingButton 
+          component="label"
+          data-testid="upload-file-button"
+          loading={loading}
+          loadingPosition="end"
+          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+        >
+          <FileUploadIcon
+            fontSize="inherit"
+          />
+          <VisuallyHiddenInput
+            data-testid="file-input"
+            type="file"
+            onChange={handleFileChange}
+            accept="*/*"
+            disabled={loading}
+          />
+        </LoadingButton>
+      </span>
     </Tooltip>
   );
 };
