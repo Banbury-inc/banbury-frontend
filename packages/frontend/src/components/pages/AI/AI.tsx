@@ -9,7 +9,7 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { BasicClient } from '@banbury/core/src/ai/basic/BasicClient';
-import { LangChainAIClient, ToolConfiguration } from '@banbury/core/src/ai/agent/LangChainAIClient';
+import { Agent, ToolConfiguration } from '@banbury/core/src/ai/agent/agent';
 import { useMcpClient } from '@banbury/core/src/ai/basic/tools/banburyMCP/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
@@ -37,7 +37,7 @@ export default function AI() {
   const [currentModel, setCurrentModel] = useState<string>('qwen3:latest');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [enhancedAIClient, setEnhancedAIClient] = useState<BasicClient | null>(null);
-  const [langChainClient, setLangChainClient] = useState<LangChainAIClient | null>(null);
+  const [langChainClient, setLangChainClient] = useState<Agent | null>(null);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -133,7 +133,7 @@ export default function AI() {
     setEnhancedAIClient(enhancedClient);
 
     // Initialize LangChain AI client with MCP integration
-    const langChainAiClient = new LangChainAIClient(
+    const langChainAiClient = new Agent(
       'http://localhost:11434',
       currentModel,
       mcpToolsEnabled ? mcpClient : null,

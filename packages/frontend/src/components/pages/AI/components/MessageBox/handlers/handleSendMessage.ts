@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { ExtendedChatMessage, ChatResponse } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
-import { handleLangChainAgent } from './handleLangChainAgent';
+import { handleAgent } from './handleAgent';
 
 // Local implementation to avoid import issues
 export const extractThinkingContent = (content: string): { thinking?: string; cleanContent: string } => {
@@ -327,7 +327,7 @@ export const handleSendMessage = async (
   // Completely separate functionality based on agent mode
   if (isAgentMode) {
     // Agent mode: Use ONLY LangChain AI client
-    return handleLangChainAgent(
+    return handleAgent(
       inputMessage,
       selectedImages,
       messages,

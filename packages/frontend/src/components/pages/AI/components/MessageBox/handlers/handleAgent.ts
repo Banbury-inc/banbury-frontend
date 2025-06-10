@@ -3,9 +3,9 @@ import { ExtendedChatMessage } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
 import { extractThinkingContent } from './handleSendMessage';
-import { LangChainAIClient } from '@banbury/core/src/ai/agent/LangChainAIClient';
+import { Agent } from '@banbury/core/src/ai/agent/agent';
 
-export const handleLangChainAgent = async (
+export const handleAgent = async (
   inputMessage: string, 
   selectedImages: string[], 
   messages: ExtendedChatMessage[], 
@@ -64,7 +64,7 @@ export const handleLangChainAgent = async (
 
   try {
     // Create LangChain AI client instance with tool configuration
-    const langChainClient = new LangChainAIClient(
+    const agent = new Agent(
       ollamaClient.baseUrl || 'http://localhost:11434',
       ollamaClient.model || 'qwen3:latest',
       mcpClient,
@@ -83,7 +83,7 @@ export const handleLangChainAgent = async (
     let activeToolResults: any[] = [];
 
     // Use LangChain AI client with streaming callbacks
-    await langChainClient.chatStream(langChainMessages, {
+    await agent.chatStream(langChainMessages, {
       onToken: (token: string) => {
         if (abortControllerRef.current?.signal.aborted) return;
         setIsPreparingToThink(false);

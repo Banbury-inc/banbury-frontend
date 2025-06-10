@@ -13,7 +13,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-export interface LangChainStreamCallback {
+export interface AgentStreamCallback {
   onToken?: (token: string) => void;
   onThinking?: (thinking: string) => void;
   onThinkingStart?: () => void;
@@ -24,12 +24,12 @@ export interface LangChainStreamCallback {
   onError?: (error: Error) => void;
 }
 
-export interface LangChainOptions {
+export interface AgentOptions {
   temperature?: number;
   maxRetries?: number;
 }
 
-export interface LangChainMessage {
+export interface AgentMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
   tool_call_id?: string;
@@ -49,7 +49,7 @@ export interface ToolConfiguration {
  * LangChain-powered AI Client with visible thinking and tool calling
  * Simplified version focused on thinking process before tool execution
  */
-export class LangChainAIClient {
+export class Agent {
   private llm: ChatOllama;
   private mcpClient: BanburyMcpClient | null;
   private webSearchService: WebSearchService;
@@ -213,8 +213,8 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    * Enhanced chat with streaming response, thinking process, tool calling, and structured output
    */
   public async chatStream(
-    messages: LangChainMessage[],
-    callbacks: LangChainStreamCallback = {},
+    messages: AgentMessage[],
+    callbacks: AgentStreamCallback = {},
   ): Promise<string> {
     try {
       // Convert messages to LangChain format
@@ -271,7 +271,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   private async streamInitialResponse(
     messages: any[],
     modelWithTools: any,
-    callbacks: LangChainStreamCallback
+    callbacks: AgentStreamCallback
   ): Promise<{ fullResponse: string; initialResponse: any }> {
     let fullResponse = '';
     let visibleContentSent = '';
@@ -367,7 +367,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Stream text token by token for better UX
    */
-  private streamText(text: string, callbacks: LangChainStreamCallback, delay: number = 20) {
+  private streamText(text: string, callbacks: AgentStreamCallback, delay: number = 20) {
     // Don't stream if text is empty
     if (!text || text.trim().length === 0) {
       return;
@@ -391,7 +391,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   private async executeToolChain(
     messages: any[],
     initialResponse: any,
-    callbacks: LangChainStreamCallback
+    callbacks: AgentStreamCallback
   ): Promise<ToolMessage[]> {
     const toolResults: ToolMessage[] = [];
     
@@ -451,7 +451,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     initialResponse: any,
     toolResults: ToolMessage[],
     llm: ChatOllama,
-    callbacks: LangChainStreamCallback
+    callbacks: AgentStreamCallback
   ): Promise<string> {
     // Build the complete message chain as per LangChain documentation
     const conversationWithResults = [
@@ -479,7 +479,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     return cleanContent;
   }
 
-  private convertMessagesToLangChain(messages: LangChainMessage[]) {
+  private convertMessagesToLangChain(messages: AgentMessage[]) {
     return messages.map(msg => {
       switch (msg.role) {
         case 'system':
@@ -596,7 +596,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Non-streaming chat
    */
-  public async chat(messages: LangChainMessage[]): Promise<string> {
+  public async chat(messages: AgentMessage[]): Promise<string> {
     return new Promise((resolve, reject) => {
       let fullResponse = '';
       
@@ -620,8 +620,8 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    * Multimodal support - handle images in messages
    */
   public async chatWithImages(
-    messages: LangChainMessage[],
-    callbacks?: LangChainStreamCallback,
+    messages: AgentMessage[],
+    callbacks?: AgentStreamCallback,
   ): Promise<string> {
     // Convert messages to support image content
     const multimodalMessages = messages.map(msg => {
@@ -656,7 +656,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Helper to convert single message to LangChain format
    */
-  private convertMessageToLangChain(msg: LangChainMessage) {
+  private convertMessageToLangChain(msg: AgentMessage) {
     switch (msg.role) {
       case 'system':
         return new SystemMessage(msg.content);
