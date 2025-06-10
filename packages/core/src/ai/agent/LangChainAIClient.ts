@@ -35,6 +35,16 @@ export interface LangChainMessage {
   tool_call_id?: string;
 }
 
+export interface ToolConfiguration {
+  webSearch: boolean;
+  banbury: boolean;
+  filesystem: boolean;
+  gmail?: boolean;
+  googleCalendar?: boolean;
+  googleDrive?: boolean;
+  googleTasks?: boolean;
+}
+
 /**
  * LangChain-powered AI Client with visible thinking and tool calling
  * Simplified version focused on thinking process before tool execution
@@ -50,17 +60,30 @@ export class LangChainAIClient {
   private allTools: any[] = [];
   private toolsMap: Map<string, any> = new Map(); // For quick tool lookup
   private baseUrl: string;
+  private model: string;
+  private llmWithTools: any ;
   private fileSystemRootDir: string;
-  private webSearchEnabled: boolean = true;
+  private toolConfig: ToolConfiguration;
 
   constructor(
     ollamaBaseUrl: string = 'http://localhost:11434',
     model: string = 'qwen3:latest',
     mcpClient: BanburyMcpClient | null = null,
-    fileSystemRootDir: string = os.homedir() // Default to user's home directory
+    fileSystemRootDir: string = os.homedir(), // Default to user's home directory
+    toolConfig: ToolConfiguration = {
+      webSearch: true,
+      banbury: true,
+      filesystem: true,
+      gmail: false,
+      googleCalendar: false,
+      googleDrive: false,
+      googleTasks: false
+    }
   ) {
     this.baseUrl = ollamaBaseUrl;
+    this.model = model;
     this.fileSystemRootDir = fileSystemRootDir;
+    this.toolConfig = toolConfig;
     this.webSearchService = new WebSearchService();
     
     this.llm = new ChatOllama({
@@ -71,15 +94,20 @@ export class LangChainAIClient {
     
     this.mcpClient = mcpClient;
     this.systemPrompt = this.createSystemPrompt();
-    this.banburyTools = createBanburyTools(this.mcpClient);
-    this.fileSystemTools = createFileSystemTools(this.fileSystemRootDir);
-    this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
+    this.rebuildTools();
+  }
+
+  private rebuildTools() {
+    this.banburyTools = this.toolConfig.banbury ? createBanburyTools(this.mcpClient) : [];
+    this.fileSystemTools = this.toolConfig.filesystem ? createFileSystemTools(this.fileSystemRootDir) : [];
+    this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
     this.populateToolsMap();
+    this.llmWithTools = this.llm.bindTools(this.allTools);
   }
 
   private createSystemPrompt(): string {
-    const webSearchInfo = this.webSearchEnabled ? `
+    const webSearchInfo = this.toolConfig.webSearch ? `
 
 **Available Web Search Tools (use only when needed):**
 - web_search_tool: Search the web for current information, news, facts, or any query that requires up-to-date information
@@ -92,6 +120,28 @@ export class LangChainAIClient {
 - Questions about current stock prices, weather, sports scores
 - Any query that requires real-time or recent data
 - When your knowledge might be outdated
+` : '';
+
+    const banburyInfo = this.toolConfig.banbury ? `
+
+**Available Banbury Tools (use only when needed):**
+- banbury-get-scanned-folders: Get all monitored directory locations
+- banbury-get-random-files: Get random file samples from monitored system
+- banbury-get-device-info: Get comprehensive device information and status
+- banbury-get-sessions: Get current active sessions and task information
+- banbury-add-task: Create new tasks in the system queue
+` : '';
+
+    const filesystemInfo = this.toolConfig.filesystem ? `
+
+**Available File System Tools (use only when needed):**
+- file_read_tool: Read contents of a file
+- file_write_tool: Write text content to a file
+- file_list_directory_tool: List files and directories in a path
+- file_copy_tool: Copy files from one location to another
+- file_move_tool: Move/rename files
+- file_delete_tool: Delete files or directories
+- file_search_tool: Search for files matching patterns
 ` : '';
 
     return `You are an advanced AI assistant with structured thinking capabilities and access to various tools through the Banbury platform and file system operations.
@@ -137,22 +187,7 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 - Questions about programming, technology, or general knowledge
 - Creative writing, analysis, or problem-solving that doesn't need system data
 - Casual conversation or clarifying questions
-
-**Available Banbury Tools (use only when needed):**
-- banbury-get-scanned-folders: Get all monitored directory locations
-- banbury-get-random-files: Get random file samples from monitored system
-- banbury-get-device-info: Get comprehensive device information and status
-- banbury-get-sessions: Get current active sessions and task information
-- banbury-add-task: Create new tasks in the system queue
-
-**Available File System Tools (use only when needed):**
-- file_read_tool: Read contents of a file
-- file_write_tool: Write text content to a file
-- file_list_directory_tool: List files and directories in a path
-- file_copy_tool: Copy files from one location to another
-- file_move_tool: Move/rename files
-- file_delete_tool: Delete files or directories
-- file_search_tool: Search for files matching patterns${webSearchInfo}
+${banburyInfo}${filesystemInfo}${webSearchInfo}
 
 **Core Principles:**
 - Think systematically before deciding whether to use tools
@@ -163,12 +198,6 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 
 Your thinking process should clearly indicate whether tools are needed and why.`;
   }
-
-
-
-
-
-
 
   /**
    * Populate tools map for quick lookup during tool execution
@@ -476,7 +505,9 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Update the model
    */
-  public setModel(model: string) {    
+  public setModel(model: string) {
+    this.model = model;
+    
     this.llm = new ChatOllama({
       baseUrl: this.baseUrl,
       model: model,
@@ -484,11 +515,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     });
     
     // Rebuild tools and tools map
-    this.banburyTools = createBanburyTools(this.mcpClient);
-    this.fileSystemTools = createFileSystemTools(this.fileSystemRootDir);
-    this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
-    this.populateToolsMap();
+    this.rebuildTools();
   }
 
   /**
@@ -496,27 +523,39 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    */
   public setFileSystemRoot(rootDir: string) {
     this.fileSystemRootDir = rootDir;
-    this.fileSystemTools = createFileSystemTools(this.fileSystemRootDir);
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
-    this.populateToolsMap();
+    this.rebuildTools();
   }
 
   /**
-   * Enable or disable web search functionality
+   * Update tool configuration
    */
-  public setWebSearchEnabled(enabled: boolean) {
-    this.webSearchEnabled = enabled;
-    this.systemPrompt = this.createSystemPrompt(); // Rebuild system prompt
-    this.webSearchTools = createWebSearchTools(this.webSearchService, this.webSearchEnabled);
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
-    this.populateToolsMap();
+  public setToolConfiguration(toolConfig: ToolConfiguration) {
+    this.toolConfig = toolConfig;
+    this.systemPrompt = this.createSystemPrompt();
+    this.rebuildTools();
   }
 
   /**
-   * Check if web search is enabled
+   * Get current tool configuration
    */
-  public isWebSearchEnabled(): boolean {
-    return this.webSearchEnabled;
+  public getToolConfiguration(): ToolConfiguration {
+    return { ...this.toolConfig };
+  }
+
+  /**
+   * Enable or disable a specific tool category
+   */
+  public setToolEnabled(toolCategory: keyof ToolConfiguration, enabled: boolean) {
+    this.toolConfig[toolCategory] = enabled;
+    this.systemPrompt = this.createSystemPrompt();
+    this.rebuildTools();
+  }
+
+  /**
+   * Check if a tool category is enabled
+   */
+  public isToolEnabled(toolCategory: keyof ToolConfiguration): boolean {
+    return this.toolConfig[toolCategory] === true;
   }
 
   /**
@@ -538,6 +577,13 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    */
   public getWebSearchTools(): string[] {
     return this.webSearchTools.map(tool => tool.name);
+  }
+
+  /**
+   * Get available banbury tools
+   */
+  public getBanburyTools(): string[] {
+    return this.banburyTools.map(tool => tool.name);
   }
 
   /**

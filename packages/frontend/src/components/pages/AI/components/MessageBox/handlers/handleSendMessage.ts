@@ -310,7 +310,8 @@ export const handleSendMessage = async (
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
   isAgentMode?: boolean,
-  mcpClient?: any
+  mcpClient?: any,
+  toolConfig?: any
 ) => {
   if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
 
@@ -346,7 +347,8 @@ export const handleSendMessage = async (
       isLoading,
       currentConversation,
       setCurrentConversation,
-      mcpClient
+      mcpClient,
+      toolConfig
     );
   } else {
     // Non-agent mode: Use ONLY basic client

@@ -64,6 +64,7 @@ interface MessageBoxProps {
   mcpClient?: any;
   availableTools: any;
   onToggleTool?: (toolId: string, isEnabled: boolean) => void;
+  toolConfig?: any;
 }
 
 export default function MessageBox({
@@ -92,7 +93,8 @@ export default function MessageBox({
   setIsAgentMode,
   mcpClient,
   availableTools,
-  onToggleTool
+  onToggleTool,
+  toolConfig
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
@@ -164,7 +166,8 @@ export default function MessageBox({
         currentConversation,
         setCurrentConversation,
         isAgentMode,
-        mcpClient
+        mcpClient,
+        toolConfig
       );
     };
   };
@@ -340,7 +343,8 @@ export default function MessageBox({
                 currentConversation,
                 setCurrentConversation,
                 isAgentMode,
-                mcpClient
+                mcpClient,
+                toolConfig
               )}
               disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
               size="small"

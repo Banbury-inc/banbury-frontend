@@ -25,7 +25,8 @@ export const handleLangChainAgent = async (
   isLoading: boolean,
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
-  mcpClient?: any
+  mcpClient?: any,
+  toolConfig?: any
 ) => {
   if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
 
@@ -62,11 +63,13 @@ export const handleLangChainAgent = async (
   abortControllerRef.current = new AbortController();
 
   try {
-    // Create LangChain AI client instance
+    // Create LangChain AI client instance with tool configuration
     const langChainClient = new LangChainAIClient(
       ollamaClient.baseUrl || 'http://localhost:11434',
       ollamaClient.model || 'qwen3:latest',
-      mcpClient
+      mcpClient,
+      undefined, // Use default file system root
+      toolConfig
     );
 
     // Convert messages to LangChain format

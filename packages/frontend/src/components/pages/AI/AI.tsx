@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -9,7 +9,7 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { BasicClient } from '@banbury/core/src/ai/basic/BasicClient';
-import { LangChainAIClient } from '@banbury/core/src/ai/agent/LangChainAIClient';
+import { LangChainAIClient, ToolConfiguration } from '@banbury/core/src/ai/agent/LangChainAIClient';
 import { useMcpClient } from '@banbury/core/src/ai/basic/tools/banburyMCP/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
@@ -103,6 +103,17 @@ export default function AI() {
     },
   ];
 
+  // Create tool configuration from availableTools state (memoized to prevent infinite re-renders)
+  const toolConfig: ToolConfiguration = useMemo(() => ({
+    webSearch: webSearchEnabled,
+    banbury: banburyEnabled,
+    filesystem: filesystemEnabled,
+    gmail: gmailEnabled,
+    googleCalendar: googleCalendarEnabled,
+    googleDrive: googleDriveEnabled,
+    googleTasks: googleTasksEnabled
+  }), [webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled]);
+
 
   // Initialize MCP client
   const {
@@ -125,10 +136,12 @@ export default function AI() {
     const langChainAiClient = new LangChainAIClient(
       'http://localhost:11434',
       currentModel,
-      mcpToolsEnabled ? mcpClient : null
+      mcpToolsEnabled ? mcpClient : null,
+      undefined, // Use default file system root
+      toolConfig // Pass tool configuration
     );
     setLangChainClient(langChainAiClient);
-  }, [currentModel, mcpClient, mcpToolsEnabled]);
+  }, [currentModel, mcpClient, mcpToolsEnabled, toolConfig]);
 
   useEffect(() => {
     // Update enhanced AI client when MCP client changes
@@ -140,9 +153,9 @@ export default function AI() {
     // Update LangChain AI client when MCP client changes
     if (langChainClient) {
       langChainClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
-      langChainClient.setWebSearchEnabled(webSearchEnabled);
+      langChainClient.setToolConfiguration(toolConfig);
     }
-  }, [enhancedAIClient, langChainClient, mcpClient, mcpToolsEnabled, webSearchEnabled]);
+  }, [enhancedAIClient, langChainClient, mcpClient, mcpToolsEnabled, webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled]);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
@@ -311,6 +324,7 @@ export default function AI() {
               setGoogleTasksEnabled,
               setFilesystemEnabled
             )}
+            toolConfig={toolConfig}
           />
         </Card>
       </Stack>
