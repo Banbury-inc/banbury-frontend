@@ -16,6 +16,7 @@ import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import { handleImageUpload } from './handlers/handleImageUpload';
 import { handleSendMessage } from './handlers/handleSendMessage';
 import { AVAILABLE_MODELS } from '../AIToolbar/ModelSelectorButton/constants';
+import ToolsButton from './ToolsButton';
 
 const HiddenInput = styled('input')({
   display: 'none',
@@ -62,6 +63,7 @@ interface MessageBoxProps {
   isAgentMode?: boolean;
   setIsAgentMode?: (enabled: boolean) => void;
   mcpClient?: any;
+  availableTools: any;
 }
 
 export default function MessageBox({
@@ -90,6 +92,7 @@ export default function MessageBox({
   isAgentMode = true,
   setIsAgentMode,
   mcpClient,
+  availableTools
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
@@ -239,6 +242,9 @@ export default function MessageBox({
             style={{ marginBottom: 16 }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <ToolsButton
+              availableTools={availableTools}
+            />
             <HiddenInput
               type="file"
               accept="image/*"

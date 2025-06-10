@@ -51,6 +51,19 @@ export default function AI() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
 
+  const availableTools = [
+    {
+      id: 'web_search',
+      label: 'Web Search',
+      isVisible: true,
+    },
+    {
+      id: 'mcp_tools',
+      label: 'MCP Tools',
+      isVisible: mcpToolsEnabled,
+    },
+  ];
+
   // Initialize MCP client
   const {
     client: mcpClient,
@@ -249,6 +262,7 @@ export default function AI() {
             isAgentMode={isAgentMode}
             setIsAgentMode={setIsAgentMode}
             mcpClient={mcpClient}
+            availableTools={availableTools}
           />
         </Card>
       </Stack>
