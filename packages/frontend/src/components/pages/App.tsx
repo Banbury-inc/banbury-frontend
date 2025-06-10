@@ -57,7 +57,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = () => {
       borderBottom: '#424242 solid 1px',
       alignItems: 'center',
       justifyContent: isMac ? 'flex-start' : 'space-between',
-      '-webkit-app-region': 'drag',
+      WebkitAppRegion: 'drag',
       userSelect: 'none',
     }}>
       {isMac && (
@@ -67,7 +67,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = () => {
           gap: '16px',
           height: '100%',
           alignItems: 'center',
-          '-webkit-app-region': 'no-drag'
+          WebkitAppRegion: 'no-drag'
         }}>
           {/* Mac-specific controls go here */}
         </div>
@@ -79,7 +79,7 @@ const CustomTitleBar: React.FC<TitleBarProps> = () => {
 
 declare module 'react' {
   interface CSSProperties {
-    '-webkit-app-region'?: 'drag' | 'no-drag';
+    WebkitAppRegion?: 'drag' | 'no-drag';
   }
 }
 
