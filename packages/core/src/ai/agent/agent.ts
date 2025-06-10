@@ -1,16 +1,12 @@
 import { ChatOllama } from '@langchain/ollama';
 import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
-import { tool } from '@langchain/core/tools';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { z } from 'zod';
 import { BanburyMcpClient, McpToolResult } from '../basic/tools/banburyMCP/BanburyMcpClient';
 import { ToolCall } from '../basic/BasicClient';
 import { WebSearchService } from '../basic/tools/webSearch';
 import { createBanburyTools } from './tools/banburyTools';
 import { createFileSystemTools } from './tools/filesystemTools';
 import { createWebSearchTools } from './tools/webSearchTools';
-import fs from 'fs';
-import path from 'path';
 import os from 'os';
 
 export interface AgentStreamCallback {
