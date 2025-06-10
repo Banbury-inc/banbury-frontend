@@ -547,14 +547,11 @@ export const handleLangChainAgent = async (
   setStreamingToolResults: (toolResults: any[]) => void,
   setIsPreparingToThink: (isPreparingToThink: boolean) => void,
   abortControllerRef: React.MutableRefObject<AbortController | null>, 
-  currentModel: string, 
-  setIsSearching: (isSearching: boolean) => void, 
   showAlert: (title: string, messages: string[], severity: AlertColor) => void, 
   ollamaClient: any, 
   isLoading: boolean,
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
-  langChainOptions?: {},
   mcpClient?: any
 ) => {
   if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
@@ -594,7 +591,7 @@ export const handleLangChainAgent = async (
     
     // Create the LangChain-style agent
     const agent = new SimpleAgentExecutor(ollamaClient, mcpClient, 5, {
-            onIterationStart: (iteration: number) => {
+            onIterationStart: () => {
         setIsPreparingToThink(true);
         setStreamingMessage(``);
         setStreamingThinking('');

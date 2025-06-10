@@ -64,6 +64,7 @@ interface MessageBoxProps {
   setIsAgentMode?: (enabled: boolean) => void;
   mcpClient?: any;
   availableTools: any;
+  onToggleTool?: (toolId: string, isEnabled: boolean) => void;
 }
 
 export default function MessageBox({
@@ -92,7 +93,8 @@ export default function MessageBox({
   isAgentMode = true,
   setIsAgentMode,
   mcpClient,
-  availableTools
+  availableTools,
+  onToggleTool
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
@@ -244,6 +246,7 @@ export default function MessageBox({
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
             <ToolsButton
               availableTools={availableTools}
+              onToggleTool={onToggleTool}
             />
             <HiddenInput
               type="file"

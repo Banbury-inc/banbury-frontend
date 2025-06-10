@@ -4,7 +4,6 @@ import {
    Tooltip, Menu,
 } from '@mui/material';
 import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
-import { useAlert } from '../../../../../renderer/context/AlertContext';
 import Checkbox from '@mui/material/Checkbox';
 import { FormControlLabel } from '@mui/material';
 
@@ -16,14 +15,14 @@ interface ConversationsButtonProps {
     isVisible: boolean;
     isEnabled: boolean;
   }[];
+  onToggleTool?: (toolId: string, isEnabled: boolean) => void;
 }
 
-export default function ToolsButton({ availableTools }: ConversationsButtonProps) {
+export default function ToolsButton({ availableTools, onToggleTool }: ConversationsButtonProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const menuOpen = Boolean(menuAnchorEl);
-  const { showAlert } = useAlert();
 
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -40,8 +39,8 @@ export default function ToolsButton({ availableTools }: ConversationsButtonProps
     setMenuAnchorEl(null);
   };
 
-  const handleToggleTool = (toolId: string, isVisible: boolean) => {
-    console.log('Toggling tool:', toolId, 'Visible:', isVisible);
+  const handleToggleTool = (toolId: string, isEnabled: boolean) => {
+    onToggleTool?.(toolId, isEnabled);
   };
 
 
@@ -93,7 +92,7 @@ export default function ToolsButton({ availableTools }: ConversationsButtonProps
                     onChange={(event) => handleToggleTool(tool.id, event.target.checked)}
                     data-testid={`tool-toggle-${tool.id}`}
                     size="small"
-                    mrarginRight="8px"
+                    sx={{ marginRight: '8px' }}
                   />
                 }
                 label={

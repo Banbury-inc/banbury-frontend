@@ -62,45 +62,73 @@ export default function AI() {
       id: 'web_search',
       label: 'Web Search',
       isVisible: true,
-      isActivated: webSearchEnabled,
+      isEnabled: webSearchEnabled,
     },
     {
       id: 'banbury',
       label: 'Banbury',
       isVisible: true,
-      isActivated: banburyEnabled
+      isEnabled: banburyEnabled
     },
     {
       id: 'gmail',
       label: 'Gmail',
       isVisible: true,
-      isActivated: gmailEnabled
+      isEnabled: gmailEnabled
     },
     {
       id: 'google_calendar',
       label: 'Google Calendar',
       isVisible: true,
-      isActivated: googleCalendarEnabled
+      isEnabled: googleCalendarEnabled
     },
     {
       id: 'google_drive',
       label: 'Google Drive',
       isVisible: true,
-      isActivated: googleDriveEnabled
+      isEnabled: googleDriveEnabled
     },
     {
       id: 'google_tasks',
       label: 'Google Tasks',
       isVisible: true,
-      isActivated: googleTasksEnabled
+      isEnabled: googleTasksEnabled
     },
     {
       id: 'filesystem',
       label: 'File System',
       isVisible: true,
-      isActivated: filesystemEnabled
+      isEnabled: filesystemEnabled
     },
   ];
+
+  const handleToggleTool = (toolId: string, isEnabled: boolean) => {
+    switch (toolId) {
+      case 'web_search':
+        setWebSearchEnabled(isEnabled);
+        break;
+      case 'banbury':
+        setBanburyEnabled(isEnabled);
+        break;
+      case 'gmail':
+        setGmailEnabled(isEnabled);
+        break;
+      case 'google_calendar':
+        setGoogleCalendarEnabled(isEnabled);
+        break;
+      case 'google_drive':
+        setGoogleDriveEnabled(isEnabled);
+        break;
+      case 'google_tasks':
+        setGoogleTasksEnabled(isEnabled);
+        break;
+      case 'filesystem':
+        setFilesystemEnabled(isEnabled);
+        break;
+      default:
+        console.warn(`Unknown tool ID: ${toolId}`);
+    }
+  };
 
   // Initialize MCP client
   const {
@@ -301,6 +329,7 @@ export default function AI() {
             setIsAgentMode={setIsAgentMode}
             mcpClient={mcpClient}
             availableTools={availableTools}
+            onToggleTool={handleToggleTool}
           />
         </Card>
       </Stack>

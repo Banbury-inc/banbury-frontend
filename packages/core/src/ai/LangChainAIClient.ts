@@ -38,8 +38,6 @@ export interface LangChainMessage {
  */
 export class LangChainAIClient {
   private llm: ChatOllama;
-  private llmWithTools: any; // Runnable with tools bound
-
   private mcpClient: CloudMcpClient | null;
   private webSearchService: WebSearchService;
   private systemPrompt: string;
@@ -49,7 +47,6 @@ export class LangChainAIClient {
   private allTools: any[] = [];
   private toolsMap: Map<string, any> = new Map(); // For quick tool lookup
   private baseUrl: string;
-  private model: string;
   private fileSystemRootDir: string;
   private webSearchEnabled: boolean = false;
 
