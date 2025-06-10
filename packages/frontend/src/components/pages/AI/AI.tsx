@@ -47,6 +47,12 @@ export default function AI() {
   const [mcpToolsEnabled] = useState<boolean>(true);
 
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
+  const [banburyEnabled, setBanburyEnabled] = useState<boolean>(true);
+  const [gmailEnabled, setGmailEnabled] = useState<boolean>(false);
+  const [googleCalendarEnabled, setGoogleCalendarEnabled] = useState<boolean>(false);
+  const [googleDriveEnabled, setGoogleDriveEnabled] = useState<boolean>(false);
+  const [googleTasksEnabled, setGoogleTasksEnabled] = useState<boolean>(false);
+  const [filesystemEnabled, setFilesystemEnabled] = useState<boolean>(false);
   const [isAgentMode, setIsAgentMode] = useState<boolean>(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
@@ -56,36 +62,43 @@ export default function AI() {
       id: 'web_search',
       label: 'Web Search',
       isVisible: true,
+      isActivated: webSearchEnabled,
     },
     {
       id: 'banbury',
       label: 'Banbury',
       isVisible: true,
+      isActivated: banburyEnabled
     },
     {
       id: 'gmail',
       label: 'Gmail',
       isVisible: true,
+      isActivated: gmailEnabled
     },
     {
       id: 'google_calendar',
       label: 'Google Calendar',
       isVisible: true,
+      isActivated: googleCalendarEnabled
     },
     {
       id: 'google_drive',
       label: 'Google Drive',
       isVisible: true,
+      isActivated: googleDriveEnabled
     },
     {
       id: 'google_tasks',
       label: 'Google Tasks',
       isVisible: true,
+      isActivated: googleTasksEnabled
     },
     {
       id: 'filesystem',
       label: 'File System',
       isVisible: true,
+      isActivated: filesystemEnabled
     },
   ];
 

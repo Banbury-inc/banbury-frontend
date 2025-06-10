@@ -14,6 +14,7 @@ interface ConversationsButtonProps {
     id: string;
     label: string;
     isVisible: boolean;
+    isEnabled: boolean;
   }[];
 }
 
@@ -46,7 +47,7 @@ export default function ToolsButton({ availableTools }: ConversationsButtonProps
 
   return (
     <>
-      <Tooltip title="Conversations">
+      <Tooltip title="Tools">
         <Button
           onClick={handleClick}
           sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
@@ -88,7 +89,7 @@ export default function ToolsButton({ availableTools }: ConversationsButtonProps
                 key={tool.id}
                 control={
                   <Checkbox
-                    checked={tool.isVisible}
+                    checked={tool.isEnabled}
                     onChange={(event) => handleToggleTool(tool.id, event.target.checked)}
                     data-testid={`tool-toggle-${tool.id}`}
                     size="small"
