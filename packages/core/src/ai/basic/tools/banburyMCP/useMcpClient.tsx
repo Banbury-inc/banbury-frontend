@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BanburyMcpClient, McpToolCall, McpToolResult, McpServerConfig } from './BanburyMcpClient';
 import { loadGlobalAxiosCredentials } from '../../../../middleware/axiosGlobalHeader';
-import banbury from '../../../../../dist';
+import { config } from '../../../../config/config';
 
 interface UseMcpClientOptions {
   serverUrl?: string;
@@ -26,7 +26,7 @@ export function useMcpClient(options: UseMcpClientOptions = {}) {
     availableTools: []
   });
 
-  const serverUrl = banbury.config.url_mcp;
+  const serverUrl = config.url_mcp;
   const apiKey = options.apiKey;
 
   // Initialize MCP client
