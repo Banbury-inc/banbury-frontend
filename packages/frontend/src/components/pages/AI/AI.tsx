@@ -58,9 +58,34 @@ export default function AI() {
       isVisible: true,
     },
     {
-      id: 'mcp_tools',
-      label: 'MCP Tools',
-      isVisible: mcpToolsEnabled,
+      id: 'banbury',
+      label: 'Banbury',
+      isVisible: true,
+    },
+    {
+      id: 'gmail',
+      label: 'Gmail',
+      isVisible: true,
+    },
+    {
+      id: 'google_calendar',
+      label: 'Google Calendar',
+      isVisible: true,
+    },
+    {
+      id: 'google_drive',
+      label: 'Google Drive',
+      isVisible: true,
+    },
+    {
+      id: 'google_tasks',
+      label: 'Google Tasks',
+      isVisible: true,
+    },
+    {
+      id: 'filesystem',
+      label: 'File System',
+      isVisible: true,
     },
   ];
 
