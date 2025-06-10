@@ -73,7 +73,6 @@ export const handleSendMessage = async (
   isLoading: boolean,
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
-  langChainOptions?: {},
   isAgentMode?: boolean,
   mcpClient?: any
 ) => {
@@ -96,14 +95,11 @@ export const handleSendMessage = async (
         setStreamingToolResults,
         setIsPreparingToThink,
         abortControllerRef,
-        currentModel,
-        setIsSearching,
         showAlert,
         ollamaClient,
         isLoading,
         currentConversation,
         setCurrentConversation,
-        langChainOptions,
         mcpClient
       );
     }
@@ -157,8 +153,6 @@ export const handleSendMessage = async (
         const throttledStreamingMessage = createStreamingThrottle(setStreamingMessage, 16);
         const throttledStreamingThinking = createStreamingThrottle(setStreamingThinking, 16);
 
-        // Prepare LangChain options if we're using LangChain client
-        const options = langChainOptions || undefined;
 
         await ollamaClient.chatStream(messageHistory, {
           onToken: (token: string) => {
@@ -234,7 +228,7 @@ export const handleSendMessage = async (
           onError: (error: Error) => {
             showAlert('Error', ['Failed to send message', error.message], 'error');
           }
-        }, options);
+        });
         
         return; // Exit early since Enhanced AI client handles everything
       }

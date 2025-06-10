@@ -322,7 +322,6 @@ export default function AI() {
             currentConversation={currentConversation}
             setCurrentConversation={setCurrentConversation}
             handleStopGeneration={handleStopGenerationWrapper}
-            langChainOptions={{}}
             webSearchEnabled={webSearchEnabled}
             setWebSearchEnabled={setWebSearchEnabled}
             isAgentMode={isAgentMode}

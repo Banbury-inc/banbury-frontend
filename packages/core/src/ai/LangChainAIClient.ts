@@ -47,6 +47,8 @@ export class LangChainAIClient {
   private allTools: any[] = [];
   private toolsMap: Map<string, any> = new Map(); // For quick tool lookup
   private baseUrl: string;
+  private model: string;
+  private llmWithTools: any ;
   private fileSystemRootDir: string;
   private webSearchEnabled: boolean = false;
 

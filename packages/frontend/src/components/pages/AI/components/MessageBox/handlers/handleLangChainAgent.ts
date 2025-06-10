@@ -590,7 +590,7 @@ export const handleLangChainAgent = async (
     let lastThinkingContent = '';
     
     // Create the LangChain-style agent
-    const agent = new SimpleAgentExecutor(ollamaClient, mcpClient, 5, {
+    const agent = new SimpleAgentExecutor(ollamaClient, mcpClient, 50, {
             onIterationStart: () => {
         setIsPreparingToThink(true);
         setStreamingMessage(``);

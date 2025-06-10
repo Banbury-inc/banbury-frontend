@@ -57,7 +57,6 @@ interface MessageBoxProps {
   currentConversation: any;
   setCurrentConversation: (conversation: any) => void;
   handleStopGeneration: () => void;
-  langChainOptions?: {};
   webSearchEnabled?: boolean;
   setWebSearchEnabled?: (enabled: boolean) => void;
   isAgentMode?: boolean;
@@ -87,7 +86,6 @@ export default function MessageBox({
   currentConversation,
   setCurrentConversation,
   handleStopGeneration,
-  langChainOptions,
   webSearchEnabled = false,
   setWebSearchEnabled,
   isAgentMode = true,
@@ -162,7 +160,6 @@ export default function MessageBox({
       isLoading,
       currentConversation,
       setCurrentConversation,
-      langChainOptions,
       isAgentMode,
       mcpClient
     );
