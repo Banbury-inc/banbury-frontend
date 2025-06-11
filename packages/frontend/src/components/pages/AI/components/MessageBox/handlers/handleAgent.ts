@@ -4,6 +4,7 @@ import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
 import { extractThinkingContent } from './handleSendMessage';
 import { Agent } from '@banbury/core/src/ai/agent/agent';
+import { LangGraphAgent } from '@banbury/core/src/ai/agent/LangGraphAgent';
 
 export const handleAgent = async (
   inputMessage: string, 
@@ -21,14 +22,14 @@ export const handleAgent = async (
   setIsPreparingToThink: (isPreparingToThink: boolean) => void,
   abortControllerRef: React.MutableRefObject<AbortController | null>, 
   showAlert: (title: string, messages: string[], severity: AlertColor) => void, 
-  ollamaClient: any, 
+  aiClient: Agent | LangGraphAgent, 
   isLoading: boolean,
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
   mcpClient?: any,
   toolConfig?: any
 ) => {
-  if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
+  if ((!inputMessage.trim() && selectedImages.length === 0) || !aiClient || isLoading) return;
 
   if (!mcpClient) {
     showAlert('Error', ['Agent mode requires MCP client for tool access'], 'error');
@@ -63,14 +64,8 @@ export const handleAgent = async (
   abortControllerRef.current = new AbortController();
 
   try {
-    // Create LangChain AI client instance with tool configuration
-    const agent = new Agent(
-      ollamaClient.baseUrl || 'http://localhost:11434',
-      ollamaClient.model || 'qwen3:latest',
-      mcpClient,
-      undefined, // Use default file system root
-      toolConfig
-    );
+    // Use the passed client (which could be LangGraphAgent or Agent)
+    const agent = aiClient;
 
     // Convert messages to LangChain format
     const langChainMessages = [...messages, userMessage].map(msg => ({

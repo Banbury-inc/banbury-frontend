@@ -10,6 +10,7 @@ import { useAuth } from '../../../renderer/context/AuthContext';
 import { OllamaClient } from '@banbury/core/src/ai';
 import { BasicClient } from '@banbury/core/src/ai/basic/BasicClient';
 import { Agent, ToolConfiguration } from '@banbury/core/src/ai/agent/agent';
+import { LangGraphAgent, ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
 import { useMcpClient } from '@banbury/core/src/ai/basic/tools/banburyMCP/useMcpClient';
 import { getSingleDeviceInfoWithDeviceName } from '@banbury/core/src/device/getSingleDeviceInfoWithDeviceName';
 import os from 'os';
@@ -34,10 +35,17 @@ export default function AI() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [streamingThinking, setStreamingThinking] = useState<string>('');
-  const [currentModel, setCurrentModel] = useState<string>('qwen3:latest');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [enhancedAIClient, setEnhancedAIClient] = useState<BasicClient | null>(null);
   const [langChainClient, setLangChainClient] = useState<Agent | null>(null);
+  const [langGraphAgent, setLangGraphAgent] = useState<LangGraphAgent | null>(null);
+  const [modelConfig, setModelConfig] = useState<ModelConfig>({
+    provider: 'ollama',
+    ollamaBaseUrl: 'http://localhost:11434',
+    ollamaModel: 'qwen3:latest',
+    temperature: 0.7
+  });
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -120,12 +128,33 @@ export default function AI() {
     client: mcpClient,
   } = useMcpClient();
 
+  // Load model configuration from localStorage on component mount
   useEffect(() => {
+    const loadModelConfig = () => {
+      try {
+        const saved = localStorage.getItem('banbury_model_config');
+        if (saved) {
+          const parsedConfig = JSON.parse(saved);
+          setModelConfig(prev => ({ ...prev, ...parsedConfig }));
+          
+
+        }
+      } catch (error) {
+        console.error('Error loading model config:', error);
+      }
+    };
+
+    loadModelConfig();
+  }, []);
+
+  useEffect(() => {
+    const currentModel = modelConfig.provider === 'ollama' ? modelConfig.ollamaModel || 'qwen3:latest' : 'qwen3:latest';
+    
     // Initialize Ollama client
     new OllamaClient('http://localhost:11434', currentModel);
 
     // Initialize Enhanced AI client with MCP integration
-            const enhancedClient = new BasicClient(
+    const enhancedClient = new BasicClient(
       'http://localhost:11434',
       currentModel,
       mcpToolsEnabled ? mcpClient : null
@@ -141,7 +170,24 @@ export default function AI() {
       toolConfig // Pass tool configuration
     );
     setLangChainClient(langChainAiClient);
-  }, [currentModel, mcpClient, mcpToolsEnabled, toolConfig]);
+
+    // Initialize LangGraph Agent with current model configuration
+    try {
+      const langGraphAiClient = new LangGraphAgent(
+        modelConfig,
+        mcpToolsEnabled ? mcpClient : null,
+        undefined, // Use default file system root
+        toolConfig // Pass tool configuration
+      );
+      setLangGraphAgent(langGraphAiClient);
+    } catch (error) {
+      console.error('Error initializing LangGraph agent:', error);
+      // If Anthropic is not configured, show a warning but continue
+      if (modelConfig.provider === 'anthropic') {
+        showAlert('Warning', ['Anthropic API key not configured. Please configure it in Settings > Models.'], 'warning');
+      }
+    }
+  }, [mcpClient, mcpToolsEnabled, toolConfig, modelConfig]);
 
   useEffect(() => {
     // Update enhanced AI client when MCP client changes
@@ -155,7 +201,22 @@ export default function AI() {
       langChainClient.setMcpClient(mcpToolsEnabled ? mcpClient : null);
       langChainClient.setToolConfiguration(toolConfig);
     }
-  }, [enhancedAIClient, langChainClient, mcpClient, mcpToolsEnabled, webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled]);
+
+    // Update LangGraph AI client when MCP client or configuration changes
+    if (langGraphAgent) {
+      langGraphAgent.setMcpClient(mcpToolsEnabled ? mcpClient : null);
+      langGraphAgent.setToolConfiguration(toolConfig);
+      // Update model configuration to ensure correct provider/model is used
+      try {
+        langGraphAgent.setModelConfig(modelConfig);
+      } catch (error) {
+        console.error('Error updating LangGraph agent model config:', error);
+        if (modelConfig.provider === 'anthropic') {
+          showAlert('Warning', ['Anthropic API key not configured. Please configure it in Settings > Models.'], 'warning');
+        }
+      }
+    }
+  }, [enhancedAIClient, langChainClient, langGraphAgent, mcpClient, mcpToolsEnabled, webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled, modelConfig]);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
@@ -192,6 +253,22 @@ export default function AI() {
     setCurrentConversation(null);
     setMessages([]);
     setStreamingMessage('');
+  };
+
+  const handleModelConfigChange = (newConfig: Partial<ModelConfig>) => {
+    const updatedConfig = { ...modelConfig, ...newConfig };
+    setModelConfig(updatedConfig);
+    
+    // Save to localStorage
+    localStorage.setItem('banbury_model_config', JSON.stringify(updatedConfig));
+    
+
+  };
+
+  const handleOpenSettings = () => {
+    // Navigate to settings - you can implement this based on your routing
+    // For now, we'll just show an alert
+    showAlert('Info', ['Please go to Settings > Models to configure your API keys'], 'info');
   };
 
   const handleStopGenerationWrapper = () => {
@@ -238,13 +315,14 @@ export default function AI() {
       <DragDropOverlay isDragging={isDragging} />
       
       <AIToolbar
-        currentModel={currentModel}
-        setCurrentModel={setCurrentModel}
         deviceInfo={deviceInfo}
         handleRefreshDeviceInfo={handleRefreshDeviceInfo}
         handleSelectConversation={handleSelectConversation}
         currentConversation={currentConversation}
         handleNewChat={handleNewChat}
+        modelConfig={modelConfig}
+        onModelConfigChange={handleModelConfigChange}
+        onOpenSettings={handleOpenSettings}
       />
 
       <Stack
@@ -302,7 +380,7 @@ export default function AI() {
             setStreamingToolResults={setStreamingToolResults}
             setIsPreparingToThink={setIsPreparingToThink}
             abortControllerRef={abortControllerRef}
-            currentModel={currentModel}
+            currentModel={modelConfig.provider === 'ollama' ? modelConfig.ollamaModel || 'qwen3:latest' : modelConfig.anthropicModel || 'claude-3-5-sonnet-20241022'}
             setIsSearching={setIsSearching}
             showAlert={showAlert}
             ollamaClient={enhancedAIClient}
@@ -325,6 +403,8 @@ export default function AI() {
               setFilesystemEnabled
             )}
             toolConfig={toolConfig}
+            langGraphAgent={langGraphAgent}
+            modelConfig={modelConfig}
           />
         </Card>
       </Stack>

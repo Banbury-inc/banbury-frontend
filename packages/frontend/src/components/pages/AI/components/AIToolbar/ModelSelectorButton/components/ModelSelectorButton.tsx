@@ -1,19 +1,58 @@
 import React from 'react';
-import { Button, Tooltip } from '@mui/material';
+import { Button, Tooltip, Box } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
 
 interface ModelSelectorButtonProps {
   currentModel: string;
   onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  provider?: 'ollama' | 'anthropic';
+  isAnthropicConfigured?: boolean;
 }
 
-export function ModelSelectorButton({ currentModel, onClick }: ModelSelectorButtonProps) {
+export function ModelSelectorButton({ 
+  currentModel, 
+  onClick, 
+  provider = 'ollama',
+  isAnthropicConfigured = false 
+}: ModelSelectorButtonProps) {
+  const getProviderIcon = () => {
+    return provider === 'anthropic' ? (
+      <CloudOutlinedIcon fontSize="small" />
+    ) : (
+      <SmartToyOutlinedIcon fontSize="small" />
+    );
+  };
+
+  const getStatusIcon = () => {
+    if (provider === 'anthropic') {
+      return isAnthropicConfigured ? (
+        <CheckCircleIcon sx={{ fontSize: 14, color: '#4caf50', ml: 0.5 }} />
+      ) : (
+        <WarningIcon sx={{ fontSize: 14, color: '#ff9800', ml: 0.5 }} />
+      );
+    }
+    return <CheckCircleIcon sx={{ fontSize: 14, color: '#4caf50', ml: 0.5 }} />;
+  };
+
+  const getTooltipText = () => {
+    if (provider === 'anthropic') {
+      if (!isAnthropicConfigured) {
+        return 'Anthropic API key required - Click to configure';
+      }
+      return `Anthropic: ${currentModel}`;
+    }
+    return `Ollama: ${currentModel}`;
+  };
+
   return (
-    <Tooltip title="Select AI Model">
+    <Tooltip title={getTooltipText()}>
       <Button
         onClick={onClick}
-        startIcon={<SmartToyOutlinedIcon fontSize="small" />}
+        startIcon={getProviderIcon()}
         endIcon={<KeyboardArrowDownIcon fontSize="small" />}
         sx={{ 
           height: '28px',
@@ -36,7 +75,10 @@ export function ModelSelectorButton({ currentModel, onClick }: ModelSelectorButt
           }
         }}
       >
-        {currentModel}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {currentModel}
+          {getStatusIcon()}
+        </Box>
       </Button>
     </Tooltip>
   );
