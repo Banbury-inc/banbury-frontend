@@ -3,6 +3,7 @@ import http from 'http';
 import axios from 'axios';
 import { config } from '../config/config';
 import { Integration } from '../types';
+import { loadGlobalAxiosCredentials } from '../middleware/axiosGlobalHeader';
 
 export interface IntegrationsResponse {
   result: string;
@@ -380,5 +381,193 @@ export const isGoogleDriveEnabled = async (): Promise<boolean> => {
   } catch (error) {
     console.error('Error checking Google Drive status:', error);
     return false;
+  }
+};
+
+/**
+ * Get Gmail integration status using existing Google Drive credentials
+ * Gmail uses the same Google API credentials as Google Drive
+ */
+export const getGmailIntegrationStatus = async (): Promise<{
+  enabled: boolean;
+  configured: boolean;
+  clientEmail: string | null;
+  needsReauth?: boolean;
+}> => {
+  try {
+    // Check if user has Google Drive credentials (which Gmail can use)
+    const { checkGoogleDriveCredentials } = await import('../files/googleDrive');
+    const credentialStatus = await checkGoogleDriveCredentials();
+    
+    const hasCredentials = credentialStatus.hasCredentials;
+    
+    // If credentials exist, check Gmail API access specifically
+    let needsReauth = false;
+    if (hasCredentials) {
+      try {
+        const gmailAccess = await checkGmailApiAccess();
+        if (!gmailAccess.hasAccess && gmailAccess.message.includes('scope not granted')) {
+          needsReauth = true;
+        }
+      } catch (error) {
+        console.warn('Could not check Gmail API access:', error);
+      }
+    }
+    
+    // Try to get user email from localStorage or return a generic message if configured
+    let clientEmail: string | null = null;
+    try {
+      // Try to get stored client email or use placeholder if Google credentials exist
+      clientEmail = localStorage.getItem('gmail_client_email') || 
+        (hasCredentials ? 'Google Account (using Drive credentials)' : null);
+    } catch (error) {
+      // localStorage not available
+      clientEmail = hasCredentials ? 'Google Account (using Drive credentials)' : null;
+    }
+    
+    return {
+      enabled: hasCredentials && !needsReauth,
+      configured: hasCredentials && !needsReauth,
+      clientEmail: clientEmail,
+      needsReauth: needsReauth
+    };
+  } catch (error) {
+    console.error('Error getting Gmail integration status:', error);
+    return {
+      enabled: false,
+      configured: false,
+      clientEmail: null,
+      needsReauth: false
+    };
+  }
+};
+
+/**
+ * Enable Gmail integration using existing Google Drive credentials
+ */
+export const enableGmailIntegration = async (clientEmail?: string): Promise<{ 
+  result: string; 
+  message?: string;
+}> => {
+  try {
+    // Check if user has Google Drive credentials
+    const { checkGoogleDriveCredentials } = await import('../files/googleDrive');
+    const credentialStatus = await checkGoogleDriveCredentials();
+    
+    if (!credentialStatus.hasCredentials) {
+      return {
+        result: 'error',
+        message: 'Google credentials not found. Please configure Google Drive integration first to enable Gmail.'
+      };
+    }
+
+    // Check Gmail API access specifically
+    const gmailAccess = await checkGmailApiAccess();
+    if (!gmailAccess.hasAccess) {
+      if (gmailAccess.message.includes('scope not granted')) {
+        return {
+          result: 'error',
+          message: 'Gmail scope missing from your Google credentials. Please disable and re-enable Google Drive integration to get Gmail permissions.'
+        };
+      } else {
+        return {
+          result: 'error',
+          message: `Gmail access unavailable: ${gmailAccess.message}`
+        };
+      }
+    }
+
+    // If a client email is provided, validate and store it
+    if (clientEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(clientEmail)) {
+        return {
+          result: 'error',
+          message: 'Please enter a valid email address'
+        };
+      }
+      
+      // Store the client email for reference
+      localStorage.setItem('gmail_client_email', clientEmail);
+    }
+    
+    return {
+      result: 'success',
+      message: 'Gmail integration enabled successfully using your existing Google credentials!'
+    };
+  } catch (error) {
+    console.error('Error enabling Gmail integration:', error);
+    return {
+      result: 'error',
+      message: error instanceof Error ? error.message : 'Failed to enable Gmail integration'
+    };
+  }
+};
+
+/**
+ * Disable Gmail integration
+ * Note: This only disables Gmail tools, Google credentials remain for Drive
+ */
+export const disableGmailIntegration = async (): Promise<{ result: string; message?: string }> => {
+  try {
+    // Remove stored client email (if any)
+    localStorage.removeItem('gmail_client_email');
+    
+    return {
+      result: 'success',
+      message: 'Gmail integration disabled successfully. Google Drive integration remains active.'
+    };
+  } catch (error) {
+    console.error('Error disabling Gmail integration:', error);
+    return {
+      result: 'error',
+      message: error instanceof Error ? error.message : 'Failed to disable Gmail integration'
+    };
+  }
+};
+
+/**
+ * Check if Gmail integration is enabled and configured
+ */
+export const isGmailEnabled = async (): Promise<boolean> => {
+  try {
+    const status = await getGmailIntegrationStatus();
+    return status.enabled && status.configured;
+  } catch (error) {
+    console.error('Error checking Gmail status:', error);
+    return false;
+  }
+};
+
+/**
+ * Check Gmail API access status through backend
+ */
+export const checkGmailApiAccess = async (): Promise<{
+  hasAccess: boolean;
+  message: string;
+  email?: string;
+}> => {
+  try {
+    const { token, apiKey } = loadGlobalAxiosCredentials();
+    const effectiveApiKey = apiKey || 'dev_key_1';
+
+    const response = await axios.get(`${config.url}/files/gmail/check_access`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-API-Key': effectiveApiKey,
+      },
+    });
+
+    return {
+      hasAccess: response.data.has_access || false,
+      message: response.data.message || 'Unknown status',
+      email: response.data.email
+    };
+  } catch (error) {
+    console.error('Error checking Gmail API access:', error);
+    return {
+      hasAccess: false,
+      message: error instanceof Error ? error.message : 'Failed to check Gmail access'
+    };
   }
 }; 

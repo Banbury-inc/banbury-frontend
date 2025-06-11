@@ -47,9 +47,9 @@ export default function AI() {
   const [isPreparingToThink, setIsPreparingToThink] = useState(false);
   const [mcpToolsEnabled] = useState<boolean>(true);
 
-  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false);
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true);
   const [banburyEnabled, setBanburyEnabled] = useState<boolean>(true);
-  const [gmailEnabled, setGmailEnabled] = useState<boolean>(false);
+  const [gmailEnabled, setGmailEnabled] = useState<boolean>(true);
   const [googleCalendarEnabled, setGoogleCalendarEnabled] = useState<boolean>(false);
   const [googleDriveEnabled, setGoogleDriveEnabled] = useState<boolean>(false);
   const [googleTasksEnabled, setGoogleTasksEnabled] = useState<boolean>(false);

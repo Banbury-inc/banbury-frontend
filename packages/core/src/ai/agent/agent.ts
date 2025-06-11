@@ -7,6 +7,7 @@ import { WebSearchService } from '../basic/tools/webSearch';
 import { createBanburyTools } from './tools/banburyTools';
 import { createFileSystemTools } from './tools/filesystemTools';
 import { createWebSearchTools } from './tools/webSearchTools';
+import { createGmailTools } from './tools/gmailTools';
 import os from 'os';
 
 export interface AgentStreamCallback {
@@ -53,6 +54,7 @@ export class Agent {
   private banburyTools: any[] = [];
   private fileSystemTools: any[] = [];
   private webSearchTools: any[] = [];
+  private gmailTools: any[] = [];
   private allTools: any[] = [];
   private toolsMap: Map<string, any> = new Map(); // For quick tool lookup
   private baseUrl: string;
@@ -97,7 +99,8 @@ export class Agent {
     this.banburyTools = this.toolConfig.banbury ? createBanburyTools(this.mcpClient) : [];
     this.fileSystemTools = this.toolConfig.filesystem ? createFileSystemTools(this.fileSystemRootDir) : [];
     this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
+    this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
+    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);
   }
@@ -138,6 +141,37 @@ export class Agent {
 - file_move_tool: Move/rename files
 - file_delete_tool: Delete files or directories
 - file_search_tool: Search for files matching patterns
+` : '';
+
+    const gmailInfo = this.toolConfig.gmail ? `
+
+**Available Gmail Tools (use only when needed):**
+- GmailSearch: Search for emails using Gmail query syntax
+  Parameters:
+  - query: Gmail search query (e.g., "from:sender@example.com", "subject:urgent", "is:unread")
+  - maxResults: Maximum number of results to return (default: 10)
+
+- GmailGetMessage: Get details of a specific email message
+  Parameters:
+  - messageId: The unique ID of the email message
+
+- GmailGetThread: Get an entire email thread/conversation
+  Parameters:
+  - threadId: The unique ID of the email thread
+
+- GmailCreateDraft: Create a draft email
+  Parameters:
+  - message: Email message object with to, subject, body fields
+
+- GmailSendMessage: Send an email message
+  Parameters:
+  - message: Email message object with to, subject, body fields
+
+**When to use Gmail tools:**
+- User asks to search for specific emails or check inbox
+- User wants to read a specific email or thread
+- User wants to compose, draft, or send emails
+- User asks about email management or organization
 ` : '';
 
     return `You are an advanced AI assistant with structured thinking capabilities and access to various tools through the Banbury platform and file system operations.
@@ -183,7 +217,7 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 - Questions about programming, technology, or general knowledge
 - Creative writing, analysis, or problem-solving that doesn't need system data
 - Casual conversation or clarifying questions
-${banburyInfo}${filesystemInfo}${webSearchInfo}
+${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
 
 **Core Principles:**
 - Think systematically before deciding whether to use tools
@@ -580,6 +614,13 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    */
   public getBanburyTools(): string[] {
     return this.banburyTools.map(tool => tool.name);
+  }
+
+  /**
+   * Get available Gmail tools
+   */
+  public getGmailTools(): string[] {
+    return this.gmailTools.map(tool => tool.name);
   }
 
   /**
