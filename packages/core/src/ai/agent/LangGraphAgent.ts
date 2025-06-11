@@ -266,7 +266,12 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       const systemMessage = { role: 'system', content: this.systemPrompt };
       const fullMessages = [systemMessage, ...langGraphMessages];
 
-      // Invoke the LangGraph agent with streaming
+      // For Anthropic with native thinking, we need to handle the stream differently
+      if (this.modelConfig.provider === 'anthropic') {
+        return this.handleAnthropicStream(fullMessages, callbacks);
+      }
+
+      // Default LangGraph streaming for Ollama and other providers
       const stream = await this.agent.stream(
         { messages: fullMessages },
         {
@@ -306,11 +311,11 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
           if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
             for (const toolCall of lastMessage.tool_calls) {
               callbacks.onToolCall?.({
-                id: toolCall.id,
+                id: toolCall.id || `tool_${Date.now()}_${Math.random()}`,
                 type: 'function',
                 function: {
-                  name: toolCall.name,
-                  arguments: JSON.stringify(toolCall.args)
+                  name: toolCall.name || 'unknown_tool',
+                  arguments: JSON.stringify(toolCall.args || {})
                 }
               });
             }
@@ -326,6 +331,86 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       callbacks.onError?.(err);
       throw err;
     }
+  }
+
+  /**
+   * Handle Anthropic's native thinking stream format
+   */
+  private async handleAnthropicStream(
+    messages: any[],
+    callbacks: LangGraphAgentStreamCallback
+  ): Promise<string> {
+    let fullResponse = '';
+    let currentThinking = '';
+    let isInThinkingBlock = false;
+    let hasNotifiedThinkingStart = false;
+
+    // Use the LLM directly for Anthropic to get the raw stream
+    const stream = await this.llm.stream(messages);
+
+    for await (const chunk of stream) {
+      // Handle Anthropic's content blocks
+      if (chunk.content && Array.isArray(chunk.content)) {
+        for (const contentBlock of chunk.content) {
+          if (contentBlock.type === 'thinking') {
+            // Handle thinking content
+            if (!hasNotifiedThinkingStart) {
+              callbacks.onThinkingStart?.();
+              hasNotifiedThinkingStart = true;
+              isInThinkingBlock = true;
+            }
+            
+            if (contentBlock.thinking) {
+              currentThinking += contentBlock.thinking;
+              callbacks.onThinking?.(currentThinking);
+            }
+          } else if (contentBlock.type === 'text') {
+            // Handle text content
+            if (isInThinkingBlock) {
+              callbacks.onThinkingEnd?.();
+              isInThinkingBlock = false;
+            }
+            
+            if (contentBlock.text) {
+              callbacks.onToken?.(contentBlock.text);
+              fullResponse += contentBlock.text;
+            }
+          }
+        }
+      }
+      
+      // Handle simple content (fallback)
+      else if (chunk.content && typeof chunk.content === 'string') {
+        if (isInThinkingBlock) {
+          callbacks.onThinkingEnd?.();
+          isInThinkingBlock = false;
+        }
+        
+        callbacks.onToken?.(chunk.content);
+        fullResponse += chunk.content;
+      }
+
+      // Handle tool calls
+      if (chunk.tool_calls && chunk.tool_calls.length > 0) {
+        for (const toolCall of chunk.tool_calls) {
+          callbacks.onToolCall?.({
+            id: toolCall.id || `tool_${Date.now()}_${Math.random()}`,
+            type: 'function',
+            function: {
+              name: toolCall.name || 'unknown_tool',
+              arguments: JSON.stringify(toolCall.args || {})
+            }
+          });
+        }
+      }
+    }
+
+    if (isInThinkingBlock) {
+      callbacks.onThinkingEnd?.();
+    }
+
+    callbacks.onComplete?.(fullResponse);
+    return fullResponse;
   }
 
   private convertMessagesToLangGraph(messages: LangGraphAgentMessage[]) {
