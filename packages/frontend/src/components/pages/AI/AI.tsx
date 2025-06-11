@@ -380,7 +380,7 @@ export default function AI() {
             setStreamingToolResults={setStreamingToolResults}
             setIsPreparingToThink={setIsPreparingToThink}
             abortControllerRef={abortControllerRef}
-            currentModel={modelConfig.provider === 'ollama' ? modelConfig.ollamaModel || 'qwen3:latest' : modelConfig.anthropicModel || 'claude-3-5-sonnet-20241022'}
+            currentModel={modelConfig.provider === 'ollama' ? modelConfig.ollamaModel || 'qwen3:latest' : modelConfig.anthropicModel || 'claude-sonnet-4-20250514'}
             setIsSearching={setIsSearching}
             showAlert={showAlert}
             ollamaClient={enhancedAIClient}

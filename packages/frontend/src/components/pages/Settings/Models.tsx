@@ -34,14 +34,14 @@ const ANTHROPIC_MODELS = [
   'claude-3-opus-20240229',
   'claude-3-sonnet-20240229',
   'claude-3-haiku-20240307',
-  'claude-4-0-sonnet-20241212',
+  'claude-sonnet-4-20250514',
 ];
 
 export default function Models() {
   const { showAlert } = useAlert();
   const [config, setConfig] = useState<ModelConfig>({
     anthropicApiKey: '',
-    defaultModel: 'claude-3-5-sonnet-20241022',
+    defaultModel: 'claude-sonnet-4-20250514',
     provider: 'ollama',
     enableAnthropic: false,
   });

@@ -193,7 +193,7 @@ export class LangGraphAgent {
 ` : '';
 
     const modelInfo = this.modelConfig.provider === 'anthropic' 
-      ? `\n**Current AI Model:** Anthropic ${this.modelConfig.anthropicModel || 'claude-3-5-sonnet-20241022'}`
+      ? `\n**Current AI Model:** Anthropic ${this.modelConfig.anthropicModel || 'claude-sonnet-4-20250514'}`
       : `\n**Current AI Model:** Ollama ${this.modelConfig.ollamaModel || 'qwen3:latest'}`;
 
     return `You are an advanced AI assistant powered by LangGraph with structured reasoning capabilities and access to various tools through the Banbury platform.
@@ -438,7 +438,7 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       : true;
 
     const model = this.modelConfig.provider === 'anthropic'
-      ? this.modelConfig.anthropicModel || 'claude-3-5-sonnet-20241022'
+      ? this.modelConfig.anthropicModel || 'claude-sonnet-4-20250514'
       : this.modelConfig.ollamaModel || 'qwen3:latest';
 
     return {
