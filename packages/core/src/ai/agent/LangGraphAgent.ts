@@ -117,7 +117,12 @@ export class LangGraphAgent {
       return new ChatAnthropic({
         apiKey: apiKey,
         model: this.modelConfig.anthropicModel || 'claude-3-5-sonnet-20241022',
-        temperature: this.modelConfig.temperature || 0.7,
+        // temperature: this.modelConfig.temperature || 0.7,
+        streaming: true,
+        thinking: {
+          type: "enabled",
+          budget_tokens: 1024
+        },
       });
     } else {
       // Default to Ollama
