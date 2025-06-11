@@ -76,6 +76,7 @@ export const handleAgent = async (
     let currentStreamingMessage = '';
     let activeToolCalls: any[] = [];
     let activeToolResults: any[] = [];
+    let accumulatedThinking = '';
 
     // Use LangChain AI client with streaming callbacks
     await agent.chatStream(langChainMessages, {
@@ -89,6 +90,7 @@ export const handleAgent = async (
       onThinking: (thinking: string) => {
         if (abortControllerRef.current?.signal.aborted) return;
         setIsPreparingToThink(false);
+        accumulatedThinking = thinking; // Store the thinking content
         setStreamingThinking(thinking);
       },
 
@@ -115,15 +117,14 @@ export const handleAgent = async (
       onComplete: (fullResponse: string) => {
         if (abortControllerRef.current?.signal.aborted) return;
         
-        const { thinking, cleanContent } = extractThinkingContent(fullResponse);
         
         // Create assistant message with all the accumulated data
         const assistantMessage: ExtendedChatMessage = {
           role: 'assistant',
-          content: cleanContent || currentStreamingMessage,
-          thinking,
+          content: fullResponse,
           toolCalls: activeToolCalls.length > 0 ? activeToolCalls : undefined,
-          toolResults: activeToolResults.length > 0 ? activeToolResults : undefined
+          toolResults: activeToolResults.length > 0 ? activeToolResults : undefined,
+          thinking: accumulatedThinking || undefined
         };
 
         const updatedMessages = [...messages, userMessage, assistantMessage];

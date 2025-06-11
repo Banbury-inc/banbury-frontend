@@ -270,6 +270,7 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       let fullResponse = '';
       let hasNotifiedThinkingStart = false;
       let isInThinkingBlock = false;
+      let accumulatedThinking = '';
       
       for await (const chunk of stream) {
         console.log('chunk', chunk);
@@ -309,12 +310,7 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
                     callbacks.onThinking?.(contentBlock.thinking);
                   }
                 } else if (contentBlock.type === 'text') {
-                  // Handle text content
-                  if (isInThinkingBlock) {
-                    callbacks.onThinkingEnd?.();
-                    isInThinkingBlock = false;
-                  }
-                  
+                  // Handle text content - don't end thinking, let it persist
                   if (contentBlock.text) {
                     callbacks.onToken?.(contentBlock.text);
                     fullResponse += contentBlock.text;
@@ -333,6 +329,7 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
                     success: true,
                     content: [{ type: 'text', text: `Tool: ${contentBlock.tool_name || 'unknown_tool'}, Result: ${JSON.stringify(contentBlock.tool_result || 'unknown_result')}` }]
                   });
+                  // Don't end thinking here - let it persist until completion
                 }
               }
             } else {
@@ -342,9 +339,10 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
                 if (!hasNotifiedThinkingStart) {
                   callbacks.onThinkingStart?.();
                   hasNotifiedThinkingStart = true;
+                  isInThinkingBlock = true;
                 }
                 callbacks.onThinking?.(thinkingMatch[1].trim());
-                callbacks.onThinkingEnd?.();
+                // Don't end thinking here - let it persist until completion
               }
               
               // Send clean content (without thinking tags)
@@ -372,11 +370,13 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
         }
       }
 
-      if (isInThinkingBlock) {
-        callbacks.onThinkingEnd?.();
-      }
-
+      // Complete the response - thinking should persist like tool calls/results
+      console.log('fullResponse', fullResponse);
       callbacks.onComplete?.(fullResponse);
+      
+      // Don't call onThinkingEnd - let thinking persist like other components
+      // The UI can handle expanding/minimizing the completed thinking
+
       return fullResponse;
 
     } catch (error) {
