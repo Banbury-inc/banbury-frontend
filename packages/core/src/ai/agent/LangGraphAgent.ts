@@ -276,6 +276,11 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
         if (chunk.messages && chunk.messages.length > 0) {
           const lastMessage = chunk.messages[chunk.messages.length - 1];
           
+          // Skip tool messages to prevent tool results from appearing in the message bubble
+          if (lastMessage.constructor?.name === 'ToolMessage' || lastMessage.type === 'tool') {
+            continue;
+          }
+          
           if (lastMessage.content) {
             let content = typeof lastMessage.content === 'string' 
               ? lastMessage.content 
