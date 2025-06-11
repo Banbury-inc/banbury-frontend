@@ -5,22 +5,6 @@ import { config } from '../../../config/config';
 import { loadGlobalAxiosCredentials } from '../../../middleware/axiosGlobalHeader';
 import axios from 'axios';
 
-interface GmailMessage {
-  id: string;
-  threadId: string;
-  snippet: string;
-  payload: {
-    headers: Array<{ name: string; value: string }>;
-    body: { data?: string };
-    parts?: Array<any>;
-  };
-  internalDate: string;
-}
-
-interface GmailThread {
-  id: string;
-  messages: GmailMessage[];
-}
 
 /**
  * Check if Gmail/Google credentials are available

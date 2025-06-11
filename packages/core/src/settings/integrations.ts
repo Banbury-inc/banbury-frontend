@@ -421,6 +421,7 @@ export const getGmailIntegrationStatus = async (): Promise<{
       clientEmail = localStorage.getItem('gmail_client_email') || 
         (hasCredentials ? 'Google Account (using Drive credentials)' : null);
     } catch (error) {
+      console.warn('Could not access localStorage for Gmail client email:', error);
       // localStorage not available
       clientEmail = hasCredentials ? 'Google Account (using Drive credentials)' : null;
     }
