@@ -96,9 +96,9 @@ export function createGmailTools(enabled: boolean): DynamicStructuredTool[] {
       description: 'Search for emails in Gmail using Gmail query syntax. Returns a list of matching emails with basic information.',
       schema: z.object({
         query: z.string().describe('Gmail search query (e.g., "from:sender@example.com", "subject:urgent", "is:unread", "has:attachment")'),
-        maxResults: z.number().optional().default(10).describe('Maximum number of results to return'),
+        maxResults: z.number().optional().default(100).describe('Maximum number of results to return'),
       }),
-      func: async ({ query, maxResults = 10 }) => {
+      func: async ({ query, maxResults = 100 }) => {
         try {
           const credentialCheck = await checkGmailCredentials();
           if (!credentialCheck.hasCredentials) {
