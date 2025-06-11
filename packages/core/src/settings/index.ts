@@ -3,7 +3,11 @@ import {
   getGoogleDriveIntegrationStatus, 
   enableGoogleDriveIntegration, 
   disableGoogleDriveIntegration,
-  isGoogleDriveEnabled
+  isGoogleDriveEnabled,
+  getGmailIntegrationStatus,
+  enableGmailIntegration,
+  disableGmailIntegration,
+  isGmailEnabled
 } from './integrations';
 import { getSettings } from './getSettings';
 
@@ -18,5 +22,9 @@ export const settings = {
   enableGoogleDriveIntegration,
   disableGoogleDriveIntegration,
   isGoogleDriveEnabled,
+  getGmailIntegrationStatus,
+  enableGmailIntegration,
+  disableGmailIntegration,
+  isGmailEnabled,
   getSettings
 };

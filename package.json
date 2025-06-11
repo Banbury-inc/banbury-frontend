@@ -26,6 +26,7 @@
     },
     "dependencies": {
         "@heroicons/react": "^2.2.0",
+        "@langchain/community": "^0.3.45",
         "@langchain/core": "^0.3.30",
         "@langchain/ollama": "^0.1.5",
         "@monaco-editor/react": "^4.7.0",
@@ -35,6 +36,8 @@
         "ace-builds": "^1.41.0",
         "docx": "^9.5.0",
         "docx-preview": "^0.3.5",
+        "google-auth-library": "^10.0.0",
+        "googleapis": "^150.0.1",
         "langchain": "^0.3.10",
         "monaco-editor": "^0.52.2",
         "ollama": "^0.5.13",
