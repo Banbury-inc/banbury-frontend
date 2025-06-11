@@ -272,12 +272,18 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       let isInThinkingBlock = false;
       
       for await (const chunk of stream) {
+        console.log('chunk', chunk);
         // Extract content from the chunk
         if (chunk.messages && chunk.messages.length > 0) {
           const lastMessage = chunk.messages[chunk.messages.length - 1];
           
           // Skip tool messages to prevent tool results from appearing in the message bubble
           if (lastMessage.constructor?.name === 'ToolMessage' || lastMessage.type === 'tool') {
+            continue;
+          }
+
+          // skip human messages to prevent them from appearing in the message bubble
+          if (lastMessage.constructor?.name === 'HumanMessage') {
             continue;
           }
           
@@ -313,6 +319,20 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
                     callbacks.onToken?.(contentBlock.text);
                     fullResponse += contentBlock.text;
                   }
+                } else if (contentBlock.type === 'tool_use') {
+                  // Handle tool use content
+                  callbacks.onToolCall?.({
+                    id: contentBlock.tool_call_id || `tool_${Date.now()}`,
+                    type: 'function',
+                    function: {
+                      name: contentBlock.tool_name || 'unknown_tool',
+                      arguments: JSON.stringify(contentBlock.tool_args || {})
+                    }
+                  });
+                  callbacks.onToolResult?.({
+                    success: true,
+                    content: [{ type: 'text', text: `Tool: ${contentBlock.tool_name || 'unknown_tool'}, Result: ${JSON.stringify(contentBlock.tool_result || 'unknown_result')}` }]
+                  });
                 }
               }
             } else {

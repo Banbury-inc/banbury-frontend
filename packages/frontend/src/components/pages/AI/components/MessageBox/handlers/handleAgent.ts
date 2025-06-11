@@ -130,11 +130,6 @@ export const handleAgent = async (
         setMessages(updatedMessages);
         saveConversation(updatedMessages, currentConversation, setCurrentConversation);
 
-        // Clear streaming states
-        setStreamingMessage('');
-        setStreamingThinking('');
-        setStreamingToolCalls([]);
-        setStreamingToolResults([]);
         setIsPreparingToThink(false);
         setIsLoading(false);
         setIsStreaming(false);
@@ -155,10 +150,6 @@ export const handleAgent = async (
     // Clean up states
     setIsLoading(false);
     setIsStreaming(false);
-    setStreamingMessage('');
-    setStreamingThinking('');
-    setStreamingToolCalls([]);
-    setStreamingToolResults([]);
     setIsPreparingToThink(false);
     abortControllerRef.current = null;
   }
