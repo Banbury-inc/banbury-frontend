@@ -8,6 +8,7 @@ import { createBanburyTools } from './tools/banburyTools';
 import { createFileSystemTools } from './tools/filesystemTools';
 import { createWebSearchTools } from './tools/webSearchTools';
 import { createGmailTools } from './tools/gmailTools';
+import { createGoogleCalendarTools } from './tools/googleCalendarTools';
 import os from 'os';
 
 export interface AgentStreamCallback {
@@ -55,6 +56,7 @@ export class Agent {
   private fileSystemTools: any[] = [];
   private webSearchTools: any[] = [];
   private gmailTools: any[] = [];
+  private googleCalendarTools: any[] = [];
   private allTools: any[] = [];
   private toolsMap: Map<string, any> = new Map(); // For quick tool lookup
   private baseUrl: string;
@@ -100,7 +102,8 @@ export class Agent {
     this.fileSystemTools = this.toolConfig.filesystem ? createFileSystemTools(this.fileSystemRootDir) : [];
     this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
     this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools];
+    this.googleCalendarTools = this.toolConfig.googleCalendar ? createGoogleCalendarTools(this.toolConfig.googleCalendar) : [];
+    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);
   }
@@ -174,6 +177,50 @@ export class Agent {
 - User asks about email management or organization
 ` : '';
 
+    const googleCalendarInfo = this.toolConfig.googleCalendar ? `
+
+**Available Google Calendar Tools (use only when needed):**
+- GoogleCalendarListEvents: List calendar events with optional filters
+  Parameters:
+  - timeMin: Lower bound for event start time (RFC3339 timestamp)
+  - timeMax: Upper bound for event start time (RFC3339 timestamp)
+  - maxResults: Maximum number of events to return (default: 50)
+  - q: Free text search terms
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarGetEvent: Get details of a specific calendar event
+  Parameters:
+  - eventId: The unique ID of the calendar event
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarCreateEvent: Create a new calendar event
+  Parameters:
+  - summary: Event title
+  - startDateTime: Event start time (RFC3339 timestamp)
+  - endDateTime: Event end time (RFC3339 timestamp)
+  - description: Event description (optional)
+  - location: Event location (optional)
+  - attendees: Array of attendee email addresses (optional)
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarUpdateEvent: Update an existing calendar event
+  Parameters:
+  - eventId: The unique ID of the event to update
+  - Various optional update fields (summary, time, location, etc.)
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarDeleteEvent: Delete a calendar event
+  Parameters:
+  - eventId: The unique ID of the event to delete
+  - calendarId: Calendar identifier (default: "primary")
+
+**When to use Google Calendar tools:**
+- User asks to check their calendar or schedule
+- User wants to create, update, or delete events
+- User asks about upcoming meetings or appointments
+- User needs to manage calendar entries
+` : '';
+
     return `You are an advanced AI assistant with structured thinking capabilities and access to various tools through the Banbury platform and file system operations.
 
 🧠 **STRUCTURED THINKING APPROACH**
@@ -217,7 +264,7 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 - Questions about programming, technology, or general knowledge
 - Creative writing, analysis, or problem-solving that doesn't need system data
 - Casual conversation or clarifying questions
-${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
+${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}${googleCalendarInfo}
 
 **Core Principles:**
 - Think systematically before deciding whether to use tools
@@ -621,6 +668,13 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    */
   public getGmailTools(): string[] {
     return this.gmailTools.map(tool => tool.name);
+  }
+
+  /**
+   * Get available Google Calendar tools
+   */
+  public getGoogleCalendarTools(): string[] {
+    return this.googleCalendarTools.map(tool => tool.name);
   }
 
   /**

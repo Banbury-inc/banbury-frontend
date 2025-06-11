@@ -25,6 +25,7 @@ import { handleDragOver } from './components/DragDropOverlay/handlers/handleDrag
 import { handleDrop } from './components/DragDropOverlay/handlers/handleDrop';
 import { Conversation, DeviceInfo, ExtendedChatMessage } from '@banbury/core/src/types';
 import { handleToggleTool } from './components/MessageBox/handlers/handleToggleTool';
+import { banbury } from '@banbury/core';
 
 
 export default function AI() {
@@ -49,7 +50,7 @@ export default function AI() {
 
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(true);
   const [banburyEnabled, setBanburyEnabled] = useState<boolean>(true);
-  const [gmailEnabled, setGmailEnabled] = useState<boolean>(true);
+  const [gmailEnabled, setGmailEnabled] = useState<boolean>(false);
   const [googleCalendarEnabled, setGoogleCalendarEnabled] = useState<boolean>(false);
   const [googleDriveEnabled, setGoogleDriveEnabled] = useState<boolean>(false);
   const [googleTasksEnabled, setGoogleTasksEnabled] = useState<boolean>(false);
@@ -164,6 +165,27 @@ export default function AI() {
 
   useEffect(() => {
     fetchDeviceInfo();
+  }, []);
+
+  useEffect(() => {
+    // Load integration statuses on mount
+    const loadIntegrationStatuses = async () => {
+      try {
+        // Check Gmail integration status
+        const gmailStatus = await banbury.settings.getGmailIntegrationStatus();
+        setGmailEnabled(gmailStatus.enabled && gmailStatus.configured);
+
+        // Check Google Calendar integration status
+        const googleCalendarStatus = await banbury.settings.getGoogleCalendarIntegrationStatus();
+        setGoogleCalendarEnabled(googleCalendarStatus.enabled && googleCalendarStatus.configured);
+
+        // Google Drive and Tasks can be added here when implemented
+      } catch (error) {
+        console.error('Error loading integration statuses:', error);
+      }
+    };
+
+    loadIntegrationStatuses();
   }, []);
 
   const fetchDeviceInfo = async () => {
