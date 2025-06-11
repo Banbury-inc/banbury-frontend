@@ -54,11 +54,11 @@ export interface ModelConfig {
 
 /**
  * LangGraph-powered AI Agent with support for both Ollama and Anthropic models
- * Uses LangGraph's createReactAgent for better tool integration and reasoning
+ * Uses LangGraph's createReactAgent for proper tool integration and reasoning
  */
 export class LangGraphAgent {
   private llm: ChatOllama | ChatAnthropic;
-  private agent: any; // LangGraph agent
+  private agent: any; // LangGraph ReAct agent
   private mcpClient: BanburyMcpClient | null;
   private webSearchService: WebSearchService;
   private systemPrompt: string;
@@ -67,7 +67,6 @@ export class LangGraphAgent {
   private webSearchTools: any[] = [];
   private gmailTools: any[] = [];
   private allTools: any[] = [];
-  private toolsMap: Map<string, any> = new Map();
   private fileSystemRootDir: string;
   private toolConfig: ToolConfiguration;
   private modelConfig: ModelConfig;
@@ -140,9 +139,9 @@ export class LangGraphAgent {
     this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
     this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools];
-    this.populateToolsMap();
     
-    // Create the LangGraph ReAct agent
+    // Create the LangGraph ReAct agent following LangGraph best practices
+    // Let LangGraph handle tool binding and execution automatically
     this.agent = createReactAgent({
       llm: this.llm,
       tools: this.allTools,
@@ -244,15 +243,9 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
 - Leverage LangGraph's structured reasoning for better outcomes`;
   }
 
-  private populateToolsMap() {
-    this.toolsMap.clear();
-    for (const tool of this.allTools) {
-      this.toolsMap.set(tool.name, tool);
-    }
-  }
-
   /**
    * Chat with streaming response using LangGraph agent
+   * Following LangGraph best practices from https://langchain-ai.github.io/langgraph/agents/tools/
    */
   public async chatStream(
     messages: LangGraphAgentMessage[],
@@ -266,12 +259,7 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       const systemMessage = { role: 'system', content: this.systemPrompt };
       const fullMessages = [systemMessage, ...langGraphMessages];
 
-      // For Anthropic with native thinking, we need to handle the stream differently
-      if (this.modelConfig.provider === 'anthropic') {
-        return this.handleAnthropicStream(fullMessages, callbacks);
-      }
-
-      // Default LangGraph streaming for Ollama and other providers
+      // Use LangGraph agent streaming - let it handle tool calling automatically
       const stream = await this.agent.stream(
         { messages: fullMessages },
         {
@@ -280,6 +268,8 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       );
 
       let fullResponse = '';
+      let hasNotifiedThinkingStart = false;
+      let isInThinkingBlock = false;
       
       for await (const chunk of stream) {
         // Extract content from the chunk
@@ -287,31 +277,65 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
           const lastMessage = chunk.messages[chunk.messages.length - 1];
           
           if (lastMessage.content) {
-            const content = typeof lastMessage.content === 'string' 
+            let content = typeof lastMessage.content === 'string' 
               ? lastMessage.content 
-              : JSON.stringify(lastMessage.content);
+              : Array.isArray(lastMessage.content)
+                ? lastMessage.content.map((block: any) => block.text || block.content || '').join('')
+                : JSON.stringify(lastMessage.content);
             
-            // Handle thinking extraction
-            const thinkingMatch = content.match(/<thinking>([\s\S]*?)<\/thinking>/);
-            if (thinkingMatch) {
-              callbacks.onThinkingStart?.();
-              callbacks.onThinking?.(thinkingMatch[1].trim());
-              callbacks.onThinkingEnd?.();
-            }
-            
-            // Send clean content (without thinking tags)
-            const cleanContent = content.replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim();
-            if (cleanContent && !fullResponse.includes(cleanContent)) {
-              callbacks.onToken?.(cleanContent);
-              fullResponse += cleanContent;
+            // Handle Anthropic's native thinking format
+            if (Array.isArray(lastMessage.content)) {
+              for (const contentBlock of lastMessage.content) {
+                if (contentBlock.type === 'thinking') {
+                  // Handle thinking content
+                  if (!hasNotifiedThinkingStart) {
+                    callbacks.onThinkingStart?.();
+                    hasNotifiedThinkingStart = true;
+                    isInThinkingBlock = true;
+                  }
+                  
+                  if (contentBlock.thinking) {
+                    callbacks.onThinking?.(contentBlock.thinking);
+                  }
+                } else if (contentBlock.type === 'text') {
+                  // Handle text content
+                  if (isInThinkingBlock) {
+                    callbacks.onThinkingEnd?.();
+                    isInThinkingBlock = false;
+                  }
+                  
+                  if (contentBlock.text) {
+                    callbacks.onToken?.(contentBlock.text);
+                    fullResponse += contentBlock.text;
+                  }
+                }
+              }
+            } else {
+              // Handle traditional thinking tags
+              const thinkingMatch = content.match(/<thinking>([\s\S]*?)<\/thinking>/);
+              if (thinkingMatch) {
+                if (!hasNotifiedThinkingStart) {
+                  callbacks.onThinkingStart?.();
+                  hasNotifiedThinkingStart = true;
+                }
+                callbacks.onThinking?.(thinkingMatch[1].trim());
+                callbacks.onThinkingEnd?.();
+              }
+              
+              // Send clean content (without thinking tags)
+              const cleanContent = content.replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim();
+              if (cleanContent && !fullResponse.includes(cleanContent)) {
+                callbacks.onToken?.(cleanContent);
+                fullResponse += cleanContent;
+              }
             }
           }
           
-          // Handle tool calls
+          // Handle tool calls - LangGraph manages this automatically
           if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
             for (const toolCall of lastMessage.tool_calls) {
               callbacks.onToolCall?.({
-                id: toolCall.id || `tool_${Date.now()}_${Math.random()}`,
+                id: toolCall.id || `tool_${Date.now()}`,
                 type: 'function',
                 function: {
                   name: toolCall.name || 'unknown_tool',
@@ -323,6 +347,10 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
         }
       }
 
+      if (isInThinkingBlock) {
+        callbacks.onThinkingEnd?.();
+      }
+
       callbacks.onComplete?.(fullResponse);
       return fullResponse;
 
@@ -331,86 +359,6 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       callbacks.onError?.(err);
       throw err;
     }
-  }
-
-  /**
-   * Handle Anthropic's native thinking stream format
-   */
-  private async handleAnthropicStream(
-    messages: any[],
-    callbacks: LangGraphAgentStreamCallback
-  ): Promise<string> {
-    let fullResponse = '';
-    let currentThinking = '';
-    let isInThinkingBlock = false;
-    let hasNotifiedThinkingStart = false;
-
-    // Use the LLM directly for Anthropic to get the raw stream
-    const stream = await this.llm.stream(messages);
-
-    for await (const chunk of stream) {
-      // Handle Anthropic's content blocks
-      if (chunk.content && Array.isArray(chunk.content)) {
-        for (const contentBlock of chunk.content) {
-          if (contentBlock.type === 'thinking') {
-            // Handle thinking content
-            if (!hasNotifiedThinkingStart) {
-              callbacks.onThinkingStart?.();
-              hasNotifiedThinkingStart = true;
-              isInThinkingBlock = true;
-            }
-            
-            if (contentBlock.thinking) {
-              currentThinking += contentBlock.thinking;
-              callbacks.onThinking?.(currentThinking);
-            }
-          } else if (contentBlock.type === 'text') {
-            // Handle text content
-            if (isInThinkingBlock) {
-              callbacks.onThinkingEnd?.();
-              isInThinkingBlock = false;
-            }
-            
-            if (contentBlock.text) {
-              callbacks.onToken?.(contentBlock.text);
-              fullResponse += contentBlock.text;
-            }
-          }
-        }
-      }
-      
-      // Handle simple content (fallback)
-      else if (chunk.content && typeof chunk.content === 'string') {
-        if (isInThinkingBlock) {
-          callbacks.onThinkingEnd?.();
-          isInThinkingBlock = false;
-        }
-        
-        callbacks.onToken?.(chunk.content);
-        fullResponse += chunk.content;
-      }
-
-      // Handle tool calls
-      if (chunk.tool_calls && chunk.tool_calls.length > 0) {
-        for (const toolCall of chunk.tool_calls) {
-          callbacks.onToolCall?.({
-            id: toolCall.id || `tool_${Date.now()}_${Math.random()}`,
-            type: 'function',
-            function: {
-              name: toolCall.name || 'unknown_tool',
-              arguments: JSON.stringify(toolCall.args || {})
-            }
-          });
-        }
-      }
-    }
-
-    if (isInThinkingBlock) {
-      callbacks.onThinkingEnd?.();
-    }
-
-    callbacks.onComplete?.(fullResponse);
-    return fullResponse;
   }
 
   private convertMessagesToLangGraph(messages: LangGraphAgentMessage[]) {
