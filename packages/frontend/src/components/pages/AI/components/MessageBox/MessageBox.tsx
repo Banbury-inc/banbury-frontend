@@ -183,7 +183,6 @@ export default function MessageBox({
         setCurrentConversation,
         modelConfig?.provider === 'anthropic' ? true : isAgentMode, // Always use agent mode for Anthropic
         mcpClient,
-        toolConfig,
         langGraphAgent
       );
     };
@@ -363,7 +362,6 @@ export default function MessageBox({
                   setCurrentConversation,
                   modelConfig?.provider === 'anthropic' ? true : isAgentMode, // Always use agent mode for Anthropic
                   mcpClient,
-                  toolConfig,
                   langGraphAgent
                 );
               }}
