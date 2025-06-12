@@ -9,33 +9,61 @@ import { handleDownloadModel } from './handlers/handleDownloadModel';
 import { handleDeleteModel } from './handlers/handleDeleteModel';
 import { handleSyncModelsWithBackend } from './handlers/handleSyncModelsWithBackend';
 import { DeviceInfo } from '@banbury/core/src/types';
+import { ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
 
 interface ModelSelectorButtonProps {
-  currentModel: string;
-  onModelChange: (model: string) => void;
+  modelConfig: ModelConfig;
+  onModelConfigChange: (config: Partial<ModelConfig>) => void;
   deviceInfo: DeviceInfo | undefined;
   onRefreshDeviceInfo?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export default function ModelSelectorButton({ 
-  currentModel, 
-  onModelChange, 
+  modelConfig,
+  onModelConfigChange,
   deviceInfo, 
-  onRefreshDeviceInfo 
+  onRefreshDeviceInfo,
+  onOpenSettings
 }: ModelSelectorButtonProps) {
   // UI State
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedProviderTab, setSelectedProviderTab] = useState<'local' | 'api'>(
+    modelConfig.provider === 'anthropic' ? 'api' : 'local'
+  );
   
   // Model State
   const [downloadedModels, setDownloadedModels] = useState<ModelInfo[]>([]);
   const [downloadProgress, setDownloadProgress] = useState<{ [key: string]: string }>({});
   const [deletingModels, setDeletingModels] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(false);
+  const [isAnthropicConfigured, setIsAnthropicConfigured] = useState(false);
 
   const open = Boolean(anchorEl);
   const ollamaClient = new OllamaClient('http://localhost:11434');
+
+  // Check Anthropic configuration
+  useEffect(() => {
+    const checkAnthropicConfig = () => {
+      const apiKey = localStorage.getItem('ANTHROPIC_API_KEY');
+      setIsAnthropicConfigured(!!apiKey);
+    };
+    
+    checkAnthropicConfig();
+    
+    // Listen for storage changes
+    const handleStorageChange = () => checkAnthropicConfig();
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Sync tab with current provider
+  useEffect(() => {
+    setSelectedProviderTab(modelConfig.provider === 'anthropic' ? 'api' : 'local');
+  }, [modelConfig.provider]);
 
   // Handler functions
   const loadModels = () => handleLoadModels(
@@ -48,9 +76,41 @@ export default function ModelSelectorButton({
 
   const syncModelsWithBackend = (localModels: ModelInfo[]) => handleSyncModelsWithBackend(localModels, deviceInfo, onRefreshDeviceInfo || (() => {}));
 
-  const handleModelSelect = (model: string) => {
-    onModelChange(model);
+  const handleOllamaModelSelect = (model: string) => {
+    onModelConfigChange({ 
+      provider: 'ollama',
+      ollamaModel: model 
+    });
     handleClose();
+  };
+
+  const handleProviderChange = (provider: 'ollama' | 'anthropic') => {
+    if (provider === 'anthropic' && !isAnthropicConfigured) {
+      // Don't switch if Anthropic is not configured, but show settings
+      onOpenSettings?.();
+      return;
+    }
+    
+    onModelConfigChange({ provider });
+    handleClose();
+  };
+
+  const handleAnthropicModelChange = (model: string) => {
+    onModelConfigChange({ 
+      provider: 'anthropic', 
+      anthropicModel: model 
+    });
+    handleClose();
+  };
+
+  const handleProviderTabChange = (tab: 'local' | 'api') => {
+    setSelectedProviderTab(tab);
+    // Auto-switch provider when tab changes
+    if (tab === 'local' && modelConfig.provider !== 'ollama') {
+      onModelConfigChange({ provider: 'ollama' });
+    } else if (tab === 'api' && modelConfig.provider !== 'anthropic' && isAnthropicConfigured) {
+      onModelConfigChange({ provider: 'anthropic' });
+    }
   };
 
   const handleDownloadModelWrapper = (modelName: string) => handleDownloadModel(
@@ -64,9 +124,9 @@ export default function ModelSelectorButton({
     loadModels, 
     onRefreshDeviceInfo || (() => {}), 
     setDeletingModels, 
-    currentModel, 
+    modelConfig.ollamaModel || 'qwen3:latest', 
     downloadedModels, 
-    handleModelSelect
+    handleOllamaModelSelect
   );
 
   // Event handlers
@@ -83,11 +143,10 @@ export default function ModelSelectorButton({
 
   // Effects
   useEffect(() => {
-    if (open) {
+    if (open && selectedProviderTab === 'local') {
       loadModels();
     }
-  }, [open]);
-
+  }, [open, selectedProviderTab]);
 
   useEffect(() => {
     // Listen for model download progress updates
@@ -105,11 +164,21 @@ export default function ModelSelectorButton({
     };
   }, []);
 
+  // Get current display text for the button
+  const getCurrentDisplayText = () => {
+    if (modelConfig.provider === 'anthropic') {
+      return `${modelConfig.anthropicModel || 'claude-3-5-sonnet-20241022'}`;
+    }
+    return modelConfig.ollamaModel || 'qwen3:latest';
+  };
+
   return (
     <>
       <Button 
-        currentModel={currentModel}
+        currentModel={getCurrentDisplayText()}
         onClick={handleClick}
+        provider={modelConfig.provider}
+        isAnthropicConfigured={isAnthropicConfigured}
       />
 
       <ModelSelector
@@ -119,15 +188,24 @@ export default function ModelSelectorButton({
         searchQuery={searchQuery}
         selectedCategory={selectedCategory}
         downloadedModels={downloadedModels}
-        currentModel={currentModel}
+        currentModel={modelConfig.ollamaModel || 'qwen3:latest'}
         downloadProgress={downloadProgress}
         deletingModels={deletingModels}
         loading={loading}
         onSearchChange={setSearchQuery}
         onCategoryChange={setSelectedCategory}
-        onModelSelect={handleModelSelect}
+        onModelSelect={handleOllamaModelSelect}
         onModelDownload={handleDownloadModelWrapper}
         onModelDelete={handleDeleteModelWrapper}
+        // Provider-related props
+        modelConfig={modelConfig}
+        isAnthropicConfigured={isAnthropicConfigured}
+        onProviderChange={handleProviderChange}
+        onAnthropicModelChange={handleAnthropicModelChange}
+        onOpenSettings={onOpenSettings}
+        // New tab-related props
+        selectedProviderTab={selectedProviderTab}
+        onProviderTabChange={handleProviderTabChange}
       />
     </>
   );
