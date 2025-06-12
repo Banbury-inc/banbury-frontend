@@ -1,7 +1,6 @@
 import { ChatOllama } from '@langchain/ollama';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
 import { BanburyMcpClient, McpToolResult } from '../basic/tools/banburyMCP/BanburyMcpClient';
 import { ToolCall } from '../basic/BasicClient';
 import { WebSearchService } from '../basic/tools/webSearch';
@@ -269,11 +268,8 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
 
       let fullResponse = '';
       let hasNotifiedThinkingStart = false;
-      let isInThinkingBlock = false;
-      let accumulatedThinking = '';
       
       for await (const chunk of stream) {
-        console.log('chunk', chunk);
         // Extract content from the chunk
         if (chunk.messages && chunk.messages.length > 0) {
           const lastMessage = chunk.messages[chunk.messages.length - 1];
@@ -303,7 +299,6 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
                   if (!hasNotifiedThinkingStart) {
                     callbacks.onThinkingStart?.();
                     hasNotifiedThinkingStart = true;
-                    isInThinkingBlock = true;
                   }
                   
                   if (contentBlock.thinking) {
@@ -339,7 +334,6 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
                 if (!hasNotifiedThinkingStart) {
                   callbacks.onThinkingStart?.();
                   hasNotifiedThinkingStart = true;
-                  isInThinkingBlock = true;
                 }
                 callbacks.onThinking?.(thinkingMatch[1].trim());
                 // Don't end thinking here - let it persist until completion
@@ -371,7 +365,6 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       }
 
       // Complete the response - thinking should persist like tool calls/results
-      console.log('fullResponse', fullResponse);
       callbacks.onComplete?.(fullResponse);
       
       // Don't call onThinkingEnd - let thinking persist like other components

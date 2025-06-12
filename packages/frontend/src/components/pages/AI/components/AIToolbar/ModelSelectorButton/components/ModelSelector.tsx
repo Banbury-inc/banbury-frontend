@@ -5,25 +5,19 @@ import {
   Stack, 
   Typography, 
   MenuItem, 
-  Divider, 
   Alert, 
   Button,
   ListItemIcon,
-  ListItemText,
-  Chip
 } from '@mui/material';
 import {
-  SmartToy,
-  Cloud,
-  Settings,
-  CheckCircle,
-  Warning,
+  Check,
 } from '@mui/icons-material';
 import { ModelInfo, AVAILABLE_MODELS } from '../constants';
 import { ModelSearch } from './ModelSearch';
 import { CategoryFilter } from './CategoryFilter';
 import { ModelList } from './ModelList';
 import { ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
+import { Tabs, Tab } from '../../../../../../common/Tabs/Tabs';
 
 const ANTHROPIC_MODELS = [
   'claude-3-5-sonnet-20241022',
@@ -55,6 +49,8 @@ interface ModelSelectorProps {
   onProviderChange: (provider: 'ollama' | 'anthropic') => void;
   onAnthropicModelChange: (model: string) => void;
   onOpenSettings?: () => void;
+  selectedProviderTab: 'local' | 'api';
+  onProviderTabChange: (tab: 'local' | 'api') => void;
 }
 
 export function ModelSelector({
@@ -75,11 +71,21 @@ export function ModelSelector({
   onModelDelete,
   modelConfig,
   isAnthropicConfigured,
-  onProviderChange,
   onAnthropicModelChange,
-  onOpenSettings
+  onOpenSettings,
+  selectedProviderTab,
+  onProviderTabChange
 }: ModelSelectorProps) {
   const categories = Array.from(new Set(AVAILABLE_MODELS.map(model => model.category)));
+
+  const tabs: Tab[] = [
+    { id: 'local', label: 'Local' },
+    { id: 'api', label: 'API' }
+  ];
+
+  const handleTabChange = (tabId: string) => {
+    onProviderTabChange(tabId as 'local' | 'api');
+  };
 
   return (
     <Popover
@@ -112,109 +118,94 @@ export function ModelSelector({
       <Box sx={{ p: 2 }}>
         <Stack spacing={2}>
           <Typography variant="h6" sx={{ color: '#ffffff', mb: 1 }}>
-            Select AI Provider & Model
+            Select AI Model
           </Typography>
 
-          <Box>
-            <MenuItem
-              onClick={() => onProviderChange('ollama')}
-              selected={modelConfig.provider === 'ollama'}
-              sx={{
-                borderRadius: 1,
-                mb: 1,
-                backgroundColor: modelConfig.provider === 'ollama' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                },
-              }}
-            >
-              <ListItemIcon>
-                <SmartToy sx={{ color: '#ffffff' }} />
-              </ListItemIcon>
-              <ListItemText>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography color="#ffffff">Ollama (Local)</Typography>
-                  <Chip label="Free" size="small" color="success" />
-                </Box>
-                <Typography variant="caption" color="#cccccc">
-                  Run models locally on your machine
-                </Typography>
-              </ListItemText>
-              <CheckCircle sx={{ color: '#4caf50' }} fontSize="small" />
-            </MenuItem>
-
-            {modelConfig.provider === 'ollama' && (
-              <Box sx={{ ml: 2, mb: 2 }}>
-                <Stack spacing={1}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                    <ModelSearch 
-                      searchQuery={searchQuery}
-                      onSearchChange={onSearchChange}
-                    />
-
-                    {categories.length > 0 && (
-                      <CategoryFilter
-                        categories={categories}
-                        selectedCategory={selectedCategory}
-                        onCategoryChange={onCategoryChange}
-                      />
-                    )}
-                  </Stack>
-
-                  <ModelList
-                    downloadedModels={downloadedModels}
-                    searchQuery={searchQuery}
-                    selectedCategory={selectedCategory}
-                    currentModel={currentModel}
-                    downloadProgress={downloadProgress}
-                    deletingModels={deletingModels}
-                    loading={loading}
-                    onModelSelect={onModelSelect}
-                    onModelDownload={onModelDownload}
-                    onModelDelete={onModelDelete}
-                  />
-                </Stack>
-              </Box>
-            )}
+          {/* Tabs */}
+          <Box sx={{ 
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            mb: 2,
+            '& .tab': {
+              backgroundColor: 'transparent !important',
+              color: 'rgba(255, 255, 255, 0.7) !important',
+              border: 'none !important',
+              borderRadius: '6px !important',
+              padding: '8px 16px !important',
+              minWidth: 'auto !important',
+              height: 'auto !important',
+              margin: '0 4px !important',
+              fontSize: '14px !important',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.05) !important',
+                color: 'rgba(255, 255, 255, 0.9) !important',
+              },
+              '&.active': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1) !important',
+                color: '#ffffff !important',
+              },
+              '& button': {
+                display: 'none !important'
+              }
+            }
+          }}>
+            <Tabs
+              tabs={tabs}
+              activeTab={selectedProviderTab}
+              onTabChange={handleTabChange}
+            />
           </Box>
 
-          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-
-          <Box>
-            <MenuItem
-              onClick={() => onProviderChange('anthropic')}
-              selected={modelConfig.provider === 'anthropic'}
-              disabled={!isAnthropicConfigured}
-              sx={{
-                borderRadius: 1,
-                backgroundColor: modelConfig.provider === 'anthropic' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                },
-                opacity: isAnthropicConfigured ? 1 : 0.6,
-              }}
-            >
-              <ListItemIcon>
-                <Cloud sx={{ color: '#ffffff' }} />
-              </ListItemIcon>
-              <ListItemText>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography color="#ffffff">Anthropic (Cloud)</Typography>
-                  <Chip label="Paid" size="small" color="warning" />
-                </Box>
-                <Typography variant="caption" color="#cccccc">
-                  High-performance cloud models
+          {/* Local Models Tab */}
+          {selectedProviderTab === 'local' && (
+            <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <Typography variant="subtitle1" sx={{ color: '#ffffff' }}>
+                  Ollama (Local Models)
                 </Typography>
-              </ListItemText>
-              {isAnthropicConfigured ? (
-                <CheckCircle sx={{ color: '#4caf50' }} fontSize="small" />
-              ) : (
-                <Warning sx={{ color: '#ff9800' }} fontSize="small" />
-              )}
-            </MenuItem>
+              </Box>
 
-            {!isAnthropicConfigured && (
-              <Box sx={{ ml: 2, mb: 1 }}>
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                  <ModelSearch 
+                    searchQuery={searchQuery}
+                    onSearchChange={onSearchChange}
+                  />
+
+                  {categories.length > 0 && (
+                    <CategoryFilter
+                      categories={categories}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={onCategoryChange}
+                    />
+                  )}
+                </Stack>
+
+                <ModelList
+                  downloadedModels={downloadedModels}
+                  searchQuery={searchQuery}
+                  selectedCategory={selectedCategory}
+                  currentModel={currentModel}
+                  downloadProgress={downloadProgress}
+                  deletingModels={deletingModels}
+                  loading={loading}
+                  onModelSelect={onModelSelect}
+                  onModelDownload={onModelDownload}
+                  onModelDelete={onModelDelete}
+                />
+              </Stack>
+            </Box>
+          )}
+
+          {/* API Models Tab */}
+          {selectedProviderTab === 'api' && (
+            <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <Typography variant="subtitle1" sx={{ color: '#ffffff' }}>
+                  Anthropic (Cloud API)
+                </Typography>
+              </Box>
+
+              {!isAnthropicConfigured ? (
                 <Alert 
                   severity="warning" 
                   sx={{ 
@@ -228,54 +219,46 @@ export function ModelSelector({
                     </Button>
                   }
                 >
-                  API key required
+                  API key required to use Anthropic models
                 </Alert>
-              </Box>
-            )}
-
-            {modelConfig.provider === 'anthropic' && isAnthropicConfigured && (
-              <Box sx={{ ml: 2, mt: 1 }}>
-                <Typography variant="caption" sx={{ color: '#cccccc', mb: 1, display: 'block' }}>
-                  Available Models:
-                </Typography>
-                <Stack spacing={0.5}>
-                  {ANTHROPIC_MODELS.map((model) => (
-                    <MenuItem
-                      key={model}
-                      onClick={() => onAnthropicModelChange(model)}
-                      selected={modelConfig.anthropicModel === model}
-                      sx={{
-                        borderRadius: 1,
-                        fontSize: '0.875rem',
-                        backgroundColor: modelConfig.anthropicModel === model ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        },
-                      }}
-                    >
-                      <Typography variant="body2" color="#ffffff">
-                        {model}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-                </Stack>
-              </Box>
-            )}
-          </Box>
-
-          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-
-          <MenuItem onClick={onOpenSettings} sx={{ borderRadius: 1 }}>
-            <ListItemIcon>
-              <Settings sx={{ color: '#ffffff' }} />
-            </ListItemIcon>
-            <ListItemText>
-              <Typography color="#ffffff">Model Settings</Typography>
-              <Typography variant="caption" color="#cccccc">
-                Configure API keys and preferences
-              </Typography>
-            </ListItemText>
-          </MenuItem>
+              ) : (
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#cccccc', mb: 1, display: 'block' }}>
+                    Available Models:
+                  </Typography>
+                  <Stack spacing={0.5}>
+                    {ANTHROPIC_MODELS.map((model) => (
+                      <MenuItem
+                        key={model}
+                        onClick={() => onAnthropicModelChange(model)}
+                        selected={modelConfig.anthropicModel === model}
+                        sx={{
+                          borderRadius: 1,
+                          fontSize: '0.875rem',
+                          backgroundColor: modelConfig.anthropicModel === model ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          },
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 28 }}>
+                          {modelConfig.anthropicModel === model && (
+                            <Check fontSize="small" sx={{ color: 'primary.main' }} />
+                          )}
+                        </ListItemIcon>
+                        <Typography variant="body2" color="#ffffff">
+                          {model}
+                        </Typography>
+                      </MenuItem>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+            </Box>
+          )}
         </Stack>
       </Box>
     </Popover>

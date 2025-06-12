@@ -2,7 +2,6 @@ import React from 'react';
 import { ExtendedChatMessage } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
-import { extractThinkingContent } from './handleSendMessage';
 import { Agent } from '@banbury/core/src/ai/agent/agent';
 import { LangGraphAgent } from '@banbury/core/src/ai/agent/LangGraphAgent';
 
@@ -27,7 +26,6 @@ export const handleAgent = async (
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
   mcpClient?: any,
-  toolConfig?: any
 ) => {
   if ((!inputMessage.trim() && selectedImages.length === 0) || !aiClient || isLoading) return;
 

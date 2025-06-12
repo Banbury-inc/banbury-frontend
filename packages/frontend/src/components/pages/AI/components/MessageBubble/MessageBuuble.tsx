@@ -112,7 +112,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   content, 
   images,
   isStreaming = false,
-  thinking
 }) => {
   // For assistant messages, don't remove thinking tags since ChatMessages handles them
   // For user messages, clean content as before

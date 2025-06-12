@@ -3,8 +3,6 @@ import { Button, Tooltip, Box } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
 
 interface ModelSelectorButtonProps {
   currentModel: string;
@@ -25,17 +23,6 @@ export function ModelSelectorButton({
     ) : (
       <SmartToyOutlinedIcon fontSize="small" />
     );
-  };
-
-  const getStatusIcon = () => {
-    if (provider === 'anthropic') {
-      return isAnthropicConfigured ? (
-        <CheckCircleIcon sx={{ fontSize: 14, color: '#4caf50', ml: 0.5 }} />
-      ) : (
-        <WarningIcon sx={{ fontSize: 14, color: '#ff9800', ml: 0.5 }} />
-      );
-    }
-    return <CheckCircleIcon sx={{ fontSize: 14, color: '#4caf50', ml: 0.5 }} />;
   };
 
   const getTooltipText = () => {
@@ -77,7 +64,6 @@ export function ModelSelectorButton({
       >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           {currentModel}
-          {getStatusIcon()}
         </Box>
       </Button>
     </Tooltip>
