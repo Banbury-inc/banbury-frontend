@@ -97,7 +97,6 @@ export default function MessageBox({
   mcpClient,
   availableTools,
   onToggleTool,
-  toolConfig,
   langGraphAgent,
   modelConfig
 }: MessageBoxProps) {
