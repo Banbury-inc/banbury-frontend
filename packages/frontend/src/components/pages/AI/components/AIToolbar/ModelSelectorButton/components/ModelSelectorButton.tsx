@@ -1,7 +1,5 @@
 import React from 'react';
 import { Button, Tooltip, Box } from '@mui/material';
-import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
-import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 interface ModelSelectorButtonProps {
@@ -17,13 +15,6 @@ export function ModelSelectorButton({
   provider = 'ollama',
   isAnthropicConfigured = false 
 }: ModelSelectorButtonProps) {
-  const getProviderIcon = () => {
-    return provider === 'anthropic' ? (
-      <CloudOutlinedIcon fontSize="small" />
-    ) : (
-      <SmartToyOutlinedIcon fontSize="small" />
-    );
-  };
 
   const getTooltipText = () => {
     if (provider === 'anthropic') {
@@ -39,7 +30,6 @@ export function ModelSelectorButton({
     <Tooltip title={getTooltipText()}>
       <Button
         onClick={onClick}
-        startIcon={getProviderIcon()}
         endIcon={<KeyboardArrowDownIcon fontSize="small" />}
         sx={{ 
           height: '28px',
