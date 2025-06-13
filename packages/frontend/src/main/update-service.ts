@@ -53,9 +53,12 @@ export class UpdateService {
         electronLog.transports.file.level = 'debug';
         
         // Check if this is a dev build and configure accordingly
+        // Use app name since version doesn't get properly embedded due to package.json restoration
         const { app } = require('electron');
-        const baseVersion = app.getVersion();
-        const isBuiltDevRelease = baseVersion.includes('-dev.'); // Built dev release has timestamp
+        const appName = app.getName();
+        const isBuiltDevRelease = appName.includes('dev') || appName.includes('Dev');
+        
+        console.log(`Update service: App name is "${appName}", treating as ${isBuiltDevRelease ? 'dev' : 'production'} build`);
         
         if (isBuiltDevRelease) {
             autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases

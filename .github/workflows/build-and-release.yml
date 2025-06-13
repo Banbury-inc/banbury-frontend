@@ -192,11 +192,6 @@ jobs:
           
           # Build the app
           npm run package:app
-          
-          # Restore original package.json if modified
-          if [ -f "package.json.original" ]; then
-            mv package.json.original package.json
-          fi
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -252,11 +247,6 @@ jobs:
           fi
           
           npm run package:dist
-          
-          # Restore original package.json if modified
-          if [ -f "package.json.original" ]; then
-            mv package.json.original package.json
-          fi
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -300,6 +290,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rpm
           
+          # Modify package.json for dev builds on Linux
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            # Get version info that was set in the macOS step
+            VERSION=$(jq -r .version ../frontend/package.json)
+            TIMESTAMP=$(date +%Y%m%d%H%M)
+            DEV_VERSION="$VERSION-dev.$TIMESTAMP"
+            
+            node -e "
+              const pkg = require('./package.json');
+              pkg.version = '$DEV_VERSION';
+              pkg.build.productName = 'Banbury-dev';
+              pkg.build.appId = 'com.banbury.cloud.dev';
+              pkg.build.linux.artifactName = 'Banbury-dev-\${version}.\${ext}';
+              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
+            "
+            mv package.json package.json.original
+            mv package.json.tmp package.json
+          fi
+          
           # Build without publishing to Snapcraft store
           npm run deploy
         env:
@@ -312,6 +321,26 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cd packages/frontend
+          
+          # Modify package.json for dev builds on Windows
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            # Get version info 
+            VERSION=$(jq -r .version ./package.json)
+            TIMESTAMP=$(date +%Y%m%d%H%M)
+            DEV_VERSION="$VERSION-dev.$TIMESTAMP"
+            
+            node -e "
+              const pkg = require('./package.json');
+              pkg.version = '$DEV_VERSION';
+              pkg.build.productName = 'Banbury-dev';
+              pkg.build.appId = 'com.banbury.cloud.dev';
+              pkg.build.win.artifactName = 'Banbury-dev-\${version}.\${ext}';
+              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
+            "
+            mv package.json package.json.original
+            mv package.json.tmp package.json
+          fi
+          
           npm run deploy
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -348,6 +377,15 @@ jobs:
           name: core-package
           path: packages/core/dist
           if-no-files-found: error
+
+      # Restore original package.json at the very end for all platforms
+      - name: Restore original package.json
+        run: |
+          cd packages/frontend
+          if [ -f "package.json.original" ]; then
+            mv package.json.original package.json
+            echo "Restored original package.json"
+          fi
 
   release:
     needs: build
