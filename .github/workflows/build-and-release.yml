@@ -93,7 +93,7 @@ jobs:
           retention-days: 30
 
   build:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/prod' || github.ref == 'refs/heads/dev')
     needs: [lint, unit-tests, e2e-tests]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -350,30 +350,53 @@ jobs:
         run: |
           VERSION=$(jq -r .version ./packages/frontend/package.json)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          
+          # Determine if this is a dev or prod release
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            echo "RELEASE_TYPE=dev" >> $GITHUB_ENV
+            echo "TAG_NAME=v$VERSION-dev" >> $GITHUB_ENV
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TYPE=prod" >> $GITHUB_ENV
+            echo "TAG_NAME=v$VERSION" >> $GITHUB_ENV
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+          fi
+
+      - name: Delete existing dev release if it exists
+        if: env.RELEASE_TYPE == 'dev'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Check if release exists and delete it
+          if gh release view "${{ env.TAG_NAME }}" --repo ${{ github.repository }} >/dev/null 2>&1; then
+            echo "Deleting existing dev release ${{ env.TAG_NAME }}"
+            gh release delete "${{ env.TAG_NAME }}" --repo ${{ github.repository }} --yes
+          fi
+          
+          # Delete the tag if it exists
+          if git ls-remote --tags origin | grep -q "refs/tags/${{ env.TAG_NAME }}"; then
+            echo "Deleting existing tag ${{ env.TAG_NAME }}"
+            git push --delete origin "${{ env.TAG_NAME }}" || true
+          fi
 
       - name: Create and push a new tag
         env:
-          VERSION: ${{ env.VERSION }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Check if tag exists
-          if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
-            echo "Creating new tag v$VERSION"
-            git tag "v$VERSION"
-            git push https://$GH_TOKEN@github.com/${{ github.repository }} "v$VERSION"
-          else
-            echo "Tag v$VERSION already exists, skipping tag creation"
-          fi
+          echo "Creating new tag ${{ env.TAG_NAME }}"
+          git tag "${{ env.TAG_NAME }}"
+          git push https://$GH_TOKEN@github.com/${{ github.repository }} "${{ env.TAG_NAME }}"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "v${{ env.VERSION }}"
+          tag_name: "${{ env.TAG_NAME }}"
+          name: "${{ env.RELEASE_TYPE == 'dev' && format('Development Release v{0}', env.VERSION) || format('Release v{0}', env.VERSION) }}"
           draft: false
-          prerelease: false
+          prerelease: ${{ env.IS_PRERELEASE }}
           files: |
             dist/**/*.AppImage
             dist/**/*.exe
@@ -382,12 +405,14 @@ jobs:
             dist/**/latest*.yml
             dist/**/latest*.yaml
             dist/**/*blockmap
+          body: ${{ env.RELEASE_TYPE == 'dev' && 'This is an automated development release. Use with caution as it may contain experimental features.' || 'Production release with stable features.' }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   publish-npm:
     needs: release
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/prod'
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
