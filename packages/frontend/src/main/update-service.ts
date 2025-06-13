@@ -39,6 +39,14 @@ export class UpdateService {
         autoUpdater.autoInstallOnAppQuit = true;
         autoUpdater.logger = electronLog;
         electronLog.transports.file.level = 'debug';
+        
+        // Check if this is a dev build and configure accordingly
+        const isDev = require('../../package.json').build.appId.includes('.dev');
+        if (isDev) {
+            autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases
+        } else {
+            autoUpdater.allowPrerelease = false; // Production builds ignore pre-releases
+        }
 
         // Listen for update events
         autoUpdater.on('checking-for-update', () => {
