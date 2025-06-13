@@ -256,5 +256,28 @@ app.on("activate", () => {
 });
 
 ipcMain.on('get-app-version', (event) => {
-  event.returnValue = app.getVersion();
+  const baseVersion = app.getVersion();
+  const appName = app.getName();
+  
+  // Check multiple indicators for development mode
+  const isDevEnv = process.env.NODE_ENV === 'development';
+  const isDevBuild = appName.includes('dev') || appName.includes('Dev');
+  const isRunningFromSource = appName === 'banbury-frontend'; // Running from npm run dev
+  const isDev = isDevEnv || isDevBuild || isRunningFromSource;
+  
+  if (isDev) {
+    if (isRunningFromSource) {
+      // Running from npm run dev
+      event.returnValue = `${baseVersion}-dev (local)`;
+    } else if (isDevBuild) {
+      // Built dev release
+      event.returnValue = baseVersion; // Already has -dev timestamp from build
+    } else {
+      // Other dev environment
+      event.returnValue = `${baseVersion}-dev`;
+    }
+  } else {
+    // Production build
+    event.returnValue = baseVersion;
+  }
 });

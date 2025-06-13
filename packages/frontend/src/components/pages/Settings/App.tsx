@@ -67,6 +67,7 @@ export default function App() {
     }, [showAlert]);
 
     const handleCheckUpdate = () => {
+        console.log('check-for-updates');
         ipcRenderer.send('check-for-updates');
     };
 

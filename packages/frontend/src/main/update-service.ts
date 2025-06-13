@@ -10,10 +10,31 @@ export class UpdateService {
 
         // Handle IPC messages from renderer
         ipcMain.on('check-for-updates', () => {
+            console.log('check-for-updates received');
             if (this.isSnap) {
                 this.sendStatusToWindow('Updates are handled by Snap store');
                 return;
             }
+            
+            // Check if we're in development mode
+            const { app } = require('electron');
+            const appName = app.getName();
+            console.log('App name:', appName);
+            
+            // Check multiple indicators for development mode
+            const isDevEnv = process.env.NODE_ENV === 'development';
+            const isDevBuild = appName.includes('dev') || appName.includes('Dev');
+            const isRunningFromSource = appName === 'banbury-frontend'; // Running from npm run dev
+            
+            console.log('Development checks:', { isDevEnv, isDevBuild, isRunningFromSource });
+            
+            if (isDevEnv || isDevBuild || isRunningFromSource) {
+                console.log('Development mode detected, simulating update check');
+                this.sendStatusToWindow('Development mode: Update checking is disabled');
+                return;
+            }
+            
+            console.log('Calling autoUpdater.checkForUpdates()');
             autoUpdater.checkForUpdates().catch(err => {
                 console.error('Error checking for updates:', err);
                 this.sendStatusToWindow(`Error checking for updates: ${err.message}`);
@@ -41,10 +62,17 @@ export class UpdateService {
         electronLog.transports.file.level = 'debug';
         
         // Check if this is a dev build and configure accordingly
-        // Use app name since it's more reliable than appId for detection
         const { app } = require('electron');
         const appName = app.getName();
-        const isDev = appName.includes('dev') || appName.includes('Dev');
+        console.log('Initial setup - App name:', appName);
+        
+        // Check multiple indicators for development mode
+        const isDevEnv = process.env.NODE_ENV === 'development';
+        const isDevBuild = appName.includes('dev') || appName.includes('Dev');
+        const isRunningFromSource = appName === 'banbury-frontend'; // Running from npm run dev
+        const isDev = isDevEnv || isDevBuild || isRunningFromSource;
+        
+        console.log('Initial setup - Development checks:', { isDevEnv, isDevBuild, isRunningFromSource, isDev });
         
         if (isDev) {
             autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases
@@ -61,6 +89,11 @@ export class UpdateService {
             this.sendStatusToWindow(`Update available: v${info.version}`);
             this.mainWindow.webContents.send('update-available');
             // Update will automatically start downloading due to autoDownload = true
+        });
+
+        autoUpdater.on('update-not-available', () => {
+            this.sendStatusToWindow('You are running the latest version.');
+            this.mainWindow.webContents.send('update-not-available');
         });
 
         autoUpdater.on('error', (err) => {
