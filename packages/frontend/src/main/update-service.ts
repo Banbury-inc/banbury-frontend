@@ -58,8 +58,6 @@ export class UpdateService {
         const appName = app.getName();
         const isBuiltDevRelease = appName.includes('dev') || appName.includes('Dev');
         
-        console.log(`Update service: App name is "${appName}", treating as ${isBuiltDevRelease ? 'dev' : 'production'} build`);
-        
         if (isBuiltDevRelease) {
             autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases
         } else {
