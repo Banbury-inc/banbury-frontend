@@ -319,15 +319,16 @@ jobs:
 
       - name: Package for Windows
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
           cd packages/frontend
           
           # Modify package.json for dev builds on Windows
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+          if ("${{ github.ref }}" -eq "refs/heads/dev") {
             # Get version info 
-            VERSION=$(jq -r .version ./package.json)
-            TIMESTAMP=$(date +%Y%m%d%H%M)
-            DEV_VERSION="$VERSION-dev.$TIMESTAMP"
+            $VERSION = (Get-Content ./package.json | ConvertFrom-Json).version
+            $TIMESTAMP = Get-Date -Format "yyyyMMddHHmm"
+            $DEV_VERSION = "$VERSION-dev.$TIMESTAMP"
             
             node -e "
               const pkg = require('./package.json');
@@ -337,9 +338,9 @@ jobs:
               pkg.build.win.artifactName = 'Banbury-dev-\${version}.\${ext}';
               require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
             "
-            mv package.json package.json.original
-            mv package.json.tmp package.json
-          fi
+            Move-Item package.json package.json.original
+            Move-Item package.json.tmp package.json
+          }
           
           npm run deploy
         env:
@@ -380,6 +381,7 @@ jobs:
 
       # Restore original package.json at the very end for all platforms
       - name: Restore original package.json
+        shell: bash
         run: |
           cd packages/frontend
           if [ -f "package.json.original" ]; then
