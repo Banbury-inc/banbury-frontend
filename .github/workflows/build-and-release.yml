@@ -159,6 +159,13 @@ jobs:
         run: |
           VERSION=$(node -p "require('./packages/frontend/package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          
+          # Set app name based on branch
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            echo "APP_NAME=Banbury-dev" >> $GITHUB_ENV
+          else
+            echo "APP_NAME=Banbury" >> $GITHUB_ENV
+          fi
 
       # For macOS: Build, Sign, and Notarize in the correct order
       - name: Build and Sign macOS App
@@ -167,8 +174,28 @@ jobs:
           cd packages/frontend
           # Ensure the build directory exists
           mkdir -p build
+          
+          # Modify package.json for dev builds
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            # Create temporary package.json with dev-specific settings
+            node -e "
+              const pkg = require('./package.json');
+              pkg.build.productName = 'Banbury-dev';
+              pkg.build.appId = 'com.banbury.cloud.dev';
+              pkg.build.mac.artifactName = 'Banbury-dev-\${version}-\${arch}.\${ext}';
+              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
+            "
+            mv package.json package.json.original
+            mv package.json.tmp package.json
+          fi
+          
           # Build the app
           npm run package:app
+          
+          # Restore original package.json if modified
+          if [ -f "package.json.original" ]; then
+            mv package.json.original package.json
+          fi
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -178,7 +205,6 @@ jobs:
       - name: Notarize macOS App Bundle
         if: runner.os == 'macOS'
         run: |
-          APP_NAME="Banbury"
           cd packages/frontend
           APP_PATH="dist/mac-arm64/${APP_NAME}.app"
           
@@ -209,7 +235,26 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cd packages/frontend
+          
+          # Modify package.json for dev builds again for distribution
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            node -e "
+              const pkg = require('./package.json');
+              pkg.build.productName = 'Banbury-dev';
+              pkg.build.appId = 'com.banbury.cloud.dev';
+              pkg.build.mac.artifactName = 'Banbury-dev-\${version}-\${arch}.\${ext}';
+              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
+            "
+            mv package.json package.json.original
+            mv package.json.tmp package.json
+          fi
+          
           npm run package:dist
+          
+          # Restore original package.json if modified
+          if [ -f "package.json.original" ]; then
+            mv package.json.original package.json
+          fi
         env:
           CSC_KEYCHAIN: build.keychain
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -219,7 +264,6 @@ jobs:
       - name: Notarize macOS Distribution Files
         if: runner.os == 'macOS'
         run: |
-          APP_NAME="Banbury"
           cd packages/frontend
           
           # Notarize DMG
