@@ -330,14 +330,8 @@ jobs:
             $TIMESTAMP = Get-Date -Format "yyyyMMddHHmm"
             $DEV_VERSION = "$VERSION-dev.$TIMESTAMP"
             
-            node -e "
-              const pkg = require('./package.json');
-              pkg.version = '$DEV_VERSION';
-              pkg.build.productName = 'Banbury-dev';
-              pkg.build.appId = 'com.banbury.cloud.dev';
-              pkg.build.win.artifactName = 'Banbury-dev-\${version}.\${ext}';
-              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
-            "
+            # Use single quotes and escape properly for PowerShell
+            node -e 'const pkg = require(\"./package.json\"); pkg.version = \"'$DEV_VERSION'\"; pkg.build.productName = \"Banbury-dev\"; pkg.build.appId = \"com.banbury.cloud.dev\"; pkg.build.win.artifactName = \"Banbury-dev-$${version}.$${ext}\"; require(\"fs\").writeFileSync(\"./package.json.tmp\", JSON.stringify(pkg, null, 2));'
             Move-Item package.json package.json.original
             Move-Item package.json.tmp package.json
           }
