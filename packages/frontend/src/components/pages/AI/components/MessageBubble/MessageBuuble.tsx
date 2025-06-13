@@ -15,6 +15,7 @@ interface MessageBubbleProps {
   content: string;
   images?: string[];
   isStreaming?: boolean;
+  thinking?: string;
 }
 
 const MessageBubbleRoot = styled(Paper, {
@@ -83,6 +84,8 @@ const ImageContainer = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(1),
 }));
 
+
+
 const CodeBlock: React.FC<{ language: string; code: string }> = ({ language, code }) => (
   <Box sx={{ my: 2 }}>
     <SyntaxHighlighter
@@ -108,15 +111,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   elevation = 2, 
   content, 
   images,
-  isStreaming = false
+  isStreaming = false,
 }) => {
-
-  
-  // Clean content - remove context tags, thinking tags, and normalize whitespace
-  const cleanContent = content
-    .replace(/<context>[\s\S]*?<\/context>\n?/g, '')
-    .replace(/<thinking>[\s\S]*?<\/thinking>\n?/g, '')
-    .trim();
+  // For assistant messages, don't remove thinking tags since ChatMessages handles them
+  // For user messages, clean content as before
+  const cleanContent = isUser 
+    ? content
+        .replace(/<context>[\s\S]*?<\/context>\n?/g, '')
+        .replace(/<thinking>[\s\S]*?<\/thinking>\n?/g, '')
+        .trim()
+    : content
+        .replace(/<context>[\s\S]*?<\/context>\n?/g, '')
+        .trim(); // Keep thinking tags for assistant messages
 
   // Split content into text and code blocks
   const renderContent = () => {

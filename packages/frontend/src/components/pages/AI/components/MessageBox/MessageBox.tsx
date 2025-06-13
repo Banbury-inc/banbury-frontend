@@ -16,6 +16,7 @@ import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import { handleImageUpload } from './handlers/handleImageUpload';
 import { handleSendMessage } from './handlers/handleSendMessage';
 import { AVAILABLE_MODELS } from '../AIToolbar/ModelSelectorButton/constants';
+import { ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
 import ToolsButton from './ToolsButton';
 
 const HiddenInput = styled('input')({
@@ -65,6 +66,8 @@ interface MessageBoxProps {
   availableTools: any;
   onToggleTool?: (toolId: string, isEnabled: boolean) => void;
   toolConfig?: any;
+  langGraphAgent?: any;
+  modelConfig?: ModelConfig;
 }
 
 export default function MessageBox({
@@ -94,7 +97,8 @@ export default function MessageBox({
   mcpClient,
   availableTools,
   onToggleTool,
-  toolConfig
+  langGraphAgent,
+  modelConfig
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
@@ -139,9 +143,20 @@ export default function MessageBox({
   };
 
 
+  // Determine which client to use based on model provider
+  const getActiveClient = () => {
+    if (modelConfig?.provider === 'anthropic') {
+      return langGraphAgent;
+    }
+    return isAgentMode ? ollamaClient : ollamaClient; // For Ollama, use ollamaClient (which can be Agent or BasicClient)
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+      
+      const activeClient = getActiveClient();
+      
       handleSendMessage(
         inputMessage,
         selectedImages,
@@ -161,13 +176,13 @@ export default function MessageBox({
         false, // useWebSearch no longer needed - handled by AI client as tool
         setIsSearching,
         showAlert,
-        ollamaClient,
+        activeClient,
         isLoading,
         currentConversation,
         setCurrentConversation,
-        isAgentMode,
+        modelConfig?.provider === 'anthropic' ? true : isAgentMode, // Always use agent mode for Anthropic
         mcpClient,
-        toolConfig
+        langGraphAgent
       );
     };
   };
@@ -319,33 +334,36 @@ export default function MessageBox({
               </Tooltip>
             )}
             <ToolbarButton
-              onClick={isStreaming ? handleStopGeneration : () => handleSendMessage(
-                inputMessage,
-                selectedImages,
-                messages,
-                setMessages,
-                setInputMessage,
-                setSelectedImages,
-                setIsLoading,
-                setIsStreaming,
-                setStreamingMessage,
-                setStreamingThinking,
-                setStreamingToolCalls,
-                setStreamingToolResults,
-                setIsPreparingToThink,
-                abortControllerRef,
-                currentModel,
-                false, // useWebSearch no longer needed - handled by AI client as tool
-                setIsSearching,
-                showAlert,
-                ollamaClient,
-                isLoading,
-                currentConversation,
-                setCurrentConversation,
-                isAgentMode,
-                mcpClient,
-                toolConfig
-              )}
+              onClick={isStreaming ? handleStopGeneration : () => {
+                const activeClient = getActiveClient();
+                handleSendMessage(
+                  inputMessage,
+                  selectedImages,
+                  messages,
+                  setMessages,
+                  setInputMessage,
+                  setSelectedImages,
+                  setIsLoading,
+                  setIsStreaming,
+                  setStreamingMessage,
+                  setStreamingThinking,
+                  setStreamingToolCalls,
+                  setStreamingToolResults,
+                  setIsPreparingToThink,
+                  abortControllerRef,
+                  currentModel,
+                  false, // useWebSearch no longer needed - handled by AI client as tool
+                  setIsSearching,
+                  showAlert,
+                  activeClient,
+                  isLoading,
+                  currentConversation,
+                  setCurrentConversation,
+                  modelConfig?.provider === 'anthropic' ? true : isAgentMode, // Always use agent mode for Anthropic
+                  mcpClient,
+                  langGraphAgent
+                );
+              }}
               disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
               size="small"
               sx={{

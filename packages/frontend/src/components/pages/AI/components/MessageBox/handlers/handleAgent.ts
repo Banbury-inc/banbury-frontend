@@ -2,8 +2,8 @@ import React from 'react';
 import { ExtendedChatMessage } from '@banbury/core/src/types';
 import { saveConversation } from "../../../handlers/handleSaveConversation";
 import { AlertColor } from "@mui/material";
-import { extractThinkingContent } from './handleSendMessage';
 import { Agent } from '@banbury/core/src/ai/agent/agent';
+import { LangGraphAgent } from '@banbury/core/src/ai/agent/LangGraphAgent';
 
 export const handleAgent = async (
   inputMessage: string, 
@@ -21,14 +21,13 @@ export const handleAgent = async (
   setIsPreparingToThink: (isPreparingToThink: boolean) => void,
   abortControllerRef: React.MutableRefObject<AbortController | null>, 
   showAlert: (title: string, messages: string[], severity: AlertColor) => void, 
-  ollamaClient: any, 
+  aiClient: Agent | LangGraphAgent, 
   isLoading: boolean,
   currentConversation: any,
   setCurrentConversation: (conversation: any) => void,
   mcpClient?: any,
-  toolConfig?: any
 ) => {
-  if ((!inputMessage.trim() && selectedImages.length === 0) || !ollamaClient || isLoading) return;
+  if ((!inputMessage.trim() && selectedImages.length === 0) || !aiClient || isLoading) return;
 
   if (!mcpClient) {
     showAlert('Error', ['Agent mode requires MCP client for tool access'], 'error');
@@ -63,14 +62,8 @@ export const handleAgent = async (
   abortControllerRef.current = new AbortController();
 
   try {
-    // Create LangChain AI client instance with tool configuration
-    const agent = new Agent(
-      ollamaClient.baseUrl || 'http://localhost:11434',
-      ollamaClient.model || 'qwen3:latest',
-      mcpClient,
-      undefined, // Use default file system root
-      toolConfig
-    );
+    // Use the passed client (which could be LangGraphAgent or Agent)
+    const agent = aiClient;
 
     // Convert messages to LangChain format
     const langChainMessages = [...messages, userMessage].map(msg => ({
@@ -81,6 +74,7 @@ export const handleAgent = async (
     let currentStreamingMessage = '';
     let activeToolCalls: any[] = [];
     let activeToolResults: any[] = [];
+    let accumulatedThinking = '';
 
     // Use LangChain AI client with streaming callbacks
     await agent.chatStream(langChainMessages, {
@@ -94,6 +88,7 @@ export const handleAgent = async (
       onThinking: (thinking: string) => {
         if (abortControllerRef.current?.signal.aborted) return;
         setIsPreparingToThink(false);
+        accumulatedThinking = thinking; // Store the thinking content
         setStreamingThinking(thinking);
       },
 
@@ -120,26 +115,20 @@ export const handleAgent = async (
       onComplete: (fullResponse: string) => {
         if (abortControllerRef.current?.signal.aborted) return;
         
-        const { thinking, cleanContent } = extractThinkingContent(fullResponse);
         
         // Create assistant message with all the accumulated data
         const assistantMessage: ExtendedChatMessage = {
           role: 'assistant',
-          content: cleanContent || currentStreamingMessage,
-          thinking,
+          content: fullResponse,
           toolCalls: activeToolCalls.length > 0 ? activeToolCalls : undefined,
-          toolResults: activeToolResults.length > 0 ? activeToolResults : undefined
+          toolResults: activeToolResults.length > 0 ? activeToolResults : undefined,
+          thinking: accumulatedThinking || undefined
         };
 
         const updatedMessages = [...messages, userMessage, assistantMessage];
         setMessages(updatedMessages);
         saveConversation(updatedMessages, currentConversation, setCurrentConversation);
 
-        // Clear streaming states
-        setStreamingMessage('');
-        setStreamingThinking('');
-        setStreamingToolCalls([]);
-        setStreamingToolResults([]);
         setIsPreparingToThink(false);
         setIsLoading(false);
         setIsStreaming(false);
@@ -160,10 +149,6 @@ export const handleAgent = async (
     // Clean up states
     setIsLoading(false);
     setIsStreaming(false);
-    setStreamingMessage('');
-    setStreamingThinking('');
-    setStreamingToolCalls([]);
-    setStreamingToolResults([]);
     setIsPreparingToThink(false);
     abortControllerRef.current = null;
   }

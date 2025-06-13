@@ -320,7 +320,8 @@ export async function ram_usage(): Promise<number> {
     swapused: 0,
     swapfree: 0,
     writeback: 0,
-    dirty: 0
+    dirty: 0,
+    reclaimable: 0
   };
   
   const memData = await safeSystemInfo(() => si.mem(), fallbackMemData);

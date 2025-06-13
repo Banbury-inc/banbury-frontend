@@ -1,19 +1,35 @@
 import React from 'react';
-import { Button, Tooltip } from '@mui/material';
-import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+import { Button, Tooltip, Box } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 interface ModelSelectorButtonProps {
   currentModel: string;
   onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  provider?: 'ollama' | 'anthropic';
+  isAnthropicConfigured?: boolean;
 }
 
-export function ModelSelectorButton({ currentModel, onClick }: ModelSelectorButtonProps) {
+export function ModelSelectorButton({ 
+  currentModel, 
+  onClick, 
+  provider = 'ollama',
+  isAnthropicConfigured = false 
+}: ModelSelectorButtonProps) {
+
+  const getTooltipText = () => {
+    if (provider === 'anthropic') {
+      if (!isAnthropicConfigured) {
+        return 'Anthropic API key required - Click to configure';
+      }
+      return `Anthropic: ${currentModel}`;
+    }
+    return `Ollama: ${currentModel}`;
+  };
+
   return (
-    <Tooltip title="Select AI Model">
+    <Tooltip title={getTooltipText()}>
       <Button
         onClick={onClick}
-        startIcon={<SmartToyOutlinedIcon fontSize="small" />}
         endIcon={<KeyboardArrowDownIcon fontSize="small" />}
         sx={{ 
           height: '28px',
@@ -36,7 +52,9 @@ export function ModelSelectorButton({ currentModel, onClick }: ModelSelectorButt
           }
         }}
       >
-        {currentModel}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {currentModel}
+        </Box>
       </Button>
     </Tooltip>
   );
