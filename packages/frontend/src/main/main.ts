@@ -261,21 +261,15 @@ ipcMain.on('get-app-version', (event) => {
   
   // Check multiple indicators for development mode
   const isDevEnv = process.env.NODE_ENV === 'development';
-  const isDevBuild = appName.includes('dev') || appName.includes('Dev');
-  const isRunningFromSource = appName === 'banbury-frontend'; // Running from npm run dev
-  const isDev = isDevEnv || isDevBuild || isRunningFromSource;
+  const isRunningFromSource = appName === 'banbury-frontend' && isDevEnv; // Running from npm run dev
+  const isBuiltDevRelease = baseVersion.includes('-dev.'); // Built dev release has timestamp
   
-  if (isDev) {
-    if (isRunningFromSource) {
-      // Running from npm run dev
-      event.returnValue = `${baseVersion}-dev (local)`;
-    } else if (isDevBuild) {
-      // Built dev release
-      event.returnValue = baseVersion; // Already has -dev timestamp from build
-    } else {
-      // Other dev environment
-      event.returnValue = `${baseVersion}-dev`;
-    }
+  if (isRunningFromSource) {
+    // Running from npm run dev
+    event.returnValue = `${baseVersion}-dev (local)`;
+  } else if (isBuiltDevRelease) {
+    // Built dev release - version already has -dev timestamp, show as-is
+    event.returnValue = baseVersion;
   } else {
     // Production build
     event.returnValue = baseVersion;

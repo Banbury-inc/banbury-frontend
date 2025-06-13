@@ -15,17 +15,14 @@ export class UpdateService {
                 return;
             }
             
-            // Check if we're in development mode
+            // Check if we're in development mode (only disable for local development)
             const { app } = require('electron');
             const appName = app.getName();
-            
-            // Check multiple indicators for development mode
             const isDevEnv = process.env.NODE_ENV === 'development';
-            const isDevBuild = appName.includes('dev') || appName.includes('Dev');
-            const isRunningFromSource = appName === 'banbury-frontend'; // Running from npm run dev
+            const isRunningFromSource = appName === 'banbury-frontend' && isDevEnv; // Running from npm run dev
             
-            if (isDevEnv || isDevBuild || isRunningFromSource) {
-                this.sendStatusToWindow('Development mode: Update checking is disabled');
+            if (isRunningFromSource) {
+                this.sendStatusToWindow('Local development: Update checking is disabled');
                 return;
             }
             
@@ -57,15 +54,10 @@ export class UpdateService {
         
         // Check if this is a dev build and configure accordingly
         const { app } = require('electron');
-        const appName = app.getName();
+        const baseVersion = app.getVersion();
+        const isBuiltDevRelease = baseVersion.includes('-dev.'); // Built dev release has timestamp
         
-        // Check multiple indicators for development mode
-        const isDevEnv = process.env.NODE_ENV === 'development';
-        const isDevBuild = appName.includes('dev') || appName.includes('Dev');
-        const isRunningFromSource = appName === 'banbury-frontend'; // Running from npm run dev
-        const isDev = isDevEnv || isDevBuild || isRunningFromSource;
-        
-        if (isDev) {
+        if (isBuiltDevRelease) {
             autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases
         } else {
             autoUpdater.allowPrerelease = false; // Production builds ignore pre-releases
