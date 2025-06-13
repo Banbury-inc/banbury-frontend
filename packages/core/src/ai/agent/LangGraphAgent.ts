@@ -8,6 +8,7 @@ import { createBanburyTools } from './tools/banburyTools';
 import { createFileSystemTools } from './tools/filesystemTools';
 import { createWebSearchTools } from './tools/webSearchTools';
 import { createGmailTools } from './tools/gmailTools';
+import { createGoogleCalendarTools } from './tools/googleCalendarTools';
 import os from 'os';
 
 export interface LangGraphAgentStreamCallback {
@@ -65,6 +66,7 @@ export class LangGraphAgent {
   private fileSystemTools: any[] = [];
   private webSearchTools: any[] = [];
   private gmailTools: any[] = [];
+  private googleCalendarTools: any[] = [];
   private allTools: any[] = [];
   private fileSystemRootDir: string;
   private toolConfig: ToolConfiguration;
@@ -137,7 +139,8 @@ export class LangGraphAgent {
     this.fileSystemTools = this.toolConfig.filesystem ? createFileSystemTools(this.fileSystemRootDir) : [];
     this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
     this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools];
+    this.googleCalendarTools = this.toolConfig.googleCalendar ? createGoogleCalendarTools(this.toolConfig.googleCalendar) : [];
+    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools];
     
     // Create the LangGraph ReAct agent following LangGraph best practices
     // Let LangGraph handle tool binding and execution automatically
