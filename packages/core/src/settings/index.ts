@@ -7,7 +7,10 @@ import {
   getGmailIntegrationStatus,
   enableGmailIntegration,
   disableGmailIntegration,
-  isGmailEnabled
+  isGmailEnabled,
+  getGoogleCalendarIntegrationStatus,
+  enableGoogleCalendarIntegration,
+  disableGoogleCalendarIntegration,
 } from './integrations';
 import { getSettings } from './getSettings';
 
@@ -26,5 +29,8 @@ export const settings = {
   enableGmailIntegration,
   disableGmailIntegration,
   isGmailEnabled,
-  getSettings
+  getSettings,
+  getGoogleCalendarIntegrationStatus,
+  enableGoogleCalendarIntegration,
+  disableGoogleCalendarIntegration,
 };

@@ -30,6 +30,7 @@ import { Integration } from '@banbury/core/src/types';
 
 const Google_Drive_Icon = 'https://raw.githubusercontent.com/Banbury-inc/banbury-frontend/dev/packages/frontend/static/Google_Drive_Icon.png'
 const Gmail_Icon = 'https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico'
+const Google_Calendar_Icon = 'https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_12_2x.png'
 
 interface GoogleDriveStatus {
   enabled: boolean;
@@ -42,6 +43,12 @@ interface GmailStatus {
   configured: boolean;
   clientEmail: string | null;
   needsReauth?: boolean;
+}
+
+interface GoogleCalendarStatus {
+  enabled: boolean;
+  configured: boolean;
+  hasCredentials: boolean;
 }
 
 interface AuthResponse {
@@ -64,6 +71,11 @@ export default function Integrations() {
     configured: false,
     hasCredentials: false,
   });
+  const [googleCalendarStatus, setGoogleCalendarStatus] = useState<GoogleCalendarStatus>({
+    enabled: false,
+    configured: false,
+    hasCredentials: false,
+  });
   const [gmailStatus, setGmailStatus] = useState<GmailStatus>({
     enabled: false,
     configured: false,
@@ -75,6 +87,8 @@ export default function Integrations() {
   const [showAccountExistsDialog, setShowAccountExistsDialog] = useState(false);
   const [showGmailConfigDialog, setShowGmailConfigDialog] = useState(false);
   const [showGmailDisableDialog, setShowGmailDisableDialog] = useState(false);
+  const [showGoogleCalendarConfigDialog, setShowGoogleCalendarConfigDialog] = useState(false);
+  const [showGoogleCalendarDisableDialog, setShowGoogleCalendarDisableDialog] = useState(false);
   const [gmailClientEmail, setGmailClientEmail] = useState('');
   const [existingAccountInfo, setExistingAccountInfo] = useState<{email: string; name: string} | null>(null);
   const [pendingAuthUrl, setPendingAuthUrl] = useState<string | null>(null);
@@ -88,12 +102,14 @@ export default function Integrations() {
   const loadIntegrationStatuses = async () => {
     try {
       setIsLoading(true);
-      const [googleDriveStatus, gmailStatus] = await Promise.all([
+      const [googleDriveStatus, gmailStatus, googleCalendarStatus] = await Promise.all([
         banbury.settings.getGoogleDriveIntegrationStatus(),
-        banbury.settings.getGmailIntegrationStatus()
+        banbury.settings.getGmailIntegrationStatus(),
+        banbury.settings.getGoogleCalendarIntegrationStatus()
       ]);
       setGoogleDriveStatus(googleDriveStatus);
       setGmailStatus(gmailStatus);
+      setGoogleCalendarStatus(googleCalendarStatus);
     } catch (error) {
       console.error('Error loading integration statuses:', error);
       showAlert(
@@ -127,6 +143,15 @@ export default function Integrations() {
     }
   };
 
+  const loadGoogleCalendarStatus = async () => {
+    try {
+      const status = await banbury.settings.getGoogleCalendarIntegrationStatus();
+      setGoogleCalendarStatus(status);
+    } catch (error) {
+      console.error('Error loading Google Calendar status:', error);
+    }
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
   };
@@ -144,6 +169,8 @@ export default function Integrations() {
         // Show dialog to configure email or prompt to set up Google Drive first
         setShowGmailConfigDialog(true);
       }
+    } else if (integrationId === 'google-calendar') {
+      await enableGoogleCalendar();
     }
   };
 
@@ -152,6 +179,8 @@ export default function Integrations() {
       setShowDisableDialog(true);
     } else if (integrationId === 'gmail') {
       setShowGmailDisableDialog(true);
+    } else if (integrationId === 'google-calendar') {
+      setShowGoogleCalendarDisableDialog(true);
     }
   };
 
@@ -394,6 +423,92 @@ export default function Integrations() {
     }
   };
 
+  const enableGoogleCalendar = async () => {
+    try {
+      setIsUpdating(true);
+      setShowGoogleCalendarConfigDialog(false);
+      
+      const task_description = 'Enabling Google Calendar Integration';
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      setTaskbox_expanded(true);
+
+      const response = await banbury.settings.enableGoogleCalendarIntegration() as AuthResponse;
+
+      if (response.result === 'success') {
+        await loadGoogleCalendarStatus();
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
+        showAlert(
+          'Success', 
+          [response.message || 'Google Calendar integration enabled successfully'], 
+          'success'
+        );
+      } else if (response.result === 'account_exists') {
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
+        setExistingAccountInfo(response.existingAccount || { email: 'Unknown', name: 'Unknown' });
+        setPendingAuthUrl(response.authUrl || null);
+        setShowAccountExistsDialog(true);
+      } else {
+        await banbury.sessions.failTask(taskInfo, response.message || 'Failed to enable Google Calendar integration', tasks || [], setTasks);
+        showAlert('Error', [response.message || 'Failed to enable Google Calendar integration'], 'error');
+      }
+    } catch (error) {
+      console.error('Error enabling Google Calendar:', error);
+      
+      let errorMessage = 'Failed to enable Google Calendar integration';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      try {
+        const task_description = 'Enabling Google Calendar Integration';
+        const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+        await banbury.sessions.failTask(taskInfo, errorMessage, tasks || [], setTasks);
+      } catch (taskError) {
+        console.error('Error failing task:', taskError);
+      }
+      
+      showAlert(
+        'Error',
+        [errorMessage],
+        'error'
+      );
+    } finally {
+      setIsUpdating(false);
+      await loadGoogleCalendarStatus();
+    }
+  };
+
+  const disableGoogleCalendar = async () => {
+    try {
+      setIsUpdating(true);
+      setShowGoogleCalendarDisableDialog(false);
+      
+      const task_description = 'Disabling Google Calendar Integration';
+      const taskInfo = await banbury.sessions.addTask(task_description, tasks, setTasks);
+      setTaskbox_expanded(true);
+
+      const response = await banbury.settings.disableGoogleCalendarIntegration();
+
+      if (response.result === 'success') {
+        await loadGoogleCalendarStatus();
+        await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
+        showAlert('Success', [response.message || 'Google Calendar integration disabled successfully'], 'success');
+      } else {
+        await banbury.sessions.failTask(taskInfo, response.message || 'Failed to disable Google Calendar integration', tasks || [], setTasks);
+        showAlert('Error', [response.message || 'Failed to disable Google Calendar integration'], 'error');
+      }
+    } catch (error) {
+      console.error('Error disabling Google Calendar:', error);
+      showAlert(
+        'Error',
+        ['Failed to disable Google Calendar integration', error instanceof Error ? error.message : 'Unknown error'],
+        'error'
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const getGoogleDriveStatusChip = () => {
     if (isLoading) {
       return <Chip label="Loading..." size="small" />;
@@ -457,6 +572,43 @@ export default function Integrations() {
     );
   };
 
+  const getGoogleCalendarStatusChip = () => {
+    if (isLoading) {
+      return <Chip label="Loading..." size="small" />;
+    }
+
+    if (googleCalendarStatus.enabled && googleCalendarStatus.configured) {
+      return (
+        <Chip
+          icon={<CheckCircleIcon />}
+          label="Active"
+          color="success"
+          size="small"
+        />
+      );
+    }
+
+    if (googleCalendarStatus.enabled && !googleCalendarStatus.configured) {
+      return (
+        <Chip
+          icon={<WarningIcon />}
+          label="Authentication Required"
+          color="warning"
+          size="small"
+        />
+      );
+    }
+
+    return (
+      <Chip
+        icon={<ErrorIcon />}
+        label="Inactive"
+        color="default"
+        size="small"
+      />
+    );
+  };
+
   // Get installed integrations
   const getInstalledIntegrations = () => {
     const integrations = [];
@@ -483,6 +635,20 @@ export default function Integrations() {
         description: 'Access and manage your Gmail emails directly from Banbury AI agent.',
         icon: <img src={Gmail_Icon} alt="Gmail" className="w-8 h-8" />,
         category: 'Email',
+        status: 'installed' as const,
+        configured: true,
+        enabled: true
+      });
+    }
+
+    // Add Google Calendar if it's enabled and configured
+    if (googleCalendarStatus.enabled && googleCalendarStatus.configured) {
+      integrations.push({
+        id: 'google-calendar',
+        name: 'Google Calendar',
+        description: 'Access and manage your Google Calendar events directly from Banbury AI agent.',
+        icon: <img src={Google_Calendar_Icon} alt="Google Calendar" className="w-8 h-8" />,
+        category: 'Calendar',
         status: 'installed' as const,
         configured: true,
         enabled: true
@@ -523,6 +689,20 @@ export default function Integrations() {
         enabled: gmailStatus.enabled
       });
     }
+
+    // Add Google Calendar if it's not configured yet
+    if (!googleCalendarStatus.enabled || !googleCalendarStatus.configured) {
+      integrations.push({
+        id: 'google-calendar',
+        name: 'Google Calendar',
+        description: 'Access and manage your Google Calendar events directly from Banbury AI agent.',
+        icon: <img src={Google_Calendar_Icon} alt="Google Calendar" className="w-8 h-8" />,
+        category: 'Calendar',
+        status: 'available' as const,
+        configured: googleCalendarStatus.configured,
+        enabled: googleCalendarStatus.enabled
+      });
+    }
     
     return integrations;
   };
@@ -549,6 +729,7 @@ export default function Integrations() {
               <Text className="text-lg font-semibold">{integration.name}</Text>
               {isInstalled && integration.id === 'google-drive' && getGoogleDriveStatusChip()}
               {isInstalled && integration.id === 'gmail' && getGmailStatusChip()}
+              {isInstalled && integration.id === 'google-calendar' && getGoogleCalendarStatusChip()}
               {!isInstalled && (
                 <Chip
                   label={integration.category}
@@ -561,6 +742,11 @@ export default function Integrations() {
               {integration.description}
             </Text>
             {integration.id === 'google-drive' && integration.enabled && !integration.configured && (
+              <Text className="text-xs text-orange-600">
+                Authentication required to complete setup
+              </Text>
+            )}
+            {integration.id === 'google-calendar' && integration.enabled && !integration.configured && (
               <Text className="text-xs text-orange-600">
                 Authentication required to complete setup
               </Text>
@@ -713,6 +899,36 @@ export default function Integrations() {
           <Text className="text-sm">
             Gmail integration is active with email: <strong>{gmailStatus.clientEmail}</strong>. 
             You can now ask the AI agent to help with email management tasks.
+          </Text>
+        </Alert>
+      )}
+
+      {/* Show info about Google Calendar authentication */}
+      {googleCalendarStatus.enabled && !googleCalendarStatus.configured && (
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          <Text className="text-sm">
+            Google Calendar integration requires authentication. 
+            Click "Configure" to complete the authentication process and link your Google account.
+          </Text>
+        </Alert>
+      )}
+
+      {/* Show info about Google Calendar configuration */}
+      {!googleCalendarStatus.enabled && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          <Text className="text-sm">
+            <strong>Google Calendar Integration:</strong> If you signed in to Banbury with Google, you may already have Google Calendar access. 
+            Click "Configure" to enable the integration. If you don't have Google credentials yet, the authentication process will open in your default browser.
+          </Text>
+        </Alert>
+      )}
+
+      {/* Show info about Google Calendar being active */}
+      {googleCalendarStatus.enabled && googleCalendarStatus.configured && (
+        <Alert severity="success" sx={{ mt: 2 }}>
+          <Text className="text-sm">
+            Google Calendar integration is active. 
+            You can now ask the AI agent to help with calendar management tasks, view events, and schedule meetings.
           </Text>
         </Alert>
       )}
@@ -902,6 +1118,75 @@ export default function Integrations() {
           </Button>
           <Button onClick={disableGmail}>
             Disable Gmail
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Google Calendar Configuration Dialog */}
+      <Dialog
+        open={showGoogleCalendarConfigDialog}
+        onClose={() => setShowGoogleCalendarConfigDialog(false)}
+        aria-labelledby="google-calendar-config-dialog-title"
+        aria-describedby="google-calendar-config-dialog-description"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="google-calendar-config-dialog-title">
+          Configure Google Calendar Integration
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="google-calendar-config-dialog-description" sx={{ mb: 2 }}>
+            Enable Google Calendar integration to access and manage your calendar events directly from Banbury AI agent.
+          </DialogContentText>
+          
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Text className="text-sm">
+              Google Calendar integration uses the same Google API credentials as Google Drive. 
+              If you have Google Drive configured, Calendar will use the same authentication.
+            </Text>
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowGoogleCalendarConfigDialog(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={enableGoogleCalendar}
+          >
+            Configure Google Calendar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Google Calendar Disable Confirmation Dialog */}
+      <Dialog
+        open={showGoogleCalendarDisableDialog}
+        onClose={() => setShowGoogleCalendarDisableDialog(false)}
+        aria-labelledby="google-calendar-disable-dialog-title"
+        aria-describedby="google-calendar-disable-dialog-description"
+      >
+        <DialogTitle id="google-calendar-disable-dialog-title">
+          Disable Google Calendar Integration?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="google-calendar-disable-dialog-description">
+            Are you sure you want to disable Google Calendar integration? This will:
+            <br />
+            • Remove Google Calendar access from the AI agent
+            <br />
+            • Disable calendar management features
+            <br />
+            • Remove stored calendar configuration
+            <br /><br />
+            You can re-enable it at any time by configuring the integration again.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowGoogleCalendarDisableDialog(false)}>
+            Cancel
+          </Button>
+          <Button onClick={disableGoogleCalendar}>
+            Disable Google Calendar
           </Button>
         </DialogActions>
       </Dialog>

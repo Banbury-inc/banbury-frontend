@@ -572,3 +572,191 @@ export const checkGmailApiAccess = async (): Promise<{
     };
   }
 }; 
+
+export const getGoogleCalendarIntegrationStatus = async (): Promise<{
+  enabled: boolean;
+  configured: boolean;
+  hasCredentials: boolean;
+  clientEmail: string | null;
+  needsReauth?: boolean;
+}> => {
+  try {
+    // Check if user has Google Drive credentials (which Google Calendar can use)
+    const { checkGoogleDriveCredentials } = await import('../files/googleDrive');
+    const credentialStatus = await checkGoogleDriveCredentials();
+    
+    const hasCredentials = credentialStatus.hasCredentials;
+    
+    // If credentials exist, check Google Calendar API access specifically
+    let needsReauth = false;
+    if (hasCredentials) {
+      try {
+        const calendarAccess = await checkGoogleCalendarApiAccess();
+        if (!calendarAccess.hasAccess && calendarAccess.message.includes('scope not granted')) {
+          needsReauth = true;
+        }
+      } catch (error) {
+        console.warn('Could not check Google Calendar API access:', error);
+      }
+    }
+    
+    // Try to get user email from localStorage or return a generic message if configured
+    let clientEmail: string | null = null;
+    try {
+      // Try to get stored client email or use placeholder if Google credentials exist
+      clientEmail = localStorage.getItem('google_calendar_client_email') || 
+        (hasCredentials ? 'Google Account (using Drive credentials)' : null);
+    } catch (error) {
+      console.warn('Could not access localStorage for Google Calendar client email:', error);
+      // localStorage not available
+      clientEmail = hasCredentials ? 'Google Account (using Drive credentials)' : null;
+    }
+    
+    return {
+      enabled: hasCredentials && !needsReauth,
+      configured: hasCredentials && !needsReauth,
+      hasCredentials: hasCredentials,
+      clientEmail: clientEmail,
+      needsReauth: needsReauth
+    };
+  } catch (error) {
+    console.error('Error getting Google Calendar integration status:', error);
+    return {
+      enabled: false,
+      configured: false,
+      hasCredentials: false,
+      clientEmail: null,
+      needsReauth: false
+    };
+  }
+};
+
+/**
+ * Enable Google Calendar integration using existing Google Drive credentials
+ */
+export const enableGoogleCalendarIntegration = async (clientEmail?: string): Promise<{ 
+  result: string; 
+  message?: string;
+}> => {
+  try {
+    // Check if user has Google Drive credentials
+    const { checkGoogleDriveCredentials } = await import('../files/googleDrive');
+    const credentialStatus = await checkGoogleDriveCredentials();
+    
+    if (!credentialStatus.hasCredentials) {
+      return {
+        result: 'error',
+        message: 'Google credentials not found. Please configure Google Drive integration first to enable Google Calendar.'
+      };
+    }
+
+    // Check Google Calendar API access specifically
+    const calendarAccess = await checkGoogleCalendarApiAccess();
+    if (!calendarAccess.hasAccess) {
+      if (calendarAccess.message.includes('scope not granted')) {
+        return {
+          result: 'error',
+          message: 'Google Calendar scope missing from your Google credentials. Please disable and re-enable Google Drive integration to get Calendar permissions.'
+        };
+      } else {
+        return {
+          result: 'error',
+          message: `Google Calendar access unavailable: ${calendarAccess.message}`
+        };
+      }
+    }
+
+    // If a client email is provided, validate and store it
+    if (clientEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(clientEmail)) {
+        return {
+          result: 'error',
+          message: 'Please enter a valid email address'
+        };
+      }
+      
+      // Store the client email for reference
+      localStorage.setItem('google_calendar_client_email', clientEmail);
+    }
+    
+    return {
+      result: 'success',
+      message: 'Google Calendar integration enabled successfully using your existing Google credentials!'
+    };
+  } catch (error) {
+    console.error('Error enabling Google Calendar integration:', error);
+    return {
+      result: 'error',
+      message: error instanceof Error ? error.message : 'Failed to enable Google Calendar integration'
+    };
+  }
+};
+
+/**
+ * Disable Google Calendar integration
+ * Note: This only disables Google Calendar tools, Google credentials remain for Drive
+ */
+export const disableGoogleCalendarIntegration = async (): Promise<{ result: string; message?: string }> => {
+  try {
+    // Remove stored client email (if any)
+    localStorage.removeItem('google_calendar_client_email');
+    
+    return {
+      result: 'success',
+      message: 'Google Calendar integration disabled successfully. Google Drive integration remains active.'
+    };
+  } catch (error) {
+    console.error('Error disabling Google Calendar integration:', error);
+    return {
+      result: 'error',
+      message: error instanceof Error ? error.message : 'Failed to disable Google Calendar integration'
+    };
+  }
+};
+
+/**
+ * Check if Google Calendar integration is enabled and configured
+ */
+export const isGoogleCalendarEnabled = async (): Promise<boolean> => {
+  try {
+    const status = await getGoogleCalendarIntegrationStatus();
+    return status.enabled && status.configured;
+  } catch (error) {
+    console.error('Error checking Google Calendar status:', error);
+    return false;
+  }
+};
+
+/**
+ * Check Google Calendar API access status through backend
+ */
+export const checkGoogleCalendarApiAccess = async (): Promise<{
+  hasAccess: boolean;
+  message: string;
+  email?: string;
+}> => {
+  try {
+    const { token, apiKey } = loadGlobalAxiosCredentials();
+    const effectiveApiKey = apiKey || 'dev_key_1';
+
+    const response = await axios.get(`${config.url}/files/google_calendar/check_access`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-API-Key': effectiveApiKey,
+      },
+    });
+
+    return {
+      hasAccess: response.data.has_access || false,
+      message: response.data.message || 'Unknown status',
+      email: response.data.email
+    };
+  } catch (error) {
+    console.error('Error checking Google Calendar API access:', error);
+    return {
+      hasAccess: false,
+      message: error instanceof Error ? error.message : 'Failed to check Google Calendar access'
+    };
+  }
+};
