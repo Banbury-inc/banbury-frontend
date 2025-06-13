@@ -41,11 +41,17 @@ export class UpdateService {
         electronLog.transports.file.level = 'debug';
         
         // Check if this is a dev build and configure accordingly
-        const isDev = require('../../package.json').build.appId.includes('.dev');
+        // Use app name since it's more reliable than appId for detection
+        const { app } = require('electron');
+        const appName = app.getName();
+        const isDev = appName.includes('dev') || appName.includes('Dev');
+        
         if (isDev) {
             autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases
+            console.log('Update service: Dev build detected, allowing pre-releases');
         } else {
             autoUpdater.allowPrerelease = false; // Production builds ignore pre-releases
+            console.log('Update service: Production build detected, ignoring pre-releases');
         }
 
         // Listen for update events

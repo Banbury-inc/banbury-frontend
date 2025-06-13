@@ -180,6 +180,7 @@ jobs:
             # Create temporary package.json with dev-specific settings
             node -e "
               const pkg = require('./package.json');
+              pkg.version = '${{ env.VERSION }}';  // Use the timestamped version
               pkg.build.productName = 'Banbury-dev';
               pkg.build.appId = 'com.banbury.cloud.dev';
               pkg.build.mac.artifactName = 'Banbury-dev-\${version}-\${arch}.\${ext}';
@@ -240,6 +241,7 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
             node -e "
               const pkg = require('./package.json');
+              pkg.version = '${{ env.VERSION }}';  // Use the timestamped version
               pkg.build.productName = 'Banbury-dev';
               pkg.build.appId = 'com.banbury.cloud.dev';
               pkg.build.mac.artifactName = 'Banbury-dev-\${version}-\${arch}.\${ext}';
@@ -393,35 +395,43 @@ jobs:
         id: get_version
         run: |
           VERSION=$(jq -r .version ./packages/frontend/package.json)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
           
           # Determine if this is a dev or prod release
           if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            # For dev builds, append timestamp to ensure unique versions
+            TIMESTAMP=$(date +%Y%m%d%H%M)
+            DEV_VERSION="$VERSION-dev.$TIMESTAMP"
+            echo "VERSION=$DEV_VERSION" >> $GITHUB_ENV
             echo "RELEASE_TYPE=dev" >> $GITHUB_ENV
-            echo "TAG_NAME=v$VERSION-dev" >> $GITHUB_ENV
+            echo "TAG_NAME=v$DEV_VERSION" >> $GITHUB_ENV
             echo "IS_PRERELEASE=true" >> $GITHUB_ENV
           else
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
             echo "RELEASE_TYPE=prod" >> $GITHUB_ENV
             echo "TAG_NAME=v$VERSION" >> $GITHUB_ENV
             echo "IS_PRERELEASE=false" >> $GITHUB_ENV
           fi
 
-      - name: Delete existing dev release if it exists
+      - name: Clean up old dev releases
         if: env.RELEASE_TYPE == 'dev'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Check if release exists and delete it
-          if gh release view "${{ env.TAG_NAME }}" --repo ${{ github.repository }} >/dev/null 2>&1; then
-            echo "Deleting existing dev release ${{ env.TAG_NAME }}"
-            gh release delete "${{ env.TAG_NAME }}" --repo ${{ github.repository }} --yes
-          fi
+          # Get all dev releases and delete old ones, keeping only the latest 3
+          echo "Cleaning up old dev releases..."
           
-          # Delete the tag if it exists
-          if git ls-remote --tags origin | grep -q "refs/tags/${{ env.TAG_NAME }}"; then
-            echo "Deleting existing tag ${{ env.TAG_NAME }}"
-            git push --delete origin "${{ env.TAG_NAME }}" || true
-          fi
+          # Get all dev releases (pre-releases with "dev" in the tag), sort by version, keep latest 3
+          gh release list --repo ${{ github.repository }} --limit 50 --json tagName,prerelease,createdAt | \
+          jq -r '.[] | select(.prerelease == true and (.tagName | contains("dev"))) | .tagName' | \
+          sort -Vr | \
+          tail -n +4 | \
+          while read tag; do
+            if [ ! -z "$tag" ]; then
+              echo "Deleting old dev release: $tag"
+              gh release delete "$tag" --repo ${{ github.repository }} --yes || true
+              git push --delete origin "$tag" 2>/dev/null || true
+            fi
+          done
 
       - name: Create and push a new tag
         env:
