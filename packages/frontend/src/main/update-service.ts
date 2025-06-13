@@ -48,10 +48,8 @@ export class UpdateService {
         
         if (isDev) {
             autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases
-            console.log('Update service: Dev build detected, allowing pre-releases');
         } else {
             autoUpdater.allowPrerelease = false; // Production builds ignore pre-releases
-            console.log('Update service: Production build detected, ignoring pre-releases');
         }
 
         // Listen for update events
