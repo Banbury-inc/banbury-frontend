@@ -9,6 +9,7 @@ import { createFileSystemTools } from './tools/filesystemTools';
 import { createWebSearchTools } from './tools/webSearchTools';
 import { createGmailTools } from './tools/gmailTools';
 import { createGoogleCalendarTools } from './tools/googleCalendarTools';
+import { createBrowserbaseTools } from './tools/browserbaseTools';
 import os from 'os';
 
 export interface AgentStreamCallback {
@@ -41,6 +42,7 @@ export interface ToolConfiguration {
   googleCalendar?: boolean;
   googleDrive?: boolean;
   googleTasks?: boolean;
+  browserbase?: boolean;
 }
 
 /**
@@ -77,7 +79,8 @@ export class Agent {
       gmail: false,
       googleCalendar: false,
       googleDrive: false,
-      googleTasks: false
+      googleTasks: false,
+      browserbase: false
     }
   ) {
     this.baseUrl = ollamaBaseUrl;
@@ -103,7 +106,8 @@ export class Agent {
     this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
     this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
     this.googleCalendarTools = this.toolConfig.googleCalendar ? createGoogleCalendarTools(this.toolConfig.googleCalendar) : [];
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools];
+    const browserbaseTools = this.toolConfig.browserbase ? createBrowserbaseTools(this.toolConfig.browserbase) : [];
+    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools, ...browserbaseTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);
   }
@@ -221,6 +225,16 @@ export class Agent {
 - User needs to manage calendar entries
 ` : '';
 
+    const browserbaseInfo = this.toolConfig.browserbase ? `
+
+**Available Browserbase Tools (use only when needed):**
+- browserbase_create_session: Create a new browser session for web automation
+- browserbase_navigate: Navigate to a specific URL in a browser session
+- browserbase_screenshot: Take a screenshot of the current page
+- browserbase_get_content: Extract text content from the page or specific elements
+- browserbase_close_session: Close and terminate a browser session
+Use these tools for web scraping, automated browsing, taking screenshots of websites, or extracting content from web pages. Always create a session first, then navigate, perform actions, and close the session when done.` : '';
+
     return `You are an advanced AI assistant with structured thinking capabilities and access to various tools through the Banbury platform and file system operations.
 
 🧠 **STRUCTURED THINKING APPROACH**
@@ -264,7 +278,7 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 - Questions about programming, technology, or general knowledge
 - Creative writing, analysis, or problem-solving that doesn't need system data
 - Casual conversation or clarifying questions
-${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}${googleCalendarInfo}
+${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}${googleCalendarInfo}${browserbaseInfo}
 
 **Core Principles:**
 - Think systematically before deciding whether to use tools
@@ -777,4 +791,4 @@ Your thinking process should clearly indicate whether tools are needed and why.`
       toolNames: response.tool_calls?.map((tc: any) => tc.name)
     };
   }
-} 
+}    

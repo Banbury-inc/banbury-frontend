@@ -63,6 +63,7 @@ export default function AI() {
   const [googleDriveEnabled, setGoogleDriveEnabled] = useState<boolean>(false);
   const [googleTasksEnabled, setGoogleTasksEnabled] = useState<boolean>(false);
   const [filesystemEnabled, setFilesystemEnabled] = useState<boolean>(false);
+  const [browserbaseEnabled, setBrowserbaseEnabled] = useState<boolean>(false);
   const [isAgentMode, setIsAgentMode] = useState<boolean>(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
@@ -110,6 +111,12 @@ export default function AI() {
       isVisible: true,
       isEnabled: filesystemEnabled
     },
+    {
+      id: 'browserbase',
+      label: 'Browserbase',
+      isVisible: true,
+      isEnabled: browserbaseEnabled
+    },
   ];
 
   // Create tool configuration from availableTools state (memoized to prevent infinite re-renders)
@@ -120,8 +127,9 @@ export default function AI() {
     gmail: gmailEnabled,
     googleCalendar: googleCalendarEnabled,
     googleDrive: googleDriveEnabled,
-    googleTasks: googleTasksEnabled
-  }), [webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled]);
+    googleTasks: googleTasksEnabled,
+    browserbase: browserbaseEnabled
+  }), [webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled, browserbaseEnabled]);
 
 
   // Initialize MCP client
@@ -217,7 +225,7 @@ export default function AI() {
         }
       }
     }
-  }, [enhancedAIClient, langChainClient, langGraphAgent, mcpClient, mcpToolsEnabled, webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled, modelConfig]);
+  }, [enhancedAIClient, langChainClient, langGraphAgent, mcpClient, mcpToolsEnabled, webSearchEnabled, banburyEnabled, filesystemEnabled, gmailEnabled, googleCalendarEnabled, googleDriveEnabled, googleTasksEnabled, browserbaseEnabled, modelConfig]);
 
   useEffect(() => {
     // Scroll to bottom when messages change or streaming content updates
@@ -422,7 +430,8 @@ export default function AI() {
               setGoogleCalendarEnabled,
               setGoogleDriveEnabled,
               setGoogleTasksEnabled,
-              setFilesystemEnabled
+              setFilesystemEnabled,
+              setBrowserbaseEnabled
             )}
             toolConfig={toolConfig}
             langGraphAgent={langGraphAgent}
