@@ -9,6 +9,7 @@ import { createFileSystemTools } from './tools/filesystemTools';
 import { createWebSearchTools } from './tools/webSearchTools';
 import { createGmailTools } from './tools/gmailTools';
 import { createGoogleCalendarTools } from './tools/googleCalendarTools';
+import { createBrowserbaseTools } from './tools/browserbaseTools';
 import os from 'os';
 
 export interface LangGraphAgentStreamCallback {
@@ -41,6 +42,7 @@ export interface ToolConfiguration {
   googleCalendar?: boolean;
   googleDrive?: boolean;
   googleTasks?: boolean;
+  browserbase?: boolean;
 }
 
 export interface ModelConfig {
@@ -140,7 +142,8 @@ export class LangGraphAgent {
     this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
     this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
     this.googleCalendarTools = this.toolConfig.googleCalendar ? createGoogleCalendarTools(this.toolConfig.googleCalendar) : [];
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools];
+    const browserbaseTools = this.toolConfig.browserbase ? createBrowserbaseTools(this.toolConfig.browserbase) : [];
+    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools, ...browserbaseTools];
     
     // Create the LangGraph ReAct agent following LangGraph best practices
     // Let LangGraph handle tool binding and execution automatically
@@ -198,6 +201,16 @@ export class LangGraphAgent {
 - GmailSendMessage: Send an email message
 ` : '';
 
+    const browserbaseInfo = this.toolConfig.browserbase ? `
+
+**Available Browserbase Tools (use only when needed):**
+- browserbase_create_session: Create a new browser session for web automation
+- browserbase_navigate: Navigate to a specific URL in a browser session
+- browserbase_screenshot: Take a screenshot of the current page
+- browserbase_get_content: Extract text content from the page or specific elements
+- browserbase_close_session: Close and terminate a browser session
+Use these tools for web scraping, automated browsing, taking screenshots of websites, or extracting content from web pages. Always create a session first, then navigate, perform actions, and close the session when done.` : '';
+
     const modelInfo = this.modelConfig.provider === 'anthropic' 
       ? `\n**Current AI Model:** Anthropic ${this.modelConfig.anthropicModel || 'claude-sonnet-4-20250514'}`
       : `\n**Current AI Model:** Ollama ${this.modelConfig.ollamaModel || 'qwen3:latest'}`;
@@ -236,7 +249,7 @@ You operate using LangGraph's ReAct (Reasoning and Acting) pattern, which provid
 - Programming or technology questions answerable with knowledge
 - Creative writing or analysis tasks
 - Casual conversation
-${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
+${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}${browserbaseInfo}
 
 **Core Principles:**
 - Think systematically using the ReAct pattern
@@ -506,4 +519,4 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
       configured
     };
   }
-} 
+}    
