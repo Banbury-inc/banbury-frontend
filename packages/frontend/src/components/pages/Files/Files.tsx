@@ -12,7 +12,7 @@ import fs from 'fs';
 import { stat } from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import { handlers } from '../../../renderer/handlers';
@@ -65,7 +65,7 @@ const ResizeHandle = styled('div')(({ theme }) => ({
   }
 }));
 
-export default function Files() {
+const Files = React.memo(function Files() {
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof DatabaseData>('file_name');
   const [selected, setSelected] = useState<readonly (string | number)[]>([]);
@@ -481,7 +481,7 @@ export default function Files() {
     }));
   };
 
-  const getColumnOptions = () => {
+  const getColumnOptions = useMemo(() => {
     // Define which columns to show and their display labels (based on AvailableTableColumns)
     const columnLabels: Record<AvailableTableColumns, string> = {
       file_name: 'File Name',
@@ -513,7 +513,7 @@ export default function Files() {
       label: columnLabels[columnId],
       isVisible: columnVisibility[columnId] ?? true // Default to visible if not set
     }));
-  };
+  }, [columnVisibility]);
   
   const handleFinish = () => {
     setSelected([]);
@@ -1011,4 +1011,6 @@ export default function Files() {
       </Dialog>
     </Box>
   );
-}
+});
+
+export default Files;
