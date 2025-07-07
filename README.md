@@ -160,6 +160,28 @@ cd packages/frontend
 npm run test:e2e
 ```
 
+### E2E Testing Requirements
+
+The E2E tests use Playwright with Electron and require specific environment setup:
+
+#### Linux/Ubuntu Requirements
+For running E2E tests on Linux systems, you need X11 display server dependencies:
+
+```bash
+# Install required X11 dependencies
+sudo apt update
+sudo apt install -y xvfb x11-utils
+
+# Run tests with virtual display
+DISPLAY=:99 xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" npm run test:e2e
+```
+
+#### macOS/Windows
+E2E tests should work out of the box on macOS and Windows with their native display servers.
+
+#### CI/CD Environment
+The GitHub Actions workflow automatically handles the display server setup for the CI environment.
+
 
 ## 🤝 Contributing
 
