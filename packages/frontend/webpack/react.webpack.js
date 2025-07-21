@@ -33,7 +33,7 @@ const config = {
   },
   entry: path.resolve(rootPath, "src/renderer", "index.tsx"),
   target: "electron-renderer",
-  devtool: process.env.NODE_ENV === 'development' ? 'eval-cheap-module-source-map' : 'source-map',
+  devtool: process.env.NODE_ENV === 'development' ? 'eval-cheap-module-source-map' : 'nosources-source-map',
   cache: {
     type: 'filesystem',
     buildDependencies: {
