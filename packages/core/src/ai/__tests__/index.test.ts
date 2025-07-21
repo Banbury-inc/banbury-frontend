@@ -4,19 +4,6 @@ import { Ollama } from 'ollama';
 // Mock the ollama module
 jest.mock('ollama');
 
-// Mock the web-search module
-jest.mock('../web-search', () => ({
-  WebSearchService: jest.fn().mockImplementation(() => ({
-    search: jest.fn().mockResolvedValue([
-      {
-        title: 'Test Result',
-        link: 'https://test.com',
-        snippet: 'Test snippet'
-      }
-    ])
-  }))
-}));
-
 describe('OllamaClient', () => {
     let client: OllamaClient;
     const mockOllama = Ollama as jest.MockedClass<typeof Ollama>;

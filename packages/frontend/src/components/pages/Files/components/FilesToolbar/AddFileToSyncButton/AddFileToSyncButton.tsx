@@ -85,17 +85,19 @@ export default function AddFileToSyncButton({ selectedFileNames }: { selectedFil
 
   return (
     <Tooltip title="Add to Sync">
-      <LoadingButton
-        onClick={handleAddFileToSync}
-        data-testid="add-file-to-sync-button"
-        loading={loading}
-        loadingPosition="end"
-        sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-      >
-        <CloudUploadOutlinedIcon
-          fontSize="inherit"
-        />
-      </LoadingButton>
+      <span>
+        <LoadingButton
+          onClick={handleAddFileToSync}
+          data-testid="add-file-to-sync-button"
+          loading={loading}
+          loadingPosition="end"
+          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+        >
+          <CloudUploadOutlinedIcon
+            fontSize="inherit"
+          />
+        </LoadingButton>
+      </span>
     </Tooltip>
   );
 }

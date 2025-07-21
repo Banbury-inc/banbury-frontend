@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button, Popover, Box, Typography, Stack, LinearProgress, IconButton, Tooltip } from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import { banbury } from '@banbury/core';
@@ -20,7 +20,7 @@ export default function SyncButton() {
   }>({ syncingFiles: [], recentlyChanged: [] });
   const [isScanning, setIsScanning] = useState(false);
   const [deviceNotFound, setDeviceNotFound] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const { tasks, setTasks, setDevices } = useAuth();
@@ -57,12 +57,19 @@ export default function SyncButton() {
     setSyncData(foldersWithProgress);
   };
 
-  const handleFolderSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files ? event.target.files[0] : null;
-    if (!file) return;
 
+
+  const triggerFolderSelect = async () => {
+    // Use Electron's dialog API directly instead of file input
     try {
-      const absoluteFolderPath = path.dirname(file.path);
+      const { ipcRenderer } = window.require('electron');
+      const result = await ipcRenderer.invoke('dialog:openDirectory');
+      
+      if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+        return;
+      }
+      
+      const absoluteFolderPath = result.filePaths[0];
 
       // Check if folder is already in scanned folders
       const existingFolder = syncData.syncingFiles.find(
@@ -88,7 +95,6 @@ export default function SyncButton() {
         // Then get updated folders with fresh device data
         const updatedFolders = await getSyncFolders();
 
-
         // Initialize folders while preserving existing progress
         const foldersWithProgress = {
           ...updatedFolders,
@@ -106,12 +112,7 @@ export default function SyncButton() {
       }
     } catch (err) {
       console.error('Failed to sync folder. Please try again. Error:', err);
-    }
-  };
-
-  const triggerFolderSelect = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+      showAlert('Error', ['Failed to select folder. Please try again.'], 'error');
     }
   };
 
@@ -215,15 +216,7 @@ export default function SyncButton() {
 
   return (
     <>
-      <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
-        webkitdirectory=""
-        directory=""
-        multiple
-        onChange={handleFolderSelect}
-      />
+
       <Tooltip title="Sync">
         <Button
           onClick={handleClick}

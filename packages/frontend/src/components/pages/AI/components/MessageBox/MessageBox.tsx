@@ -16,6 +16,8 @@ import { ToolbarButton } from '../../../../common/ToolbarButton/ToolbarButton';
 import { handleImageUpload } from './handlers/handleImageUpload';
 import { handleSendMessage } from './handlers/handleSendMessage';
 import { AVAILABLE_MODELS } from '../AIToolbar/ModelSelectorButton/constants';
+import { ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
+import ToolsButton from './ToolsButton';
 
 const HiddenInput = styled('input')({
   display: 'none',
@@ -56,12 +58,16 @@ interface MessageBoxProps {
   currentConversation: any;
   setCurrentConversation: (conversation: any) => void;
   handleStopGeneration: () => void;
-  langChainOptions?: {};
   webSearchEnabled?: boolean;
   setWebSearchEnabled?: (enabled: boolean) => void;
   isAgentMode?: boolean;
   setIsAgentMode?: (enabled: boolean) => void;
   mcpClient?: any;
+  availableTools: any;
+  onToggleTool?: (toolId: string, isEnabled: boolean) => void;
+  toolConfig?: any;
+  langGraphAgent?: any;
+  modelConfig?: ModelConfig;
 }
 
 export default function MessageBox({
@@ -84,12 +90,15 @@ export default function MessageBox({
   currentConversation,
   setCurrentConversation,
   handleStopGeneration,
-  langChainOptions,
   webSearchEnabled = false,
   setWebSearchEnabled,
   isAgentMode = true,
   setIsAgentMode,
   mcpClient,
+  availableTools,
+  onToggleTool,
+  langGraphAgent,
+  modelConfig
 }: MessageBoxProps) {
   // Internal state management
   const [inputMessage, setInputMessage] = useState('');
@@ -133,41 +142,49 @@ export default function MessageBox({
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSendClick = () => {
-    handleSendMessage(
-      inputMessage,
-      selectedImages,
-      messages,
-      setMessages,
-      setInputMessage,
-      setSelectedImages,
-      setIsLoading,
-      setIsStreaming,
-      setStreamingMessage,
-      setStreamingThinking,
-      setStreamingToolCalls,
-      setStreamingToolResults,
-      setIsPreparingToThink,
-      abortControllerRef,
-      currentModel,
-      false, // useWebSearch no longer needed - handled by AI client as tool
-      setIsSearching,
-      showAlert,
-      ollamaClient,
-      isLoading,
-      currentConversation,
-      setCurrentConversation,
-      langChainOptions,
-      isAgentMode,
-      mcpClient
-    );
+
+  // Determine which client to use based on model provider
+  const getActiveClient = () => {
+    if (modelConfig?.provider === 'anthropic') {
+      return langGraphAgent;
+    }
+    return isAgentMode ? ollamaClient : ollamaClient; // For Ollama, use ollamaClient (which can be Agent or BasicClient)
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      handleSendClick();
-    }
+      
+      const activeClient = getActiveClient();
+      
+      handleSendMessage(
+        inputMessage,
+        selectedImages,
+        messages,
+        setMessages,
+        setInputMessage,
+        setSelectedImages,
+        setIsLoading,
+        setIsStreaming,
+        setStreamingMessage,
+        setStreamingThinking,
+        setStreamingToolCalls,
+        setStreamingToolResults,
+        setIsPreparingToThink,
+        abortControllerRef,
+        currentModel,
+        false, // useWebSearch no longer needed - handled by AI client as tool
+        setIsSearching,
+        showAlert,
+        activeClient,
+        isLoading,
+        currentConversation,
+        setCurrentConversation,
+        modelConfig?.provider === 'anthropic' ? true : isAgentMode, // Always use agent mode for Anthropic
+        mcpClient,
+        langGraphAgent
+      );
+    };
   };
 
   return (
@@ -239,6 +256,10 @@ export default function MessageBox({
             style={{ marginBottom: 16 }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <ToolsButton
+              availableTools={availableTools}
+              onToggleTool={onToggleTool}
+            />
             <HiddenInput
               type="file"
               accept="image/*"
@@ -249,65 +270,100 @@ export default function MessageBox({
 
 
             <Tooltip title={supportsVision ? "Upload Image" : "Image uploads not supported by this model"}>
-              <ToolbarButton
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading || !supportsVision}
-                size="small"
-                sx={{
-                  minWidth: 0,
-                  width: 36,
-                  height: 36,
-                  borderRadius: 2,
-                  opacity: supportsVision ? 1 : 0.5,
-                }}
-              >
-                <ImageIcon sx={{ fontSize: '1.1rem' }} />
-              </ToolbarButton>
-            </Tooltip>
-            {setIsAgentMode && (
-              <Tooltip title={`${isAgentMode ? 'LangChain Agent' : 'Chat'} Mode - ${isAgentMode ? 'AI uses LangChain framework to analyze tool results and iterate to solve problems step-by-step' : 'Direct chat responses'}`}>
+              <span>
                 <ToolbarButton
-                  onClick={() => setIsAgentMode(!isAgentMode)}
-                  disabled={isLoading}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading || !supportsVision}
                   size="small"
                   sx={{
                     minWidth: 0,
                     width: 36,
                     height: 36,
                     borderRadius: 2,
-                    backgroundColor: isAgentMode ? 'rgba(33,150,243,0.15)' : 'background.paper',
-                    '&:hover': {
-                      backgroundColor: isAgentMode ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
-                    },
+                    opacity: supportsVision ? 1 : 0.5,
                   }}
                 >
-                  <SmartToyIcon sx={{ fontSize: '1.1rem', color: isAgentMode ? 'info.main' : 'text.secondary' }} />
+                  <ImageIcon sx={{ fontSize: '1.1rem' }} />
                 </ToolbarButton>
+              </span>
+            </Tooltip>
+            {setIsAgentMode && (
+              <Tooltip title={`${isAgentMode ? 'LangChain Agent' : 'Chat'} Mode - ${isAgentMode ? 'AI uses LangChain framework to analyze tool results and iterate to solve problems step-by-step' : 'Direct chat responses'}`}>
+                <span>
+                  <ToolbarButton
+                    onClick={() => setIsAgentMode(!isAgentMode)}
+                    disabled={isLoading}
+                    size="small"
+                    sx={{
+                      minWidth: 0,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 2,
+                      backgroundColor: isAgentMode ? 'rgba(33,150,243,0.15)' : 'background.paper',
+                      '&:hover': {
+                        backgroundColor: isAgentMode ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <SmartToyIcon sx={{ fontSize: '1.1rem', color: isAgentMode ? 'info.main' : 'text.secondary' }} />
+                  </ToolbarButton>
+                </span>
               </Tooltip>
             )}
             {setWebSearchEnabled && (
               <Tooltip title="Web Search Tool - Allow AI to search the web when needed">
-                <ToolbarButton
-                  onClick={() => setWebSearchEnabled(!webSearchEnabled)}
-                  disabled={isLoading}
-                  size="small"
-                  sx={{
-                    minWidth: 0,
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.15)' : 'background.paper',
-                    '&:hover': {
-                      backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
-                    },
-                  }}
-                >
-                  <LanguageIcon sx={{ fontSize: '1.1rem', color: webSearchEnabled ? 'info.main' : 'text.secondary' }} />
-                </ToolbarButton>
+                <span>
+                  <ToolbarButton
+                    onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                    disabled={isLoading}
+                    size="small"
+                    sx={{
+                      minWidth: 0,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 2,
+                      backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.15)' : 'background.paper',
+                      '&:hover': {
+                        backgroundColor: webSearchEnabled ? 'rgba(33,150,243,0.22)' : (theme) => theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    <LanguageIcon sx={{ fontSize: '1.1rem', color: webSearchEnabled ? 'info.main' : 'text.secondary' }} />
+                  </ToolbarButton>
+                </span>
               </Tooltip>
             )}
             <ToolbarButton
-              onClick={isStreaming ? handleStopGeneration : handleSendClick}
+              onClick={isStreaming ? handleStopGeneration : () => {
+                const activeClient = getActiveClient();
+                handleSendMessage(
+                  inputMessage,
+                  selectedImages,
+                  messages,
+                  setMessages,
+                  setInputMessage,
+                  setSelectedImages,
+                  setIsLoading,
+                  setIsStreaming,
+                  setStreamingMessage,
+                  setStreamingThinking,
+                  setStreamingToolCalls,
+                  setStreamingToolResults,
+                  setIsPreparingToThink,
+                  abortControllerRef,
+                  currentModel,
+                  false, // useWebSearch no longer needed - handled by AI client as tool
+                  setIsSearching,
+                  showAlert,
+                  activeClient,
+                  isLoading,
+                  currentConversation,
+                  setCurrentConversation,
+                  modelConfig?.provider === 'anthropic' ? true : isAgentMode, // Always use agent mode for Anthropic
+                  mcpClient,
+                  langGraphAgent
+                );
+              }}
               disabled={(!isStreaming && (!inputMessage.trim() && selectedImages.length === 0))}
               size="small"
               sx={{
@@ -338,4 +394,4 @@ export default function MessageBox({
       </Box>
     </Box>
   );
-} 
+}

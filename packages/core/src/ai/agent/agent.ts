@@ -1,16 +1,17 @@
 import { ChatOllama } from '@langchain/ollama';
 import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
-import { tool } from '@langchain/core/tools';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { z } from 'zod';
-import { CloudMcpClient, McpToolResult } from './CloudMcpClient';
-import { ToolCall } from './EnhancedAIClient';
-import { WebSearchService } from './web-search';
-import fs from 'fs';
-import path from 'path';
+import { BanburyMcpClient, McpToolResult } from '../basic/tools/banburyMCP/BanburyMcpClient';
+import { ToolCall } from '../basic/BasicClient';
+import { WebSearchService } from '../basic/tools/webSearch';
+import { createBanburyTools } from './tools/banburyTools';
+import { createFileSystemTools } from './tools/filesystemTools';
+import { createWebSearchTools } from './tools/webSearchTools';
+import { createGmailTools } from './tools/gmailTools';
+import { createGoogleCalendarTools } from './tools/googleCalendarTools';
 import os from 'os';
 
-export interface LangChainStreamCallback {
+export interface AgentStreamCallback {
   onToken?: (token: string) => void;
   onThinking?: (thinking: string) => void;
   onThinkingStart?: () => void;
@@ -21,47 +22,68 @@ export interface LangChainStreamCallback {
   onError?: (error: Error) => void;
 }
 
-export interface LangChainOptions {
+export interface AgentOptions {
   temperature?: number;
   maxRetries?: number;
 }
 
-export interface LangChainMessage {
+export interface AgentMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
   tool_call_id?: string;
+}
+
+export interface ToolConfiguration {
+  webSearch: boolean;
+  banbury: boolean;
+  filesystem: boolean;
+  gmail?: boolean;
+  googleCalendar?: boolean;
+  googleDrive?: boolean;
+  googleTasks?: boolean;
 }
 
 /**
  * LangChain-powered AI Client with visible thinking and tool calling
  * Simplified version focused on thinking process before tool execution
  */
-export class LangChainAIClient {
+export class Agent {
   private llm: ChatOllama;
-  private llmWithTools: any; // Runnable with tools bound
-
-  private mcpClient: CloudMcpClient | null;
+  private mcpClient: BanburyMcpClient | null;
   private webSearchService: WebSearchService;
   private systemPrompt: string;
   private banburyTools: any[] = [];
   private fileSystemTools: any[] = [];
   private webSearchTools: any[] = [];
+  private gmailTools: any[] = [];
+  private googleCalendarTools: any[] = [];
   private allTools: any[] = [];
   private toolsMap: Map<string, any> = new Map(); // For quick tool lookup
   private baseUrl: string;
   private model: string;
+  private llmWithTools: any ;
   private fileSystemRootDir: string;
-  private webSearchEnabled: boolean = false;
+  private toolConfig: ToolConfiguration;
 
   constructor(
     ollamaBaseUrl: string = 'http://localhost:11434',
     model: string = 'qwen3:latest',
-    mcpClient: CloudMcpClient | null = null,
-    fileSystemRootDir: string = os.homedir() // Default to user's home directory
+    mcpClient: BanburyMcpClient | null = null,
+    fileSystemRootDir: string = os.homedir(), // Default to user's home directory
+    toolConfig: ToolConfiguration = {
+      webSearch: true,
+      banbury: true,
+      filesystem: true,
+      gmail: false,
+      googleCalendar: false,
+      googleDrive: false,
+      googleTasks: false
+    }
   ) {
     this.baseUrl = ollamaBaseUrl;
     this.model = model;
     this.fileSystemRootDir = fileSystemRootDir;
+    this.toolConfig = toolConfig;
     this.webSearchService = new WebSearchService();
     
     this.llm = new ChatOllama({
@@ -72,16 +94,22 @@ export class LangChainAIClient {
     
     this.mcpClient = mcpClient;
     this.systemPrompt = this.createSystemPrompt();
-    this.banburyTools = this.createBanburyTools();
-    this.fileSystemTools = this.createFileSystemTools();
-    this.webSearchTools = this.createWebSearchTools();
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
+    this.rebuildTools();
+  }
+
+  private rebuildTools() {
+    this.banburyTools = this.toolConfig.banbury ? createBanburyTools(this.mcpClient) : [];
+    this.fileSystemTools = this.toolConfig.filesystem ? createFileSystemTools(this.fileSystemRootDir) : [];
+    this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
+    this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
+    this.googleCalendarTools = this.toolConfig.googleCalendar ? createGoogleCalendarTools(this.toolConfig.googleCalendar) : [];
+    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools];
     this.populateToolsMap();
     this.llmWithTools = this.llm.bindTools(this.allTools);
   }
 
   private createSystemPrompt(): string {
-    const webSearchInfo = this.webSearchEnabled ? `
+    const webSearchInfo = this.toolConfig.webSearch ? `
 
 **Available Web Search Tools (use only when needed):**
 - web_search_tool: Search the web for current information, news, facts, or any query that requires up-to-date information
@@ -94,6 +122,103 @@ export class LangChainAIClient {
 - Questions about current stock prices, weather, sports scores
 - Any query that requires real-time or recent data
 - When your knowledge might be outdated
+` : '';
+
+    const banburyInfo = this.toolConfig.banbury ? `
+
+**Available Banbury Tools (use only when needed):**
+- banbury-get-scanned-folders: Get all monitored directory locations
+- banbury-get-random-files: Get random file samples from monitored system
+- banbury-get-device-info: Get comprehensive device information and status
+- banbury-get-sessions: Get current active sessions and task information
+- banbury-add-task: Create new tasks in the system queue
+` : '';
+
+    const filesystemInfo = this.toolConfig.filesystem ? `
+
+**Available File System Tools (use only when needed):**
+- file_read_tool: Read contents of a file
+- file_write_tool: Write text content to a file
+- file_list_directory_tool: List files and directories in a path
+- file_copy_tool: Copy files from one location to another
+- file_move_tool: Move/rename files
+- file_delete_tool: Delete files or directories
+- file_search_tool: Search for files matching patterns
+` : '';
+
+    const gmailInfo = this.toolConfig.gmail ? `
+
+**Available Gmail Tools (use only when needed):**
+- GmailSearch: Search for emails using Gmail query syntax
+  Parameters:
+  - query: Gmail search query (e.g., "from:sender@example.com", "subject:urgent", "is:unread")
+  - maxResults: Maximum number of results to return (default: 10)
+
+- GmailGetMessage: Get details of a specific email message
+  Parameters:
+  - messageId: The unique ID of the email message
+
+- GmailGetThread: Get an entire email thread/conversation
+  Parameters:
+  - threadId: The unique ID of the email thread
+
+- GmailCreateDraft: Create a draft email
+  Parameters:
+  - message: Email message object with to, subject, body fields
+
+- GmailSendMessage: Send an email message
+  Parameters:
+  - message: Email message object with to, subject, body fields
+
+**When to use Gmail tools:**
+- User asks to search for specific emails or check inbox
+- User wants to read a specific email or thread
+- User wants to compose, draft, or send emails
+- User asks about email management or organization
+` : '';
+
+    const googleCalendarInfo = this.toolConfig.googleCalendar ? `
+
+**Available Google Calendar Tools (use only when needed):**
+- GoogleCalendarListEvents: List calendar events with optional filters
+  Parameters:
+  - timeMin: Lower bound for event start time (RFC3339 timestamp)
+  - timeMax: Upper bound for event start time (RFC3339 timestamp)
+  - maxResults: Maximum number of events to return (default: 50)
+  - q: Free text search terms
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarGetEvent: Get details of a specific calendar event
+  Parameters:
+  - eventId: The unique ID of the calendar event
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarCreateEvent: Create a new calendar event
+  Parameters:
+  - summary: Event title
+  - startDateTime: Event start time (RFC3339 timestamp)
+  - endDateTime: Event end time (RFC3339 timestamp)
+  - description: Event description (optional)
+  - location: Event location (optional)
+  - attendees: Array of attendee email addresses (optional)
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarUpdateEvent: Update an existing calendar event
+  Parameters:
+  - eventId: The unique ID of the event to update
+  - Various optional update fields (summary, time, location, etc.)
+  - calendarId: Calendar identifier (default: "primary")
+
+- GoogleCalendarDeleteEvent: Delete a calendar event
+  Parameters:
+  - eventId: The unique ID of the event to delete
+  - calendarId: Calendar identifier (default: "primary")
+
+**When to use Google Calendar tools:**
+- User asks to check their calendar or schedule
+- User wants to create, update, or delete events
+- User asks about upcoming meetings or appointments
+- User needs to manage calendar entries
 ` : '';
 
     return `You are an advanced AI assistant with structured thinking capabilities and access to various tools through the Banbury platform and file system operations.
@@ -139,25 +264,7 @@ CRITICAL: Always show your thinking process using <thinking> tags, but ONLY use 
 - Questions about programming, technology, or general knowledge
 - Creative writing, analysis, or problem-solving that doesn't need system data
 - Casual conversation or clarifying questions
-
-**Available Banbury Tools (use only when needed):**
-- banbury-get-scanned-folders: Get all monitored directory locations
-- banbury-get-random-files: Get random file samples from monitored system
-- banbury-get-device-info: Get comprehensive device information and status
-- banbury-get-sessions: Get current active sessions and task information
-- banbury-add-task: Create new tasks in the system queue
-
-**Available File System Tools (use only when needed):**
-- file_read_tool: Read contents of a file
-- file_write_tool: Write text content to a file
-- file_list_directory_tool: List files and directories in a path
-- file_copy_tool: Copy files from one location to another
-- file_move_tool: Move/rename files
-- file_delete_tool: Delete files or directories
-- file_search_tool: Search for files matching patterns${webSearchInfo}
-
-**Security Notice:**
-File system operations are restricted to: ${this.fileSystemRootDir} and its subdirectories for security.
+${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}${googleCalendarInfo}
 
 **Core Principles:**
 - Think systematically before deciding whether to use tools
@@ -167,407 +274,6 @@ File system operations are restricted to: ${this.fileSystemRootDir} and its subd
 - Handle both tool-based and knowledge-based responses excellently
 
 Your thinking process should clearly indicate whether tools are needed and why.`;
-  }
-
-  /**
-   * Create Banbury tools using proper LangChain tool definitions with Zod schemas
-   */
-  private createBanburyTools() {
-    const deviceInfoTool = tool(
-      async ({ device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-device-info',
-            parameters: { device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-device-info",
-        description: "Get comprehensive device information and status including performance metrics",
-        schema: z.object({
-          device_name: z.string().optional().describe("Device name to query (optional)"),
-        }),
-      }
-    );
-
-    const sessionsTool = tool(
-      async () => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-sessions',
-            parameters: {}
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-sessions",
-        description: "Get current active sessions and task information from the system",
-        schema: z.object({}),
-      }
-    );
-
-    const scannedFoldersTool = tool(
-      async ({ device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-scanned-folders',
-            parameters: { device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-scanned-folders",
-        description: "List all monitored directory locations on the device",
-        schema: z.object({
-          device_name: z.string().optional().describe("Device name to query (optional)"),
-        }),
-      }
-    );
-
-    const randomFilesTool = tool(
-      async ({ count, device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-get-random-files',
-            parameters: { count, device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-get-random-files",
-        description: "Get a random sample of files from the monitored system",
-        schema: z.object({
-          count: z.number().default(10).describe("Number of random files to retrieve"),
-          device_name: z.string().optional().describe("Device name to query (optional)"),
-        }),
-      }
-    );
-
-    const addTaskTool = tool(
-      async ({ task_description, device_name }) => {
-        if (!this.mcpClient) {
-          return 'MCP client not available';
-        }
-        try {
-          const result = await this.mcpClient.callTool({
-            tool: 'banbury-add-task',
-            parameters: { task_description, device_name }
-          });
-          return result.content.map(c => c.text).join('\n');
-        } catch (error) {
-          return `Error: ${error}`;
-        }
-      },
-      {
-        name: "banbury-add-task",
-        description: "Create a new task in the system queue",
-        schema: z.object({
-          task_description: z.string().describe("Description of the task to add"),
-          device_name: z.string().optional().describe("Device name to assign task to (optional)"),
-        }),
-      }
-    );
-
-    return [deviceInfoTool, sessionsTool, scannedFoldersTool, randomFilesTool, addTaskTool];
-  }
-
-  /**
-   * Create File System tools using proper LangChain tool definitions with Zod schemas
-   * Following the same pattern as Python's FileManagementToolkit
-   */
-  private createFileSystemTools() {
-    // Helper function to resolve and validate paths
-    const resolvePath = (inputPath: string): string => {
-      // Resolve relative paths against the root directory
-      const resolvedPath = path.isAbsolute(inputPath) 
-        ? inputPath 
-        : path.resolve(this.fileSystemRootDir, inputPath);
-      
-      // Ensure the path is within the allowed root directory
-      if (!resolvedPath.startsWith(this.fileSystemRootDir)) {
-        throw new Error(`Access denied: Path must be within ${this.fileSystemRootDir}`);
-      }
-      
-      return resolvedPath;
-    };
-
-    const readFileTool = tool(
-      async ({ file_path }) => {
-        try {
-          const resolvedPath = resolvePath(file_path);
-          const content = fs.readFileSync(resolvedPath, 'utf-8');
-          return `File contents of ${file_path}:\n\n${content}`;
-        } catch (error) {
-          return `Error reading file ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_read_tool",
-        description: "Read the contents of a file",
-        schema: z.object({
-          file_path: z.string().describe("Path to the file to read"),
-        }),
-      }
-    );
-
-    const writeFileTool = tool(
-      async ({ file_path, text }) => {
-        try {
-          const resolvedPath = resolvePath(file_path);
-          // Ensure the directory exists
-          fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
-          fs.writeFileSync(resolvedPath, text, 'utf-8');
-          return `File written successfully to ${file_path}`;
-        } catch (error) {
-          return `Error writing file ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_write_tool",
-        description: "Write text content to a file",
-        schema: z.object({
-          file_path: z.string().describe("Path to the file to write"),
-          text: z.string().describe("Text content to write to the file"),
-        }),
-      }
-    );
-
-    const listDirectoryTool = tool(
-      async ({ directory_path = "." }) => {
-        try {
-          const resolvedPath = resolvePath(directory_path);
-          const items = fs.readdirSync(resolvedPath, { withFileTypes: true });
-          
-          const result = items.map(item => {
-            return `${item.isDirectory() ? 'DIR' : 'FILE'}: ${item.name}`;
-          });
-          
-          return `Contents of ${directory_path}:\n${result.join('\n')}`;
-        } catch (error) {
-          return `Error listing directory ${directory_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_list_directory_tool",
-        description: "List files and directories in a specified path",
-        schema: z.object({
-          directory_path: z.string().optional().default(".").describe("Path to the directory to list (default: current directory)"),
-        }),
-      }
-    );
-
-    const copyFileTool = tool(
-      async ({ source_path, destination_path }) => {
-        try {
-          const resolvedSource = resolvePath(source_path);
-          const resolvedDest = resolvePath(destination_path);
-          
-          // Ensure destination directory exists
-          fs.mkdirSync(path.dirname(resolvedDest), { recursive: true });
-          fs.copyFileSync(resolvedSource, resolvedDest);
-          
-          return `File copied successfully from ${source_path} to ${destination_path}`;
-        } catch (error) {
-          return `Error copying file: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_copy_tool",
-        description: "Copy a file from source to destination",
-        schema: z.object({
-          source_path: z.string().describe("Path to the source file"),
-          destination_path: z.string().describe("Path to the destination file"),
-        }),
-      }
-    );
-
-    const moveFileTool = tool(
-      async ({ source_path, destination_path }) => {
-        try {
-          const resolvedSource = resolvePath(source_path);
-          const resolvedDest = resolvePath(destination_path);
-          
-          // Ensure destination directory exists
-          fs.mkdirSync(path.dirname(resolvedDest), { recursive: true });
-          fs.renameSync(resolvedSource, resolvedDest);
-          
-          return `File moved successfully from ${source_path} to ${destination_path}`;
-        } catch (error) {
-          return `Error moving file: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_move_tool",
-        description: "Move or rename a file from source to destination",
-        schema: z.object({
-          source_path: z.string().describe("Path to the source file"),
-          destination_path: z.string().describe("Path to the destination file"),
-        }),
-      }
-    );
-
-    const deleteFileTool = tool(
-      async ({ file_path }) => {
-        try {
-          const resolvedPath = resolvePath(file_path);
-          const stats = fs.statSync(resolvedPath);
-          
-          if (stats.isDirectory()) {
-            fs.rmSync(resolvedPath, { recursive: true, force: true });
-            return `Directory ${file_path} deleted successfully`;
-          } else {
-            fs.unlinkSync(resolvedPath);
-            return `File ${file_path} deleted successfully`;
-          }
-        } catch (error) {
-          return `Error deleting ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_delete_tool",
-        description: "Delete a file or directory",
-        schema: z.object({
-          file_path: z.string().describe("Path to the file or directory to delete"),
-        }),
-      }
-    );
-
-    const searchFilesTool = tool(
-      async ({ directory_path = ".", pattern, file_extension }) => {
-        try {
-          const resolvedPath = resolvePath(directory_path);
-          const results: string[] = [];
-          
-          const searchRecursive = (currentPath: string) => {
-            const items = fs.readdirSync(currentPath, { withFileTypes: true });
-            
-            for (const item of items) {
-              const itemFullPath = path.join(currentPath, item.name);
-              const relativePath = path.relative(this.fileSystemRootDir, itemFullPath);
-              
-              if (item.isDirectory()) {
-                try {
-                  searchRecursive(itemFullPath);
-                } catch (error) {
-                  console.error(`Error reading directory ${itemFullPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                }
-              } else {
-                let matches = true;
-                
-                if (pattern && !item.name.toLowerCase().includes(pattern.toLowerCase())) {
-                  matches = false;
-                }
-                
-                if (file_extension && !item.name.toLowerCase().endsWith(file_extension.toLowerCase())) {
-                  matches = false;
-                }
-                
-                if (matches) {
-                  results.push(relativePath);
-                }
-              }
-            }
-          };
-          
-          searchRecursive(resolvedPath);
-          
-          if (results.length === 0) {
-            return `No files found matching the criteria in ${directory_path}`;
-          }
-          
-          return `Found ${results.length} files:\n${results.join('\n')}`;
-        } catch (error) {
-          return `Error searching files: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "file_search_tool",
-        description: "Search for files in a directory by name pattern or extension",
-        schema: z.object({
-          directory_path: z.string().optional().default(".").describe("Directory to search in"),
-          pattern: z.string().optional().describe("Text pattern to search for in filenames"),
-          file_extension: z.string().optional().describe("File extension to filter by (e.g., '.txt', '.js')"),
-        }),
-      }
-    );
-
-    return [
-      readFileTool,
-      writeFileTool,
-      listDirectoryTool,
-      copyFileTool,
-      moveFileTool,
-      deleteFileTool,
-      searchFilesTool
-    ];
-  }
-
-  /**
-   * Create Web Search tools using proper LangChain tool definitions with Zod schemas
-   */
-  private createWebSearchTools() {
-    if (!this.webSearchEnabled) {
-      return [];
-    }
-
-    const webSearchTool = tool(
-      async ({ query, maxResults = 5 }) => {
-        try {
-          if (!query || query.trim().length === 0) {
-            return 'Error: Search query is required';
-          }
-
-          const searchResults = await this.webSearchService.search(query, maxResults);
-          
-          if (searchResults.length === 0) {
-            return `No web search results found for query: "${query}"`;
-          }
-
-          const resultText = searchResults.map((result, index) => 
-            `**${index + 1}. ${result.title}**\n${result.snippet}\nSource: ${result.link}`
-          ).join('\n\n');
-
-          return `Web search results for "${query}":\n\n${resultText}`;
-        } catch (error) {
-          return `Error performing web search: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        }
-      },
-      {
-        name: "web_search_tool",
-        description: "Search the web for current information, news, facts, or any query that requires up-to-date information",
-        schema: z.object({
-          query: z.string().describe("Search query string"),
-          maxResults: z.number().optional().default(5).describe("Maximum number of results to return (default: 5)"),
-        }),
-      }
-    );
-
-    return [webSearchTool];
   }
 
   /**
@@ -584,8 +290,8 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    * Enhanced chat with streaming response, thinking process, tool calling, and structured output
    */
   public async chatStream(
-    messages: LangChainMessage[],
-    callbacks: LangChainStreamCallback = {},
+    messages: AgentMessage[],
+    callbacks: AgentStreamCallback = {},
   ): Promise<string> {
     try {
       // Convert messages to LangChain format
@@ -642,7 +348,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   private async streamInitialResponse(
     messages: any[],
     modelWithTools: any,
-    callbacks: LangChainStreamCallback
+    callbacks: AgentStreamCallback
   ): Promise<{ fullResponse: string; initialResponse: any }> {
     let fullResponse = '';
     let visibleContentSent = '';
@@ -738,7 +444,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Stream text token by token for better UX
    */
-  private streamText(text: string, callbacks: LangChainStreamCallback, delay: number = 20) {
+  private streamText(text: string, callbacks: AgentStreamCallback, delay: number = 20) {
     // Don't stream if text is empty
     if (!text || text.trim().length === 0) {
       return;
@@ -762,7 +468,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   private async executeToolChain(
     messages: any[],
     initialResponse: any,
-    callbacks: LangChainStreamCallback
+    callbacks: AgentStreamCallback
   ): Promise<ToolMessage[]> {
     const toolResults: ToolMessage[] = [];
     
@@ -822,7 +528,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     initialResponse: any,
     toolResults: ToolMessage[],
     llm: ChatOllama,
-    callbacks: LangChainStreamCallback
+    callbacks: AgentStreamCallback
   ): Promise<string> {
     // Build the complete message chain as per LangChain documentation
     const conversationWithResults = [
@@ -850,7 +556,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     return cleanContent;
   }
 
-  private convertMessagesToLangChain(messages: LangChainMessage[]) {
+  private convertMessagesToLangChain(messages: AgentMessage[]) {
     return messages.map(msg => {
       switch (msg.role) {
         case 'system':
@@ -869,7 +575,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Update the MCP client
    */
-  public setMcpClient(mcpClient: CloudMcpClient | null) {
+  public setMcpClient(mcpClient: BanburyMcpClient | null) {
     this.mcpClient = mcpClient;
   }
 
@@ -886,12 +592,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
     });
     
     // Rebuild tools and tools map
-    this.banburyTools = this.createBanburyTools();
-    this.fileSystemTools = this.createFileSystemTools();
-    this.webSearchTools = this.createWebSearchTools();
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
-    this.populateToolsMap();
-    this.llmWithTools = this.llm.bindTools(this.allTools);
+    this.rebuildTools();
   }
 
   /**
@@ -899,29 +600,39 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    */
   public setFileSystemRoot(rootDir: string) {
     this.fileSystemRootDir = rootDir;
-    this.fileSystemTools = this.createFileSystemTools();
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
-    this.populateToolsMap();
-    this.llmWithTools = this.llm.bindTools(this.allTools);
+    this.rebuildTools();
   }
 
   /**
-   * Enable or disable web search functionality
+   * Update tool configuration
    */
-  public setWebSearchEnabled(enabled: boolean) {
-    this.webSearchEnabled = enabled;
-    this.systemPrompt = this.createSystemPrompt(); // Rebuild system prompt
-    this.webSearchTools = this.createWebSearchTools();
-    this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools];
-    this.populateToolsMap();
-    this.llmWithTools = this.llm.bindTools(this.allTools);
+  public setToolConfiguration(toolConfig: ToolConfiguration) {
+    this.toolConfig = toolConfig;
+    this.systemPrompt = this.createSystemPrompt();
+    this.rebuildTools();
   }
 
   /**
-   * Check if web search is enabled
+   * Get current tool configuration
    */
-  public isWebSearchEnabled(): boolean {
-    return this.webSearchEnabled;
+  public getToolConfiguration(): ToolConfiguration {
+    return { ...this.toolConfig };
+  }
+
+  /**
+   * Enable or disable a specific tool category
+   */
+  public setToolEnabled(toolCategory: keyof ToolConfiguration, enabled: boolean) {
+    this.toolConfig[toolCategory] = enabled;
+    this.systemPrompt = this.createSystemPrompt();
+    this.rebuildTools();
+  }
+
+  /**
+   * Check if a tool category is enabled
+   */
+  public isToolEnabled(toolCategory: keyof ToolConfiguration): boolean {
+    return this.toolConfig[toolCategory] === true;
   }
 
   /**
@@ -946,6 +657,27 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   }
 
   /**
+   * Get available banbury tools
+   */
+  public getBanburyTools(): string[] {
+    return this.banburyTools.map(tool => tool.name);
+  }
+
+  /**
+   * Get available Gmail tools
+   */
+  public getGmailTools(): string[] {
+    return this.gmailTools.map(tool => tool.name);
+  }
+
+  /**
+   * Get available Google Calendar tools
+   */
+  public getGoogleCalendarTools(): string[] {
+    return this.googleCalendarTools.map(tool => tool.name);
+  }
+
+  /**
    * Get all available tools
    */
   public getAllTools(): string[] {
@@ -955,7 +687,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Non-streaming chat
    */
-  public async chat(messages: LangChainMessage[]): Promise<string> {
+  public async chat(messages: AgentMessage[]): Promise<string> {
     return new Promise((resolve, reject) => {
       let fullResponse = '';
       
@@ -979,8 +711,8 @@ Your thinking process should clearly indicate whether tools are needed and why.`
    * Multimodal support - handle images in messages
    */
   public async chatWithImages(
-    messages: LangChainMessage[],
-    callbacks?: LangChainStreamCallback,
+    messages: AgentMessage[],
+    callbacks?: AgentStreamCallback,
   ): Promise<string> {
     // Convert messages to support image content
     const multimodalMessages = messages.map(msg => {
@@ -1015,7 +747,7 @@ Your thinking process should clearly indicate whether tools are needed and why.`
   /**
    * Helper to convert single message to LangChain format
    */
-  private convertMessageToLangChain(msg: LangChainMessage) {
+  private convertMessageToLangChain(msg: AgentMessage) {
     switch (msg.role) {
       case 'system':
         return new SystemMessage(msg.content);

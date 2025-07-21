@@ -39,21 +39,23 @@ export default function NavigateForwardButton({
 
   return (
     <Tooltip title="Navigate forward">
-      <Button
-        data-testid="navigate-forward-button"
-        onClick={handleForwardNavigation}
-        disabled={forwardHistory.length === 0}
-        sx={{ 
-          paddingLeft: '4px', 
-          paddingRight: '4px', 
-          minWidth: '30px',
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          }
-        }}
-      >
-        <NavigateNextOutlinedIcon fontSize="inherit" />
-      </Button>
+      <span>
+        <Button
+          data-testid="navigate-forward-button"
+          onClick={handleForwardNavigation}
+          disabled={forwardHistory.length === 0}
+          sx={{ 
+            paddingLeft: '4px', 
+            paddingRight: '4px', 
+            minWidth: '30px',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            }
+          }}
+        >
+          <NavigateNextOutlinedIcon fontSize="inherit" />
+        </Button>
+      </span>
     </Tooltip>
   );
 }

@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as url from "url";
 import axios from 'axios'; // Adjusted import for axios
-import { BrowserWindow, app, ipcMain } from "electron";
+import { BrowserWindow, app, ipcMain, dialog } from "electron";
 import { UpdateService } from './update-service';
 import { OllamaService } from './ollama-service';
 
@@ -116,6 +116,18 @@ function registerIpcHandlers() {
     if (mainWindow) {
       mainWindow.webContents.send('show-alert', alertData);
     }
+  });
+
+  ipcMain.handle('dialog:openDirectory', async () => {
+    if (!mainWindow) {
+      return { canceled: true };
+    }
+    
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory']
+    });
+    
+    return result;
   });
 }
 
@@ -256,5 +268,22 @@ app.on("activate", () => {
 });
 
 ipcMain.on('get-app-version', (event) => {
-  event.returnValue = app.getVersion();
+  const baseVersion = app.getVersion();
+  const appName = app.getName();
+  
+  // Check multiple indicators for development mode
+  const isDevEnv = process.env.NODE_ENV === 'development';
+  const isRunningFromSource = appName === 'banbury-frontend' && isDevEnv; // Running from npm run dev
+  const isBuiltDevRelease = baseVersion.includes('-dev.'); // Built dev release has timestamp
+  
+  if (isRunningFromSource) {
+    // Running from npm run dev
+    event.returnValue = `${baseVersion}-dev (local)`;
+  } else if (isBuiltDevRelease) {
+    // Built dev release - version already has -dev timestamp, show as-is
+    event.returnValue = baseVersion;
+  } else {
+    // Production build
+    event.returnValue = baseVersion;
+  }
 });

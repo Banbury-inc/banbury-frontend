@@ -14,6 +14,18 @@ export class UpdateService {
                 this.sendStatusToWindow('Updates are handled by Snap store');
                 return;
             }
+            
+            // Check if we're in development mode (only disable for local development)
+            const { app } = require('electron');
+            const appName = app.getName();
+            const isDevEnv = process.env.NODE_ENV === 'development';
+            const isRunningFromSource = appName === 'banbury-frontend' && isDevEnv; // Running from npm run dev
+            
+            if (isRunningFromSource) {
+                this.sendStatusToWindow('Local development: Update checking is disabled');
+                return;
+            }
+            
             autoUpdater.checkForUpdates().catch(err => {
                 console.error('Error checking for updates:', err);
                 this.sendStatusToWindow(`Error checking for updates: ${err.message}`);
@@ -39,6 +51,18 @@ export class UpdateService {
         autoUpdater.autoInstallOnAppQuit = true;
         autoUpdater.logger = electronLog;
         electronLog.transports.file.level = 'debug';
+        
+        // Check if this is a dev build and configure accordingly
+        // Use app name since version doesn't get properly embedded due to package.json restoration
+        const { app } = require('electron');
+        const appName = app.getName();
+        const isBuiltDevRelease = appName.includes('dev') || appName.includes('Dev');
+        
+        if (isBuiltDevRelease) {
+            autoUpdater.allowPrerelease = true;  // Dev builds should check for pre-releases
+        } else {
+            autoUpdater.allowPrerelease = false; // Production builds ignore pre-releases
+        }
 
         // Listen for update events
         autoUpdater.on('checking-for-update', () => {
@@ -49,6 +73,11 @@ export class UpdateService {
             this.sendStatusToWindow(`Update available: v${info.version}`);
             this.mainWindow.webContents.send('update-available');
             // Update will automatically start downloading due to autoDownload = true
+        });
+
+        autoUpdater.on('update-not-available', () => {
+            this.sendStatusToWindow('You are running the latest version.');
+            this.mainWindow.webContents.send('update-not-available');
         });
 
         autoUpdater.on('error', (err) => {

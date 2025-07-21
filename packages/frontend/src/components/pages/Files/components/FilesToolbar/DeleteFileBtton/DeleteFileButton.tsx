@@ -360,14 +360,16 @@ export default function DeleteFileButton({
   return (
     <>
       <Tooltip title={getButtonTooltip()}>
-        <Button
-          data-testid="delete-button"
-          onClick={handleDeleteClick}
-          sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
-          disabled={loading}
-        >
-          {loading ? <CircularProgress size={20} /> : <DeleteIcon fontSize="inherit" />}
-        </Button>
+        <span>
+          <Button
+            data-testid="delete-button"
+            onClick={handleDeleteClick}
+            sx={{ paddingLeft: '4px', paddingRight: '4px', minWidth: '30px' }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={20} /> : <DeleteIcon fontSize="inherit" />}
+          </Button>
+        </span>
       </Tooltip>
     </>
   );

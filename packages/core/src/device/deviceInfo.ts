@@ -175,7 +175,6 @@ export async function usb_devices(): Promise<string> {
   if ('usbDevices' in si) {
     return JSON.stringify(await (si as any).usbDevices());
   } else {
-    console.warn('USB devices information not available');
     return JSON.stringify([]);
   }
 }
@@ -321,7 +320,8 @@ export async function ram_usage(): Promise<number> {
     swapused: 0,
     swapfree: 0,
     writeback: 0,
-    dirty: 0
+    dirty: 0,
+    reclaimable: 0
   };
   
   const memData = await safeSystemInfo(() => si.mem(), fallbackMemData);
@@ -497,7 +497,6 @@ export async function bluetooth_status(): Promise<boolean> {
       const bluetoothData = await si.bluetooth();
       return bluetoothData.connected || false;
     } else {
-      console.warn('Bluetooth status check not supported on this system');
       return false;
     }
   } catch (error) {
