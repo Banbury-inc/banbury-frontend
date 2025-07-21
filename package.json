@@ -33,7 +33,6 @@
         "@langchain/ollama": "^0.1.6",
         "@monaco-editor/react": "^4.7.0",
         "@tensorflow/tfjs": "^4.22.0",
-        "@tensorflow/tfjs-node": "^4.22.0",
         "@types/react-syntax-highlighter": "^15.5.13",
         "ace-builds": "^1.41.0",
         "docx": "^9.5.0",

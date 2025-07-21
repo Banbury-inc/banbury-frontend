@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as url from "url";
 import axios from 'axios'; // Adjusted import for axios
-import { BrowserWindow, app, ipcMain } from "electron";
+import { BrowserWindow, app, ipcMain, dialog } from "electron";
 import { UpdateService } from './update-service';
 import { OllamaService } from './ollama-service';
 
@@ -116,6 +116,18 @@ function registerIpcHandlers() {
     if (mainWindow) {
       mainWindow.webContents.send('show-alert', alertData);
     }
+  });
+
+  ipcMain.handle('dialog:openDirectory', async () => {
+    if (!mainWindow) {
+      return { canceled: true };
+    }
+    
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory']
+    });
+    
+    return result;
   });
 }
 

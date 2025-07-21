@@ -1,4 +1,4 @@
-name: Build and Release
+ name: Build and Release
 
 on:
   push:
@@ -93,7 +93,7 @@ jobs:
           retention-days: 30
 
   build:
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/prod' || github.ref == 'refs/heads/dev')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     needs: [lint, unit-tests, e2e-tests]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -159,13 +159,6 @@ jobs:
         run: |
           VERSION=$(node -p "require('./packages/frontend/package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          
-          # Set app name based on branch
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            echo "APP_NAME=Banbury-dev" >> $GITHUB_ENV
-          else
-            echo "APP_NAME=Banbury" >> $GITHUB_ENV
-          fi
 
       # For macOS: Build, Sign, and Notarize in the correct order
       - name: Build and Sign macOS App
@@ -174,22 +167,6 @@ jobs:
           cd packages/frontend
           # Ensure the build directory exists
           mkdir -p build
-          
-          # Modify package.json for dev builds
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            # Create temporary package.json with dev-specific settings
-            node -e "
-              const pkg = require('./package.json');
-              pkg.version = '${{ env.VERSION }}';  // Use the timestamped version
-              pkg.build.productName = 'Banbury-dev';
-              pkg.build.appId = 'com.banbury.cloud.dev';
-              pkg.build.mac.artifactName = 'Banbury-dev-\${version}-\${arch}.\${ext}';
-              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
-            "
-            mv package.json package.json.original
-            mv package.json.tmp package.json
-          fi
-          
           # Build the app
           npm run package:app
         env:
@@ -201,6 +178,7 @@ jobs:
       - name: Notarize macOS App Bundle
         if: runner.os == 'macOS'
         run: |
+          APP_NAME="Banbury"
           cd packages/frontend
           APP_PATH="dist/mac-arm64/${APP_NAME}.app"
           
@@ -231,21 +209,6 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cd packages/frontend
-          
-          # Modify package.json for dev builds again for distribution
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            node -e "
-              const pkg = require('./package.json');
-              pkg.version = '${{ env.VERSION }}';  // Use the timestamped version
-              pkg.build.productName = 'Banbury-dev';
-              pkg.build.appId = 'com.banbury.cloud.dev';
-              pkg.build.mac.artifactName = 'Banbury-dev-\${version}-\${arch}.\${ext}';
-              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
-            "
-            mv package.json package.json.original
-            mv package.json.tmp package.json
-          fi
-          
           npm run package:dist
         env:
           CSC_KEYCHAIN: build.keychain
@@ -256,6 +219,7 @@ jobs:
       - name: Notarize macOS Distribution Files
         if: runner.os == 'macOS'
         run: |
+          APP_NAME="Banbury"
           cd packages/frontend
           
           # Notarize DMG
@@ -290,25 +254,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rpm
           
-          # Modify package.json for dev builds on Linux
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            # Get version info that was set in the macOS step
-            VERSION=$(jq -r .version ../frontend/package.json)
-            TIMESTAMP=$(date +%Y%m%d%H%M)
-            DEV_VERSION="$VERSION-dev.$TIMESTAMP"
-            
-            node -e "
-              const pkg = require('./package.json');
-              pkg.version = '$DEV_VERSION';
-              pkg.build.productName = 'Banbury-dev';
-              pkg.build.appId = 'com.banbury.cloud.dev';
-              pkg.build.linux.artifactName = 'Banbury-dev-\${version}.\${ext}';
-              require('fs').writeFileSync('./package.json.tmp', JSON.stringify(pkg, null, 2));
-            "
-            mv package.json package.json.original
-            mv package.json.tmp package.json
-          fi
-          
           # Build without publishing to Snapcraft store
           npm run deploy
         env:
@@ -319,23 +264,8 @@ jobs:
 
       - name: Package for Windows
         if: runner.os == 'Windows'
-        shell: pwsh
         run: |
           cd packages/frontend
-          
-          # Modify package.json for dev builds on Windows
-          if ("${{ github.ref }}" -eq "refs/heads/dev") {
-            # Get version info 
-            $VERSION = (Get-Content ./package.json | ConvertFrom-Json).version
-            $TIMESTAMP = Get-Date -Format "yyyyMMddHHmm"
-            $DEV_VERSION = "$VERSION-dev.$TIMESTAMP"
-            
-            # Use single quotes and escape properly for PowerShell
-            node -e 'const pkg = require(\"./package.json\"); pkg.version = \"'$DEV_VERSION'\"; pkg.build.productName = \"Banbury-dev\"; pkg.build.appId = \"com.banbury.cloud.dev\"; pkg.build.win.artifactName = \"Banbury-dev-$${version}.$${ext}\"; require(\"fs\").writeFileSync(\"./package.json.tmp\", JSON.stringify(pkg, null, 2));'
-            Move-Item package.json package.json.original
-            Move-Item package.json.tmp package.json
-          }
-          
           npm run deploy
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -372,16 +302,6 @@ jobs:
           name: core-package
           path: packages/core/dist
           if-no-files-found: error
-
-      # Restore original package.json at the very end for all platforms
-      - name: Restore original package.json
-        shell: bash
-        run: |
-          cd packages/frontend
-          if [ -f "package.json.original" ]; then
-            mv package.json.original package.json
-            echo "Restored original package.json"
-          fi
 
   release:
     needs: build
@@ -429,62 +349,31 @@ jobs:
         id: get_version
         run: |
           VERSION=$(jq -r .version ./packages/frontend/package.json)
-          
-          # Determine if this is a dev or prod release
-          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
-            # For dev builds, append timestamp to ensure unique versions
-            TIMESTAMP=$(date +%Y%m%d%H%M)
-            DEV_VERSION="$VERSION-dev.$TIMESTAMP"
-            echo "VERSION=$DEV_VERSION" >> $GITHUB_ENV
-            echo "RELEASE_TYPE=dev" >> $GITHUB_ENV
-            echo "TAG_NAME=v$DEV_VERSION" >> $GITHUB_ENV
-            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
-          else
-            echo "VERSION=$VERSION" >> $GITHUB_ENV
-            echo "RELEASE_TYPE=prod" >> $GITHUB_ENV
-            echo "TAG_NAME=v$VERSION" >> $GITHUB_ENV
-            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
-          fi
-
-      - name: Clean up old dev releases
-        if: env.RELEASE_TYPE == 'dev'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          # Get all dev releases and delete old ones, keeping only the latest 3
-          echo "Cleaning up old dev releases..."
-          
-          # Get all dev releases (pre-releases with "dev" in the tag), sort by version, keep latest 3
-          gh release list --repo ${{ github.repository }} --limit 50 --json tagName,prerelease,createdAt | \
-          jq -r '.[] | select(.prerelease == true and (.tagName | contains("dev"))) | .tagName' | \
-          sort -Vr | \
-          tail -n +4 | \
-          while read tag; do
-            if [ ! -z "$tag" ]; then
-              echo "Deleting old dev release: $tag"
-              gh release delete "$tag" --repo ${{ github.repository }} --yes || true
-              git push --delete origin "$tag" 2>/dev/null || true
-            fi
-          done
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create and push a new tag
         env:
+          VERSION: ${{ env.VERSION }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          echo "Creating new tag ${{ env.TAG_NAME }}"
-          git tag "${{ env.TAG_NAME }}"
-          git push https://$GH_TOKEN@github.com/${{ github.repository }} "${{ env.TAG_NAME }}"
+          # Check if tag exists
+          if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Creating new tag v$VERSION"
+            git tag "v$VERSION"
+            git push https://$GH_TOKEN@github.com/${{ github.repository }} "v$VERSION"
+          else
+            echo "Tag v$VERSION already exists, skipping tag creation"
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "${{ env.TAG_NAME }}"
-          name: "${{ env.RELEASE_TYPE == 'dev' && format('Development Release v{0}', env.VERSION) || format('Release v{0}', env.VERSION) }}"
+          tag_name: "v${{ env.VERSION }}"
           draft: false
-          prerelease: ${{ env.IS_PRERELEASE }}
+          prerelease: false
           files: |
             dist/**/*.AppImage
             dist/**/*.exe
@@ -493,14 +382,12 @@ jobs:
             dist/**/latest*.yml
             dist/**/latest*.yaml
             dist/**/*blockmap
-          body: ${{ env.RELEASE_TYPE == 'dev' && 'This is an automated development release. Use with caution as it may contain experimental features.' || 'Production release with stable features.' }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   publish-npm:
     needs: release
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/prod'
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
