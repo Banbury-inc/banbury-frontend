@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import {
@@ -10,6 +10,13 @@ import {
   Divider,
   Button,
   Alert,
+  Menu,
+  MenuItem,
+  Chip,
+  CircularProgress,
+  FormControl,
+  Select,
+  InputLabel,
 } from '@mui/material';
 import {
   FormatBold,
@@ -21,11 +28,19 @@ import {
   Undo,
   Redo,
   GetApp,
+  SmartToy,
+  AutoFixHigh,
+  Summarize,
+  Translate,
+  Edit,
+  MoreVert,
 } from '@mui/icons-material';
 import { readFile, writeFile, stat } from 'fs/promises';
 import path from 'path';
 import { shell } from 'electron';
 import mammoth from 'mammoth';
+import { LangGraphAgent, ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
+import { useMcpClient } from '@banbury/core/src/ai/basic/tools/banburyMCP/useMcpClient';
 
 interface TiptapWordEditorProps {
   src: string;
@@ -33,7 +48,22 @@ interface TiptapWordEditorProps {
   onError?: () => void;
   onLoad?: () => void;
   onSave?: (content: string) => void;
+  documentActions?: any;
+  onDocumentEditorChange?: (editor: any, content: string, fileName: string) => void;
 }
+
+// Available AI models
+const availableModels = [
+  { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
+  { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', provider: 'anthropic' },
+  { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', provider: 'anthropic' },
+  { id: 'claude-4-opus-20250101', name: 'Claude 4 Opus', provider: 'anthropic' },
+  { id: 'claude-sonnet-4-20250514', name: 'Claude 4 Sonnet', provider: 'anthropic' },
+  { id: 'claude-4-haiku-20250101', name: 'Claude 4 Haiku', provider: 'anthropic' },
+  { id: 'llama3.1:8b', name: 'Llama 3.1 8B', provider: 'ollama' },
+  { id: 'llama3.1:70b', name: 'Llama 3.1 70B', provider: 'ollama' },
+  { id: 'codellama:13b', name: 'Code Llama 13B', provider: 'ollama' },
+];
 
 const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
   src,
@@ -41,10 +71,77 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
   onError,
   onLoad,
   onSave,
+  documentActions,
+  onDocumentEditorChange,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [documentLoaded, setDocumentLoaded] = useState(false);
+  
+  // AI-related state
+  const [aiAgent, setAiAgent] = useState<LangGraphAgent | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMenuAnchor, setAiMenuAnchor] = useState<null | HTMLElement>(null);
+  const [selectedText, setSelectedText] = useState('');
+  const [selectedModel, setSelectedModel] = useState(() => {
+    return localStorage.getItem('tiptap_ai_model') || 'claude-sonnet-4-20250514';
+  });
+
+  // AI model configuration
+  const modelConfig: ModelConfig = useMemo(() => {
+    const model = availableModels.find(m => m.id === selectedModel);
+    const provider = model?.provider || 'anthropic';
+    
+    const config: ModelConfig = {
+      provider: provider as 'anthropic' | 'ollama',
+      temperature: 0.7
+    };
+
+    if (provider === 'anthropic') {
+      config.anthropicApiKey = localStorage.getItem('ANTHROPIC_API_KEY') || '';
+      config.anthropicModel = selectedModel;
+    } else if (provider === 'ollama') {
+      config.ollamaBaseUrl = localStorage.getItem('OLLAMA_BASE_URL') || 'http://localhost:11434';
+      config.ollamaModel = selectedModel;
+    }
+
+    return config;
+  }, [selectedModel]);
+
+  // Initialize MCP client
+  const { client: mcpClient } = useMcpClient();
+
+  // Tool configuration for document assistance
+  const toolConfig = useMemo(() => ({
+    webSearch: true,
+    banbury: true,
+    filesystem: false,
+    gmail: false,
+    googleCalendar: false,
+    googleDrive: false,
+    googleTasks: false
+  }), []);
+
+  // Save selected model to localStorage
+  useEffect(() => {
+    localStorage.setItem('tiptap_ai_model', selectedModel);
+  }, [selectedModel]);
+
+  // Initialize AI Agent
+  useEffect(() => {
+    try {
+      const agent = new LangGraphAgent(
+        modelConfig,
+        mcpClient,
+        undefined, // Use default file system root
+        toolConfig
+      );
+      setAiAgent(agent);
+    } catch (error) {
+      console.error('Error initializing AI agent for document editing:', error);
+    }
+  }, [modelConfig, mcpClient, toolConfig]);
 
   const editor = useEditor({
     extensions: [
@@ -73,6 +170,9 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
 
   // Load DOCX file content
   useEffect(() => {
+    // Only load if we have an editor, a source file, and haven't already loaded this document
+    if (!editor || !src || documentLoaded) return;
+
     const loadDocxContent = async () => {
       try {
         setIsLoading(true);
@@ -162,7 +262,16 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
           }
         }
         
+        // Mark document as loaded to prevent re-loading
+        setDocumentLoaded(true);
+        
         onLoad?.();
+        
+        // Register editor with parent component for AI assistant integration
+        if (onDocumentEditorChange && editor) {
+          const content = editor.getHTML ? editor.getHTML() : editor.getText();
+          onDocumentEditorChange(editor, content, fileName || 'Untitled Document');
+        }
       } catch (err) {
         console.error('Error loading DOCX file:', err);
         setError(`Failed to load document: ${err instanceof Error ? err.message : 'Unable to parse DOCX file'}`);
@@ -187,21 +296,55 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
           }
         }
         
+        // Mark as loaded even if failed to prevent retry loops
+        setDocumentLoaded(true);
         onError?.();
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (editor) {
-      // Wrap the async function call to prevent unhandled promise rejections
-      loadDocxContent().catch((error) => {
-        console.error('Unhandled error in loadDocxContent:', error);
-        setError('Failed to load document due to an unexpected error.');
-        setIsLoading(false);
-      });
+    // Wrap the async function call to prevent unhandled promise rejections
+    loadDocxContent().catch((error) => {
+      console.error('Unhandled error in loadDocxContent:', error);
+      setError('Failed to load document due to an unexpected error.');
+      setIsLoading(false);
+      setDocumentLoaded(true); // Prevent retry loops
+    });
+  }, [editor, src, documentLoaded]);
+
+  // Reset document loaded state when src changes (new document)
+  useEffect(() => {
+    setDocumentLoaded(false);
+  }, [src]);
+
+  // Listen for editor content changes and notify parent (with debouncing)
+  useEffect(() => {
+    if (editor && onDocumentEditorChange && documentLoaded) {
+      let timeoutId: NodeJS.Timeout;
+      
+      const handleUpdate = () => {
+        // Debounce the updates to prevent excessive notifications
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          const content = editor.getHTML ? editor.getHTML() : editor.getText();
+          onDocumentEditorChange(editor, content, fileName || 'Untitled Document');
+        }, 300); // 300ms debounce
+      };
+
+      // Register the update listener
+      editor.on('update', handleUpdate);
+      
+      // Initial registration (only after document is loaded)
+      const content = editor.getHTML ? editor.getHTML() : editor.getText();
+      onDocumentEditorChange(editor, content, fileName || 'Untitled Document');
+      
+      return () => {
+        editor.off('update', handleUpdate);
+        clearTimeout(timeoutId);
+      };
     }
-  }, [editor, src, fileName, onLoad, onError]);
+  }, [editor, onDocumentEditorChange, fileName, documentLoaded]);
 
   const handleSave = async () => {
     if (!editor) return;
@@ -241,6 +384,84 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
     shell.openPath(filePath);
   };
 
+  // AI Operations
+  const performAiOperation = useCallback(async (operation: string, selectedText?: string) => {
+    if (!aiAgent || !editor || aiLoading) return;
+
+    const textToProcess = selectedText || editor.getText();
+    if (!textToProcess.trim()) return;
+
+    setAiLoading(true);
+
+    try {
+      const prompts = {
+        improve: `Please improve the following text for clarity, grammar, and style while maintaining its original meaning and tone:\n\n${textToProcess}`,
+        summarize: `Please provide a concise summary of the following text:\n\n${textToProcess}`,
+        expand: `Please expand and elaborate on the following text with more details and examples:\n\n${textToProcess}`,
+        rewrite: `Please rewrite the following text in a different style while maintaining the same meaning:\n\n${textToProcess}`,
+        fix_grammar: `Please fix any grammar, spelling, and punctuation errors in the following text:\n\n${textToProcess}`,
+        make_professional: `Please rewrite the following text in a more professional tone:\n\n${textToProcess}`,
+        make_casual: `Please rewrite the following text in a more casual, friendly tone:\n\n${textToProcess}`,
+        translate: `Please translate the following text to English if it's in another language, or suggest a translation if you're unsure of the target language:\n\n${textToProcess}`,
+      };
+
+      const prompt = prompts[operation as keyof typeof prompts] || prompts.improve;
+      
+      let response = '';
+      const messages = [{ role: 'user' as const, content: prompt }];
+
+      await aiAgent.chatStream(messages, {
+        onToken: (token: string) => {
+          response += token;
+        },
+        onComplete: (fullResponse: string) => {
+          if (selectedText && editor.state.selection.from !== editor.state.selection.to) {
+            // Replace selected text
+            const { from, to } = editor.state.selection;
+            editor.chain().focus().deleteRange({ from, to }).insertContent(fullResponse).run();
+          } else {
+            // Replace entire content
+            editor.chain().focus().setContent(fullResponse).run();
+          }
+          setAiLoading(false);
+          setAiMenuAnchor(null);
+        },
+        onError: (error: Error) => {
+          console.error('AI Operation Error:', error);
+          setError(`AI Error: ${error.message}`);
+          setAiLoading(false);
+          setAiMenuAnchor(null);
+        }
+      });
+    } catch (error) {
+      console.error('Error performing AI operation:', error);
+      setError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setAiLoading(false);
+      setAiMenuAnchor(null);
+    }
+  }, [aiAgent, editor, aiLoading]);
+
+  // Handle AI menu
+  const handleAiMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setAiMenuAnchor(event.currentTarget);
+    
+    // Get selected text if any
+    if (editor && editor.state.selection.from !== editor.state.selection.to) {
+      const selectedText = editor.state.doc.textBetween(
+        editor.state.selection.from,
+        editor.state.selection.to
+      );
+      setSelectedText(selectedText);
+    } else {
+      setSelectedText('');
+    }
+  }, [editor]);
+
+  const handleAiMenuClose = useCallback(() => {
+    setAiMenuAnchor(null);
+    setSelectedText('');
+  }, []);
+
   if (!editor) {
     return (
       <Box sx={{ p: 2 }}>
@@ -257,6 +478,17 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
           <Typography variant="subtitle2" sx={{ mr: 2, fontWeight: 600 }}>
             {fileName}
           </Typography>
+          
+          {/* AI Status Indicator */}
+          {aiLoading && (
+            <Chip
+              icon={<CircularProgress size={16} />}
+              label="AI Processing..."
+              size="small"
+              color="primary"
+              sx={{ mr: 2 }}
+            />
+          )}
           
           <Divider orientation="vertical" flexItem />
           
@@ -365,6 +597,35 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
             <Redo />
           </IconButton>
 
+          <Divider orientation="vertical" flexItem />
+
+          {/* AI Model Selector */}
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>AI Model</InputLabel>
+            <Select
+              value={selectedModel}
+              label="AI Model"
+              onChange={(e) => setSelectedModel(e.target.value)}
+              disabled={aiLoading}
+            >
+              {availableModels.map((model) => (
+                <MenuItem key={model.id} value={model.id}>
+                  {model.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* AI Actions */}
+          <IconButton
+            size="small"
+            onClick={handleAiMenuOpen}
+            disabled={aiLoading || !aiAgent}
+            color="primary"
+          >
+            {aiLoading ? <CircularProgress size={16} /> : <SmartToy />}
+          </IconButton>
+
           <Box sx={{ flex: 1 }} />
 
           {/* Action Buttons */}
@@ -395,6 +656,62 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
           {error}
         </Alert>
       )}
+
+      {/* AI Menu */}
+      <Menu
+        anchorEl={aiMenuAnchor}
+        open={Boolean(aiMenuAnchor)}
+        onClose={handleAiMenuClose}
+        PaperProps={{
+          sx: { minWidth: 200 }
+        }}
+      >
+        <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.secondary">
+            {selectedText ? `Selected: "${selectedText.slice(0, 30)}${selectedText.length > 30 ? '...' : ''}"` : 'Entire Document'}
+          </Typography>
+        </Box>
+        
+        <MenuItem onClick={() => performAiOperation('improve', selectedText)} disabled={aiLoading}>
+          <AutoFixHigh sx={{ mr: 1 }} />
+          Improve Text
+        </MenuItem>
+        
+        <MenuItem onClick={() => performAiOperation('fix_grammar', selectedText)} disabled={aiLoading}>
+          <Edit sx={{ mr: 1 }} />
+          Fix Grammar
+        </MenuItem>
+        
+        <MenuItem onClick={() => performAiOperation('summarize', selectedText)} disabled={aiLoading}>
+          <Summarize sx={{ mr: 1 }} />
+          Summarize
+        </MenuItem>
+        
+        <MenuItem onClick={() => performAiOperation('expand', selectedText)} disabled={aiLoading}>
+          <MoreVert sx={{ mr: 1 }} />
+          Expand
+        </MenuItem>
+        
+        <MenuItem onClick={() => performAiOperation('rewrite', selectedText)} disabled={aiLoading}>
+          <Edit sx={{ mr: 1 }} />
+          Rewrite
+        </MenuItem>
+        
+        <Divider />
+        
+        <MenuItem onClick={() => performAiOperation('make_professional', selectedText)} disabled={aiLoading}>
+          <Typography variant="body2">Make Professional</Typography>
+        </MenuItem>
+        
+        <MenuItem onClick={() => performAiOperation('make_casual', selectedText)} disabled={aiLoading}>
+          <Typography variant="body2">Make Casual</Typography>
+        </MenuItem>
+        
+        <MenuItem onClick={() => performAiOperation('translate', selectedText)} disabled={aiLoading}>
+          <Translate sx={{ mr: 1 }} />
+          Translate
+        </MenuItem>
+      </Menu>
 
       {/* Editor Content */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, bgcolor: 'background.default' }}>
@@ -440,11 +757,7 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
             }
           }}
         >
-          {isLoading ? (
-            <Typography color="text.secondary">Loading document...</Typography>
-          ) : (
-            <EditorContent editor={editor} />
-          )}
+          <EditorContent editor={editor} />
         </Paper>
       </Box>
     </Box>

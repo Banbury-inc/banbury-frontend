@@ -7,6 +7,8 @@ interface WordViewerProps {
   onError?: () => void;
   onLoad?: () => void;
   onSave?: (filePath: string) => void;
+  documentActions?: any;
+  onDocumentEditorChange?: (editor: any, content: string, fileName: string) => void;
 }
 
 const WordViewer: React.FC<WordViewerProps> = ({
@@ -15,6 +17,8 @@ const WordViewer: React.FC<WordViewerProps> = ({
   onError,
   onLoad,
   onSave,
+  documentActions,
+  onDocumentEditorChange,
 }) => {
   return (
     <TiptapWordEditor
@@ -23,6 +27,8 @@ const WordViewer: React.FC<WordViewerProps> = ({
       onError={onError}
       onLoad={onLoad}
       onSave={onSave}
+      documentActions={documentActions}
+      onDocumentEditorChange={onDocumentEditorChange}
     />
   );
 };

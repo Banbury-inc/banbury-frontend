@@ -221,12 +221,16 @@ const MainContent = ({
   activeTab,
   onCloseTab,
   onSwitchTab,
+  documentActions,
+  onDocumentEditorChange,
 }: {
   showFileViewer: boolean;
   openTabs: FileTab[];
   activeTab: string | null;
   onCloseTab: (tabId: string) => void;
   onSwitchTab: (tabId: string) => void;
+  documentActions: any;
+  onDocumentEditorChange: (editor: any, content: string, fileName: string) => void;
 }) => {
   if (showFileViewer && openTabs.length > 0) {
     return (
@@ -235,6 +239,8 @@ const MainContent = ({
         activeTab={activeTab}
         onCloseTab={onCloseTab}
         onSwitchTab={onSwitchTab}
+        documentActions={documentActions}
+        onDocumentEditorChange={onDocumentEditorChange}
       />
     );
   }
@@ -274,8 +280,113 @@ export default function Workspaces() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showFileViewer, setShowFileViewer] = useState(false);
 
+  // Document editing context for AI assistant
+  const [documentEditor, setDocumentEditor] = useState<any>(null);
+  const [currentDocumentContent, setCurrentDocumentContent] = useState<string>('');
+  const [currentDocumentName, setCurrentDocumentName] = useState<string>('');
+
   const { showAlert } = useAlert();
   const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
+
+  // Document AI Integration Functions
+  const getDocumentInfo = useCallback(() => {
+    const activeTabData = openTabs.find(tab => tab.id === activeTab);
+    return {
+      hasDocument: Boolean(documentEditor && activeTabData),
+      fileName: currentDocumentName || activeTabData?.fileName || '',
+      fileType: activeTabData?.fileType || '',
+      filePath: activeTabData?.filePath || '',
+      isWordDocument: activeTabData?.fileType === 'Word Document',
+      content: currentDocumentContent
+    };
+  }, [documentEditor, activeTab, openTabs, currentDocumentName, currentDocumentContent]);
+
+  const getDocumentContent = useCallback(() => {
+    if (!documentEditor) return '';
+    try {
+      return documentEditor.getHTML ? documentEditor.getHTML() : documentEditor.getText();
+    } catch (error) {
+      console.error('Error getting document content:', error);
+      return currentDocumentContent;
+    }
+  }, [documentEditor, currentDocumentContent]);
+
+  const setDocumentContent = useCallback((newContent: string) => {
+    if (!documentEditor) {
+      console.warn('No document editor available');
+      return false;
+    }
+    
+    try {
+      if (documentEditor.commands && documentEditor.commands.setContent) {
+        documentEditor.commands.setContent(newContent);
+        setCurrentDocumentContent(newContent);
+        return true;
+      } else {
+        console.warn('Document editor does not support setContent');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error setting document content:', error);
+      return false;
+    }
+  }, [documentEditor]);
+
+  const insertDocumentContent = useCallback((content: string, position?: 'start' | 'end' | 'cursor') => {
+    if (!documentEditor) return false;
+    
+    try {
+      if (documentEditor.commands) {
+        switch (position) {
+          case 'start':
+            documentEditor.commands.setTextSelection(0);
+            documentEditor.commands.insertContent(content);
+            break;
+          case 'end':
+            const endPos = documentEditor.state.doc.content.size;
+            documentEditor.commands.setTextSelection(endPos);
+            documentEditor.commands.insertContent(content);
+            break;
+          case 'cursor':
+          default:
+            documentEditor.commands.insertContent(content);
+            break;
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error inserting document content:', error);
+      return false;
+    }
+  }, [documentEditor]);
+
+  const replaceSelectedText = useCallback((newText: string) => {
+    if (!documentEditor) return false;
+    
+    try {
+      if (documentEditor.state.selection.from !== documentEditor.state.selection.to) {
+        const { from, to } = documentEditor.state.selection;
+        documentEditor.commands.deleteRange({ from, to }).insertContent(newText);
+        return true;
+      } else {
+        // No selection, insert at cursor
+        documentEditor.commands.insertContent(newText);
+        return true;
+      }
+    } catch (error) {
+      console.error('Error replacing selected text:', error);
+      return false;
+    }
+  }, [documentEditor]);
+
+  const documentActions = {
+    getInfo: getDocumentInfo,
+    getContent: getDocumentContent,
+    setContent: setDocumentContent,
+    insertContent: insertDocumentContent,
+    replaceSelected: replaceSelectedText
+  };
 
   // Keyboard shortcuts
   useHotkeys('ctrl+/', () => toggleRightPanel(), { preventDefault: true });
@@ -476,6 +587,12 @@ export default function Workspaces() {
                       activeTab={activeTab}
                       onCloseTab={closeTab}
                       onSwitchTab={switchTab}
+                      documentActions={documentActions}
+                      onDocumentEditorChange={(editor, content, fileName) => {
+                        setDocumentEditor(editor);
+                        setCurrentDocumentContent(content);
+                        setCurrentDocumentName(fileName);
+                      }}
                     />
                   </motion.div>
                 </AnimatePresence>
@@ -492,7 +609,7 @@ export default function Workspaces() {
               maxSize={800}
             >
               <Box sx={{ height: '100%', position: 'relative' }}>
-                <WorkspaceAssistantInterface />
+                <WorkspaceAssistantInterface documentActions={documentActions} />
                 <NavToggleButton
                   isCollapsed={!rightPanelOpen}
                   onClick={toggleRightPanel}

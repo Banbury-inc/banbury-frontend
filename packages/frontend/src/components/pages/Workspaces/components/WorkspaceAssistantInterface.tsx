@@ -34,8 +34,18 @@ const availableModels = [
   { id: 'codellama:13b', name: 'Code Llama 13B', provider: 'ollama' },
 ];
 
+interface WorkspaceAssistantInterfaceProps {
+  documentActions?: {
+    getInfo: () => any;
+    getContent: () => string;
+    setContent: (content: string) => boolean;
+    insertContent: (content: string, position?: 'start' | 'end' | 'cursor') => boolean;
+    replaceSelected: (content: string) => boolean;
+  };
+}
+
 // AI Assistant Chat Interface
-const WorkspaceAssistantInterface = () => {
+const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions }) => {
   const [langGraphAgent, setLangGraphAgent] = useState<LangGraphAgent | null>(null);
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -86,6 +96,22 @@ const WorkspaceAssistantInterface = () => {
     googleTasks: false
   }), []);
 
+  // Document context for AI
+  const documentContext = useMemo(() => {
+    if (!documentActions) return null;
+    
+    const docInfo = documentActions.getInfo();
+    if (!docInfo.hasDocument) return null;
+
+    return {
+      hasDocument: true,
+      fileName: docInfo.fileName,
+      fileType: docInfo.fileType,
+      isWordDocument: docInfo.isWordDocument,
+      content: docInfo.content
+    };
+  }, [documentActions]);
+
   // Initialize LangGraph Agent
   useEffect(() => {
     try {
@@ -120,17 +146,106 @@ const WorkspaceAssistantInterface = () => {
         return;
       }
 
-      // Build conversation for AI - let LangGraphAgent handle system messages internally
-      const allMessages = [...messages, userMessage];
+      // Build conversation for AI with document context
+      let conversationMessages = [...messages];
+      
+      // Add document context to the user message if available
+      let contextualUserMessage = userMessage;
+      if (documentContext && documentContext.hasDocument) {
+        contextualUserMessage = {
+          role: 'user' as const,
+          content: `[DOCUMENT CONTEXT]
+Current Document: ${documentContext.fileName} (${documentContext.fileType})
+Content: ${documentContext.content}
+
+[USER REQUEST]
+${userMessage.content}
+
+IMPORTANT: If you want to modify the document, format your response like this:
+- For adding content: Use "ADD_CONTENT:" followed by the exact content to add
+- For replacing content: Use "REPLACE_CONTENT:" followed by the exact new content
+- For inserting at cursor: Use "INSERT_CONTENT:" followed by the exact content
+
+Example:
+ADD_CONTENT: This is the new sentence I want to add to the document.
+
+or 
+
+REPLACE_CONTENT: This is the complete new content that should replace the entire document.`
+        };
+      }
+      
+      conversationMessages.push(contextualUserMessage);
 
       let response = '';
 
-      await langGraphAgent.chatStream(allMessages, {
+      await langGraphAgent.chatStream(conversationMessages, {
         onToken: (token: string) => {
           response += token;
         },
         onComplete: (fullResponse: string) => {
           setMessages(prev => [...prev, { role: 'assistant', content: fullResponse }]);
+          
+          // Check if the AI response contains document modification commands
+          if (documentActions && documentContext?.hasDocument) {
+            try {
+              // Parse for ADD_CONTENT command
+              const addContentMatch = fullResponse.match(/ADD_CONTENT:\s*(.*?)(?=\n\n|\nREPLACE_CONTENT:|\nINSERT_CONTENT:|$)/s);
+              if (addContentMatch) {
+                const contentToAdd = addContentMatch[1].trim();
+                console.log('AI wants to add content:', contentToAdd);
+                documentActions.insertContent(contentToAdd, 'end');
+                showAlert('Success', ['AI content added to document'], 'success');
+              }
+              
+              // Parse for REPLACE_CONTENT command
+              const replaceContentMatch = fullResponse.match(/REPLACE_CONTENT:\s*(.*?)(?=\n\n|\nADD_CONTENT:|\nINSERT_CONTENT:|$)/s);
+              if (replaceContentMatch) {
+                const newContent = replaceContentMatch[1].trim();
+                console.log('AI wants to replace content with:', newContent);
+                documentActions.setContent(newContent);
+                showAlert('Success', ['Document content replaced by AI'], 'success');
+              }
+              
+              // Parse for INSERT_CONTENT command
+              const insertContentMatch = fullResponse.match(/INSERT_CONTENT:\s*(.*?)(?=\n\n|\nADD_CONTENT:|\nREPLACE_CONTENT:|$)/s);
+              if (insertContentMatch) {
+                const contentToInsert = insertContentMatch[1].trim();
+                console.log('AI wants to insert content:', contentToInsert);
+                documentActions.insertContent(contentToInsert, 'cursor');
+                showAlert('Success', ['AI content inserted at cursor'], 'success');
+              }
+              
+              // Fallback: if no special commands found but AI seems to want to add content
+              if (!addContentMatch && !replaceContentMatch && !insertContentMatch) {
+                const userMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
+                const aiResponse = fullResponse.toLowerCase();
+                
+                // Check if user asked to write/add something and AI provided content
+                const wantsToWrite = userMessage.includes('write') || userMessage.includes('add') || 
+                                   userMessage.includes('insert') || userMessage.includes('create');
+                const aiProvidesContent = aiResponse.includes('here is') || aiResponse.includes('here\'s') ||
+                                        aiResponse.includes('i\'ll add') || aiResponse.includes('i\'ll write');
+                
+                if (wantsToWrite && aiProvidesContent) {
+                  // Try to extract the content that looks like it should be added
+                  const sentences = fullResponse.split(/[.!?]\s+/);
+                  const lastSentence = sentences[sentences.length - 2] || sentences[sentences.length - 1];
+                  
+                  if (lastSentence && lastSentence.length > 10 && lastSentence.length < 500) {
+                    console.log('AI fallback: adding last sentence as content:', lastSentence);
+                    documentActions.insertContent(lastSentence.trim() + '.', 'end');
+                    showAlert('Info', ['AI content added to document (auto-detected)'], 'info');
+                  }
+                }
+              }
+              
+            } catch (error) {
+              console.error('Error applying AI document changes:', error);
+              showAlert('Error', ['Failed to apply AI changes to document'], 'error');
+            }
+          }
+          
           setIsLoading(false);
         },
         onError: (error: Error) => {
@@ -167,6 +282,9 @@ const WorkspaceAssistantInterface = () => {
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {availableModels.find(m => m.id === selectedModel)?.name || 'Unknown Model'}
+                  {documentContext?.hasDocument && (
+                    <> • Document: {documentContext.fileName}</>
+                  )}
                 </Typography>
               </Box>
             </Stack>
@@ -223,6 +341,49 @@ const WorkspaceAssistantInterface = () => {
       
       {/* Messages */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+        {/* Document status message */}
+        {!documentContext?.hasDocument && messages.length === 0 && (
+          <Box sx={{ 
+            p: 2, 
+            textAlign: 'center',
+            backgroundColor: 'grey.50',
+            borderRadius: 1,
+            mb: 2
+          }}>
+            <Typography variant="body2" color="text.secondary">
+              💡 Open a Word document to enable AI-powered document editing!
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              I can help you improve, edit, and modify your documents in real-time.
+            </Typography>
+          </Box>
+        )}
+        
+        {/* Document editing help message */}
+        {documentContext?.hasDocument && messages.length === 0 && (
+          <Box sx={{ 
+            p: 2, 
+            backgroundColor: 'primary.50',
+            borderRadius: 1,
+            mb: 2,
+            border: 1,
+            borderColor: 'primary.200'
+          }}>
+            <Typography variant="body2" color="primary.main" sx={{ fontWeight: 600, mb: 1 }}>
+              📝 Document editing enabled!
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              I can now edit your document "{documentContext.fileName}". Try commands like:
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              • "Write a sentence about artificial intelligence"<br/>
+              • "Add a conclusion paragraph"<br/>
+              • "Improve the introduction"<br/>
+              • "Make this more professional"
+            </Typography>
+          </Box>
+        )}
+        
         {messages.map((message, index) => (
           <Box
             key={index}
@@ -273,7 +434,10 @@ const WorkspaceAssistantInterface = () => {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
+            placeholder={documentContext?.hasDocument 
+              ? "Ask me to edit your document... (e.g., 'Write a sentence about AI')"
+              : "Type your message..."
+            }
             disabled={isLoading}
             sx={{
               flex: 1,
