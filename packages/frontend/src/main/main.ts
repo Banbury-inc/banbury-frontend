@@ -159,7 +159,7 @@ async function createWindow(): Promise<void> {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      devTools: process.env.NODE_ENV !== "production",
+      devTools: true, // Always enable devtools for debugging
       webSecurity: false,
       allowRunningInsecureContent: false,
       webgl: true,
@@ -171,13 +171,11 @@ async function createWindow(): Promise<void> {
       await waitForWebpackReady("http://localhost:8081");
       mainWindow.loadURL("http://localhost:8081");
     } else {
-      mainWindow.loadURL(
-        url.format({
-          pathname: path.join(__dirname, "renderer/index.html"),
-          protocol: "file:",
-          slashes: true,
-        })
-      );
+      // Use path.resolve for reliable cross-platform path construction
+      const htmlPath = path.resolve(__dirname, "renderer", "index.html");
+      // Convert to file URL with proper encoding for Windows compatibility
+      const fileUrl = url.pathToFileURL(htmlPath).href;
+      mainWindow.loadURL(fileUrl);
     }
 
     mainWindow.on("closed", () => {

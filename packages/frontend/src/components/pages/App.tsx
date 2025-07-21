@@ -1,6 +1,6 @@
 import { Box, CssBaseline, ThemeProvider as MuiThemeProvider } from "@mui/material";
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Login/Login";
 import { AuthProvider } from "../../renderer/context/AuthContext";
 import { ipcRenderer } from 'electron';
@@ -107,7 +107,8 @@ function ThemedApp(): JSX.Element {
         />
         <AlertWrapper />
         <CssBaseline />
-        <BrowserRouter>
+{/* Always use HashRouter for Electron apps to ensure file:// protocol compatibility */}
+        <HashRouter>
           <AuthProvider>
             <Box sx={{ backgroundColor: (theme) => theme.palette.background.default }}>
               <main>
@@ -119,7 +120,7 @@ function ThemedApp(): JSX.Element {
               </main>
             </Box>
           </AuthProvider>
-        </BrowserRouter>
+        </HashRouter>
       </AlertProvider>
     </MuiThemeProvider>
   );

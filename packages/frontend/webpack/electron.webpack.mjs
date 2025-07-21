@@ -12,7 +12,7 @@ const config = {
       'osx-temperature-sensor': false
     }
   },
-  devtool: "source-map",
+  devtool: process.env.NODE_ENV === 'development' ? 'eval-cheap-module-source-map' : 'nosources-source-map',
   entry: path.resolve(rootPath, "src/main", "main.ts"),
   target: "electron-main",
   module: {
