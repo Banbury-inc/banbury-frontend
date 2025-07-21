@@ -82,6 +82,7 @@ Think of Banbury as a digital ecosystem where your devices work together as one 
 - npm (v9 or higher) or yarn
 - Git
 
+
 ### Installation
 
 1. Clone the repository:
