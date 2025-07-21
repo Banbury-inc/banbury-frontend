@@ -396,83 +396,101 @@ export default function FileTreeView({
   // Main effect to fetch and update files - consolidated from the three duplicate effects
   useEffect(() => {
     const fetchAndUpdateFiles = async () => {
-      const new_files = await fetchFileData(
-        filePath || '',
-        {
-          setFirstname,
-          setLastname,
-          setFileRows,
-          setIsLoading,
-          cache,
-          existingFiles: fetchedFiles,
-        },
-      );
+      try {
+        const new_files = await fetchFileData(
+          filePath || '',
+          {
+            setFirstname,
+            setLastname,
+            setFileRows,
+            setIsLoading,
+            cache,
+            existingFiles: fetchedFiles,
+          },
+        );
 
-      if (new_files) {
-        // Create a Map to store unique files
-        const uniqueFilesMap = new Map<string, DatabaseData>();
+        if (new_files) {
+          // Create a Map to store unique files
+          const uniqueFilesMap = new Map<string, DatabaseData>();
 
-        // Add existing fetched files to the Map
-        fetchedFiles.forEach(file => {
-          const uniqueKey = `${file.file_path}-${file.device_name}`;
-          uniqueFilesMap.set(uniqueKey, file);
-        });
+          // Add existing fetched files to the Map
+          fetchedFiles.forEach(file => {
+            const uniqueKey = `${file.file_path}-${file.device_name}`;
+            uniqueFilesMap.set(uniqueKey, file);
+          });
 
-        // Add new files to the Map (will automatically overwrite duplicates)
-        new_files.forEach(file => {
-          const uniqueKey = `${file.file_path}-${file.device_name}`;
-          uniqueFilesMap.set(uniqueKey, file);
-        });
+          // Add new files to the Map (will automatically overwrite duplicates)
+          new_files.forEach(file => {
+            const uniqueKey = `${file.file_path}-${file.device_name}`;
+            uniqueFilesMap.set(uniqueKey, file);
+          });
 
-        // Convert Map back to array
-        const updatedFiles = Array.from(uniqueFilesMap.values());
+          // Convert Map back to array
+          const updatedFiles = Array.from(uniqueFilesMap.values());
 
-        setFetchedFiles(updatedFiles);
-        let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
-        // Add S3 Files node to the tree
-        treeData = addS3FilesNode(treeData);
-        // Add Google Drive node to the tree with actual files
-        treeData = addGoogleDriveNode(treeData, googleDriveFiles, googleDriveEnabled);
-        setFileRows(treeData);
-        set_Files(updatedFiles);
+          setFetchedFiles(updatedFiles);
+          let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
+          // Add S3 Files node to the tree
+          treeData = addS3FilesNode(treeData);
+          // Add Google Drive node to the tree with actual files
+          treeData = addGoogleDriveNode(treeData, googleDriveFiles, googleDriveEnabled);
+          setFileRows(treeData);
+          set_Files(updatedFiles);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching file data:', error);
         setIsLoading(false);
       }
     };
 
-    fetchAndUpdateFiles();
+    fetchAndUpdateFiles().catch((error) => {
+      console.error('Unhandled error in fetchAndUpdateFiles:', error);
+      setIsLoading(false);
+    });
   }, [username, disableFetch, filePath, devices, googleDriveFiles, googleDriveEnabled]);
 
   // File watcher effect - separate from main fetch logic
   useEffect(() => {
     const handleFileChange = async () => {
-      const new_files = await fetchFileData(
-        filePath || '',
-        {
-          setFirstname,
-          setLastname,
-          setFileRows,
-          setIsLoading,
-          cache,
-          existingFiles: fetchedFiles,
-        },
-      );
+      try {
+        const new_files = await fetchFileData(
+          filePath || '',
+          {
+            setFirstname,
+            setLastname,
+            setFileRows,
+            setIsLoading,
+            cache,
+            existingFiles: fetchedFiles,
+          },
+        );
 
-      if (new_files) {
-        const updatedFiles = [...fetchedFiles, ...new_files];
-        setFetchedFiles(updatedFiles);
-        let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
-        // Add S3 Files node to the tree
-        treeData = addS3FilesNode(treeData);
-        // Add Google Drive node to the tree with actual files
-        treeData = addGoogleDriveNode(treeData, googleDriveFiles, googleDriveEnabled);
-        setFileRows(treeData);
-        set_Files(updatedFiles);
+        if (new_files) {
+          const updatedFiles = [...fetchedFiles, ...new_files];
+          setFetchedFiles(updatedFiles);
+          let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
+          // Add S3 Files node to the tree
+          treeData = addS3FilesNode(treeData);
+          // Add Google Drive node to the tree with actual files
+          treeData = addGoogleDriveNode(treeData, googleDriveFiles, googleDriveEnabled);
+          setFileRows(treeData);
+          set_Files(updatedFiles);
+        }
+      } catch (error) {
+        console.error('Error in file watcher:', error);
       }
     };
 
-    fileWatcherEmitter.on('fileChanged', handleFileChange);
+    const handleFileChangeWrapper = () => {
+      handleFileChange().catch((error) => {
+        console.error('Unhandled error in handleFileChange:', error);
+      });
+    };
+
+    fileWatcherEmitter.on('fileChanged', handleFileChangeWrapper);
     return () => {
-      fileWatcherEmitter.off('fileChanged', handleFileChange);
+      fileWatcherEmitter.off('fileChanged', handleFileChangeWrapper);
     };
   }, [username, disableFetch, devices, googleDriveFiles, googleDriveEnabled]);
 
@@ -485,7 +503,11 @@ export default function FileTreeView({
           key={node.id}
           data-testid={`file-tree-item-${node.id}`}
           itemId={node.id.toString()}
-          onClick={() => handleCustomNodeSelect(String(node.id))}
+          onClick={() => {
+            handleCustomNodeSelect(String(node.id)).catch((error) => {
+              console.error('Error in handleCustomNodeSelect:', error);
+            });
+          }}
           label={
             <Box sx={{ display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
               {getIconForKind(node.kind)}

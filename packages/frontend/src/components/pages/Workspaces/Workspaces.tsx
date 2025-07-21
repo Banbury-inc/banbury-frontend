@@ -164,7 +164,13 @@ const WorkspaceSidebar = ({
             // It's a file, open it in the viewer
             const fileName = path.basename(actualPath);
             const fileType = getFileType(fileName);
-            onFileClick(fileName, actualPath, fileType);
+            // Properly await the async onFileClick function and catch any errors
+            try {
+              await onFileClick(fileName, actualPath, fileType);
+            } catch (fileClickError) {
+              console.error('Error opening file:', fileClickError);
+              // The error will be handled by the onFileClick function's own error handling
+            }
             return; // Don't update filePath for files
           }
         } catch (error) {
@@ -363,7 +369,7 @@ export default function Workspaces() {
   return (
     <Box sx={{ 
       position: 'fixed',
-      top: 0,
+      top: 40,
       left: 80, // Add left padding to avoid overlapping with navigation sidebar
       right: 0,
       bottom: 0,
