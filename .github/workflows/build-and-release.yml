@@ -2,13 +2,9 @@
 
 on:
   push:
-    branches:
-      - prod
-      - dev
+    branches: [prod, dev]
   pull_request:
-    branches:
-      - prod
-      - dev
+    branches: [prod, dev]
 
 jobs:
   lint:
