@@ -15,7 +15,8 @@ export async function file_request(senderSocket: net.Socket, file_name: string, 
   const file_header = `FILE_REQUEST_RESPONSE:${request_file_name}:${file_size}:${null_string}:END_OF_HEADER`;
   senderSocket.write(file_header);
 
-  file.on('data', (bytes_read: Buffer) => {
+  file.on('data', (chunk: string | Buffer) => {
+    const bytes_read: Buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     senderSocket.write(bytes_read);
   });
 
