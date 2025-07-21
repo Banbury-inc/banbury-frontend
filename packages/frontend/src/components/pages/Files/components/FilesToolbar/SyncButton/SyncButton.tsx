@@ -8,7 +8,6 @@ import SyncIcon from '@mui/icons-material/Sync';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import SearchIcon from '@mui/icons-material/Search';
 import { getSyncFolders } from './getSyncFolders';
-import path from 'path';
 import CloseIcon from '@mui/icons-material/Close';
 
 
