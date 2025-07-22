@@ -196,28 +196,30 @@ const EnhancedRichTextInput: React.FC<EnhancedRichTextInputProps> = ({
     tooltip: string;
   }) => (
     <Tooltip title={tooltip}>
-      <IconButton
-        onClick={onClick}
-        disabled={disabled || buttonDisabled}
-        size="small"
-        sx={{
-          color: active ? '#1976d2' : '#616161',
-          backgroundColor: active ? '#e3f2fd' : 'transparent',
-          border: active ? '1px solid #1976d2' : '1px solid transparent',
-          borderRadius: 1,
-          '&:hover': {
-            backgroundColor: active ? '#bbdefb' : '#f5f5f5',
-            color: active ? '#0d47a1' : '#424242',
-            border: '1px solid #ccc',
-          },
-          '&:disabled': {
-            color: '#bdbdbd',
-            backgroundColor: 'transparent',
-          },
-        }}
-      >
-        {children}
-      </IconButton>
+      <span>
+        <IconButton
+          onClick={onClick}
+          disabled={disabled || buttonDisabled}
+          size="small"
+          sx={{
+            color: active ? '#1976d2' : '#616161',
+            backgroundColor: active ? '#e3f2fd' : 'transparent',
+            border: active ? '1px solid #1976d2' : '1px solid transparent',
+            borderRadius: 1,
+            '&:hover': {
+              backgroundColor: active ? '#bbdefb' : '#f5f5f5',
+              color: active ? '#0d47a1' : '#424242',
+              border: '1px solid #ccc',
+            },
+            '&:disabled': {
+              color: '#bdbdbd',
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
+          {children}
+        </IconButton>
+      </span>
     </Tooltip>
   );
 

@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Highlight from '@tiptap/extension-highlight';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
 import {
   Box,
   Toolbar,
@@ -32,6 +35,7 @@ interface SimpleTipTapEditorProps {
   placeholder?: string;
   editable?: boolean;
   onSave?: () => void;
+  onEditorReady?: (editor: any) => void;
 }
 
 const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
@@ -40,6 +44,7 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
   placeholder = 'Start typing...',
   editable = true,
   onSave,
+  onEditorReady,
 }) => {
   const editor = useEditor({
     extensions: [
@@ -52,6 +57,13 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
           keepMarks: true,
           keepAttributes: false,
         },
+      }),
+      Underline,
+      Highlight.configure({
+        multicolor: true,
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
       }),
     ],
     content,
@@ -72,6 +84,13 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
     }
   }, [content, editor]);
 
+  // Pass editor instance to parent for AI integration
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
+
   const ToolbarButton = ({ 
     onClick, 
     active = false, 
@@ -86,28 +105,30 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
     tooltip: string;
   }) => (
     <Tooltip title={tooltip}>
-      <IconButton
-        onClick={onClick}
-        disabled={disabled}
-        size="small"
-        sx={{
-          color: active ? '#1976d2' : '#424242',
-          backgroundColor: active ? '#e3f2fd' : 'transparent',
-          border: active ? '1px solid #1976d2' : '1px solid transparent',
-          borderRadius: 1,
-          '&:hover': {
-            backgroundColor: active ? '#bbdefb' : '#f5f5f5',
-            color: active ? '#0d47a1' : '#212121',
-            border: '1px solid #ccc',
-          },
-          '&:disabled': {
-            color: '#bdbdbd',
-            backgroundColor: 'transparent',
-          },
-        }}
-      >
-        {children}
-      </IconButton>
+      <span>
+        <IconButton
+          onClick={onClick}
+          disabled={disabled}
+          size="small"
+          sx={{
+            color: active ? '#1976d2' : '#424242',
+            backgroundColor: active ? '#e3f2fd' : 'transparent',
+            border: active ? '1px solid #1976d2' : '1px solid transparent',
+            borderRadius: 1,
+            '&:hover': {
+              backgroundColor: active ? '#bbdefb' : '#f5f5f5',
+              color: active ? '#0d47a1' : '#212121',
+              border: '1px solid #ccc',
+            },
+            '&:disabled': {
+              color: '#bdbdbd',
+              backgroundColor: 'transparent',
+            },
+          }}
+        >
+          {children}
+        </IconButton>
+      </span>
     </Tooltip>
   );
 

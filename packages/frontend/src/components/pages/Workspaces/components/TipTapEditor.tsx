@@ -87,21 +87,23 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
     tooltip: string;
   }) => (
     <Tooltip title={tooltip}>
-      <IconButton
-        onClick={onClick}
-        disabled={disabled}
-        size="small"
-        sx={{
-          color: active ? 'primary.contrastText' : 'text.primary',
-          backgroundColor: active ? 'primary.main' : 'transparent',
-          '&:hover': {
-            backgroundColor: active ? 'primary.dark' : 'action.hover',
+      <span>
+        <IconButton
+          onClick={onClick}
+          disabled={disabled}
+          size="small"
+          sx={{
             color: active ? 'primary.contrastText' : 'text.primary',
-          },
-        }}
-      >
-        {children}
-      </IconButton>
+            backgroundColor: active ? 'primary.main' : 'transparent',
+            '&:hover': {
+              backgroundColor: active ? 'primary.dark' : 'action.hover',
+              color: active ? 'primary.contrastText' : 'text.primary',
+            },
+          }}
+        >
+          {children}
+        </IconButton>
+      </span>
     </Tooltip>
   );
 

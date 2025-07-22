@@ -23,6 +23,8 @@ import path from 'path';
 import os from 'os';
 import { stat, readFile, writeFile } from 'fs/promises';
 import { shell } from 'electron';
+import mammoth from 'mammoth';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 import 'allotment/dist/style.css';
 
 
@@ -196,13 +198,17 @@ const MainContent = ({
   document, 
   onDocumentChange,
   onCloseDocument,
-  onSaveDocument
+  onSaveDocument,
+  getCurrentContent,
+  setDocumentEditor
 }: { 
   showEditor: boolean;
   document: { fileName: string; filePath: string; content: string } | null;
   onDocumentChange: (content: string) => void;
   onCloseDocument: () => void;
   onSaveDocument: (document: { fileName: string; filePath: string; content: string }) => void;
+  getCurrentContent: () => string;
+  setDocumentEditor: (editor: any) => void;
 }) => {
   if (showEditor && document) {
     return (
@@ -232,7 +238,16 @@ const MainContent = ({
             onChange={onDocumentChange}
             placeholder={`Start editing ${document.fileName}...`}
             onSave={() => {
-              onSaveDocument(document);
+              // Use the current content from state instead of the original document content
+              const currentContent = getCurrentContent();
+              onSaveDocument({
+                ...document,
+                content: currentContent
+              });
+            }}
+            onEditorReady={(editor) => {
+              // Set the editor instance for AI integration
+              setDocumentEditor(editor);
             }}
           />
         </Box>
@@ -437,65 +452,84 @@ export default function Workspaces() {
     console.log('Input text:', text);
     console.log('Input text length:', text.length);
     
-    if (!text || text.trim().length === 0) {
-      console.log('Text is empty, returning default paragraph');
-      return '<p></p>';
-    }
-
-    // Split into paragraphs and convert to HTML
-    const paragraphs = text.split(/\n\s*\n/);
-    console.log('Split into paragraphs:', paragraphs.length);
-    let html = '';
-
-    for (let i = 0; i < paragraphs.length; i++) {
-      const paragraph = paragraphs[i];
-      const trimmed = paragraph.trim();
-      console.log(`Processing paragraph ${i}:`, trimmed);
-      
-      if (!trimmed) {
-        console.log(`Paragraph ${i} is empty, skipping`);
-        continue;
+    try {
+      if (!text || text.trim().length === 0) {
+        console.log('Text is empty, returning default paragraph');
+        return '<p></p>';
       }
 
-      // Check if it looks like a heading (starts with # for markdown)
-      if (trimmed.startsWith('# ')) {
-        const heading = trimmed.substring(2).trim();
-        html += `<h1>${heading}</h1>`;
-        console.log(`Added H1: ${heading}`);
-      } else if (trimmed.startsWith('## ')) {
-        const heading = trimmed.substring(3).trim();
-        html += `<h2>${heading}</h2>`;
-        console.log(`Added H2: ${heading}`);
-      } else if (trimmed.startsWith('### ')) {
-        const heading = trimmed.substring(4).trim();
-        html += `<h3>${heading}</h3>`;
-        console.log(`Added H3: ${heading}`);
-      } else {
-        // Regular paragraph - preserve line breaks within paragraph
-        const lines = trimmed.split('\n').map(line => line.trim()).filter(line => line);
-        console.log(`Paragraph ${i} lines:`, lines);
+      // Escape HTML entities to prevent XSS
+      const escapeHtml = (unsafe: string) => {
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      };
+
+      // Split into paragraphs and convert to HTML
+      const paragraphs = text.split(/\n\s*\n/);
+      console.log('Split into paragraphs:', paragraphs.length);
+      let html = '';
+
+      for (let i = 0; i < paragraphs.length; i++) {
+        const paragraph = paragraphs[i];
+        const trimmed = paragraph.trim();
+        console.log(`Processing paragraph ${i}:`, trimmed);
         
-        if (lines.length === 1) {
-          html += `<p>${lines[0]}</p>`;
-          console.log(`Added single line paragraph: ${lines[0]}`);
-        } else if (lines.length > 1) {
-          html += `<p>${lines.join('<br>')}</p>`;
-          console.log(`Added multi-line paragraph with ${lines.length} lines`);
+        if (!trimmed) {
+          console.log(`Paragraph ${i} is empty, skipping`);
+          continue;
+        }
+
+        // Check if it looks like a heading (starts with # for markdown)
+        if (trimmed.startsWith('# ')) {
+          const heading = escapeHtml(trimmed.substring(2).trim());
+          html += `<h1>${heading}</h1>`;
+          console.log(`Added H1: ${heading}`);
+        } else if (trimmed.startsWith('## ')) {
+          const heading = escapeHtml(trimmed.substring(3).trim());
+          html += `<h2>${heading}</h2>`;
+          console.log(`Added H2: ${heading}`);
+        } else if (trimmed.startsWith('### ')) {
+          const heading = escapeHtml(trimmed.substring(4).trim());
+          html += `<h3>${heading}</h3>`;
+          console.log(`Added H3: ${heading}`);
+        } else {
+          // Regular paragraph - preserve line breaks within paragraph
+          const lines = trimmed.split('\n').map(line => line.trim()).filter(line => line);
+          console.log(`Paragraph ${i} lines:`, lines);
+          
+          if (lines.length === 1) {
+            const escapedLine = escapeHtml(lines[0]);
+            html += `<p>${escapedLine}</p>`;
+            console.log(`Added single line paragraph: ${escapedLine}`);
+          } else if (lines.length > 1) {
+            const escapedLines = lines.map(line => escapeHtml(line));
+            html += `<p>${escapedLines.join('<br>')}</p>`;
+            console.log(`Added multi-line paragraph with ${lines.length} lines`);
+          }
         }
       }
-    }
 
-    // If we still have no HTML content, create a paragraph with the raw text
-    if (!html.trim()) {
-      console.log('No HTML generated from paragraphs, using raw text');
-      // Just wrap the entire text in a paragraph, replacing line breaks
-      const cleanText = text.trim().replace(/\n/g, '<br>');
-      html = `<p>${cleanText}</p>`;
-    }
+      // If we still have no HTML content, create a paragraph with the raw text
+      if (!html.trim()) {
+        console.log('No HTML generated from paragraphs, using raw text');
+        // Just wrap the entire text in a paragraph, replacing line breaks
+        const cleanText = escapeHtml(text.trim()).replace(/\n/g, '<br>');
+        html = `<p>${cleanText}</p>`;
+      }
 
-    console.log('Final HTML output:', html);
-    console.log('=== END TEXT TO HTML CONVERSION ===');
-    return html;
+      console.log('Final HTML output:', html);
+      console.log('=== END TEXT TO HTML CONVERSION ===');
+      return html;
+    } catch (error) {
+      console.error('Error in textToHtml conversion:', error);
+      // Fallback: return a simple paragraph with escaped text
+      const fallbackText = String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return `<p>${fallbackText}</p>`;
+    }
   };
 
   // Convert HTML back to plain text/markdown for saving
@@ -532,6 +566,7 @@ export default function Workspaces() {
       
       const ext = path.extname(document.fileName).toLowerCase();
       let textContent = '';
+      let actualSavePath = document.filePath;
 
       if (ext === '.md' || ext === '.markdown') {
         // Save as markdown
@@ -539,14 +574,181 @@ export default function Workspaces() {
       } else if (ext === '.txt' || ext === '.rtf') {
         // Save as plain text
         textContent = htmlToText(document.content, false);
+      } else if (ext === '.docx' || ext === '.doc') {
+        // For DOCX files, convert HTML back to DOCX format
+        try {
+          console.log('Converting HTML to DOCX format using docx library...');
+          
+          // Enhanced HTML parser that preserves formatting
+          const htmlToDocxParagraphs = (htmlContent: string) => {
+            const paragraphs: Paragraph[] = [];
+            
+            // Parse HTML and preserve basic formatting
+            const parseElement = (element: string): TextRun[] => {
+              const runs: TextRun[] = [];
+              
+              // Extract text and formatting
+              let text = element;
+              let isBold = false;
+              let isItalic = false;
+              let isUnderline = false;
+              let isStrike = false;
+              
+              // Check for formatting tags
+              if (text.includes('<strong>') || text.includes('<b>')) {
+                isBold = true;
+                text = text.replace(/<\/?(?:strong|b)>/g, '');
+              }
+              if (text.includes('<em>') || text.includes('<i>')) {
+                isItalic = true;
+                text = text.replace(/<\/?(?:em|i)>/g, '');
+              }
+              if (text.includes('<u>')) {
+                isUnderline = true;
+                text = text.replace(/<\/?u>/g, '');
+              }
+              if (text.includes('<s>') || text.includes('<del>')) {
+                isStrike = true;
+                text = text.replace(/<\/?(?:s|del)>/g, '');
+              }
+              
+              // Clean up remaining HTML
+              text = text
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#039;/g, "'")
+                .replace(/\s+/g, ' ')
+                .trim();
+              
+              if (text) {
+                runs.push(new TextRun({
+                  text: text,
+                  bold: isBold,
+                  italics: isItalic,
+                  underline: isUnderline ? {} : undefined,
+                  strike: isStrike,
+                }));
+              }
+              
+              return runs;
+            };
+            
+            // Split content into blocks
+            const blocks = htmlContent
+              .replace(/<script[^>]*>.*?<\/script>/gis, '')
+              .replace(/<style[^>]*>.*?<\/style>/gis, '')
+              .split(/(?=<(?:h[1-6]|p|div|blockquote|ul|ol|li))|(?<=<\/(?:h[1-6]|p|div|blockquote|ul|ol|li)>)/)
+              .filter(block => block.trim());
+            
+            for (const block of blocks) {
+              const trimmedBlock = block.trim();
+              if (!trimmedBlock) continue;
+              
+              // Handle headings
+              if (trimmedBlock.match(/^<h([1-6])[^>]*>/)) {
+                const level = parseInt(trimmedBlock.match(/^<h([1-6])/)?.[1] || '1');
+                const runs = parseElement(trimmedBlock);
+                if (runs.length > 0) {
+                  paragraphs.push(new Paragraph({
+                    heading: level === 1 ? 'Heading1' : level === 2 ? 'Heading2' : 'Heading3',
+                    children: runs
+                  }));
+                }
+              }
+              // Handle blockquotes
+              else if (trimmedBlock.includes('<blockquote')) {
+                const runs = parseElement(trimmedBlock);
+                if (runs.length > 0) {
+                  paragraphs.push(new Paragraph({
+                    indent: { left: 720 }, // 0.5 inch indent
+                    border: {
+                      left: {
+                        color: "auto",
+                        space: 1,
+                        size: 6,
+                        style: "single",
+                      },
+                    },
+                    children: runs
+                  }));
+                }
+              }
+              // Handle regular paragraphs
+              else if (trimmedBlock.includes('<p') || !trimmedBlock.includes('<')) {
+                const runs = parseElement(trimmedBlock);
+                if (runs.length > 0) {
+                  paragraphs.push(new Paragraph({
+                    children: runs
+                  }));
+                }
+              }
+            }
+            
+            // Fallback if no paragraphs were created
+            if (paragraphs.length === 0) {
+              const fallbackText = htmlContent
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+              
+              paragraphs.push(new Paragraph({
+                children: [new TextRun(fallbackText || "Document content")]
+              }));
+            }
+            
+            return paragraphs;
+          };
+          
+          // Create DOCX document
+          const doc = new Document({
+            sections: [{
+              properties: {},
+              children: htmlToDocxParagraphs(document.content)
+            }]
+          });
+          
+          // Generate DOCX buffer
+          const docxBuffer = await Packer.toBuffer(doc);
+          
+          // Write the DOCX buffer to file
+          await writeFile(document.filePath, docxBuffer);
+          
+          console.log('Document saved successfully as DOCX');
+          showAlert('Success', [`"${document.fileName}" saved successfully in DOCX format.`], 'success');
+          
+          return; // Early return to avoid the generic success message
+        } catch (docxError) {
+          console.error('Error converting to DOCX:', docxError);
+          
+          // Fallback: save as HTML if DOCX conversion fails
+          const baseName = path.basename(document.fileName, ext);
+          const dirName = path.dirname(document.filePath);
+          actualSavePath = path.join(dirName, `${baseName}_edited.html`);
+          
+          textContent = document.content;
+          await writeFile(actualSavePath, textContent, 'utf-8');
+          
+          showAlert('Warning', [
+            `Could not save as DOCX format. Saved as HTML instead: "${baseName}_edited.html"`,
+            `Error: ${docxError instanceof Error ? docxError.message : 'Unknown error'}`,
+            'The document content has been preserved and can be reopened for further editing.'
+          ], 'warning');
+          
+          return;
+        }
       } else {
         // For other formats, save as plain text
         textContent = htmlToText(document.content, false);
       }
 
-      await writeFile(document.filePath, textContent, 'utf-8');
+      await writeFile(actualSavePath, textContent, 'utf-8');
       console.log('Document saved successfully:', document.fileName);
-      showAlert('Success', [`"${document.fileName}" saved successfully.`], 'success');
+      showAlert('Success', [`"${path.basename(actualSavePath)}" saved successfully.`], 'success');
     } catch (error) {
       console.error('Error saving document:', error);
       showAlert('Error', [`Failed to save "${document.fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
@@ -575,10 +777,103 @@ export default function Workspaces() {
       console.log('File extension:', ext);
 
       if (ext === '.docx' || ext === '.doc') {
-        // For Word documents, show a placeholder for now
-        // TODO: Implement proper Word document parsing
-        content = `<h1>${fileName}</h1><p>Word document editing coming soon...</p><p>This is a placeholder for the actual document content.</p>`;
-        console.log('Using Word document placeholder');
+        // For Word documents, first check if it's actually a DOCX file or plain text
+        try {
+          console.log('Loading DOCX content using mammoth.js...');
+          const buffer = await readFile(filePath);
+          console.log('File buffer loaded, size:', buffer.length);
+          
+          // Check if the file is actually a DOCX file (starts with PK signature) or plain text
+          const isActualDocx = buffer.length > 4 && 
+            buffer[0] === 0x50 && buffer[1] === 0x4B && // PK signature
+            (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07); // Various zip types
+          
+          if (!isActualDocx) {
+            // This is likely a plain text file that was saved with .docx extension
+            // Treat it as a text file
+            console.log('File appears to be plain text despite .docx extension, treating as text');
+            const fileText = buffer.toString('utf-8');
+            if (!fileText || fileText.trim().length === 0) {
+              content = '<p><em>This file appears to be empty.</em></p>';
+            } else {
+              try {
+                // Try to parse as HTML first (in case it was saved as HTML)
+                if (fileText.trim().startsWith('<') && fileText.includes('>')) {
+                  content = fileText;
+                  console.log('File appears to contain HTML content');
+                } else {
+                  // Convert plain text to HTML
+                  content = textToHtml(fileText);
+                  console.log('Converted plain text to HTML');
+                }
+              } catch (conversionError) {
+                console.error('Error converting text to HTML:', conversionError);
+                content = `<p>${fileText.replace(/\n/g, '<br>')}</p>`;
+              }
+            }
+          } else {
+            // This is an actual DOCX file, use mammoth to parse it
+            let result;
+            let conversionMethod = 'unknown';
+            
+            try {
+              // Method 1: Try with buffer (most reliable in Electron)
+              console.log('Attempting buffer method...');
+              
+              // Ensure buffer is in the right format for mammoth
+              const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+              result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+              conversionMethod = 'arrayBuffer';
+              console.log('Successfully converted using arrayBuffer method');
+              
+            } catch (arrayBufferError) {
+              console.log('ArrayBuffer method failed:', arrayBufferError);
+              
+              try {
+                // Method 2: Try with regular buffer
+                console.log('Attempting regular buffer method...');
+                result = await mammoth.convertToHtml({ buffer: buffer });
+                conversionMethod = 'buffer';
+                console.log('Successfully converted using buffer method');
+                
+              } catch (bufferError) {
+                console.log('Buffer method failed:', bufferError);
+                
+                try {
+                  // Method 3: Try with path (if supported)
+                  console.log('Attempting path method...');
+                  result = await mammoth.convertToHtml({ path: filePath });
+                  conversionMethod = 'path';
+                  console.log('Successfully converted using path method');
+                  
+                } catch (pathError) {
+                  console.error('All mammoth methods failed:', {
+                    arrayBufferError,
+                    bufferError,
+                    pathError
+                  });
+                  throw new Error(`Unable to parse DOCX file using any method. Last error: ${pathError instanceof Error ? pathError.message : String(pathError)}`);
+                }
+              }
+            }
+            
+            console.log(`DOCX conversion successful using method: ${conversionMethod}`);
+            
+            // Use the converted HTML content
+            content = result.value || '<p>Document appears to be empty.</p>';
+            
+            // Clean up the content if needed (mammoth sometimes produces extra elements)
+            if (content.trim() === '') {
+              content = '<p>Document appears to be empty.</p>';
+            }
+            
+            console.log('DOCX content loaded successfully, length:', content.length);
+          }
+          
+        } catch (docxError) {
+          console.error('Error loading DOCX content:', docxError);
+          content = `<h1>Error Loading Document</h1><p>Could not load the contents of "${fileName}".</p><p>Error: ${docxError instanceof Error ? docxError.message : 'Unknown error parsing DOCX file'}</p>`;
+        }
       } else {
         // For text files (.txt, .md, .markdown, .rtf)
         try {
@@ -594,16 +889,22 @@ export default function Workspaces() {
             console.log('File appears to be empty');
             content = '<p><em>This file appears to be empty.</em></p>';
           } else {
-            if (ext === '.md' || ext === '.markdown') {
-              // For markdown files, convert basic markdown to HTML
-              console.log('Converting markdown to HTML...');
-              content = textToHtml(fileText);
-            } else {
-              // For plain text files, convert to HTML
-              console.log('Converting text to HTML...');
-              content = textToHtml(fileText);
+            try {
+              if (ext === '.md' || ext === '.markdown') {
+                // For markdown files, convert basic markdown to HTML
+                console.log('Converting markdown to HTML...');
+                content = textToHtml(fileText);
+              } else {
+                // For plain text files, convert to HTML
+                console.log('Converting text to HTML...');
+                content = textToHtml(fileText);
+              }
+              console.log('Converted content preview:', content.substring(0, 200));
+            } catch (conversionError) {
+              console.error('Error converting text to HTML:', conversionError);
+              // Fallback to plain text wrapped in a paragraph
+              content = `<p>${fileText.replace(/\n/g, '<br>')}</p>`;
             }
-            console.log('Converted content preview:', content.substring(0, 200));
           }
         } catch (readError) {
           console.error('Error reading file:', readError);
@@ -650,7 +951,12 @@ export default function Workspaces() {
     if (shouldOpenInTipTap(fileName)) {
       // Open document files in TipTap editor
       console.log('Opening in TipTap with path:', normalizedPath);
-      openInTipTap(fileName, normalizedPath);
+      try {
+        await openInTipTap(fileName, normalizedPath);
+      } catch (error) {
+        console.error('Failed to open file in TipTap:', error);
+        showAlert('Error', [`Failed to open "${fileName}" in editor: ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+      }
     } else {
       // Open other files with system default application
       console.log('Opening with system default application');
@@ -840,8 +1146,11 @@ export default function Workspaces() {
                         setCurrentDocument(null);
                         setCurrentDocumentContent('');
                         setCurrentDocumentName('');
+                        setDocumentEditor(null); // Clear editor for AI integration
                       }}
                       onSaveDocument={saveDocument}
+                      getCurrentContent={() => currentDocumentContent}
+                      setDocumentEditor={setDocumentEditor}
                     />
                   </motion.div>
                 </AnimatePresence>

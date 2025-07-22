@@ -8,7 +8,6 @@ export interface WebSearchResult {
 }
 
 export class WebSearchService {
-    private readonly userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
 
     async search(query: string, maxResults: number = 5): Promise<WebSearchResult[]> {
         try {
@@ -32,7 +31,8 @@ export class WebSearchService {
             const encodedQuery = encodeURIComponent(query);
             const response = await axios.get(`https://html.duckduckgo.com/html/?q=${encodedQuery}`, {
                 headers: {
-                    'User-Agent': this.userAgent
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5'
                 }
             });
 
@@ -67,7 +67,8 @@ export class WebSearchService {
             const encodedQuery = encodeURIComponent(query);
             const response = await axios.get(`https://search.brave.com/search?q=${encodedQuery}&source=web`, {
                 headers: {
-                    'User-Agent': this.userAgent
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5'
                 }
             });
 
