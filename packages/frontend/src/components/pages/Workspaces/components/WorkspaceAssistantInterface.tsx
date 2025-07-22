@@ -20,6 +20,11 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useAlert } from '../../../../renderer/context/AlertContext';
 import { LangGraphAgent, ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
 import { useMcpClient } from '@banbury/core/src/ai/basic/tools/banburyMCP/useMcpClient';
+import FileAttachment from './FileAttachment';
+import ToolSelector from './ToolSelector';
+import RichTextInput from './RichTextInput';
+import { fileService } from './FileService';
+import { MentionableFile } from './MentionExtension';
 
 // Available AI models
 const availableModels = [
@@ -33,6 +38,14 @@ const availableModels = [
   { id: 'llama3.1:70b', name: 'Llama 3.1 70B', provider: 'ollama' },
   { id: 'codellama:13b', name: 'Code Llama 13B', provider: 'ollama' },
 ];
+
+interface AttachedFile {
+  id: string;
+  name: string;
+  path: string;
+  size: number;
+  type: string;
+}
 
 interface WorkspaceAssistantInterfaceProps {
   documentActions?: {
@@ -54,6 +67,9 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
     return localStorage.getItem('workspace_ai_model') || 'claude-sonnet-4-20250514';
   });
   const [showModelSettings, setShowModelSettings] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [enabledTools, setEnabledTools] = useState<string[]>(['webSearch', 'filesystem', 'banbury']);
+  const [mentionedFiles, setMentionedFiles] = useState<MentionableFile[]>([]);
 
   // Save selected model to localStorage when it changes
   useEffect(() => {
@@ -87,14 +103,15 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
 
   // Tool configuration for workspace assistance
   const toolConfig = useMemo(() => ({
-    webSearch: true,
-    banbury: true,
-    filesystem: true,
-    gmail: false,
-    googleCalendar: false,
-    googleDrive: false,
-    googleTasks: false
-  }), []);
+    webSearch: enabledTools.includes('webSearch'),
+    banbury: enabledTools.includes('banbury'),
+    filesystem: enabledTools.includes('filesystem'),
+    gmail: enabledTools.includes('gmail'),
+    googleCalendar: enabledTools.includes('googleCalendar'),
+    googleDrive: enabledTools.includes('googleDrive'),
+    googleTasks: enabledTools.includes('googleTasks'),
+    codeExecution: enabledTools.includes('codeExecution')
+  }), [enabledTools]);
 
   // Document context for AI
   const documentContext = useMemo(() => {
@@ -111,6 +128,28 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
       content: docInfo.content
     };
   }, [documentActions]);
+
+  // Callback handlers
+  const handleFilesChange = useCallback((files: AttachedFile[]) => {
+    setAttachedFiles(files);
+  }, []);
+
+  const handleToolsChange = useCallback((tools: string[]) => {
+    setEnabledTools(tools);
+  }, []);
+
+  const handleMentionedFilesChange = useCallback((files: MentionableFile[]) => {
+    setMentionedFiles(files);
+  }, []);
+
+  const handleGetFiles = useCallback(async (query: string) => {
+    try {
+      return await fileService.searchFiles(query, 10);
+    } catch (error) {
+      console.error('Error getting files for mentions:', error);
+      return [];
+    }
+  }, []);
 
   // Initialize LangGraph Agent
   useEffect(() => {
@@ -149,29 +188,74 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
       // Build conversation for AI with document context
       let conversationMessages = [...messages];
       
-      // Add document context to the user message if available
+      // Add context information to the user message if available
       let contextualUserMessage = userMessage;
+      
+      let contextParts: string[] = [];
+      
+      // Add document context
       if (documentContext && documentContext.hasDocument) {
+        contextParts.push(`[DOCUMENT CONTEXT]
+Current Document: ${documentContext.fileName} (${documentContext.fileType})
+Content: ${documentContext.content}`);
+      }
+      
+      // Add attached files context
+      if (attachedFiles.length > 0) {
+        contextParts.push(`[ATTACHED FILES]
+${attachedFiles.map(file => `- ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)`).join('\n')}
+
+Note: You can reference these files in your response. Use the file paths to access their content if needed.`);
+      }
+
+      // Add mentioned files context
+      if (mentionedFiles.length > 0) {
+        contextParts.push(`[MENTIONED FILES]
+${mentionedFiles.map(file => `- @${file.name} (${file.type}${file.size ? `, ${(file.size / 1024).toFixed(1)}KB` : ''})`).join('\n')}
+
+Note: These files were referenced in the conversation using @ mentions. You can access their content if needed.`);
+      }
+      
+      // Add enabled tools context
+      if (enabledTools.length > 0) {
+        contextParts.push(`[ENABLED TOOLS]
+Available capabilities: ${enabledTools.join(', ')}`);
+      }
+      
+      // Check if user is explicitly asking for document modification
+      const userWantsDocumentEdit = documentContext?.hasDocument && (
+        userMessage.content.toLowerCase().includes('write') ||
+        userMessage.content.toLowerCase().includes('add') ||
+        userMessage.content.toLowerCase().includes('insert') ||
+        userMessage.content.toLowerCase().includes('edit') ||
+        userMessage.content.toLowerCase().includes('modify') ||
+        userMessage.content.toLowerCase().includes('change') ||
+        userMessage.content.toLowerCase().includes('update') ||
+        userMessage.content.toLowerCase().includes('improve') ||
+        userMessage.content.toLowerCase().includes('rewrite') ||
+        userMessage.content.toLowerCase().includes('create')
+      );
+      
+      if (contextParts.length > 0 || userWantsDocumentEdit) {
+        let instructions = '';
+        
+        // Only add document editing instructions if user seems to want document modification
+        if (userWantsDocumentEdit) {
+          instructions = `
+
+DOCUMENT EDITING CAPABILITY:
+If you determine that the user wants to modify the document based on their request, you can use these commands:
+- ADD_CONTENT: [content] - to add content to the document
+- REPLACE_CONTENT: [content] - to replace the entire document content
+- INSERT_CONTENT: [content] - to insert content at the current cursor position
+
+Only use these commands if the user's request clearly indicates they want document modification.`;
+        }
+        
         contextualUserMessage = {
           role: 'user' as const,
-          content: `[DOCUMENT CONTEXT]
-Current Document: ${documentContext.fileName} (${documentContext.fileType})
-Content: ${documentContext.content}
-
-[USER REQUEST]
-${userMessage.content}
-
-IMPORTANT: If you want to modify the document, format your response like this:
-- For adding content: Use "ADD_CONTENT:" followed by the exact content to add
-- For replacing content: Use "REPLACE_CONTENT:" followed by the exact new content
-- For inserting at cursor: Use "INSERT_CONTENT:" followed by the exact content
-
-Example:
-ADD_CONTENT: This is the new sentence I want to add to the document.
-
-or 
-
-REPLACE_CONTENT: This is the complete new content that should replace the entire document.`
+          content: `${contextParts.length > 0 ? contextParts.join('\n\n') + '\n\n' : ''}[USER REQUEST]
+${userMessage.content}${instructions}`
         };
       }
       
@@ -216,29 +300,7 @@ REPLACE_CONTENT: This is the complete new content that should replace the entire
                 showAlert('Success', ['AI content inserted at cursor'], 'success');
               }
               
-              // Fallback: if no special commands found but AI seems to want to add content
-              if (!addContentMatch && !replaceContentMatch && !insertContentMatch) {
-                const userMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
-                const aiResponse = fullResponse.toLowerCase();
-                
-                // Check if user asked to write/add something and AI provided content
-                const wantsToWrite = userMessage.includes('write') || userMessage.includes('add') || 
-                                   userMessage.includes('insert') || userMessage.includes('create');
-                const aiProvidesContent = aiResponse.includes('here is') || aiResponse.includes('here\'s') ||
-                                        aiResponse.includes('i\'ll add') || aiResponse.includes('i\'ll write');
-                
-                if (wantsToWrite && aiProvidesContent) {
-                  // Try to extract the content that looks like it should be added
-                  const sentences = fullResponse.split(/[.!?]\s+/);
-                  const lastSentence = sentences[sentences.length - 2] || sentences[sentences.length - 1];
-                  
-                  if (lastSentence && lastSentence.length > 10 && lastSentence.length < 500) {
-                    console.log('AI fallback: adding last sentence as content:', lastSentence);
-                    documentActions.insertContent(lastSentence.trim() + '.', 'end');
-                    showAlert('Info', ['AI content added to document (auto-detected)'], 'info');
-                  }
-                }
-              }
+              // Note: Removed aggressive fallback editing - AI now only edits when explicitly commanded
               
             } catch (error) {
               console.error('Error applying AI document changes:', error);
@@ -261,12 +323,7 @@ REPLACE_CONTENT: This is the complete new content that should replace the entire
     }
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSendMessage();
-    }
-  };
+
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -284,6 +341,15 @@ REPLACE_CONTENT: This is the complete new content that should replace the entire
                   {availableModels.find(m => m.id === selectedModel)?.name || 'Unknown Model'}
                   {documentContext?.hasDocument && (
                     <> • Document: {documentContext.fileName}</>
+                  )}
+                  {attachedFiles.length > 0 && (
+                    <> • {attachedFiles.length} attached</>
+                  )}
+                  {mentionedFiles.length > 0 && (
+                    <> • {mentionedFiles.length} mentioned</>
+                  )}
+                  {enabledTools.length > 0 && (
+                    <> • {enabledTools.length} tools</>
                   )}
                 </Typography>
               </Box>
@@ -341,49 +407,6 @@ REPLACE_CONTENT: This is the complete new content that should replace the entire
       
       {/* Messages */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        {/* Document status message */}
-        {!documentContext?.hasDocument && messages.length === 0 && (
-          <Box sx={{ 
-            p: 2, 
-            textAlign: 'center',
-            backgroundColor: 'grey.50',
-            borderRadius: 1,
-            mb: 2
-          }}>
-            <Typography variant="body2" color="text.secondary">
-              💡 Open a Word document to enable AI-powered document editing!
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              I can help you improve, edit, and modify your documents in real-time.
-            </Typography>
-          </Box>
-        )}
-        
-        {/* Document editing help message */}
-        {documentContext?.hasDocument && messages.length === 0 && (
-          <Box sx={{ 
-            p: 2, 
-            backgroundColor: 'primary.50',
-            borderRadius: 1,
-            mb: 2,
-            border: 1,
-            borderColor: 'primary.200'
-          }}>
-            <Typography variant="body2" color="primary.main" sx={{ fontWeight: 600, mb: 1 }}>
-              📝 Document editing enabled!
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              I can now edit your document "{documentContext.fileName}". Try commands like:
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-              • "Write a sentence about artificial intelligence"<br/>
-              • "Add a conclusion paragraph"<br/>
-              • "Improve the introduction"<br/>
-              • "Make this more professional"
-            </Typography>
-          </Box>
-        )}
-        
         {messages.map((message, index) => (
           <Box
             key={index}
@@ -425,47 +448,70 @@ REPLACE_CONTENT: This is the complete new content that should replace the entire
         )}
       </Box>
 
+      {/* Attachments and Tools */}
+      <Box sx={{ px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+          <FileAttachment
+            onFilesChange={handleFilesChange}
+            disabled={isLoading}
+            maxFiles={5}
+          />
+          
+          <ToolSelector
+            onToolsChange={handleToolsChange}
+            disabled={isLoading}
+            compact={true}
+          />
+        </Stack>
+        
+        {/* Status indicators */}
+        {(attachedFiles.length > 0 || mentionedFiles.length > 0 || enabledTools.length > 3) && (
+          <Box sx={{ mt: 1 }}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {attachedFiles.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  📎 {attachedFiles.length} attached
+                </Typography>
+              )}
+              {mentionedFiles.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  📄 {mentionedFiles.length} mentioned
+                </Typography>
+              )}
+              {enabledTools.length > 3 && (
+                <Typography variant="caption" color="text.secondary">
+                  🛠️ {enabledTools.length} tools enabled
+                </Typography>
+              )}
+            </Stack>
+          </Box>
+        )}
+      </Box>
+
       {/* Input */}
       <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Stack direction="row" spacing={1}>
-          <Box
-            component="input"
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={documentContext?.hasDocument 
-              ? "Ask me to edit your document... (e.g., 'Write a sentence about AI')"
-              : "Type your message..."
-            }
-            disabled={isLoading}
-            sx={{
-              flex: 1,
-              p: 1.5,
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 1,
-              fontSize: '0.875rem',
-              outline: 'none',
-              backgroundColor: '#ffffff',
-              color: '#000000',
-              '&::placeholder': {
-                color: '#666666',
-              },
-              '&:focus': {
-                borderColor: 'primary.main',
-              },
-              '&:disabled': {
-                backgroundColor: '#f5f5f5',
-                color: '#999999',
-              },
-            }}
-          />
+        <Stack direction="row" spacing={1} alignItems="flex-end">
+          <Box sx={{ flex: 1 }}>
+            <RichTextInput
+              value={inputMessage}
+              onChange={setInputMessage}
+              onSubmit={handleSendMessage}
+              placeholder={documentContext?.hasDocument 
+                ? "Ask questions about your document or request edits... Type @ to mention files"
+                : attachedFiles.length > 0 || mentionedFiles.length > 0
+                  ? "Ask me about the files... Type @ to mention more files"
+                  : "Type your message... Use @ to mention files"
+              }
+              disabled={isLoading}
+              getFiles={handleGetFiles}
+              onMentionedFilesChange={handleMentionedFilesChange}
+            />
+          </Box>
           <Button
             variant="contained"
             onClick={handleSendMessage}
             disabled={isLoading || !inputMessage.trim()}
-            sx={{ minWidth: 80 }}
+            sx={{ minWidth: 80, height: 'fit-content' }}
           >
             Send
           </Button>

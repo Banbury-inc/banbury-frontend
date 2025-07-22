@@ -98,8 +98,8 @@ export default function PermanentDrawerLeft() {
   const [tabs, setTabs] = useState<TabState[]>([
     {
       id: 'tab-1',
-      label: 'Files',
-      view: 'Files',
+      label: 'Workspaces',
+      view: 'Workspaces',
     }
   ]);
   const [currentTabId] = useState('tab-1');

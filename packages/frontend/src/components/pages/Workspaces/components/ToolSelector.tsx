@@ -1,0 +1,371 @@
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  IconButton,
+  Tooltip,
+  Typography,
+  Stack,
+  Chip,
+  Menu,
+  MenuItem,
+  Divider,
+  Popper,
+  Paper,
+  MenuList,
+  Switch,
+  useTheme,
+} from '@mui/material';
+import BuildIcon from '@mui/icons-material/Build';
+import SearchIcon from '@mui/icons-material/Search';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import EmailIcon from '@mui/icons-material/Email';
+import CodeIcon from '@mui/icons-material/Code';
+import StorageIcon from '@mui/icons-material/Storage';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import CloudIcon from '@mui/icons-material/Cloud';
+import TaskIcon from '@mui/icons-material/Task';
+import LanguageIcon from '@mui/icons-material/Language';
+import CheckIcon from '@mui/icons-material/Check';
+
+interface Tool {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  enabled: boolean;
+  category?: string;
+  requiresAuth?: boolean;
+  note?: string;
+}
+
+interface ToolSelectorProps {
+  onToolsChange?: (enabledTools: string[]) => void;
+  disabled?: boolean;
+  compact?: boolean;
+}
+
+const availableTools: Tool[] = [
+  {
+    id: 'webSearch',
+    name: 'Web Search',
+    description: 'Search and browse the web for real-time information',
+    icon: SearchIcon,
+    enabled: true,
+    category: 'Research'
+  },
+  {
+    id: 'filesystem',
+    name: 'File System',
+    description: 'Read, write, and manage files and directories',
+    icon: FolderOpenIcon,
+    enabled: true,
+    category: 'File Management'
+  },
+  {
+    id: 'banbury',
+    name: 'Banbury Core',
+    description: 'Access Banbury platform features and data',
+    icon: CloudIcon,
+    enabled: true,
+    category: 'Platform'
+  },
+  {
+    id: 'gmail',
+    name: 'Gmail',
+    description: 'Read, send, and manage Gmail emails',
+    icon: EmailIcon,
+    enabled: false,
+    category: 'Communication',
+    requiresAuth: true,
+    note: 'Requires Gmail authentication'
+  },
+  {
+    id: 'googleCalendar',
+    name: 'Google Calendar',
+    description: 'View and manage calendar events',
+    icon: CalendarTodayIcon,
+    enabled: false,
+    category: 'Productivity',
+    requiresAuth: true,
+    note: 'Requires Google Calendar authentication'
+  },
+  {
+    id: 'googleDrive',
+    name: 'Google Drive',
+    description: 'Access and manage Google Drive files',
+    icon: StorageIcon,
+    enabled: false,
+    category: 'File Management',
+    requiresAuth: true,
+    note: 'Requires Google Drive authentication'
+  },
+  {
+    id: 'googleTasks',
+    name: 'Google Tasks',
+    description: 'Manage tasks and to-do lists',
+    icon: TaskIcon,
+    enabled: false,
+    category: 'Productivity',
+    requiresAuth: true,
+    note: 'Requires Google Tasks authentication'
+  },
+  {
+    id: 'codeExecution',
+    name: 'Code Execution',
+    description: 'Execute code snippets and scripts',
+    icon: CodeIcon,
+    enabled: false,
+    category: 'Development',
+    note: 'Execute Python, JavaScript, and other code'
+  }
+];
+
+const ToolSelector: React.FC<ToolSelectorProps> = ({
+  onToolsChange,
+  disabled = false,
+  compact = false
+}) => {
+  const [tools, setTools] = useState<Tool[]>(availableTools);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const theme = useTheme();
+
+  const enabledTools = useMemo(() => tools.filter(tool => tool.enabled), [tools]);
+  const enabledToolIds = useMemo(() => enabledTools.map(tool => tool.id), [enabledTools]);
+
+  const toggleTool = useCallback((toolId: string) => {
+    setTools(prevTools => {
+      const newTools = prevTools.map(tool => 
+        tool.id === toolId ? { ...tool, enabled: !tool.enabled } : tool
+      );
+      
+      const newEnabledIds = newTools.filter(t => t.enabled).map(t => t.id);
+      onToolsChange?.(newEnabledIds);
+      
+      return newTools;
+    });
+  }, [onToolsChange]);
+
+  const toggleWebSearch = useCallback(() => {
+    toggleTool('webSearch');
+  }, [toggleTool]);
+
+  const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+    setOpen(!open);
+  }, [open]);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setAnchorEl(null);
+  }, []);
+
+  // Handle clicks outside of the menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (open && anchorEl && !anchorEl.contains(event.target as Node) && 
+          !(event.target as Element).closest('[data-tool-menu]')) {
+        setOpen(false);
+        setAnchorEl(null);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && open) {
+        setOpen(false);
+        setAnchorEl(null);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open, anchorEl]);
+
+  const groupedTools = useMemo(() => {
+    const groups: { [category: string]: Tool[] } = {};
+    tools.forEach(tool => {
+      const category = tool.category || 'Other';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(tool);
+    });
+    return groups;
+  }, [tools]);
+
+  const webSearchTool = tools.find(tool => tool.id === 'webSearch');
+  const otherEnabledCount = enabledTools.filter(tool => tool.id !== 'webSearch').length;
+
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      {/* Web Search Toggle (separate button) */}
+      <Tooltip 
+        title={`${webSearchTool?.name}: ${webSearchTool?.description}`}
+        arrow
+        placement="top"
+      >
+        <span>
+          <Button
+            size="small"
+            variant="text"
+            disabled={disabled}
+            onClick={toggleWebSearch}
+            startIcon={<SearchIcon />}
+            sx={{
+              minWidth: compact ? 32 : 'auto',
+              width: compact ? 32 : 'auto',
+              padding: compact ? '4px' : '4px 8px',
+              backgroundColor: webSearchTool?.enabled ? 'primary.light' : 'transparent',
+              color: webSearchTool?.enabled ? 'primary.contrastText' : 'text.primary',
+              '&:hover': {
+                backgroundColor: webSearchTool?.enabled ? 'primary.main' : 'action.hover',
+              },
+              '& .MuiButton-startIcon': {
+                marginRight: compact ? 0 : 1,
+                marginLeft: 0,
+              },
+            }}
+          >
+            {!compact && 'Web'}
+          </Button>
+        </span>
+      </Tooltip>
+
+      {/* Tools Menu Toggle */}
+      <Tooltip 
+        title="AI Tools - Enable additional capabilities for the assistant"
+        arrow
+        placement="top"
+      >
+        <span>
+          <Button
+            ref={setAnchorEl}
+            size="small"
+            variant="text"
+            disabled={disabled}
+            onClick={handleClick}
+            startIcon={<BuildIcon />}
+            sx={{
+              minWidth: compact ? 32 : 'auto',
+              width: compact ? 32 : 'auto',
+              padding: compact ? '4px' : '4px 8px',
+              backgroundColor: otherEnabledCount > 0 ? 'primary.light' : 'transparent',
+              color: otherEnabledCount > 0 ? 'primary.contrastText' : 'text.primary',
+              '&:hover': {
+                backgroundColor: otherEnabledCount > 0 ? 'primary.main' : 'action.hover',
+              },
+              '& .MuiButton-startIcon': {
+                marginRight: compact ? 0 : 1,
+                marginLeft: 0,
+              },
+            }}
+          >
+            {!compact && 'Tools'}
+            {otherEnabledCount > 0 && (
+              <Chip
+                size="small"
+                label={otherEnabledCount}
+                sx={{
+                  ml: 0.5,
+                  height: 16,
+                  '& .MuiChip-label': {
+                    fontSize: '0.625rem',
+                    px: 0.5,
+                  },
+                }}
+              />
+            )}
+          </Button>
+        </span>
+      </Tooltip>
+
+      {/* Tools Menu */}
+      <Popper 
+        open={open} 
+        anchorEl={anchorEl} 
+        placement="top-start"
+        style={{ zIndex: 1300 }}
+        data-tool-menu
+      >
+        <Paper elevation={8} sx={{ mt: 1, minWidth: 280 }}>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              AI Tools
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Enable tools to enhance AI capabilities
+            </Typography>
+          </Box>
+
+          <MenuList sx={{ py: 1, maxHeight: 400, overflow: 'auto' }}>
+            {Object.entries(groupedTools).map(([category, categoryTools]) => (
+              <Box key={category}>
+                {categoryTools.length > 0 && (
+                  <>
+                    <Box sx={{ px: 2, py: 1 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                        {category}
+                      </Typography>
+                    </Box>
+                    {categoryTools
+                      .filter(tool => tool.id !== 'webSearch') // Exclude web search as it has its own button
+                      .map((tool) => (
+                        <MenuItem
+                          key={tool.id}
+                          onClick={() => toggleTool(tool.id)}
+                          sx={{
+                            mx: 1,
+                            borderRadius: 1,
+                            backgroundColor: tool.enabled ? 'primary.light' : 'transparent',
+                            color: tool.enabled ? 'primary.contrastText' : 'text.primary',
+                            '&:hover': {
+                              backgroundColor: tool.enabled ? 'primary.main' : 'action.hover',
+                            },
+                          }}
+                        >
+                          <Stack direction="row" spacing={2} alignItems="center" sx={{ width: '100%' }}>
+                            <tool.icon sx={{ fontSize: 20 }} />
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" sx={{ fontWeight: tool.enabled ? 600 : 400 }}>
+                                {tool.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" noWrap>
+                                {tool.description}
+                              </Typography>
+                              {tool.note && (
+                                <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>
+                                  {tool.note}
+                                </Typography>
+                              )}
+                            </Box>
+                            {tool.enabled && (
+                              <CheckIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+                            )}
+                          </Stack>
+                        </MenuItem>
+                      ))}
+                    <Divider sx={{ my: 1 }} />
+                  </>
+                )}
+              </Box>
+            ))}
+            
+            <MenuItem onClick={handleClose} sx={{ mx: 1, borderRadius: 1, justifyContent: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Close
+              </Typography>
+            </MenuItem>
+          </MenuList>
+        </Paper>
+      </Popper>
+    </Stack>
+  );
+};
+
+export default ToolSelector; 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, Suspense, useMemo } from 'react';
+import React, { useState, useCallback, Suspense, useMemo, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -16,21 +16,16 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import FileTreeView from '../Files/components/NewTreeView/FileTreeView';
-import FileViewerTabs from '../../common/FileViewer/FileViewerTabs';
+
 import WorkspaceAssistantInterface from './components/WorkspaceAssistantInterface';
+import SimpleTipTapEditor from './components/SimpleTipTapEditor';
 import path from 'path';
 import os from 'os';
-import { stat } from 'fs/promises';
+import { stat, readFile, writeFile } from 'fs/promises';
 import { shell } from 'electron';
 import 'allotment/dist/style.css';
 
-// File tab interface
-interface FileTab {
-  id: string;
-  fileName: string;
-  filePath: string;
-  fileType: string;
-}
+
 
 // Navigation Toggle Button Component
 const NavToggleButton = ({ 
@@ -75,16 +70,7 @@ const NavToggleButton = ({
   </Box>
 );
 
-// Helper function to check if file can be viewed in app
-const isViewableInApp = (fileName: string): boolean => {
-  const ext = path.extname(fileName).toLowerCase();
-  const viewableExtensions = [
-    '.txt', '.md', '.json', '.js', '.ts', '.tsx', '.jsx', '.html', '.css', '.xml', '.yaml', '.yml',
-    '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.pdf', '.mp4', '.mov', '.avi', '.mp3', '.wav',
-    '.doc', '.docx', '.xls', '.xlsx'
-  ];
-  return viewableExtensions.includes(ext);
-};
+
 
 // Workspace Sidebar Component
 const WorkspaceSidebar = ({ 
@@ -187,15 +173,6 @@ const WorkspaceSidebar = ({
   }, [filePath, onFileClick]);
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-          File Explorer
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Browse and manage your files
-        </Typography>
-      </Box>
       <Box sx={{ flex: 1, overflow: 'hidden' }}>
         {username && (
           <FileTreeView
@@ -210,38 +187,56 @@ const WorkspaceSidebar = ({
           />
         )}
       </Box>
-    </Box>
   );
 };
 
-// Main Content Component
-const MainContent = ({
-  showFileViewer,
-  openTabs,
-  activeTab,
-  onCloseTab,
-  onSwitchTab,
-  documentActions,
-  onDocumentEditorChange,
-}: {
-  showFileViewer: boolean;
-  openTabs: FileTab[];
-  activeTab: string | null;
-  onCloseTab: (tabId: string) => void;
-  onSwitchTab: (tabId: string) => void;
-  documentActions: any;
-  onDocumentEditorChange: (editor: any, content: string, fileName: string) => void;
+// Main Content Component - Shows welcome screen or TipTap editor
+const MainContent = ({ 
+  showEditor, 
+  document, 
+  onDocumentChange,
+  onCloseDocument,
+  onSaveDocument
+}: { 
+  showEditor: boolean;
+  document: { fileName: string; filePath: string; content: string } | null;
+  onDocumentChange: (content: string) => void;
+  onCloseDocument: () => void;
+  onSaveDocument: (document: { fileName: string; filePath: string; content: string }) => void;
 }) => {
-  if (showFileViewer && openTabs.length > 0) {
+  if (showEditor && document) {
     return (
-      <FileViewerTabs
-        openTabs={openTabs}
-        activeTab={activeTab}
-        onCloseTab={onCloseTab}
-        onSwitchTab={onSwitchTab}
-        documentActions={documentActions}
-        onDocumentEditorChange={onDocumentEditorChange}
-      />
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Document Header */}
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {document.fileName}
+          </Typography>
+          <IconButton onClick={onCloseDocument} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        
+        {/* TipTap Editor */}
+        <Box sx={{ flex: 1 }}>
+          <SimpleTipTapEditor
+            content={document.content}
+            onChange={onDocumentChange}
+            placeholder={`Start editing ${document.fileName}...`}
+            onSave={() => {
+              onSaveDocument(document);
+            }}
+          />
+        </Box>
+      </Box>
     );
   }
 
@@ -253,17 +248,31 @@ const MainContent = ({
       justifyContent: 'center',
       p: 4
     }}>
-      <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+      <Box sx={{ textAlign: 'center', maxWidth: 500 }}>
+        <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, color: 'primary.main' }}>
           Welcome to Workspaces
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          Use the file explorer on the left to browse and open files. 
-          Enable the AI assistant on the right to get help with your code and projects.
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.6 }}>
+          Browse your files in the left panel and open documents to edit them with our powerful rich text editor. 
+          Use the AI assistant on the right to get help with your work.
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Select any file from the tree to view it here.
-        </Typography>
+        <Box sx={{ 
+          p: 3, 
+          backgroundColor: 'grey.50', 
+          borderRadius: 2, 
+          border: 1, 
+          borderColor: 'grey.200'
+        }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+            💡 Quick Start:
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Click on any .txt, .md, .docx, or document file in the file tree to edit it<br/>
+            • Use Ctrl+S (or Cmd+S) to save your changes<br/>
+            • Use the AI assistant to help with writing and coding<br/>
+            • All other files will open in their default applications
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );
@@ -271,14 +280,18 @@ const MainContent = ({
 
 // Main Workspaces Component
 export default function Workspaces() {
+
   // Panel state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
-  // File viewer state
-  const [openTabs, setOpenTabs] = useState<FileTab[]>([]);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [showFileViewer, setShowFileViewer] = useState(false);
+  // Document editing state
+  const [showTipTapEditor, setShowTipTapEditor] = useState(false);
+  const [currentDocument, setCurrentDocument] = useState<{
+    fileName: string;
+    filePath: string;
+    content: string;
+  } | null>(null);
 
   // Document editing context for AI assistant
   const [documentEditor, setDocumentEditor] = useState<any>(null);
@@ -290,16 +303,15 @@ export default function Workspaces() {
 
   // Document AI Integration Functions
   const getDocumentInfo = useCallback(() => {
-    const activeTabData = openTabs.find(tab => tab.id === activeTab);
     return {
-      hasDocument: Boolean(documentEditor && activeTabData),
-      fileName: currentDocumentName || activeTabData?.fileName || '',
-      fileType: activeTabData?.fileType || '',
-      filePath: activeTabData?.filePath || '',
-      isWordDocument: activeTabData?.fileType === 'Word Document',
+      hasDocument: showTipTapEditor && Boolean(currentDocument),
+      fileName: currentDocument?.fileName || 'No Document',
+      fileType: 'Text Document',
+      filePath: currentDocument?.filePath || '',
+      isWordDocument: false,
       content: currentDocumentContent
     };
-  }, [documentEditor, activeTab, openTabs, currentDocumentName, currentDocumentContent]);
+  }, [showTipTapEditor, currentDocument, currentDocumentContent]);
 
   const getDocumentContent = useCallback(() => {
     if (!documentEditor) return '';
@@ -393,64 +405,255 @@ export default function Workspaces() {
   useHotkeys('meta+/', () => toggleRightPanel(), { preventDefault: true });
   useHotkeys('ctrl+alt+/', () => toggleLeftPanel(), { preventDefault: true });
   useHotkeys('meta+alt+/', () => toggleLeftPanel(), { preventDefault: true });
-
-  const closeTab = useCallback((tabId: string) => {
-    setOpenTabs(prev => {
-      const newTabs = prev.filter(tab => tab.id !== tabId);
-      if (newTabs.length === 0) {
-        setShowFileViewer(false);
-        setActiveTab(null);
-      } else if (activeTab === tabId) {
-        setActiveTab(newTabs[newTabs.length - 1].id);
-      }
-      return newTabs;
-    });
-  }, [activeTab]);
-
-  const switchTab = useCallback((tabId: string) => {
-    setActiveTab(tabId);
-  }, []);
+  
+  // Save document shortcut
+  useHotkeys('ctrl+s', (event) => {
+    event.preventDefault();
+    if (currentDocument && showTipTapEditor) {
+      saveDocument(currentDocument);
+    }
+  }, { preventDefault: true });
+  useHotkeys('meta+s', (event) => {
+    event.preventDefault();
+    if (currentDocument && showTipTapEditor) {
+      saveDocument(currentDocument);
+    }
+  }, { preventDefault: true });
 
   const resetWorkspaceView = () => {
-    setShowFileViewer(false);
-    setOpenTabs([]);
-    setActiveTab(null);
+    // Reset any workspace state if needed
   };
 
-  // File handling functions
-  const openFileInTab = useCallback(async (fileName: string, filePath: string, fileType: string) => {
-    // Check if file exists and is accessible
-    try {
-      await stat(filePath);
-    } catch (error) {
-      console.log('File not found locally:', filePath);
-      showAlert('File not available', [`The file "${fileName}" is not available locally. Please ensure it's synced to this device.`], 'warning');
-      return;
+  // Determine if file should open in TipTap editor
+  const shouldOpenInTipTap = (fileName: string): boolean => {
+    const ext = path.extname(fileName).toLowerCase();
+    const editableExtensions = ['.txt', '.md', '.markdown', '.rtf', '.doc', '.docx'];
+    return editableExtensions.includes(ext);
+  };
+
+  // Convert plain text to HTML for TipTap
+  const textToHtml = (text: string): string => {
+    console.log('=== TEXT TO HTML CONVERSION ===');
+    console.log('Input text:', text);
+    console.log('Input text length:', text.length);
+    
+    if (!text || text.trim().length === 0) {
+      console.log('Text is empty, returning default paragraph');
+      return '<p></p>';
     }
 
-    const tabId = `${filePath}_${Date.now()}`;
-    const newTab: FileTab = {
-      id: tabId,
-      fileName,
-      filePath: path.normalize(filePath), // Normalize for cross-platform compatibility
-      fileType
-    };
-    
-    setOpenTabs(prev => [...prev, newTab]);
-    setActiveTab(tabId);
-    setShowFileViewer(true);
+    // Split into paragraphs and convert to HTML
+    const paragraphs = text.split(/\n\s*\n/);
+    console.log('Split into paragraphs:', paragraphs.length);
+    let html = '';
+
+    for (let i = 0; i < paragraphs.length; i++) {
+      const paragraph = paragraphs[i];
+      const trimmed = paragraph.trim();
+      console.log(`Processing paragraph ${i}:`, trimmed);
+      
+      if (!trimmed) {
+        console.log(`Paragraph ${i} is empty, skipping`);
+        continue;
+      }
+
+      // Check if it looks like a heading (starts with # for markdown)
+      if (trimmed.startsWith('# ')) {
+        const heading = trimmed.substring(2).trim();
+        html += `<h1>${heading}</h1>`;
+        console.log(`Added H1: ${heading}`);
+      } else if (trimmed.startsWith('## ')) {
+        const heading = trimmed.substring(3).trim();
+        html += `<h2>${heading}</h2>`;
+        console.log(`Added H2: ${heading}`);
+      } else if (trimmed.startsWith('### ')) {
+        const heading = trimmed.substring(4).trim();
+        html += `<h3>${heading}</h3>`;
+        console.log(`Added H3: ${heading}`);
+      } else {
+        // Regular paragraph - preserve line breaks within paragraph
+        const lines = trimmed.split('\n').map(line => line.trim()).filter(line => line);
+        console.log(`Paragraph ${i} lines:`, lines);
+        
+        if (lines.length === 1) {
+          html += `<p>${lines[0]}</p>`;
+          console.log(`Added single line paragraph: ${lines[0]}`);
+        } else if (lines.length > 1) {
+          html += `<p>${lines.join('<br>')}</p>`;
+          console.log(`Added multi-line paragraph with ${lines.length} lines`);
+        }
+      }
+    }
+
+    // If we still have no HTML content, create a paragraph with the raw text
+    if (!html.trim()) {
+      console.log('No HTML generated from paragraphs, using raw text');
+      // Just wrap the entire text in a paragraph, replacing line breaks
+      const cleanText = text.trim().replace(/\n/g, '<br>');
+      html = `<p>${cleanText}</p>`;
+    }
+
+    console.log('Final HTML output:', html);
+    console.log('=== END TEXT TO HTML CONVERSION ===');
+    return html;
+  };
+
+  // Convert HTML back to plain text/markdown for saving
+  const htmlToText = (html: string, isMarkdown: boolean = false): string => {
+    // Simple HTML to text conversion
+    let text = html
+      // Convert headings
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, isMarkdown ? '# $1\n\n' : '$1\n\n')
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, isMarkdown ? '## $1\n\n' : '$1\n\n')
+      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, isMarkdown ? '### $1\n\n' : '$1\n\n')
+      // Convert paragraphs
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+      // Convert line breaks
+      .replace(/<br\s*\/?>/gi, '\n')
+      // Remove other HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Decode HTML entities
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      // Clean up extra whitespace
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .trim();
+
+    return text || '';
+  };
+
+  // Save document to file system
+  const saveDocument = useCallback(async (document: { fileName: string; filePath: string; content: string }) => {
+    try {
+      console.log('Saving document:', document.fileName);
+      
+      const ext = path.extname(document.fileName).toLowerCase();
+      let textContent = '';
+
+      if (ext === '.md' || ext === '.markdown') {
+        // Save as markdown
+        textContent = htmlToText(document.content, true);
+      } else if (ext === '.txt' || ext === '.rtf') {
+        // Save as plain text
+        textContent = htmlToText(document.content, false);
+      } else {
+        // For other formats, save as plain text
+        textContent = htmlToText(document.content, false);
+      }
+
+      await writeFile(document.filePath, textContent, 'utf-8');
+      console.log('Document saved successfully:', document.fileName);
+      showAlert('Success', [`"${document.fileName}" saved successfully.`], 'success');
+    } catch (error) {
+      console.error('Error saving document:', error);
+      showAlert('Error', [`Failed to save "${document.fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+    }
   }, [showAlert]);
 
+  // Open document in TipTap editor
+  const openInTipTap = useCallback(async (fileName: string, filePath: string) => {
+    try {
+      console.log('=== FILE LOADING DEBUG ===');
+      console.log('Opening file in TipTap:', fileName);
+      console.log('File path:', filePath);
+      console.log('Normalized path:', path.normalize(filePath));
+      
+      // Check if file exists
+      console.log('Checking if file exists...');
+      const fileStats = await stat(filePath);
+      console.log('File stats:', fileStats);
+      
+      if (!fileStats.isFile()) {
+        throw new Error('Path is not a file');
+      }
+
+      let content = '';
+      const ext = path.extname(fileName).toLowerCase();
+      console.log('File extension:', ext);
+
+      if (ext === '.docx' || ext === '.doc') {
+        // For Word documents, show a placeholder for now
+        // TODO: Implement proper Word document parsing
+        content = `<h1>${fileName}</h1><p>Word document editing coming soon...</p><p>This is a placeholder for the actual document content.</p>`;
+        console.log('Using Word document placeholder');
+      } else {
+        // For text files (.txt, .md, .markdown, .rtf)
+        try {
+          console.log('Reading file contents...');
+          const fileBuffer = await readFile(filePath);
+          console.log('File buffer size:', fileBuffer.length);
+          
+          const fileText = fileBuffer.toString('utf-8');
+          console.log('File text length:', fileText.length);
+          console.log('File text preview:', fileText.substring(0, 200));
+          
+          if (!fileText || fileText.trim().length === 0) {
+            console.log('File appears to be empty');
+            content = '<p><em>This file appears to be empty.</em></p>';
+          } else {
+            if (ext === '.md' || ext === '.markdown') {
+              // For markdown files, convert basic markdown to HTML
+              console.log('Converting markdown to HTML...');
+              content = textToHtml(fileText);
+            } else {
+              // For plain text files, convert to HTML
+              console.log('Converting text to HTML...');
+              content = textToHtml(fileText);
+            }
+            console.log('Converted content preview:', content.substring(0, 200));
+          }
+        } catch (readError) {
+          console.error('Error reading file:', readError);
+          console.error('Error details:', readError);
+          content = `<h1>Error Reading File</h1><p>Could not read the contents of "${fileName}".</p><p>Error: ${readError instanceof Error ? readError.message : 'Unknown error'}</p>`;
+        }
+      }
+
+      console.log('Final content length:', content.length);
+      console.log('Setting document state...');
+
+      setCurrentDocument({
+        fileName,
+        filePath,
+        content
+      });
+      setCurrentDocumentContent(content);
+      setCurrentDocumentName(fileName);
+      setShowTipTapEditor(true);
+      
+      console.log('File loaded successfully:', fileName);
+      console.log('=== END FILE LOADING DEBUG ===');
+    } catch (error) {
+      console.error('Error opening document in TipTap:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      showAlert('Error', [`Failed to open "${fileName}" in editor: ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+    }
+  }, [showAlert]);
+
+  // File handling - TipTap for documents, system default for others
   const handleFileClick = useCallback(async (fileName: string, filePath: string, fileType: string) => {
-    console.log('File clicked:', fileName, filePath, fileType);
+    console.log('=== HANDLE FILE CLICK DEBUG ===');
+    console.log('File clicked:', fileName);
+    console.log('Original file path:', filePath);
+    console.log('File type:', fileType);
     
     // Normalize the path for cross-platform compatibility
     const normalizedPath = path.normalize(filePath);
+    console.log('Normalized path:', normalizedPath);
+    console.log('Path is absolute:', path.isAbsolute(normalizedPath));
     
-    if (isViewableInApp(fileName)) {
-      openFileInTab(fileName, normalizedPath, fileType);
+    console.log('Should open in TipTap:', shouldOpenInTipTap(fileName));
+    
+    if (shouldOpenInTipTap(fileName)) {
+      // Open document files in TipTap editor
+      console.log('Opening in TipTap with path:', normalizedPath);
+      openInTipTap(fileName, normalizedPath);
     } else {
-      // For non-viewable files, open with system default application
+      // Open other files with system default application
+      console.log('Opening with system default application');
       try {
         await shell.openPath(normalizedPath);
       } catch (error) {
@@ -458,30 +661,71 @@ export default function Workspaces() {
         showAlert('Error', [`Failed to open "${fileName}" with system application.`], 'error');
       }
     }
-  }, [openFileInTab, showAlert]);
+    console.log('=== END HANDLE FILE CLICK DEBUG ===');
+  }, [showAlert, openInTipTap]);
 
   const toggleLeftPanel = () => {
-    setLeftPanelCollapsed(!leftPanelCollapsed);
+    const newLeftCollapsed = !leftPanelCollapsed;
+    updatePanelStates(newLeftCollapsed, rightPanelOpen);
   };
 
   const toggleRightPanel = () => {
-    setRightPanelOpen(!rightPanelOpen);
+    const newRightOpen = !rightPanelOpen;
+    updatePanelStates(leftPanelCollapsed, newRightOpen);
   };
 
+  // Use refs to track current state and avoid stale closures
+  const panelStateRef = useRef({ leftCollapsed: false, rightOpen: false });
+  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Debounced state update to prevent ResizeObserver loops
+  const updatePanelStates = useCallback((leftCollapsed: boolean, rightOpen: boolean) => {
+    // Clear any pending updates
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+
+    // Only update if state actually changed
+    if (panelStateRef.current.leftCollapsed !== leftCollapsed || 
+        panelStateRef.current.rightOpen !== rightOpen) {
+      
+      // Update ref immediately to prevent duplicate updates
+      panelStateRef.current = { leftCollapsed, rightOpen };
+      
+      // Debounce the actual state update
+      resizeTimeoutRef.current = setTimeout(() => {
+        setLeftPanelCollapsed(leftCollapsed);
+        setRightPanelOpen(rightOpen);
+      }, 16); // One frame delay to prevent ResizeObserver loops
+    }
+  }, []);
+
   const onAllotmentChange = useCallback(([leftWidth, middleWidth, rightWidth]: number[]) => {
-    if (rightWidth !== undefined) {
-      setRightPanelOpen(rightWidth > 0);
-    }
-    if (leftWidth !== undefined) {
-      setLeftPanelCollapsed(leftWidth === 0);
-    }
+    const newLeftCollapsed = leftWidth === undefined || leftWidth === 0;
+    const newRightOpen = rightWidth !== undefined && rightWidth > 0;
+    
+    updatePanelStates(newLeftCollapsed, newRightOpen);
+  }, [updatePanelStates]);
+
+  // Sync initial state with ref
+  useEffect(() => {
+    panelStateRef.current = { leftCollapsed: leftPanelCollapsed, rightOpen: rightPanelOpen };
+  }, [leftPanelCollapsed, rightPanelOpen]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
   }, []);
 
   return (
     <Box sx={{ 
       position: 'fixed',
       top: 40,
-      left: 80, // Add left padding to avoid overlapping with navigation sidebar
+      left: 40, // Add left padding to avoid overlapping with navigation sidebar
       right: 0,
       bottom: 0,
       display: 'flex',
@@ -501,11 +745,11 @@ export default function Workspaces() {
               <Typography variant="h6" component="h1" sx={{ fontWeight: 600 }}>
                 Workspaces
               </Typography>
-              {showFileViewer && openTabs.length > 0 && (
+              {showTipTapEditor && currentDocument && (
                 <>
                   <Typography variant="body2" color="text.secondary">/</Typography>
                   <Typography variant="body1" color="text.secondary">
-                    {openTabs.find(tab => tab.id === activeTab)?.fileName || 'File Viewer'}
+                    {currentDocument.fileName}
                   </Typography>
                 </>
               )}
@@ -518,7 +762,6 @@ export default function Workspaces() {
                   onClick={() => setRightPanelOpen(false)}
                   size="small"
                 >
-                  Close Assistant
                 </Button>
               ) : (
                 <Button
@@ -527,7 +770,6 @@ export default function Workspaces() {
                   onClick={() => setRightPanelOpen(true)}
                   size="small"
                 >
-                  Open AI Assistant
                 </Button>
               )}
             </Stack>
@@ -581,18 +823,25 @@ export default function Workspaces() {
                     transition={{ duration: 0.2 }}
                     style={{ height: '100%' }}
                   >
-                    <MainContent
-                      showFileViewer={showFileViewer}
-                      openTabs={openTabs}
-                      activeTab={activeTab}
-                      onCloseTab={closeTab}
-                      onSwitchTab={switchTab}
-                      documentActions={documentActions}
-                      onDocumentEditorChange={(editor, content, fileName) => {
-                        setDocumentEditor(editor);
+                    <MainContent 
+                      showEditor={showTipTapEditor}
+                      document={currentDocument}
+                      onDocumentChange={(content) => {
                         setCurrentDocumentContent(content);
-                        setCurrentDocumentName(fileName);
+                        if (currentDocument) {
+                          setCurrentDocument({
+                            ...currentDocument,
+                            content
+                          });
+                        }
                       }}
+                      onCloseDocument={() => {
+                        setShowTipTapEditor(false);
+                        setCurrentDocument(null);
+                        setCurrentDocumentContent('');
+                        setCurrentDocumentName('');
+                      }}
+                      onSaveDocument={saveDocument}
                     />
                   </motion.div>
                 </AnimatePresence>
