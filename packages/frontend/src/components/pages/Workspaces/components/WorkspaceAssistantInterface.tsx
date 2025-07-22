@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Stack,
-  Button,
   FormControl,
   Select,
   MenuItem,
@@ -13,6 +12,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
+import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -25,6 +25,8 @@ import ToolSelector from './ToolSelector';
 import RichTextInput from './RichTextInput';
 import { fileService } from './FileService';
 import { MentionableFile } from './MentionExtension';
+import SendIcon from '@mui/icons-material/Send';
+
 
 // Available AI models
 const availableModels = [
@@ -332,11 +334,7 @@ ${userMessage.content}${instructions}`
         <Box sx={{ p: 2 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Stack direction="row" alignItems="center" spacing={2}>
-              <SmartToyIcon color="primary" />
               <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  AI Assistant
-                </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {availableModels.find(m => m.id === selectedModel)?.name || 'Unknown Model'}
                   {documentContext?.hasDocument && (
@@ -355,16 +353,22 @@ ${userMessage.content}${instructions}`
               </Box>
             </Stack>
             <Tooltip title="Model Settings">
-              <IconButton 
-                size="small" 
-                onClick={() => setShowModelSettings(!showModelSettings)}
-                sx={{ 
-                  backgroundColor: showModelSettings ? 'action.selected' : 'transparent',
-                  '&:hover': { backgroundColor: 'action.hover' }
-                }}
-              >
-                <SettingsIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <ToolbarButton 
+                  onClick={() => setShowModelSettings(!showModelSettings)}
+                  sx={{ 
+                    paddingLeft: '4px', 
+                    paddingRight: '4px', 
+                    minWidth: '30px',
+                    backgroundColor: showModelSettings ? 'action.selected' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
+                >
+                  <SettingsIcon fontSize="inherit" />
+                </ToolbarButton>
+              </span>
             </Tooltip>
           </Stack>
         </Box>
@@ -448,22 +452,76 @@ ${userMessage.content}${instructions}`
         )}
       </Box>
 
-      {/* Attachments and Tools */}
-      <Box sx={{ px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-          <FileAttachment
-            onFilesChange={handleFilesChange}
-            disabled={isLoading}
-            maxFiles={5}
-          />
-          
-          <ToolSelector
-            onToolsChange={handleToolsChange}
-            disabled={isLoading}
-            compact={true}
-          />
+
+      {/* Input */}
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Stack direction="row" spacing={1} alignItems="flex-end">
+          <Box sx={{ flex: 1 }}>
+            <RichTextInput
+              value={inputMessage}
+              onChange={setInputMessage}
+              onSubmit={handleSendMessage}
+              placeholder={documentContext?.hasDocument 
+                ? "Ask questions about your document or request edits... Type @ to mention files"
+                : attachedFiles.length > 0 || mentionedFiles.length > 0
+                  ? "Ask me about the files... Type @ to mention more files"
+                  : "Type your message... Use @ to mention files"
+              }
+              disabled={isLoading}
+              getFiles={handleGetFiles}
+              onMentionedFilesChange={handleMentionedFilesChange}
+            />
+          </Box>
         </Stack>
-        
+      </Box>
+
+      {/* Attachments and Tools */}
+      <Box sx={{ px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+          <Stack direction="row" spacing={2} alignItems="center">
+            <FileAttachment
+              onFilesChange={handleFilesChange}
+              disabled={isLoading}
+              maxFiles={5}
+            />
+            
+            <ToolSelector
+              onToolsChange={handleToolsChange}
+              disabled={isLoading}
+              compact={true}
+            />
+          </Stack>
+          
+          <ToolbarButton
+            onClick={handleSendMessage}
+            disabled={isLoading || !inputMessage.trim()}
+            sx={{ 
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              backgroundColor: (theme) =>
+                (isLoading || !inputMessage.trim())
+                  ? theme.palette.grey[800]
+                  : 'rgba(33,150,243,0.15)',
+              color: (theme) =>
+                (isLoading || !inputMessage.trim())
+                  ? theme.palette.grey[100]
+                  : theme.palette.info.main,
+                              '&:hover': {
+                  backgroundColor: (theme) =>
+                    (isLoading || !inputMessage.trim())
+                      ? theme.palette.grey[700]
+                      : 'rgba(33,150,243,0.22)',
+                }
+            }}
+          >
+            <SendIcon sx={{ fontSize: '1.1rem' }} />
+          </ToolbarButton>
+        </Stack>
+
         {/* Status indicators */}
         {(attachedFiles.length > 0 || mentionedFiles.length > 0 || enabledTools.length > 3) && (
           <Box sx={{ mt: 1 }}>
@@ -486,36 +544,6 @@ ${userMessage.content}${instructions}`
             </Stack>
           </Box>
         )}
-      </Box>
-
-      {/* Input */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-        <Stack direction="row" spacing={1} alignItems="flex-end">
-          <Box sx={{ flex: 1 }}>
-            <RichTextInput
-              value={inputMessage}
-              onChange={setInputMessage}
-              onSubmit={handleSendMessage}
-              placeholder={documentContext?.hasDocument 
-                ? "Ask questions about your document or request edits... Type @ to mention files"
-                : attachedFiles.length > 0 || mentionedFiles.length > 0
-                  ? "Ask me about the files... Type @ to mention more files"
-                  : "Type your message... Use @ to mention files"
-              }
-              disabled={isLoading}
-              getFiles={handleGetFiles}
-              onMentionedFilesChange={handleMentionedFilesChange}
-            />
-          </Box>
-          <Button
-            variant="contained"
-            onClick={handleSendMessage}
-            disabled={isLoading || !inputMessage.trim()}
-            sx={{ minWidth: 80, height: 'fit-content' }}
-          >
-            Send
-          </Button>
-        </Stack>
       </Box>
     </Box>
   );

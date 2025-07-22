@@ -16,6 +16,7 @@ import {
   Switch,
   useTheme,
 } from '@mui/material';
+import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
 import BuildIcon from '@mui/icons-material/Build';
 import SearchIcon from '@mui/icons-material/Search';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -211,29 +212,23 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
         placement="top"
       >
         <span>
-          <Button
-            size="small"
-            variant="text"
+          <ToolbarButton
             disabled={disabled}
             onClick={toggleWebSearch}
-            startIcon={<SearchIcon />}
             sx={{
-              minWidth: compact ? 32 : 'auto',
-              width: compact ? 32 : 'auto',
-              padding: compact ? '4px' : '4px 8px',
-              backgroundColor: webSearchTool?.enabled ? 'primary.light' : 'transparent',
-              color: webSearchTool?.enabled ? 'primary.contrastText' : 'text.primary',
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              backgroundColor: webSearchTool?.enabled ? 'rgba(33,150,243,0.15)' : 'transparent',
+              color: webSearchTool?.enabled ? 'info.main' : 'text.primary',
               '&:hover': {
-                backgroundColor: webSearchTool?.enabled ? 'primary.main' : 'action.hover',
-              },
-              '& .MuiButton-startIcon': {
-                marginRight: compact ? 0 : 1,
-                marginLeft: 0,
+                backgroundColor: webSearchTool?.enabled ? 'rgba(33,150,243,0.22)' : 'rgba(255, 255, 255, 0.1)',
               },
             }}
           >
-            {!compact && 'Web'}
-          </Button>
+            <LanguageIcon fontSize="inherit" />
+            {!compact && <Typography variant="caption" sx={{ ml: 0.5 }}>Web</Typography>}
+          </ToolbarButton>
         </span>
       </Tooltip>
 
@@ -244,44 +239,23 @@ const ToolSelector: React.FC<ToolSelectorProps> = ({
         placement="top"
       >
         <span>
-          <Button
-            ref={setAnchorEl}
-            size="small"
-            variant="text"
+          <ToolbarButton
+            {...({ ref: setAnchorEl } as any)}
             disabled={disabled}
             onClick={handleClick}
-            startIcon={<BuildIcon />}
             sx={{
-              minWidth: compact ? 32 : 'auto',
-              width: compact ? 32 : 'auto',
-              padding: compact ? '4px' : '4px 8px',
-              backgroundColor: otherEnabledCount > 0 ? 'primary.light' : 'transparent',
-              color: otherEnabledCount > 0 ? 'primary.contrastText' : 'text.primary',
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              backgroundColor: otherEnabledCount > 0 ? 'rgba(33,150,243,0.15)' : 'transparent',
+              color: otherEnabledCount > 0 ? 'info.main' : 'text.primary',
               '&:hover': {
-                backgroundColor: otherEnabledCount > 0 ? 'primary.main' : 'action.hover',
-              },
-              '& .MuiButton-startIcon': {
-                marginRight: compact ? 0 : 1,
-                marginLeft: 0,
+                backgroundColor: otherEnabledCount > 0 ? 'rgba(33,150,243,0.22)' : 'rgba(255, 255, 255, 0.1)',
               },
             }}
           >
-            {!compact && 'Tools'}
-            {otherEnabledCount > 0 && (
-              <Chip
-                size="small"
-                label={otherEnabledCount}
-                sx={{
-                  ml: 0.5,
-                  height: 16,
-                  '& .MuiChip-label': {
-                    fontSize: '0.625rem',
-                    px: 0.5,
-                  },
-                }}
-              />
-            )}
-          </Button>
+            <BuildIcon fontSize="inherit" />
+          </ToolbarButton>
         </span>
       </Tooltip>
 

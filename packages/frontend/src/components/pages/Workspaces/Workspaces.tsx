@@ -9,7 +9,8 @@ import {
   Tooltip
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Allotment, LayoutPriority } from 'allotment';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -18,6 +19,7 @@ import { useAlert } from '../../../renderer/context/AlertContext';
 import FileTreeView from '../Files/components/NewTreeView/FileTreeView';
 
 import WorkspaceAssistantInterface from './components/WorkspaceAssistantInterface';
+import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
 import SimpleTipTapEditor from './components/SimpleTipTapEditor';
 import path from 'path';
 import os from 'os';
@@ -48,17 +50,19 @@ const NavToggleButton = ({
       zIndex: 1000,
     }}
   >
-    <IconButton
+    <ToolbarButton
       onClick={onClick}
-      size="small"
       sx={{
+        paddingLeft: '4px', 
+        paddingRight: '4px', 
+        minWidth: '30px',
         bgcolor: 'background.paper',
         border: 1,
         borderColor: 'divider',
         width: 24,
         height: 24,
         '&:hover': {
-          bgcolor: 'action.hover',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
         },
       }}
     >
@@ -68,7 +72,7 @@ const NavToggleButton = ({
           : (isCollapsed ? '←' : '→')
         }
       </Typography>
-    </IconButton>
+    </ToolbarButton>
   </Box>
 );
 
@@ -226,9 +230,19 @@ const MainContent = ({
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             {document.fileName}
           </Typography>
-          <IconButton onClick={onCloseDocument} size="small">
-            <CloseIcon />
-          </IconButton>
+          <ToolbarButton
+            onClick={onCloseDocument}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
         </Box>
         
         {/* TipTap Editor */}
@@ -271,23 +285,6 @@ const MainContent = ({
           Browse your files in the left panel and open documents to edit them with our powerful rich text editor. 
           Use the AI assistant on the right to get help with your work.
         </Typography>
-        <Box sx={{ 
-          p: 3, 
-          backgroundColor: 'grey.50', 
-          borderRadius: 2, 
-          border: 1, 
-          borderColor: 'grey.200'
-        }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
-            💡 Quick Start:
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            • Click on any .txt, .md, .docx, or document file in the file tree to edit it<br/>
-            • Use Ctrl+S (or Cmd+S) to save your changes<br/>
-            • Use the AI assistant to help with writing and coding<br/>
-            • All other files will open in their default applications
-          </Typography>
-        </Box>
       </Box>
     </Box>
   );
@@ -1062,21 +1059,33 @@ export default function Workspaces() {
             </Stack>
             <Stack direction="row" spacing={1}>
               {rightPanelOpen ? (
-                <Button
-                  variant="outlined"
-                  startIcon={<CloseIcon />}
+                <ToolbarButton
                   onClick={() => setRightPanelOpen(false)}
-                  size="small"
+                  sx={{ 
+                    paddingLeft: '4px', 
+                    paddingRight: '4px', 
+                    minWidth: '30px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
                 >
-                </Button>
+                  <ArrowForwardIcon fontSize="inherit" />
+                </ToolbarButton>
               ) : (
-                <Button
-                  variant="contained"
-                  startIcon={<SmartToyIcon />}
+                <ToolbarButton
                   onClick={() => setRightPanelOpen(true)}
-                  size="small"
+                  sx={{ 
+                    paddingLeft: '4px', 
+                    paddingRight: '4px', 
+                    minWidth: '30px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
                 >
-                </Button>
+                  <ArrowBackIcon fontSize="inherit" />
+                </ToolbarButton>
               )}
             </Stack>
           </Stack>

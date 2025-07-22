@@ -9,6 +9,7 @@ import {
   Chip,
   Paper,
 } from '@mui/material';
+import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAlert } from '../../../../renderer/context/AlertContext';
@@ -138,18 +139,20 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
       {/* Attachment Button */}
       <Tooltip title="Attach Files">
         <span>
-          <IconButton
-            component="label"
-            size="small"
+          <ToolbarButton
+            {...({ component: "label" } as any)}
             disabled={disabled || attachedFiles.length >= maxFiles}
             sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
               color: attachedFiles.length > 0 ? 'primary.main' : 'text.secondary',
               '&:hover': {
-                backgroundColor: 'action.hover',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
               },
             }}
           >
-            <AttachFileIcon fontSize="small" />
+            <AttachFileIcon fontSize="inherit" />
             <input
               type="file"
               multiple
@@ -157,7 +160,7 @@ const FileAttachment: React.FC<FileAttachmentProps> = ({
               accept={acceptedTypes.join(',')}
               onChange={handleFileSelect}
             />
-          </IconButton>
+          </ToolbarButton>
         </span>
       </Tooltip>
 
