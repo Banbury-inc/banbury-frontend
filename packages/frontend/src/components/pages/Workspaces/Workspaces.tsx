@@ -28,6 +28,8 @@ import { shell } from 'electron';
 import mammoth from 'mammoth';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import 'allotment/dist/style.css';
+import ImageViewer from '../../common/FileViewer/ImageViewer/ImageViewer';
+import { isImageFile } from '../Files/utils/fileUtils';
 
 
 
@@ -196,79 +198,8 @@ const WorkspaceSidebar = ({
   );
 };
 
-// Main Content Component - Shows welcome screen or TipTap editor
-const MainContent = ({ 
-  showEditor, 
-  document, 
-  onDocumentChange,
-  onCloseDocument,
-  onSaveDocument,
-  getCurrentContent,
-  setDocumentEditor
-}: { 
-  showEditor: boolean;
-  document: { fileName: string; filePath: string; content: string } | null;
-  onDocumentChange: (content: string) => void;
-  onCloseDocument: () => void;
-  onSaveDocument: (document: { fileName: string; filePath: string; content: string }) => void;
-  getCurrentContent: () => string;
-  setDocumentEditor: (editor: any) => void;
-}) => {
-  if (showEditor && document) {
-    return (
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Document Header */}
-        <Box sx={{ 
-          p: 2, 
-          borderBottom: 1, 
-          borderColor: 'divider',
-          backgroundColor: 'background.paper',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {document.fileName}
-          </Typography>
-          <ToolbarButton
-            onClick={onCloseDocument}
-            sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <CloseIcon fontSize="inherit" />
-          </ToolbarButton>
-        </Box>
-        
-        {/* TipTap Editor */}
-        <Box sx={{ flex: 1 }}>
-          <SimpleTipTapEditor
-            content={document.content}
-            onChange={onDocumentChange}
-            placeholder={`Start editing ${document.fileName}...`}
-            onSave={() => {
-              // Use the current content from state instead of the original document content
-              const currentContent = getCurrentContent();
-              onSaveDocument({
-                ...document,
-                content: currentContent
-              });
-            }}
-            onEditorReady={(editor) => {
-              // Set the editor instance for AI integration
-              setDocumentEditor(editor);
-            }}
-          />
-        </Box>
-      </Box>
-    );
-  }
-
+// Welcome Screen Component
+const WelcomeScreen = () => {
   return (
     <Box sx={{ 
       height: '100%', 
@@ -282,9 +213,126 @@ const MainContent = ({
           Welcome to Workspaces
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.6 }}>
-          Browse your files in the left panel and open documents to edit them with our powerful rich text editor. 
+          Browse your files in the left panel and open documents, images, or other files to view them here. 
           Use the AI assistant on the right to get help with your work.
         </Typography>
+      </Box>
+    </Box>
+  );
+};
+
+// Main Content Component - Shows documents, images, or welcome screen
+const MainContent = ({ 
+  currentFile,
+  onDocumentChange,
+  onCloseFile,
+  onSaveDocument,
+  getCurrentContent,
+  setDocumentEditor
+}: { 
+  currentFile: { fileName: string; filePath: string; content?: string; fileType: string } | null;
+  onDocumentChange: (content: string) => void;
+  onCloseFile: () => void;
+  onSaveDocument: (document: { fileName: string; filePath: string; content: string }) => void;
+  getCurrentContent: () => string;
+  setDocumentEditor: (editor: any) => void;
+}) => {
+  if (!currentFile) {
+    return <WelcomeScreen />;
+  }
+
+  // Check if it's an image file
+  if (isImageFile(currentFile.fileName)) {
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* File Header */}
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {currentFile.fileName}
+          </Typography>
+          <ToolbarButton
+            onClick={onCloseFile}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
+        </Box>
+        
+        {/* Image Viewer */}
+        <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+          <ImageViewer
+            src={currentFile.filePath}
+            alt={currentFile.fileName}
+            fileName={currentFile.fileName}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
+  // For documents, use SimpleTipTapEditor
+  return (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Document Header */}
+      <Box sx={{ 
+        p: 2, 
+        borderBottom: 1, 
+        borderColor: 'divider',
+        backgroundColor: 'background.paper',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          {currentFile.fileName}
+        </Typography>
+        <ToolbarButton
+          onClick={onCloseFile}
+          sx={{
+            paddingLeft: '4px', 
+            paddingRight: '4px', 
+            minWidth: '30px',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            }
+          }}
+        >
+          <CloseIcon fontSize="inherit" />
+        </ToolbarButton>
+      </Box>
+      
+      {/* TipTap Editor */}
+      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <SimpleTipTapEditor
+          content={currentFile.content || ''}
+          onChange={onDocumentChange}
+          placeholder={`Start editing ${currentFile.fileName}...`}
+          onSave={() => {
+            const currentContent = getCurrentContent();
+            onSaveDocument({
+              ...currentFile,
+              content: currentContent
+            });
+          }}
+          onEditorReady={(editor) => {
+            setDocumentEditor(editor);
+          }}
+        />
       </Box>
     </Box>
   );
@@ -309,6 +357,17 @@ export default function Workspaces() {
   const [documentEditor, setDocumentEditor] = useState<any>(null);
   const [currentDocumentContent, setCurrentDocumentContent] = useState<string>('');
   const [currentDocumentName, setCurrentDocumentName] = useState<string>('');
+
+  // File tabs state
+  interface FileTab {
+    id: string;
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    content?: string;
+  }
+  const [openTabs, setOpenTabs] = useState<FileTab[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const { showAlert } = useAlert();
   const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
@@ -436,11 +495,12 @@ export default function Workspaces() {
     // Reset any workspace state if needed
   };
 
-  // Determine if file should open in TipTap editor
-  const shouldOpenInTipTap = (fileName: string): boolean => {
+  // Determine if file should open in the middle panel (editor or viewer)
+  const shouldOpenInMiddlePanel = (fileName: string): boolean => {
     const ext = path.extname(fileName).toLowerCase();
     const editableExtensions = ['.txt', '.md', '.markdown', '.rtf', '.doc', '.docx'];
-    return editableExtensions.includes(ext);
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'];
+    return editableExtensions.includes(ext) || imageExtensions.includes(ext);
   };
 
   // Convert plain text to HTML for TipTap
@@ -752,167 +812,72 @@ export default function Workspaces() {
     }
   }, [showAlert]);
 
-  // Open document in TipTap editor
-  const openInTipTap = useCallback(async (fileName: string, filePath: string) => {
-    try {
-      console.log('=== FILE LOADING DEBUG ===');
-      console.log('Opening file in TipTap:', fileName);
-      console.log('File path:', filePath);
-      console.log('Normalized path:', path.normalize(filePath));
-      
-      // Check if file exists
-      console.log('Checking if file exists...');
-      const fileStats = await stat(filePath);
-      console.log('File stats:', fileStats);
-      
-      if (!fileStats.isFile()) {
-        throw new Error('Path is not a file');
+  // Handle tab operations
+  const handleCloseTab = useCallback((tabId: string) => {
+    setOpenTabs(prev => {
+      const newTabs = prev.filter(tab => tab.id !== tabId);
+      // If closing the active tab, switch to another tab
+      if (activeTab === tabId && newTabs.length > 0) {
+        setActiveTab(newTabs[newTabs.length - 1].id);
+      } else if (newTabs.length === 0) {
+        setActiveTab(null);
+        setShowTipTapEditor(false);
       }
+      return newTabs;
+    });
+  }, [activeTab]);
 
-      let content = '';
+  const handleSwitchTab = useCallback((tabId: string) => {
+    setActiveTab(tabId);
+  }, []);
+
+  // Load document content without updating UI
+  const loadDocumentContent = async (fileName: string, filePath: string): Promise<string> => {
+    try {
       const ext = path.extname(fileName).toLowerCase();
-      console.log('File extension:', ext);
+      let content = '';
 
       if (ext === '.docx' || ext === '.doc') {
-        // For Word documents, first check if it's actually a DOCX file or plain text
-        try {
-          console.log('Loading DOCX content using mammoth.js...');
-          const buffer = await readFile(filePath);
-          console.log('File buffer loaded, size:', buffer.length);
-          
-          // Check if the file is actually a DOCX file (starts with PK signature) or plain text
-          const isActualDocx = buffer.length > 4 && 
-            buffer[0] === 0x50 && buffer[1] === 0x4B && // PK signature
-            (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07); // Various zip types
-          
-          if (!isActualDocx) {
-            // This is likely a plain text file that was saved with .docx extension
-            // Treat it as a text file
-            console.log('File appears to be plain text despite .docx extension, treating as text');
-            const fileText = buffer.toString('utf-8');
-            if (!fileText || fileText.trim().length === 0) {
-              content = '<p><em>This file appears to be empty.</em></p>';
-            } else {
-              try {
-                // Try to parse as HTML first (in case it was saved as HTML)
-                if (fileText.trim().startsWith('<') && fileText.includes('>')) {
-                  content = fileText;
-                  console.log('File appears to contain HTML content');
-                } else {
-                  // Convert plain text to HTML
-                  content = textToHtml(fileText);
-                  console.log('Converted plain text to HTML');
-                }
-              } catch (conversionError) {
-                console.error('Error converting text to HTML:', conversionError);
-                content = `<p>${fileText.replace(/\n/g, '<br>')}</p>`;
-              }
-            }
+        const buffer = await readFile(filePath);
+        const isActualDocx = buffer.length > 4 && 
+          buffer[0] === 0x50 && buffer[1] === 0x4B &&
+          (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07);
+        
+        if (!isActualDocx) {
+          // Plain text file with docx extension
+          const fileText = buffer.toString('utf-8');
+          if (fileText.trim().startsWith('<') && fileText.includes('>')) {
+            content = fileText;
           } else {
-            // This is an actual DOCX file, use mammoth to parse it
-            let result;
-            let conversionMethod = 'unknown';
-            
-            try {
-              // Method 1: Try with buffer (most reliable in Electron)
-              console.log('Attempting buffer method...');
-              
-              // Ensure buffer is in the right format for mammoth
-              const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
-              result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
-              conversionMethod = 'arrayBuffer';
-              console.log('Successfully converted using arrayBuffer method');
-              
-            } catch (arrayBufferError) {
-              console.log('ArrayBuffer method failed:', arrayBufferError);
-              
-              try {
-                // Method 2: Try with regular buffer
-                console.log('Attempting regular buffer method...');
-                result = await mammoth.convertToHtml({ buffer: buffer });
-                conversionMethod = 'buffer';
-                console.log('Successfully converted using buffer method');
-                
-              } catch (bufferError) {
-                console.log('Buffer method failed:', bufferError);
-                
-                try {
-                  // Method 3: Try with path (if supported)
-                  console.log('Attempting path method...');
-                  result = await mammoth.convertToHtml({ path: filePath });
-                  conversionMethod = 'path';
-                  console.log('Successfully converted using path method');
-                  
-                } catch (pathError) {
-                  console.error('All mammoth methods failed:', {
-                    arrayBufferError,
-                    bufferError,
-                    pathError
-                  });
-                  throw new Error(`Unable to parse DOCX file using any method. Last error: ${pathError instanceof Error ? pathError.message : String(pathError)}`);
-                }
-              }
-            }
-            
-            console.log(`DOCX conversion successful using method: ${conversionMethod}`);
-            
-            // Use the converted HTML content
-            content = result.value || '<p>Document appears to be empty.</p>';
-            
-            // Clean up the content if needed (mammoth sometimes produces extra elements)
-            if (content.trim() === '') {
-              content = '<p>Document appears to be empty.</p>';
-            }
-            
-            console.log('DOCX content loaded successfully, length:', content.length);
+            content = fileText.split('\n').map(line => `<p>${line || '<br>'}</p>`).join('');
           }
-          
-        } catch (docxError) {
-          console.error('Error loading DOCX content:', docxError);
-          content = `<h1>Error Loading Document</h1><p>Could not load the contents of "${fileName}".</p><p>Error: ${docxError instanceof Error ? docxError.message : 'Unknown error parsing DOCX file'}</p>`;
+        } else {
+          // Actual DOCX file
+          const result = await mammoth.convertToHtml({ buffer });
+          content = result.value || '<p>Document appears to be empty.</p>';
         }
       } else {
-        // For text files (.txt, .md, .markdown, .rtf)
-        try {
-          console.log('Reading file contents...');
-          const fileBuffer = await readFile(filePath);
-          console.log('File buffer size:', fileBuffer.length);
-          
-          const fileText = fileBuffer.toString('utf-8');
-          console.log('File text length:', fileText.length);
-          console.log('File text preview:', fileText.substring(0, 200));
-          
-          if (!fileText || fileText.trim().length === 0) {
-            console.log('File appears to be empty');
-            content = '<p><em>This file appears to be empty.</em></p>';
-          } else {
-            try {
-              if (ext === '.md' || ext === '.markdown') {
-                // For markdown files, convert basic markdown to HTML
-                console.log('Converting markdown to HTML...');
-                content = textToHtml(fileText);
-              } else {
-                // For plain text files, convert to HTML
-                console.log('Converting text to HTML...');
-                content = textToHtml(fileText);
-              }
-              console.log('Converted content preview:', content.substring(0, 200));
-            } catch (conversionError) {
-              console.error('Error converting text to HTML:', conversionError);
-              // Fallback to plain text wrapped in a paragraph
-              content = `<p>${fileText.replace(/\n/g, '<br>')}</p>`;
-            }
-          }
-        } catch (readError) {
-          console.error('Error reading file:', readError);
-          console.error('Error details:', readError);
-          content = `<h1>Error Reading File</h1><p>Could not read the contents of "${fileName}".</p><p>Error: ${readError instanceof Error ? readError.message : 'Unknown error'}</p>`;
+        // Text files
+        const fileContent = await readFile(filePath, 'utf-8');
+        if (ext === '.md' || ext === '.markdown') {
+          content = fileContent; // Let TipTap handle markdown
+        } else {
+          content = fileContent.split('\n').map(line => `<p>${line || '<br>'}</p>`).join('');
         }
       }
 
-      console.log('Final content length:', content.length);
-      console.log('Setting document state...');
+      return content || '<p><em>This file appears to be empty.</em></p>';
+    } catch (error) {
+      console.error('Error loading document content:', error);
+      throw error;
+    }
+  };
 
+  // Set current document for AI assistant context
+  const openInTipTap = useCallback(async (fileName: string, filePath: string) => {
+    try {
+      const content = await loadDocumentContent(fileName, filePath);
+      
       setCurrentDocument({
         fileName,
         filePath,
@@ -921,15 +886,52 @@ export default function Workspaces() {
       setCurrentDocumentContent(content);
       setCurrentDocumentName(fileName);
       setShowTipTapEditor(true);
-      
-      console.log('File loaded successfully:', fileName);
-      console.log('=== END FILE LOADING DEBUG ===');
     } catch (error) {
-      console.error('Error opening document in TipTap:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      showAlert('Error', [`Failed to open "${fileName}" in editor: ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+      console.error('Error opening document:', error);
+      showAlert('Error', [`Failed to open "${fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
     }
   }, [showAlert]);
+
+  // Open file (documents or images) in the middle panel
+  const openFileInMiddlePanel = useCallback(async (fileName: string, filePath: string, fileType: string) => {
+    try {
+      // Generate unique tab ID
+      const tabId = `${fileName}-${Date.now()}`;
+      
+      // Check if file is already open
+      const existingTab = openTabs.find(tab => tab.filePath === filePath);
+      if (existingTab) {
+        setActiveTab(existingTab.id);
+        return;
+      }
+
+      let fileContent: string | undefined;
+      
+      // For document files, load the content first
+      const ext = path.extname(fileName).toLowerCase();
+      if (['.docx', '.doc', '.txt', '.md', '.markdown', '.rtf'].includes(ext)) {
+        // Load document content but don't set UI state yet
+        const content = await loadDocumentContent(fileName, filePath);
+        fileContent = content;
+      }
+
+      // Add new tab
+      const newTab: FileTab = {
+        id: tabId,
+        fileName,
+        filePath,
+        fileType,
+        content: fileContent
+      };
+
+      setOpenTabs(prev => [...prev, newTab]);
+      setActiveTab(tabId);
+      setShowTipTapEditor(true);
+    } catch (error) {
+      console.error('Error opening file:', error);
+      showAlert('Error', [`Failed to open "${fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+    }
+  }, [openTabs, showAlert, openInTipTap, currentDocumentContent]);
 
   // File handling - TipTap for documents, system default for others
   const handleFileClick = useCallback(async (fileName: string, filePath: string, fileType: string) => {
@@ -943,16 +945,16 @@ export default function Workspaces() {
     console.log('Normalized path:', normalizedPath);
     console.log('Path is absolute:', path.isAbsolute(normalizedPath));
     
-    console.log('Should open in TipTap:', shouldOpenInTipTap(fileName));
+    console.log('Should open in middle panel:', shouldOpenInMiddlePanel(fileName));
     
-    if (shouldOpenInTipTap(fileName)) {
-      // Open document files in TipTap editor
-      console.log('Opening in TipTap with path:', normalizedPath);
+    if (shouldOpenInMiddlePanel(fileName)) {
+      // Open file in middle panel (editor or viewer)
+      console.log('Opening in middle panel with path:', normalizedPath);
       try {
-        await openInTipTap(fileName, normalizedPath);
+        await openFileInMiddlePanel(fileName, normalizedPath, fileType);
       } catch (error) {
-        console.error('Failed to open file in TipTap:', error);
-        showAlert('Error', [`Failed to open "${fileName}" in editor: ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+        console.error('Failed to open file in middle panel:', error);
+        showAlert('Error', [`Failed to open "${fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
       }
     } else {
       // Open other files with system default application
@@ -965,7 +967,22 @@ export default function Workspaces() {
       }
     }
     console.log('=== END HANDLE FILE CLICK DEBUG ===');
-  }, [showAlert, openInTipTap]);
+  }, [showAlert, openFileInMiddlePanel]);
+
+  // Handle document editor changes for FileViewerTabs
+  const handleDocumentEditorChange = useCallback((editor: any, content: string, fileName: string) => {
+    setDocumentEditor(editor);
+    setCurrentDocumentContent(content);
+    setCurrentDocumentName(fileName);
+    
+    // Update current document if it matches the fileName
+    if (currentDocument?.fileName === fileName) {
+      setCurrentDocument({
+        ...currentDocument,
+        content
+      });
+    }
+  }, [currentDocument]);
 
   const toggleLeftPanel = () => {
     const newLeftCollapsed = !leftPanelCollapsed;
@@ -1107,29 +1124,29 @@ export default function Workspaces() {
                     transition={{ duration: 0.2 }}
                     style={{ height: '100%' }}
                   >
-                    <MainContent 
-                      showEditor={showTipTapEditor}
-                      document={currentDocument}
-                      onDocumentChange={(content) => {
-                        setCurrentDocumentContent(content);
-                        if (currentDocument) {
-                          setCurrentDocument({
-                            ...currentDocument,
-                            content
-                          });
-                        }
-                      }}
-                      onCloseDocument={() => {
-                        setShowTipTapEditor(false);
-                        setCurrentDocument(null);
-                        setCurrentDocumentContent('');
-                        setCurrentDocumentName('');
-                        setDocumentEditor(null); // Clear editor for AI integration
-                      }}
-                      onSaveDocument={saveDocument}
-                      getCurrentContent={() => currentDocumentContent}
-                      setDocumentEditor={setDocumentEditor}
-                    />
+                    {openTabs.length > 0 ? (
+                      <MainContent
+                        currentFile={openTabs.find(tab => tab.id === activeTab) || null}
+                        onDocumentChange={(content) => {
+                          setCurrentDocumentContent(content);
+                          // Update the content in the tab
+                          setOpenTabs(prev => prev.map(tab => 
+                            tab.id === activeTab 
+                              ? { ...tab, content } 
+                              : tab
+                          ));
+                        }}
+                        onCloseFile={() => handleCloseTab(activeTab || '')}
+                        onSaveDocument={saveDocument}
+                        getCurrentContent={() => {
+                          const activeTabData = openTabs.find(tab => tab.id === activeTab);
+                          return activeTabData?.content || currentDocumentContent;
+                        }}
+                        setDocumentEditor={setDocumentEditor}
+                      />
+                    ) : (
+                      <WelcomeScreen />
+                    )}
                   </motion.div>
                 </AnimatePresence>
               </Box>

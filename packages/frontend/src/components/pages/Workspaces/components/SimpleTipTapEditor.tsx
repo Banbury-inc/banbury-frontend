@@ -189,7 +189,8 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
       height: '100%', 
       display: 'flex', 
       flexDirection: 'column',
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      overflow: 'hidden'
     }}>
       {/* Formatting Toolbar */}
       <Toolbar 
@@ -198,11 +199,11 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
           borderBottom: 1, 
           borderColor: '#e0e0e0',
           minHeight: 48,
+          flexShrink: 0,
           gap: 1,
           flexWrap: 'wrap',
           px: 2,
           py: 1,
-          flexShrink: 0,
           backgroundColor: '#fafafa',
           '& .MuiButtonGroup-root': {
             '& .MuiButtonBase-root': {
@@ -325,11 +326,13 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
         flex: 1, 
         overflow: 'auto',
         backgroundColor: '#ffffff !important',
+        minHeight: 0, // Important for flex child to respect parent's height
         '& .ProseMirror': {
           outline: 'none',
-          minHeight: '200px',
+          minHeight: '100%',
           color: '#000000',
           backgroundColor: '#ffffff !important',
+          paddingBottom: '50px', // Add some bottom padding for better scrolling experience
           '& p': {
             margin: '0.5em 0',
             color: '#000000',
@@ -390,9 +393,12 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
             color: '#7b1fa2',
             fontStyle: 'italic',
           },
+        },
+        '& .tiptap': {
+          height: '100%',
         }
       }}>
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} style={{ height: '100%' }} />
       </Box>
     </Box>
   );
