@@ -65,6 +65,15 @@ export const handleNodeSelect = (
       }
       setFilePathDevice('');
     }
+    // Handle Cloud files (S3 files)
+    else if (selectedNode.source === 'cloud' || selectedNode.file_parent === 'Cloud' || selectedNode.file_path?.includes(joinVirtualPath('Core', 'Cloud'))) {
+      if (selectedNode.file_path && selectedNode.file_path.includes(joinVirtualPath('Core', 'Cloud'))) {
+        newFilePath = normalizeVirtualPath(selectedNode.file_path);
+      } else {
+        newFilePath = joinVirtualPath('Core', 'Cloud', selectedNode.file_name);
+      }
+      setFilePathDevice('');
+    }
     // Don't set path for main Devices, Sync, or Shared nodes
     else if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync' || 
             selectedNode.id === 'Sync' || selectedNode.id === 'Shared') {

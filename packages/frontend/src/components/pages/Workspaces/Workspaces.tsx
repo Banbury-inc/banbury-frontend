@@ -30,6 +30,7 @@ import { Document, Packer, Paragraph, TextRun } from 'docx';
 import 'allotment/dist/style.css';
 import ImageViewer from '../../common/FileViewer/ImageViewer/ImageViewer';
 import { isImageFile } from '../Files/utils/fileUtils';
+import { DatabaseData } from '@banbury/core/src/types';
 
 
 
@@ -89,7 +90,7 @@ const WorkspaceSidebar = ({
 }: { 
   resetWorkspaceView: () => void;
   onFileClick?: (fileName: string, filePath: string, fileType: string) => void;
-  cloudFiles?: any[];
+  cloudFiles?: DatabaseData[];
   cloudEnabled?: boolean;
 }) => {
   const [filePath, setFilePath] = useState('');
@@ -142,7 +143,46 @@ const WorkspaceSidebar = ({
     // Check if the path points to a file
     try {
       if (newPath && newPath !== filePath && onFileClick) {
-        // Handle absolute paths (like C:\Users\... on Windows)
+        // Check if this is a cloud file path
+        if (newPath.startsWith('Core/Cloud/')) {
+          // Extract the file name from the cloud path
+          const fileName = path.basename(newPath);
+          
+          // Find the cloud file in the cloudFiles array
+          const cloudFile = cloudFiles.find(file => 
+            file.file_name === fileName || file.file_path === newPath
+          );
+          
+          if (cloudFile && cloudFile.is_s3) {
+            console.log('Detected cloud file click:', cloudFile);
+            
+            try {
+              // Import the required functions
+              const { banbury } = await import('@banbury/core');
+              
+              // Download the cloud file to local BCloud directory
+              const localFilePath = await banbury.files.saveS3FileToBCloud(
+                String(cloudFile._id || cloudFile.id),
+                cloudFile.file_name
+              );
+              
+              console.log('Cloud file downloaded to:', localFilePath);
+              
+              // Get file type
+              const fileType = getFileType(fileName);
+              
+              // Open the downloaded local file
+              await onFileClick(fileName, localFilePath, fileType);
+              
+              return; // Don't update filePath for cloud files
+            } catch (error) {
+              console.error('Error downloading and opening cloud file:', error);
+              // Fall through to normal handling if cloud download fails
+            }
+          }
+        }
+        
+        // Handle local files (existing logic)
         let actualPath = newPath;
         
         // If it's not an absolute path, it might be a relative path that needs conversion
@@ -182,7 +222,7 @@ const WorkspaceSidebar = ({
     
     // For directories or navigation, update the file path
     setFilePath(newPath);
-  }, [filePath, onFileClick]);
+  }, [filePath, onFileClick, cloudFiles]);
 
   return (
       <Box sx={{ height: '100%', overflow: 'auto', minHeight: 0 }}>
@@ -390,7 +430,7 @@ export default function Workspaces() {
   const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
 
   // Add Cloud Files state (similar to Files.tsx)
-  const [cloudFiles, setCloudFiles] = useState<any[]>([]);
+  const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
   const [isCloudLoading, setIsCloudLoading] = useState(false);
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [cloudEnabled] = useState(true); // Cloud is always enabled
