@@ -295,7 +295,7 @@ export default function Workspaces() {
 
   // Panel state
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
-  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
   // Document editing state
   const [showTipTapEditor, setShowTipTapEditor] = useState(false);
@@ -1035,63 +1035,6 @@ export default function Workspaces() {
       flexDirection: 'column',
       bgcolor: 'background.default'
     }}>
-      {/* Header */}
-      <Box sx={{ 
-        borderBottom: 1, 
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        zIndex: 1000
-      }}>
-        <Box sx={{ p: 2 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Typography variant="h6" component="h1" sx={{ fontWeight: 600 }}>
-                Workspaces
-              </Typography>
-              {showTipTapEditor && currentDocument && (
-                <>
-                  <Typography variant="body2" color="text.secondary">/</Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    {currentDocument.fileName}
-                  </Typography>
-                </>
-              )}
-            </Stack>
-            <Stack direction="row" spacing={1}>
-              {rightPanelOpen ? (
-                <ToolbarButton
-                  onClick={() => setRightPanelOpen(false)}
-                  sx={{ 
-                    paddingLeft: '4px', 
-                    paddingRight: '4px', 
-                    minWidth: '30px',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                >
-                  <ArrowForwardIcon fontSize="inherit" />
-                </ToolbarButton>
-              ) : (
-                <ToolbarButton
-                  onClick={() => setRightPanelOpen(true)}
-                  sx={{ 
-                    paddingLeft: '4px', 
-                    paddingRight: '4px', 
-                    minWidth: '30px',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                >
-                  <ArrowBackIcon fontSize="inherit" />
-                </ToolbarButton>
-              )}
-            </Stack>
-          </Stack>
-        </Box>
-      </Box>
-
       {/* Main Content - Three Panel Layout */}
       <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <Suspense fallback={<LinearProgress />}>

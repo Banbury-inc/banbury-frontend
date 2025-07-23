@@ -194,6 +194,15 @@ const RichTextInput: React.FC<RichTextInputProps> = ({
         sx={{
           '& .MuiOutlinedInput-root': {
             fontSize: '0.875rem',
+            '& fieldset': {
+              border: 'transparent',
+            },
+            '&:hover fieldset': {
+              border: 'transparent',
+            },
+            '&.Mui-focused fieldset': {
+              border: 'transparent',
+            },
           },
         }}
       />

@@ -11,6 +11,7 @@ import {
   Collapse,
   IconButton,
   Tooltip,
+  Paper,
 } from '@mui/material';
 import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
@@ -535,86 +536,6 @@ ${userMessage.content}${instructions}`
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ p: 2 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {availableModels.find(m => m.id === selectedModel)?.name || 'Unknown Model'}
-                  {documentContext?.hasDocument && (
-                    <> • Document: {documentContext.fileName}</>
-                  )}
-                  {attachedFiles.length > 0 && (
-                    <> • {attachedFiles.length} attached</>
-                  )}
-                  {mentionedFiles.length > 0 && (
-                    <> • {mentionedFiles.length} mentioned</>
-                  )}
-                  {enabledTools.length > 0 && (
-                    <> • {enabledTools.length} tools</>
-                  )}
-                </Typography>
-              </Box>
-            </Stack>
-            <Tooltip title="Model Settings">
-              <span>
-                <ToolbarButton 
-                  onClick={() => setShowModelSettings(!showModelSettings)}
-                  sx={{ 
-                    paddingLeft: '4px', 
-                    paddingRight: '4px', 
-                    minWidth: '30px',
-                    backgroundColor: showModelSettings ? 'action.selected' : 'transparent',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    }
-                  }}
-                >
-                  <SettingsIcon fontSize="inherit" />
-                </ToolbarButton>
-              </span>
-            </Tooltip>
-          </Stack>
-        </Box>
-
-        {/* Model Settings Panel */}
-        <Collapse in={showModelSettings}>
-          <Box sx={{ p: 2, pt: 0, borderBottom: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-            <Stack spacing={2}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>AI Model</InputLabel>
-                <Select
-                  value={selectedModel}
-                  label="AI Model"
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  disabled={isLoading}
-                >
-                  {availableModels.map((model) => (
-                    <MenuItem key={model.id} value={model.id}>
-                      <Stack>
-                        <Typography variant="body2">{model.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {model.provider === 'anthropic' ? 'Anthropic' : 'Ollama'}
-                        </Typography>
-                      </Stack>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              
-              <Typography variant="caption" color="text.secondary">
-                {availableModels.find(m => m.id === selectedModel)?.provider === 'anthropic' 
-                  ? 'Requires Anthropic API key in Settings > Models'
-                  : 'Requires local Ollama installation'
-                }
-              </Typography>
-            </Stack>
-          </Box>
-        </Collapse>
-      </Box>
-      
       {/* Messages */}
       <Box ref={messagesContainerRef} sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {messages.map((message, index) => {
@@ -779,11 +700,28 @@ ${userMessage.content}${instructions}`
         <div ref={messagesEndRef} />
       </Box>
 
-
-      {/* Input */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+      <Box sx={{
+        p: 1,
+        borderTop: 1,
+        borderColor: 'transparent',
+        backgroundColor: (theme) => theme.palette.background.paper,
+        flexShrink: 0
+      }}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 1,
+            borderRadius: 3,
+            backgroundColor: (theme) => theme.palette.background.default,
+            boxShadow: (theme) => theme.shadows[2],
+            maxWidth: 600,
+            margin: '0 auto',
+          }}
+        >
+          {/* Input */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Stack direction="row" spacing={1} alignItems="flex-end">
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1}}>
             <RichTextInput
               value={inputMessage}
               onChange={setInputMessage}
@@ -803,9 +741,9 @@ ${userMessage.content}${instructions}`
       </Box>
 
       {/* Attachments and Tools */}
-      <Box sx={{ px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+      <Box sx={{paddingTop: 1, borderTop: 1, borderColor: 'transparent', bgcolor: 'transparent' }}>
         <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center">
             <FileAttachment
               onFilesChange={handleFilesChange}
               disabled={isLoading}
@@ -822,27 +760,15 @@ ${userMessage.content}${instructions}`
           <ToolbarButton
             onClick={handleSendMessage}
             disabled={isLoading || !inputMessage.trim()}
-            sx={{ 
-              paddingLeft: '4px', 
+            sx={{
+              paddingLeft: 'px', 
               paddingRight: '4px', 
               minWidth: '30px',
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-              backgroundColor: (theme) =>
-                (isLoading || !inputMessage.trim())
-                  ? theme.palette.grey[800]
-                  : 'rgba(33,150,243,0.15)',
-              color: (theme) =>
-                (isLoading || !inputMessage.trim())
-                  ? theme.palette.grey[100]
-                  : theme.palette.info.main,
-                              '&:hover': {
-                  backgroundColor: (theme) =>
-                    (isLoading || !inputMessage.trim())
-                      ? theme.palette.grey[700]
-                      : 'rgba(33,150,243,0.22)',
-                }
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'text.primary',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              },
             }}
           >
             <SendIcon sx={{ fontSize: '1.1rem' }} />
@@ -871,6 +797,8 @@ ${userMessage.content}${instructions}`
             </Stack>
           </Box>
         )}
+      </Box>
+        </Paper>
       </Box>
     </Box>
   );
