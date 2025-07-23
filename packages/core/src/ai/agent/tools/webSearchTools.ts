@@ -1,46 +1,36 @@
-import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
+import { createSimpleTool, convertToLangChainTool, createToolParameter } from './simplifiedTools';
 import { WebSearchService } from '../../basic/tools/webSearch';
 
 /**
- * Create Web Search tools using proper LangChain tool definitions with Zod schemas
+ * Create Web Search tools using simplified tool definitions
  */
-export function createWebSearchTools(webSearchService: WebSearchService, webSearchEnabled: boolean) {
-  if (!webSearchEnabled) {
-    return [];
-  }
-
-  const webSearchTool = tool(
-    async ({ query, maxResults = 5 }) => {
+export function createWebSearchTools(webSearchService: WebSearchService): any[] {
+  
+  const webSearchTool = createSimpleTool(
+    'web_search',
+    'Search the web for information using a search query',
+    {
+      query: createToolParameter('string', 'Search query to find information on the web', { required: true }),
+      maxResults: createToolParameter('number', 'Maximum number of search results to return (default: 5)', { default: 5, optional: true })
+    },
+    async (params: { query: string; maxResults?: number }) => {
       try {
-        if (!query || query.trim().length === 0) {
-          return 'Error: Search query is required';
-        }
-
-        const searchResults = await webSearchService.search(query, maxResults);
+        const results = await webSearchService.search(params.query, params.maxResults || 5);
         
-        if (searchResults.length === 0) {
-          return `No web search results found for query: "${query}"`;
+        if (!results.length) {
+          return `No search results found for: ${params.query}`;
         }
-
-        const resultText = searchResults.map((result, index) => 
-          `**${index + 1}. ${result.title}**\n${result.snippet}\nSource: ${result.link}`
-        ).join('\n\n');
-
-        return `Web search results for "${query}":\n\n${resultText}`;
+        
+        const formattedResults = results.map((result, index) => {
+          return `${index + 1}. **${result.title}**\n   URL: ${result.link}\n   ${result.snippet}\n`;
+        }).join('\n');
+        
+        return `Web search results for "${params.query}":\n\n${formattedResults}`;
       } catch (error) {
         return `Error performing web search: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "web_search_tool",
-      description: "Search the web for current information, news, facts, or any query that requires up-to-date information",
-      schema: z.object({
-        query: z.string().describe("Search query string"),
-        maxResults: z.number().optional().default(5).describe("Maximum number of results to return (default: 5)"),
-      }),
     }
   );
 
-  return [webSearchTool];
+  return [convertToLangChainTool(webSearchTool)];
 } 

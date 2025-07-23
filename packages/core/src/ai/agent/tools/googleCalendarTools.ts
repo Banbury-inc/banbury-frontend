@@ -1,22 +1,17 @@
-import { DynamicStructuredTool } from '@langchain/core/tools';
-import { z } from 'zod';
+import { createSimpleTool, convertToLangChainTool, createToolParameter } from './simplifiedTools';
 import { checkGoogleDriveCredentials } from '../../../files/googleDrive';
 import { config } from '../../../config/config';
 import { loadGlobalAxiosCredentials } from '../../../middleware/axiosGlobalHeader';
 import axios from 'axios';
 
-
 /**
  * Check if Google Calendar/Google credentials are available
- * Since Google Calendar uses the same Google API credentials as Google Drive,
- * we check for Google Drive credentials
  */
 const checkGoogleCalendarCredentials = async (): Promise<{
   hasCredentials: boolean;
   message?: string;
 }> => {
   try {
-    // Use the same credential check as Google Drive since they share credentials
     const credentialStatus = await checkGoogleDriveCredentials();
     return {
       hasCredentials: credentialStatus.hasCredentials,
@@ -64,234 +59,217 @@ const makeGoogleCalendarRequest = async (endpoint: string, method: 'GET' | 'POST
 };
 
 /**
- * Create Google Calendar tools that use the existing Google Drive credentials
+ * Create Google Calendar tools using simplified tool definitions
  */
-export function createGoogleCalendarTools(enabled: boolean): DynamicStructuredTool[] {
+export function createGoogleCalendarTools(enabled: boolean): any[] {
   if (!enabled) {
     return [];
   }
 
-  const tools: DynamicStructuredTool[] = [];
-
-  // Google Calendar List Events Tool
-  tools.push(
-    new DynamicStructuredTool({
-      name: 'GoogleCalendarListEvents',
-      description: 'List calendar events from Google Calendar. Can filter by date range and other criteria.',
-      schema: z.object({
-        timeMin: z.string().optional().describe('Lower bound for event start time (RFC3339 timestamp, e.g. "2024-01-01T00:00:00Z")'),
-        timeMax: z.string().optional().describe('Upper bound for event start time (RFC3339 timestamp, e.g. "2024-12-31T23:59:59Z")'),
-        maxResults: z.number().optional().default(50).describe('Maximum number of events to return'),
-        q: z.string().optional().describe('Free text search terms to find events'),
-        calendarId: z.string().optional().default('primary').describe('Calendar identifier (default is "primary" for the main calendar)'),
-      }),
-      func: async ({ timeMin, timeMax, maxResults = 50, q, calendarId = 'primary' }) => {
-        try {
-          const credentialCheck = await checkGoogleCalendarCredentials();
-          if (!credentialCheck.hasCredentials) {
-            return `Google Calendar not available: ${credentialCheck.message}`;
-          }
-
-          const params = new URLSearchParams();
-          if (timeMin) params.append('timeMin', timeMin);
-          if (timeMax) params.append('timeMax', timeMax);
-          if (maxResults) params.append('maxResults', maxResults.toString());
-          if (q) params.append('q', q);
-          params.append('calendarId', calendarId);
-
-          const result = await makeGoogleCalendarRequest(`events?${params.toString()}`);
-          
-          if (!result.events || result.events.length === 0) {
-            return `No events found for the specified criteria.`;
-          }
-
-          const eventSummaries = result.events.map((event: any, index: number) => {
-            const start = event.start?.dateTime || event.start?.date || 'No start time';
-            const end = event.end?.dateTime || event.end?.date || 'No end time';
-            const attendees = event.attendees ? event.attendees.map((a: any) => a.email).join(', ') : 'None';
-            
-            return `${index + 1}. ${event.summary || 'No title'}
-   When: ${start} - ${end}
-   Location: ${event.location || 'No location'}
-   Status: ${event.status || 'Unknown'}
-   Attendees: ${attendees}
-   Event ID: ${event.id}`;
-          });
-
-          return `Found ${eventSummaries.length} events:\n\n${eventSummaries.join('\n\n')}`;
-
-        } catch (error) {
-          return `Error listing calendar events: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  // List Events Tool
+  const listEventsTool = createSimpleTool(
+    'GoogleCalendarListEvents',
+    'List upcoming events from Google Calendar.',
+    {
+      timeMin: createToolParameter('string', 'Start time for events (ISO string)', { optional: true }),
+      timeMax: createToolParameter('string', 'End time for events (ISO string)', { optional: true }),
+      maxResults: createToolParameter('number', 'Maximum number of events to return', { default: 10, optional: true }),
+      singleEvents: createToolParameter('boolean', 'Expand recurring events into instances', { default: true, optional: true })
+    },
+    async (params: { timeMin?: string; timeMax?: string; maxResults?: number; singleEvents?: boolean }) => {
+      try {
+        const credentialCheck = await checkGoogleCalendarCredentials();
+        if (!credentialCheck.hasCredentials) {
+          return `Google Calendar not available: ${credentialCheck.message}`;
         }
-      },
-    })
+
+        const queryParams = new URLSearchParams();
+        
+        if (params.timeMin) queryParams.append('timeMin', params.timeMin);
+        if (params.timeMax) queryParams.append('timeMax', params.timeMax);
+        if (params.maxResults) queryParams.append('maxResults', params.maxResults.toString());
+        if (params.singleEvents !== undefined) queryParams.append('singleEvents', params.singleEvents.toString());
+        
+        const result = await makeGoogleCalendarRequest(`events?${queryParams.toString()}`);
+        
+        if (!result.items || result.items.length === 0) {
+          return 'No upcoming events found in Google Calendar';
+        }
+
+        const eventSummaries = result.items.map((event: any, index: number) => {
+          const startTime = event.start?.dateTime || event.start?.date || 'No start time';
+          const endTime = event.end?.dateTime || event.end?.date || 'No end time';
+          
+          return `${index + 1}. **${event.summary || 'No Title'}**\n   Start: ${startTime}\n   End: ${endTime}\n   Location: ${event.location || 'No location'}\n   Description: ${event.description || 'No description'}\n   ID: ${event.id}`;
+        }).join('\n\n');
+
+        return `Found ${result.items.length} upcoming events:\n\n${eventSummaries}`;
+      } catch (error) {
+        return `Error listing Google Calendar events: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+    }
   );
 
-  // Google Calendar Get Event Tool
-  tools.push(
-    new DynamicStructuredTool({
-      name: 'GoogleCalendarGetEvent',
-      description: 'Get the full details of a specific calendar event by its ID.',
-      schema: z.object({
-        eventId: z.string().describe('The unique ID of the calendar event to retrieve'),
-        calendarId: z.string().optional().default('primary').describe('Calendar identifier (default is "primary" for the main calendar)'),
-      }),
-      func: async ({ eventId, calendarId = 'primary' }) => {
-        try {
-          const credentialCheck = await checkGoogleCalendarCredentials();
-          if (!credentialCheck.hasCredentials) {
-            return `Google Calendar not available: ${credentialCheck.message}`;
-          }
-
-          const result = await makeGoogleCalendarRequest(`event/${calendarId}/${eventId}`);
-          
-          const start = result.start?.dateTime || result.start?.date || 'No start time';
-          const end = result.end?.dateTime || result.end?.date || 'No end time';
-          const attendees = result.attendees ? 
-            result.attendees.map((a: any) => `${a.email} (${a.responseStatus || 'no response'})`).join('\n   ') : 
-            'None';
-
-          return `Event Details:
-Title: ${result.summary || 'No title'}
-When: ${start} - ${end}
-Location: ${result.location || 'No location'}
-Status: ${result.status || 'Unknown'}
-Description: ${result.description || 'No description'}
-Organizer: ${result.organizer?.email || 'Unknown'}
-Attendees:
-   ${attendees}
-Event ID: ${result.id}
-Link: ${result.htmlLink || 'No link available'}`;
-
-        } catch (error) {
-          return `Error retrieving event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  // Create Event Tool
+  const createEventTool = createSimpleTool(
+    'GoogleCalendarCreateEvent',
+    'Create a new event in Google Calendar.',
+    {
+      summary: createToolParameter('string', 'Event title/summary', { required: true }),
+      startDateTime: createToolParameter('string', 'Event start date and time (ISO string)', { required: true }),
+      endDateTime: createToolParameter('string', 'Event end date and time (ISO string)', { required: true }),
+      description: createToolParameter('string', 'Event description', { optional: true }),
+      location: createToolParameter('string', 'Event location', { optional: true }),
+      attendees: createToolParameter('string', 'Attendee email addresses (comma-separated)', { optional: true })
+    },
+    async (params: { summary: string; startDateTime: string; endDateTime: string; description?: string; location?: string; attendees?: string }) => {
+      try {
+        const credentialCheck = await checkGoogleCalendarCredentials();
+        if (!credentialCheck.hasCredentials) {
+          return `Google Calendar not available: ${credentialCheck.message}`;
         }
-      },
-    })
+
+        const eventData = {
+          summary: params.summary,
+          start: { dateTime: params.startDateTime },
+          end: { dateTime: params.endDateTime },
+          ...(params.description && { description: params.description }),
+          ...(params.location && { location: params.location }),
+          ...(params.attendees && { 
+            attendees: params.attendees.split(',').map(email => ({ email: email.trim() })) 
+          })
+        };
+
+        const result = await makeGoogleCalendarRequest('events', 'POST', eventData);
+        
+        return `Event created successfully!\n**Title:** ${result.summary}\n**Start:** ${result.start?.dateTime}\n**End:** ${result.end?.dateTime}\n**ID:** ${result.id}\n**Calendar Link:** ${result.htmlLink}`;
+      } catch (error) {
+        return `Error creating Google Calendar event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+    }
   );
 
-  // Google Calendar Create Event Tool
-  tools.push(
-    new DynamicStructuredTool({
-      name: 'GoogleCalendarCreateEvent',
-      description: 'Create a new calendar event in Google Calendar.',
-      schema: z.object({
-        summary: z.string().describe('Event title/summary'),
-        startDateTime: z.string().describe('Event start time (RFC3339 timestamp, e.g. "2024-01-01T10:00:00-07:00")'),
-        endDateTime: z.string().describe('Event end time (RFC3339 timestamp, e.g. "2024-01-01T11:00:00-07:00")'),
-        description: z.string().optional().describe('Event description'),
-        location: z.string().optional().describe('Event location'),
-        attendees: z.array(z.string()).optional().describe('Array of attendee email addresses'),
-        calendarId: z.string().optional().default('primary').describe('Calendar identifier (default is "primary" for the main calendar)'),
-      }),
-      func: async ({ summary, startDateTime, endDateTime, description, location, attendees, calendarId = 'primary' }) => {
-        try {
-          const credentialCheck = await checkGoogleCalendarCredentials();
-          if (!credentialCheck.hasCredentials) {
-            return `Google Calendar not available: ${credentialCheck.message}`;
-          }
-
-          const eventData = {
-            summary,
-            description,
-            location,
-            start: { dateTime: startDateTime },
-            end: { dateTime: endDateTime },
-            attendees: attendees?.map((email: string) => ({ email })),
-            calendarId
-          };
-
-          const result = await makeGoogleCalendarRequest('event', 'POST', eventData);
-          
-          return `Event created successfully!
-Event ID: ${result.id}
-Title: ${summary}
-When: ${startDateTime} - ${endDateTime}
-Location: ${location || 'No location'}
-Attendees: ${attendees?.join(', ') || 'None'}
-Status: Created
-Link: ${result.htmlLink || 'No link available'}`;
-
-        } catch (error) {
-          return `Error creating event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  // Update Event Tool
+  const updateEventTool = createSimpleTool(
+    'GoogleCalendarUpdateEvent',
+    'Update an existing event in Google Calendar.',
+    {
+      eventId: createToolParameter('string', 'ID of the event to update', { required: true }),
+      summary: createToolParameter('string', 'Updated event title/summary', { optional: true }),
+      startDateTime: createToolParameter('string', 'Updated start date and time (ISO string)', { optional: true }),
+      endDateTime: createToolParameter('string', 'Updated end date and time (ISO string)', { optional: true }),
+      description: createToolParameter('string', 'Updated event description', { optional: true }),
+      location: createToolParameter('string', 'Updated event location', { optional: true })
+    },
+    async (params: { eventId: string; summary?: string; startDateTime?: string; endDateTime?: string; description?: string; location?: string }) => {
+      try {
+        const credentialCheck = await checkGoogleCalendarCredentials();
+        if (!credentialCheck.hasCredentials) {
+          return `Google Calendar not available: ${credentialCheck.message}`;
         }
-      },
-    })
+
+        const updateData: any = {};
+        if (params.summary) updateData.summary = params.summary;
+        if (params.startDateTime) updateData.start = { dateTime: params.startDateTime };
+        if (params.endDateTime) updateData.end = { dateTime: params.endDateTime };
+        if (params.description) updateData.description = params.description;
+        if (params.location) updateData.location = params.location;
+
+        const result = await makeGoogleCalendarRequest(`events/${params.eventId}`, 'PUT', updateData);
+        
+        return `Event updated successfully!\n**Title:** ${result.summary}\n**Start:** ${result.start?.dateTime}\n**End:** ${result.end?.dateTime}\n**ID:** ${result.id}`;
+      } catch (error) {
+        return `Error updating Google Calendar event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+    }
   );
 
-  // Google Calendar Update Event Tool
-  tools.push(
-    new DynamicStructuredTool({
-      name: 'GoogleCalendarUpdateEvent',
-      description: 'Update an existing calendar event in Google Calendar.',
-      schema: z.object({
-        eventId: z.string().describe('The unique ID of the calendar event to update'),
-        summary: z.string().optional().describe('Updated event title/summary'),
-        startDateTime: z.string().optional().describe('Updated start time (RFC3339 timestamp)'),
-        endDateTime: z.string().optional().describe('Updated end time (RFC3339 timestamp)'),
-        description: z.string().optional().describe('Updated event description'),
-        location: z.string().optional().describe('Updated event location'),
-        attendees: z.array(z.string()).optional().describe('Updated array of attendee email addresses'),
-        calendarId: z.string().optional().default('primary').describe('Calendar identifier'),
-      }),
-      func: async ({ eventId, summary, startDateTime, endDateTime, description, location, attendees, calendarId = 'primary' }) => {
-        try {
-          const credentialCheck = await checkGoogleCalendarCredentials();
-          if (!credentialCheck.hasCredentials) {
-            return `Google Calendar not available: ${credentialCheck.message}`;
-          }
-
-          const updateData: any = { calendarId, eventId };
-          if (summary !== undefined) updateData.summary = summary;
-          if (description !== undefined) updateData.description = description;
-          if (location !== undefined) updateData.location = location;
-          if (startDateTime !== undefined) updateData.start = { dateTime: startDateTime };
-          if (endDateTime !== undefined) updateData.end = { dateTime: endDateTime };
-          if (attendees !== undefined) updateData.attendees = attendees.map((email: string) => ({ email }));
-
-          const result = await makeGoogleCalendarRequest('event', 'PUT', updateData);
-          
-          return `Event updated successfully!
-Event ID: ${result.id}
-Title: ${result.summary || 'No title'}
-Status: Updated
-Link: ${result.htmlLink || 'No link available'}`;
-
-        } catch (error) {
-          return `Error updating event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  // Delete Event Tool
+  const deleteEventTool = createSimpleTool(
+    'GoogleCalendarDeleteEvent',
+    'Delete an event from Google Calendar.',
+    {
+      eventId: createToolParameter('string', 'ID of the event to delete', { required: true })
+    },
+    async (params: { eventId: string }) => {
+      try {
+        const credentialCheck = await checkGoogleCalendarCredentials();
+        if (!credentialCheck.hasCredentials) {
+          return `Google Calendar not available: ${credentialCheck.message}`;
         }
-      },
-    })
+
+        await makeGoogleCalendarRequest(`events/${params.eventId}`, 'DELETE');
+        
+        return `Event with ID ${params.eventId} has been successfully deleted from Google Calendar`;
+      } catch (error) {
+        return `Error deleting Google Calendar event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+    }
   );
 
-  // Google Calendar Delete Event Tool
-  tools.push(
-    new DynamicStructuredTool({
-      name: 'GoogleCalendarDeleteEvent',
-      description: 'Delete a calendar event from Google Calendar.',
-      schema: z.object({
-        eventId: z.string().describe('The unique ID of the calendar event to delete'),
-        calendarId: z.string().optional().default('primary').describe('Calendar identifier'),
-      }),
-      func: async ({ eventId, calendarId = 'primary' }) => {
-        try {
-          const credentialCheck = await checkGoogleCalendarCredentials();
-          if (!credentialCheck.hasCredentials) {
-            return `Google Calendar not available: ${credentialCheck.message}`;
-          }
-
-          await makeGoogleCalendarRequest(`event/${calendarId}/${eventId}`, 'DELETE');
-          
-          return `Event deleted successfully!
-Event ID: ${eventId}
-Status: Deleted`;
-
-        } catch (error) {
-          return `Error deleting event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  // Get Event Details Tool
+  const getEventTool = createSimpleTool(
+    'GoogleCalendarGetEvent',
+    'Get detailed information about a specific event.',
+    {
+      eventId: createToolParameter('string', 'ID of the event to retrieve', { required: true })
+    },
+    async (params: { eventId: string }) => {
+      try {
+        const credentialCheck = await checkGoogleCalendarCredentials();
+        if (!credentialCheck.hasCredentials) {
+          return `Google Calendar not available: ${credentialCheck.message}`;
         }
-      },
-    })
+
+        const result = await makeGoogleCalendarRequest(`events/${params.eventId}`);
+        
+        const startTime = result.start?.dateTime || result.start?.date || 'No start time';
+        const endTime = result.end?.dateTime || result.end?.date || 'No end time';
+        const attendees = result.attendees ? result.attendees.map((att: any) => att.email).join(', ') : 'No attendees';
+        
+        return `**Event Details:**\n\n**Title:** ${result.summary || 'No title'}\n**Start:** ${startTime}\n**End:** ${endTime}\n**Location:** ${result.location || 'No location'}\n**Description:** ${result.description || 'No description'}\n**Attendees:** ${attendees}\n**Status:** ${result.status}\n**Created:** ${result.created}\n**Updated:** ${result.updated}\n**Calendar Link:** ${result.htmlLink}`;
+      } catch (error) {
+        return `Error retrieving Google Calendar event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+    }
   );
 
-  return tools;
+  // List Calendars Tool
+  const listCalendarsTool = createSimpleTool(
+    'GoogleCalendarListCalendars',
+    'List all available Google Calendars.',
+    {},
+    async () => {
+      try {
+        const credentialCheck = await checkGoogleCalendarCredentials();
+        if (!credentialCheck.hasCredentials) {
+          return `Google Calendar not available: ${credentialCheck.message}`;
+        }
+
+        const result = await makeGoogleCalendarRequest('calendars');
+        
+        if (!result.items || result.items.length === 0) {
+          return 'No calendars found';
+        }
+
+        const calendarList = result.items.map((calendar: any, index: number) => 
+          `${index + 1}. **${calendar.summary}**\n   ID: ${calendar.id}\n   Access: ${calendar.accessRole}\n   Primary: ${calendar.primary ? 'Yes' : 'No'}`
+        ).join('\n\n');
+
+        return `Available Google Calendars:\n\n${calendarList}`;
+      } catch (error) {
+        return `Error listing Google Calendars: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+    }
+  );
+
+  // Convert simplified tools to LangChain-compatible format
+  return [
+    convertToLangChainTool(listEventsTool),
+    convertToLangChainTool(createEventTool),
+    convertToLangChainTool(updateEventTool),
+    convertToLangChainTool(deleteEventTool),
+    convertToLangChainTool(getEventTool),
+    convertToLangChainTool(listCalendarsTool)
+  ];
 } 

@@ -1,21 +1,18 @@
-import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
+import { createSimpleTool, convertToLangChainTool, createToolParameter } from './simplifiedTools';
 import fs from 'fs';
 import path from 'path';
 
 /**
- * Create File System tools using proper LangChain tool definitions with Zod schemas
- * Following the same pattern as Python's FileManagementToolkit
+ * Create File System tools using simplified tool definitions
  */
-export function createFileSystemTools(fileSystemRootDir: string) {
+export function createFileSystemTools(fileSystemRootDir: string): any[] {
+  
   // Helper function to resolve and validate paths
   const resolvePath = (inputPath: string): string => {
-    // Resolve relative paths against the root directory
     const resolvedPath = path.isAbsolute(inputPath) 
       ? inputPath 
       : path.resolve(fileSystemRootDir, inputPath);
     
-    // Ensure the path is within the allowed root directory
     if (!resolvedPath.startsWith(fileSystemRootDir)) {
       throw new Error(`Access denied: Path must be within ${fileSystemRootDir}`);
     }
@@ -23,213 +20,215 @@ export function createFileSystemTools(fileSystemRootDir: string) {
     return resolvedPath;
   };
 
-  const readFileTool = tool(
-    async ({ file_path }) => {
+  // Read File Tool
+  const readFileTool = createSimpleTool(
+    'file_read_tool',
+    'Read the contents of a file',
+    {
+      file_path: createToolParameter('string', 'Path to the file to read', { required: true })
+    },
+    async (params: { file_path: string }) => {
       try {
-        const resolvedPath = resolvePath(file_path);
+        const resolvedPath = resolvePath(params.file_path);
         const content = fs.readFileSync(resolvedPath, 'utf-8');
-        return `File contents of ${file_path}:\n\n${content}`;
+        return `File contents of ${params.file_path}:\n\n${content}`;
       } catch (error) {
-        return `Error reading file ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        return `Error reading file ${params.file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "file_read_tool",
-      description: "Read the contents of a file",
-      schema: z.object({
-        file_path: z.string().describe("Path to the file to read"),
-      }),
     }
   );
 
-  const writeFileTool = tool(
-    async ({ file_path, text }) => {
+  // Write File Tool
+  const writeFileTool = createSimpleTool(
+    'file_write_tool',
+    'Write text content to a file',
+    {
+      file_path: createToolParameter('string', 'Path to the file to write', { required: true }),
+      text: createToolParameter('string', 'Text content to write to the file', { required: true })
+    },
+    async (params: { file_path: string; text: string }) => {
       try {
-        const resolvedPath = resolvePath(file_path);
-        // Ensure the directory exists
+        const resolvedPath = resolvePath(params.file_path);
         fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
-        fs.writeFileSync(resolvedPath, text, 'utf-8');
-        return `File written successfully to ${file_path}`;
+        fs.writeFileSync(resolvedPath, params.text, 'utf-8');
+        return `Successfully wrote to ${params.file_path}`;
       } catch (error) {
-        return `Error writing file ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        return `Error writing to file ${params.file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "file_write_tool",
-      description: "Write text content to a file",
-      schema: z.object({
-        file_path: z.string().describe("Path to the file to write"),
-        text: z.string().describe("Text content to write to the file"),
-      }),
     }
   );
 
-  const listDirectoryTool = tool(
-    async ({ directory_path = "." }) => {
+  // List Directory Tool
+  const listDirectoryTool = createSimpleTool(
+    'list_directory_tool',
+    'List files and directories in a given path',
+    {
+      directory_path: createToolParameter('string', 'Path to the directory to list', { default: '.', optional: true })
+    },
+    async (params: { directory_path?: string }) => {
       try {
-        const resolvedPath = resolvePath(directory_path);
+        const dirPath = params.directory_path || '.';
+        const resolvedPath = resolvePath(dirPath);
         const items = fs.readdirSync(resolvedPath, { withFileTypes: true });
-        
-        const result = items.map(item => {
-          return `${item.isDirectory() ? 'DIR' : 'FILE'}: ${item.name}`;
+        const formattedItems = items.map(item => {
+          const type = item.isDirectory() ? 'DIR' : 'FILE';
+          const stats = fs.statSync(path.join(resolvedPath, item.name));
+          const size = item.isFile() ? stats.size : '';
+          const modified = stats.mtime.toISOString().split('T')[0];
+          return `${type.padEnd(4)} ${item.name.padEnd(30)} ${size.toString().padStart(10)} ${modified}`;
         });
         
-        return `Contents of ${directory_path}:\n${result.join('\n')}`;
+        const header = `${'TYPE'.padEnd(4)} ${'NAME'.padEnd(30)} ${'SIZE'.padStart(10)} ${'MODIFIED'}`;
+        return `Directory listing for ${dirPath}:\n\n${header}\n${'-'.repeat(60)}\n${formattedItems.join('\n')}`;
       } catch (error) {
-        return `Error listing directory ${directory_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        return `Error listing directory ${params.directory_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "file_list_directory_tool",
-      description: "List files and directories in a specified path",
-      schema: z.object({
-        directory_path: z.string().optional().default(".").describe("Path to the directory to list (default: current directory)"),
-      }),
     }
   );
 
-  const copyFileTool = tool(
-    async ({ source_path, destination_path }) => {
+  // Copy File Tool
+  const copyFileTool = createSimpleTool(
+    'copy_file_tool',
+    'Copy a file from source to destination',
+    {
+      source_path: createToolParameter('string', 'Source file path', { required: true }),
+      destination_path: createToolParameter('string', 'Destination file path', { required: true })
+    },
+    async (params: { source_path: string; destination_path: string }) => {
       try {
-        const resolvedSource = resolvePath(source_path);
-        const resolvedDest = resolvePath(destination_path);
+        const resolvedSource = resolvePath(params.source_path);
+        const resolvedDest = resolvePath(params.destination_path);
         
-        // Ensure destination directory exists
         fs.mkdirSync(path.dirname(resolvedDest), { recursive: true });
         fs.copyFileSync(resolvedSource, resolvedDest);
-        
-        return `File copied successfully from ${source_path} to ${destination_path}`;
+        return `Successfully copied ${params.source_path} to ${params.destination_path}`;
       } catch (error) {
         return `Error copying file: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "file_copy_tool",
-      description: "Copy a file from source to destination",
-      schema: z.object({
-        source_path: z.string().describe("Path to the source file"),
-        destination_path: z.string().describe("Path to the destination file"),
-      }),
     }
   );
 
-  const moveFileTool = tool(
-    async ({ source_path, destination_path }) => {
+  // Move File Tool
+  const moveFileTool = createSimpleTool(
+    'move_file_tool',
+    'Move/rename a file from source to destination',
+    {
+      source_path: createToolParameter('string', 'Source file path', { required: true }),
+      destination_path: createToolParameter('string', 'Destination file path', { required: true })
+    },
+    async (params: { source_path: string; destination_path: string }) => {
       try {
-        const resolvedSource = resolvePath(source_path);
-        const resolvedDest = resolvePath(destination_path);
+        const resolvedSource = resolvePath(params.source_path);
+        const resolvedDest = resolvePath(params.destination_path);
         
-        // Ensure destination directory exists
         fs.mkdirSync(path.dirname(resolvedDest), { recursive: true });
         fs.renameSync(resolvedSource, resolvedDest);
-        
-        return `File moved successfully from ${source_path} to ${destination_path}`;
+        return `Successfully moved ${params.source_path} to ${params.destination_path}`;
       } catch (error) {
         return `Error moving file: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "file_move_tool",
-      description: "Move or rename a file from source to destination",
-      schema: z.object({
-        source_path: z.string().describe("Path to the source file"),
-        destination_path: z.string().describe("Path to the destination file"),
-      }),
     }
   );
 
-  const deleteFileTool = tool(
-    async ({ file_path }) => {
+  // Delete File Tool
+  const deleteFileTool = createSimpleTool(
+    'delete_file_tool',
+    'Delete a file or directory',
+    {
+      file_path: createToolParameter('string', 'Path to the file or directory to delete', { required: true })
+    },
+    async (params: { file_path: string }) => {
       try {
-        const resolvedPath = resolvePath(file_path);
+        const resolvedPath = resolvePath(params.file_path);
         const stats = fs.statSync(resolvedPath);
         
         if (stats.isDirectory()) {
           fs.rmSync(resolvedPath, { recursive: true, force: true });
-          return `Directory ${file_path} deleted successfully`;
+          return `Successfully deleted directory ${params.file_path}`;
         } else {
           fs.unlinkSync(resolvedPath);
-          return `File ${file_path} deleted successfully`;
+          return `Successfully deleted file ${params.file_path}`;
         }
       } catch (error) {
-        return `Error deleting ${file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        return `Error deleting ${params.file_path}: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "file_delete_tool",
-      description: "Delete a file or directory",
-      schema: z.object({
-        file_path: z.string().describe("Path to the file or directory to delete"),
-      }),
     }
   );
 
-  const searchFilesTool = tool(
-    async ({ directory_path = ".", pattern, file_extension }) => {
+  // Search Files Tool
+  const searchFilesTool = createSimpleTool(
+    'search_files_tool',
+    'Search for files in a directory based on name pattern and/or file extension',
+    {
+      directory_path: createToolParameter('string', 'Directory to search in', { default: '.', optional: true }),
+      pattern: createToolParameter('string', 'Pattern to search for in filenames', { optional: true }),
+      file_extension: createToolParameter('string', 'File extension to filter by (e.g., \'.txt\', \'.js\')', { optional: true })
+    },
+    async (params: { directory_path?: string; pattern?: string; file_extension?: string }) => {
       try {
-        const resolvedPath = resolvePath(directory_path);
+        const dirPath = params.directory_path || '.';
+        const resolvedPath = resolvePath(dirPath);
         const results: string[] = [];
         
         const searchRecursive = (currentPath: string) => {
-          const items = fs.readdirSync(currentPath, { withFileTypes: true });
-          
-          for (const item of items) {
-            const itemFullPath = path.join(currentPath, item.name);
-            const relativePath = path.relative(fileSystemRootDir, itemFullPath);
+          try {
+            const items = fs.readdirSync(currentPath, { withFileTypes: true });
             
-            if (item.isDirectory()) {
-              try {
-                searchRecursive(itemFullPath);
-              } catch (error) {
-                console.error(`Error reading directory ${itemFullPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-              }
-            } else {
-              let matches = true;
+            for (const item of items) {
+              const fullPath = path.join(currentPath, item.name);
+              const relativePath = path.relative(resolvedPath, fullPath);
               
-              if (pattern && !item.name.toLowerCase().includes(pattern.toLowerCase())) {
-                matches = false;
-              }
-              
-              if (file_extension && !item.name.toLowerCase().endsWith(file_extension.toLowerCase())) {
-                matches = false;
-              }
-              
-              if (matches) {
-                results.push(relativePath);
+              if (item.isDirectory()) {
+                if (!item.name.startsWith('.') && 
+                    !['node_modules', 'dist', 'build', 'coverage'].includes(item.name)) {
+                  searchRecursive(fullPath);
+                }
+              } else {
+                let matches = true;
+                
+                if (params.file_extension && !item.name.toLowerCase().endsWith(params.file_extension.toLowerCase())) {
+                  matches = false;
+                }
+                
+                if (params.pattern && !item.name.toLowerCase().includes(params.pattern.toLowerCase())) {
+                  matches = false;
+                }
+                
+                if (matches) {
+                  const stats = fs.statSync(fullPath);
+                  const size = stats.size;
+                  const modified = stats.mtime.toISOString().split('T')[0];
+                  results.push(`${relativePath.padEnd(50)} ${size.toString().padStart(10)} ${modified}`);
+                }
               }
             }
+          } catch (error) {
+            // Skip directories we can't read
           }
         };
         
         searchRecursive(resolvedPath);
         
         if (results.length === 0) {
-          return `No files found matching the criteria in ${directory_path}`;
+          return `No files found matching criteria in ${dirPath}`;
         }
         
-        return `Found ${results.length} files:\n${results.join('\n')}`;
+        const header = `${'FILE PATH'.padEnd(50)} ${'SIZE'.padStart(10)} ${'MODIFIED'}`;
+        return `Search results in ${dirPath}:\n\n${header}\n${'-'.repeat(72)}\n${results.slice(0, 50).join('\n')}${results.length > 50 ? `\n\n... and ${results.length - 50} more files` : ''}`;
       } catch (error) {
         return `Error searching files: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
-    },
-    {
-      name: "file_search_tool",
-      description: "Search for files in a directory by name pattern or extension",
-      schema: z.object({
-        directory_path: z.string().optional().default(".").describe("Directory to search in"),
-        pattern: z.string().optional().describe("Text pattern to search for in filenames"),
-        file_extension: z.string().optional().describe("File extension to filter by (e.g., '.txt', '.js')"),
-      }),
     }
   );
 
+  // Convert simplified tools to LangChain-compatible format
   return [
-    readFileTool,
-    writeFileTool,
-    listDirectoryTool,
-    copyFileTool,
-    moveFileTool,
-    deleteFileTool,
-    searchFilesTool
+    convertToLangChainTool(readFileTool),
+    convertToLangChainTool(writeFileTool),
+    convertToLangChainTool(listDirectoryTool),
+    convertToLangChainTool(copyFileTool),
+    convertToLangChainTool(moveFileTool),
+    convertToLangChainTool(deleteFileTool),
+    convertToLangChainTool(searchFilesTool)
   ];
 }

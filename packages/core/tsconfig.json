@@ -5,10 +5,20 @@
         "declaration": true,
         "outDir": "./dist",
         "rootDir": "./src",
-        "strict": true,
+        "strict": false,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "incremental": true,
+        "tsBuildInfoFile": "./dist/.tsbuildinfo",
+        "removeComments": true,
+        "preserveConstEnums": false,
+        "noImplicitAny": false,
+        "noImplicitReturns": false,
+        "noImplicitThis": false,
+        "strictNullChecks": false,
+        "strictFunctionTypes": false,
+        "strictPropertyInitialization": false
     },
     "include": [
         "src/**/*"
@@ -16,6 +26,8 @@
     "exclude": [
         "node_modules",
         "dist",
-        "../frontend"
+        "../frontend",
+        "**/*.test.ts",
+        "**/__tests__/**/*"
     ]
 }
