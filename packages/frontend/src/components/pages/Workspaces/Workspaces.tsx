@@ -181,7 +181,7 @@ const WorkspaceSidebar = ({
   }, [filePath, onFileClick]);
 
   return (
-      <Box sx={{ flex: 1, overflow: 'hidden' }}>
+      <Box sx={{ height: '100%', overflow: 'auto', minHeight: 0 }}>
         {username && (
           <FileTreeView
             filePath={filePath}
@@ -1069,7 +1069,7 @@ export default function Workspaces() {
               minSize={250}
               priority={LayoutPriority.Low}
             >
-              <Box sx={{ height: '100%', borderRight: 1, borderColor: 'divider', position: 'relative' }}>
+              <Box sx={{ height: '100%', borderRight: 1, borderColor: 'divider', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 <WorkspaceSidebar 
                   resetWorkspaceView={resetWorkspaceView} 
                   onFileClick={handleFileClick}

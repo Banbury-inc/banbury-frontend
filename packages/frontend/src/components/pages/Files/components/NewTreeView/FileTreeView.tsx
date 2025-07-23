@@ -547,7 +547,7 @@ export default function FileTreeView({
       ) : (
         <SimpleTreeView
           aria-label="file system navigator"
-          sx={{ width: '100%', flexGrow: 1, overflow: 'auto' }}
+          sx={{ width: '100%', flexGrow: 1 }}
           expandedItems={expandedNodes}
           onExpandedItemsChange={(_event: any, itemIds: any) => setExpandedNodes(itemIds)}
         >
