@@ -68,6 +68,8 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
     content: string;
     toolName?: string;
     thinking?: boolean;
+    expandableContent?: string;
+    expanded?: boolean;
   };
 
   const [messages, setMessages] = useState<UIMessage[]>([]);
@@ -82,6 +84,7 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [enabledTools, setEnabledTools] = useState<string[]>(['webSearch', 'filesystem', 'banbury']);
   const [mentionedFiles, setMentionedFiles] = useState<MentionableFile[]>([]);
+  const [expandedMessages, setExpandedMessages] = useState<Set<number>>(new Set());
 
   // Save selected model to localStorage when it changes
   useEffect(() => {
@@ -161,6 +164,18 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
       console.error('Error getting files for mentions:', error);
       return [];
     }
+  }, []);
+
+  const toggleMessageExpansion = useCallback((messageIndex: number) => {
+    setExpandedMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageIndex)) {
+        newSet.delete(messageIndex);
+      } else {
+        newSet.add(messageIndex);
+      }
+      return newSet;
+    });
   }, []);
 
   // Initialize LangGraph Agent
@@ -396,7 +411,13 @@ ${userMessage.content}${instructions}`
         },
         onThinkingStart: () => {
           setCurrentThinking('');
-          setMessages(prev => [...prev, { role: 'thinking', content: '🤔 Thinking...', thinking: true }]);
+          setMessages(prev => [...prev, { 
+            role: 'thinking', 
+            content: 'Thinking...', 
+            thinking: true,
+            expandableContent: '',
+            expanded: false
+          }]);
         },
         onThinking: (thinking: string) => {
           setCurrentThinking(thinking);
@@ -405,7 +426,12 @@ ${userMessage.content}${instructions}`
             const newPrev = [...prev];
             const lastIndex = newPrev.length - 1;
             if (newPrev[lastIndex].role === 'thinking') {
-              newPrev[lastIndex] = { ...newPrev[lastIndex], content: thinking } as UIMessage;
+              newPrev[lastIndex] = { 
+                ...newPrev[lastIndex], 
+                content: 'Thinking...', 
+                expandableContent: thinking,
+                expanded: newPrev[lastIndex].expanded || false
+              } as UIMessage;
             }
             return newPrev;
           });
@@ -414,12 +440,16 @@ ${userMessage.content}${instructions}`
           /* End thinking */
         },
         onToolCall: (toolCall) => {
-          const argsPreview = toolCall.function.arguments ? JSON.stringify(toolCall.function.arguments).slice(0, 120) : '';
-          setMessages(prev => [...prev, { role: 'tool-call', content: `🔧 Calling ${toolCall.function.name}(${argsPreview || ''})`, toolName: toolCall.function.name }]);
+          setMessages(prev => [...prev, { role: 'tool-call', content: `🔧 Calling ${toolCall.function.name}`, toolName: toolCall.function.name }]);
         },
         onToolResult: (result) => {
-          const resultPreview = JSON.stringify(result.content ?? '').slice(0, 200);
-          setMessages(prev => [...prev, { role: 'tool-result', content: `✅ Result: ${resultPreview}` }]);
+          const fullContent = JSON.stringify(result.content ?? '', null, 2);
+          setMessages(prev => [...prev, { 
+            role: 'tool-result', 
+            content: '✅ Result', 
+            expandableContent: fullContent,
+            expanded: false
+          }]);
         },
         onComplete: (fullResponse: string) => {
           // Clear the streaming message
@@ -570,48 +600,102 @@ ${userMessage.content}${instructions}`
       
       {/* Messages */}
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-        {messages.map((message, index) => (
-          <Box
-            key={index}
-            sx={{
-              mb: 2,
-              display: 'flex',
-              justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-            }}
-          >
+        {messages.map((message, index) => {
+          const isExpanded = expandedMessages.has(index);
+          const hasExpandableContent = message.expandableContent && (message.role === 'tool-result' || message.role === 'thinking');
+          
+          return (
             <Box
-              sx={(theme) => {
-                const bg = (role: string) => {
-                  switch (role) {
-                    case 'user':
-                      return theme.palette.primary.main;
-                    case 'assistant':
-                      return theme.palette.grey[100];
-                    case 'thinking':
-                      return theme.palette.grey[200];
-                    case 'tool-call':
-                      return theme.palette.info.light;
-                    case 'tool-result':
-                      return theme.palette.success.light;
-                    default:
-                      return theme.palette.grey[100];
-                  }
-                };
-                return {
-                  maxWidth: '70%',
-                  p: 2,
-                  borderRadius: 2,
-                  backgroundColor: bg(message.role),
-                  color: message.role === 'user' ? '#ffffff' : '#000000',
-                };
+              key={index}
+              sx={{
+                mb: 2,
+                display: 'flex',
+                justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
               }}
             >
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                {message.content}
-              </Typography>
+              <Box
+                sx={(theme) => {
+                  const bg = (role: string) => {
+                    switch (role) {
+                      case 'user':
+                        return theme.palette.primary.main;
+                      case 'assistant':
+                        return theme.palette.grey[100];
+                      case 'thinking':
+                        return theme.palette.background.paper;
+                      case 'tool-call':
+                        return theme.palette.background.paper;
+                      case 'tool-result':
+                        return theme.palette.background.paper;
+                      default:
+                        return theme.palette.grey[100];
+                    }
+                  };
+                  const getTextColor = (role: string) => {
+                    switch (role) {
+                      case 'tool-call':
+                      case 'tool-result':
+                        return '#ffffff';
+                      case 'thinking':
+                        return '#FFFFFF';
+                      default:
+                        return '#000000';
+                    }
+                  };
+                  return {
+                    maxWidth: '70%',
+                    p: 2,
+                    borderRadius: 2,
+                    backgroundColor: bg(message.role),
+                    color: getTextColor(message.role),
+                  };
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', flex: 1 }}>
+                    {message.content}
+                  </Typography>
+                  {hasExpandableContent && (
+                    <IconButton
+                      size="small"
+                      onClick={() => toggleMessageExpansion(index)}
+                      sx={{ 
+                        color: 'inherit',
+                        minWidth: 'auto',
+                        width: 24,
+                        height: 24,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        }
+                      }}
+                    >
+                      {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                    </IconButton>
+                  )}
+                </Stack>
+                
+                {hasExpandableContent && isExpanded && (
+                  <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: 'monospace',
+                        fontSize: '0.7rem',
+                        opacity: 0.9,
+                        display: 'block',
+                        maxHeight: '200px',
+                        overflow: 'auto'
+                      }}
+                    >
+                      {message.expandableContent}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Box>
-          </Box>
-        ))}
+          );
+        })}
         
         {/* Current streaming message */}
         {currentStreamingMessage && (
@@ -664,10 +748,10 @@ ${userMessage.content}${instructions}`
               sx={{
                 p: 2,
                 borderRadius: 2,
-                backgroundColor: 'grey.100',
+                backgroundColor: 'theme.palette.background.paper',
               }}
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="white">
                 Thinking...
               </Typography>
             </Box>
