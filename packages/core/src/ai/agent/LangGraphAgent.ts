@@ -154,7 +154,7 @@ export class LangGraphAgent {
     const webSearchInfo = this.toolConfig.webSearch ? `
 
 **Available Web Search Tools (use only when needed):**
-- web_search_tool: Search the web for current information, news, facts, or any query that requires up-to-date information
+- web_search: Search the web for current information, news, facts, or any query that requires up-to-date information
   Parameters:
   - query: Search query string
   - maxResults: Maximum number of results to return (default: 5)
@@ -181,7 +181,7 @@ export class LangGraphAgent {
 **Available File System Tools (use only when needed):**
 - file_read_tool: Read contents of a file
 - file_write_tool: Write text content to a file
-- file_list_directory_tool: List files and directories in a path
+- list_directory_tool: List files and directories in a path
 - file_copy_tool: Copy files from one location to another
 - file_move_tool: Move/rename files
 - file_delete_tool: Delete files or directories
@@ -211,6 +211,8 @@ You operate using LangGraph's ReAct (Reasoning and Acting) pattern, which provid
 - Strategic tool selection and usage
 - Iterative problem-solving with reflection
 
+Use <thinking> tags to show your reasoning process when deciding whether to use tools.
+
 **Your workflow:**
 
 1. **ANALYZE** the user's request thoroughly
@@ -224,11 +226,12 @@ You operate using LangGraph's ReAct (Reasoning and Acting) pattern, which provid
 - Don't use tools for general knowledge questions
 - Use tools strategically for current system information, file operations, or web searches
 - Handle errors gracefully and provide alternatives
+- When calling tools, use the exact tool names as specified below
 
 **Examples of when to use tools:**
 - User asks about their files or device → Use banbury tools
 - User wants file operations → Use file system tools
-- User asks for current information → Use web search tools
+- User asks for current information → Use web_search
 - User wants email management → Use Gmail tools
 
 **Examples of when NOT to use tools:**
@@ -277,8 +280,20 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
         if (chunk.messages && chunk.messages.length > 0) {
           const lastMessage = chunk.messages[chunk.messages.length - 1];
           
-          // Skip tool messages to prevent tool results from appearing in the message bubble
+          // Handle tool result messages
           if (lastMessage.constructor?.name === 'ToolMessage' || lastMessage.type === 'tool') {
+            // Extract tool result and notify
+            if (lastMessage.content) {
+              const toolId = lastMessage.tool_call_id || lastMessage.id || 'unknown';
+              const content = typeof lastMessage.content === 'string' 
+                ? lastMessage.content 
+                : JSON.stringify(lastMessage.content);
+              
+              callbacks.onToolResult?.({
+                success: true,
+                content: [{ type: 'text', text: content }]
+              });
+            }
             continue;
           }
 
@@ -315,18 +330,19 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
                   }
                 } else if (contentBlock.type === 'tool_use') {
                   // Handle tool use content
+                  const toolName = contentBlock.name || contentBlock.tool_name || 'unknown_tool';
+                  const toolId = contentBlock.id || contentBlock.tool_call_id || `tool_${Date.now()}`;
+                  const toolArgs = contentBlock.input || contentBlock.tool_args || {};
+                  
                   callbacks.onToolCall?.({
-                    id: contentBlock.tool_call_id || `tool_${Date.now()}`,
+                    id: toolId,
                     type: 'function',
                     function: {
-                      name: contentBlock.tool_name || 'unknown_tool',
-                      arguments: JSON.stringify(contentBlock.tool_args || {})
+                      name: toolName,
+                      arguments: JSON.stringify(toolArgs)
                     }
                   });
-                  callbacks.onToolResult?.({
-                    success: true,
-                    content: [{ type: 'text', text: `Tool: ${contentBlock.tool_name || 'unknown_tool'}, Result: ${JSON.stringify(contentBlock.tool_result || 'unknown_result')}` }]
-                  });
+                  // Don't send tool result here - it will come separately
                   // Don't end thinking here - let it persist until completion
                 }
               }
@@ -354,12 +370,17 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
           // Handle tool calls - LangGraph manages this automatically
           if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
             for (const toolCall of lastMessage.tool_calls) {
+              // Support different property names from different LangChain versions
+              const toolName = toolCall.name || toolCall.tool || toolCall.function?.name || 'unknown_tool';
+              const toolArgs = toolCall.args || toolCall.arguments || toolCall.function?.arguments || {};
+              const toolId = toolCall.id || toolCall.tool_call_id || `tool_${Date.now()}`;
+              
               callbacks.onToolCall?.({
-                id: toolCall.id || `tool_${Date.now()}`,
+                id: toolId,
                 type: 'function',
                 function: {
-                  name: toolCall.name || 'unknown_tool',
-                  arguments: JSON.stringify(toolCall.args || {})
+                  name: toolName,
+                  arguments: typeof toolArgs === 'string' ? toolArgs : JSON.stringify(toolArgs)
                 }
               });
             }

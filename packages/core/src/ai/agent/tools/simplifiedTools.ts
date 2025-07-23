@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DynamicStructuredTool } from '@langchain/core/tools';
 
 /**
  * Simplified tool system that avoids complex LangChain generic types
@@ -132,46 +133,15 @@ function convertToZodSchema(simpleSchema: ToolSchema): any {
 export function convertToLangChainTool(simpleTool: SimpleTool): any {
   const zodSchema = convertToZodSchema(simpleTool.parameters);
   
-  // Create a LangChain-compatible tool object manually
-  const langchainTool: any = {
+  // Create a proper DynamicStructuredTool instance
+  return new DynamicStructuredTool({
     name: simpleTool.name,
     description: simpleTool.description,
     schema: zodSchema,
-    
-    // Core LangChain tool methods
-    call: async (params: any) => {
+    func: async (params: any) => {
       return await simpleTool.execute(params);
-    },
-    
-    invoke: async (params: any) => {
-      return await simpleTool.execute(params);
-    },
-    
-    _call: async (params: any) => {
-      return await simpleTool.execute(params);
-    },
-    
-    // Additional properties for compatibility
-    lc_name: simpleTool.name,
-    lc_serializable: true,
-    lc_namespace: ['langchain', 'tools'],
-    
-    // For Anthropic compatibility - ensure proper JSON Schema format
-    toJSON: () => ({
-      type: 'function',
-      function: {
-        name: simpleTool.name,
-        description: simpleTool.description,
-        parameters: zodSchema.toJsonSchema ? zodSchema.toJsonSchema() : {
-          type: 'object',
-          properties: {},
-          additionalProperties: false
-        }
-      }
-    })
-  };
-  
-  return langchainTool;
+    }
+  });
 }
 
 /**
