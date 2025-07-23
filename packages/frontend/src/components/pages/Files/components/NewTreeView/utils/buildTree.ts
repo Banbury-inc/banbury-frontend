@@ -139,8 +139,11 @@ export function buildTree(files: DatabaseData[], allDevices: any[] = []): Databa
     // Get the device node from the map
     const deviceNode = devicesMap.get(uniqueDeviceKey);
 
+    // Normalize the file path to handle both Windows backslashes and Unix forward slashes
+    const normalizedPath = file.file_path.replace(/\\/g, '/');
+    
     // Create or update the file structure under the device node
-    const filePathParts = file.file_path.split('/').filter(Boolean);
+    const filePathParts = normalizedPath.split('/').filter(Boolean);
     let currentNode = deviceNode;
 
     filePathParts.forEach((part: string, partIndex: number) => {
