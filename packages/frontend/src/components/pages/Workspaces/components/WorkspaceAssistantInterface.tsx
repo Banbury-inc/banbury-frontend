@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -85,11 +85,28 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
   const [enabledTools, setEnabledTools] = useState<string[]>(['webSearch', 'filesystem', 'banbury']);
   const [mentionedFiles, setMentionedFiles] = useState<MentionableFile[]>([]);
   const [expandedMessages, setExpandedMessages] = useState<Set<number>>(new Set());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Save selected model to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('workspace_ai_model', selectedModel);
   }, [selectedModel]);
+
+  // Auto-scroll to bottom when new messages arrive
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  // Auto-scroll when messages change, streaming updates, or loading state changes
+  useEffect(() => {
+    // Small delay to ensure DOM is updated before scrolling
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [messages, currentStreamingMessage, isLoading, scrollToBottom]);
   const { showAlert } = useAlert();
 
   // Model configuration - dynamically updated based on selected model
@@ -599,7 +616,7 @@ ${userMessage.content}${instructions}`
       </Box>
       
       {/* Messages */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+      <Box ref={messagesContainerRef} sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         {messages.map((message, index) => {
           const isExpanded = expandedMessages.has(index);
           const hasExpandableContent = message.expandableContent && (message.role === 'tool-result' || message.role === 'thinking');
@@ -757,6 +774,9 @@ ${userMessage.content}${instructions}`
             </Box>
           </Box>
         )}
+        
+        {/* Invisible element to scroll to */}
+        <div ref={messagesEndRef} />
       </Box>
 
 
