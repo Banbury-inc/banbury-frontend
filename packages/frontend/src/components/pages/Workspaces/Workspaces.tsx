@@ -83,10 +83,14 @@ const NavToggleButton = ({
 // Workspace Sidebar Component
 const WorkspaceSidebar = ({ 
   resetWorkspaceView,
-  onFileClick 
+  onFileClick,
+  cloudFiles = [],
+  cloudEnabled = true
 }: { 
   resetWorkspaceView: () => void;
   onFileClick?: (fileName: string, filePath: string, fileType: string) => void;
+  cloudFiles?: any[];
+  cloudEnabled?: boolean;
 }) => {
   const [filePath, setFilePath] = useState('');
   const [filePathDevice, setFilePathDevice] = useState('');
@@ -192,6 +196,8 @@ const WorkspaceSidebar = ({
             setForwardHistory={setForwardHistory}
             googleDriveFiles={[]}
             googleDriveEnabled={false}
+            cloudFiles={cloudFiles}
+            cloudEnabled={cloudEnabled}
           />
         )}
       </Box>
@@ -382,6 +388,12 @@ export default function Workspaces() {
 
   const { showAlert } = useAlert();
   const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
+
+  // Add Cloud Files state (similar to Files.tsx)
+  const [cloudFiles, setCloudFiles] = useState<any[]>([]);
+  const [isCloudLoading, setIsCloudLoading] = useState(false);
+  const [cloudError, setCloudError] = useState<string | null>(null);
+  const [cloudEnabled] = useState(true); // Cloud is always enabled
 
   // Document AI Integration Functions
   const getDocumentInfo = useCallback(() => {
@@ -1217,6 +1229,31 @@ export default function Workspaces() {
     updatePanelStates(newLeftCollapsed, newRightOpen);
   }, [updatePanelStates]);
 
+  // Add Cloud Files fetching effect (similar to Files.tsx)
+  useEffect(() => {
+    const fetchCloudFilesData = async () => {
+      if (!username) return;
+
+      // Fetch Cloud files for tree display
+      setIsCloudLoading(true);
+      setCloudError(null);
+
+      try {
+        const { fetchCloudData } = await import('../Files/utils/fetchAllData');
+        const result = await fetchCloudData();
+        setCloudFiles(result);
+      } catch (error: any) {
+        console.error('Error fetching Cloud files for Workspaces:', error);
+        setCloudError(error.message || 'Failed to load Cloud files');
+        setCloudFiles([]);
+      } finally {
+        setIsCloudLoading(false);
+      }
+    };
+
+    fetchCloudFilesData();
+  }, [username]);
+
   // Sync initial state with ref
   useEffect(() => {
     panelStateRef.current = { leftCollapsed: leftPanelCollapsed, rightOpen: rightPanelOpen };
@@ -1263,6 +1300,8 @@ export default function Workspaces() {
                 <WorkspaceSidebar 
                   resetWorkspaceView={resetWorkspaceView} 
                   onFileClick={handleFileClick}
+                  cloudFiles={cloudFiles}
+                  cloudEnabled={cloudEnabled}
                 />
                 {/* Left Panel Toggle Button (when panel is open) */}
                 <Box
