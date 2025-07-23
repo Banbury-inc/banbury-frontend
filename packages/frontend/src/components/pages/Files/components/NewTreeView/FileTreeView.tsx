@@ -52,7 +52,12 @@ function getIconForKind(kind: string) {
 }
 
 // Add the S3 Files node to the tree data
-const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
+const addS3FilesNode = (fileRows: DatabaseData[], cloudFiles: DatabaseData[] = [], cloudEnabled: boolean = true): DatabaseData[] => {
+  // Don't add Cloud node if cloud is disabled (though it's always enabled by default)
+  if (!cloudEnabled) {
+    return fileRows;
+  }
+
   // Find the Core node
   const coreNodeIndex = fileRows.findIndex(node => node.id === 'Core');
   
@@ -60,15 +65,17 @@ const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
     // Create a copy of the fileRows
     const updatedFileRows = [...fileRows];
     
-    // Create the S3 Files node if Core node exists
-    if (!updatedFileRows[coreNodeIndex].children?.some(child => child.id === 'Cloud')) {
+    // Find existing Cloud node or create it
+    let cloudNodeIndex = updatedFileRows[coreNodeIndex].children?.findIndex(child => child.id === 'Cloud');
+    
+    if (cloudNodeIndex === -1 || cloudNodeIndex === undefined) {
       // Ensure the children array exists
       if (!updatedFileRows[coreNodeIndex].children) {
         updatedFileRows[coreNodeIndex].children = [];
       }
       
-      // Add the S3 Files node as a child of Core
-      updatedFileRows[coreNodeIndex].children.push({
+      // Add the Cloud node as a child of Core
+      const cloudNode: DatabaseData = {
         id: 'Cloud',
         _id: 'Cloud',
         file_name: 'Cloud',
@@ -84,8 +91,29 @@ const addS3FilesNode = (fileRows: DatabaseData[]): DatabaseData[] => {
         deviceID: '',
         helpers: 0,
         available: '',
-        original_device: ''
-      });
+        original_device: '',
+        children: []
+      };
+      
+      updatedFileRows[coreNodeIndex].children.push(cloudNode);
+      cloudNodeIndex = updatedFileRows[coreNodeIndex].children.length - 1;
+    }
+    
+    // Update Cloud files as children
+    if (updatedFileRows[coreNodeIndex].children && cloudNodeIndex >= 0) {
+      if (cloudFiles.length > 0) {
+        // If we have files, populate with actual Cloud files
+        // Transform cloud files to match tree structure
+        const cloudTreeFiles: DatabaseData[] = cloudFiles.map(file => ({
+          ...file,
+          file_parent: 'Cloud',
+          children: file.kind === 'Folder' ? [] : undefined
+        }));
+        updatedFileRows[coreNodeIndex].children[cloudNodeIndex].children = cloudTreeFiles;
+      } else {
+        // If no files, set children to empty array to make node expandable but show no items
+        updatedFileRows[coreNodeIndex].children[cloudNodeIndex].children = [];
+      }
     }
     
     return updatedFileRows;
@@ -187,7 +215,9 @@ export default function FileTreeView({
   setBackHistory,
   setForwardHistory,
   googleDriveFiles = [],
-  googleDriveEnabled = false
+  googleDriveEnabled = false,
+  cloudFiles = [],
+  cloudEnabled = true
 }: { 
   filePath: string, 
   setFilePath: (filePath: string) => void, 
@@ -196,7 +226,9 @@ export default function FileTreeView({
   setBackHistory: React.Dispatch<React.SetStateAction<string[]>>,
   setForwardHistory: React.Dispatch<React.SetStateAction<string[]>>,
   googleDriveFiles?: any[],
-  googleDriveEnabled?: boolean
+  googleDriveEnabled?: boolean,
+  cloudFiles?: DatabaseData[],
+  cloudEnabled?: boolean
 }) {
   const { set_Files, username, setFirstname, setLastname, devices } = useAuth();
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
@@ -431,7 +463,7 @@ export default function FileTreeView({
           setFetchedFiles(updatedFiles);
           let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
           // Add S3 Files node to the tree
-          treeData = addS3FilesNode(treeData);
+          treeData = addS3FilesNode(treeData, cloudFiles, cloudEnabled);
           // Add Google Drive node to the tree with actual files
           treeData = addGoogleDriveNode(treeData, googleDriveFiles, googleDriveEnabled);
           setFileRows(treeData);
@@ -448,7 +480,7 @@ export default function FileTreeView({
       console.error('Unhandled error in fetchAndUpdateFiles:', error);
       setIsLoading(false);
     });
-  }, [username, disableFetch, filePath, devices, googleDriveFiles, googleDriveEnabled]);
+  }, [username, disableFetch, filePath, devices, googleDriveFiles, googleDriveEnabled, cloudFiles, cloudEnabled]);
 
   // File watcher effect - separate from main fetch logic
   useEffect(() => {
@@ -471,7 +503,7 @@ export default function FileTreeView({
           setFetchedFiles(updatedFiles);
           let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
           // Add S3 Files node to the tree
-          treeData = addS3FilesNode(treeData);
+          treeData = addS3FilesNode(treeData, cloudFiles, cloudEnabled);
           // Add Google Drive node to the tree with actual files
           treeData = addGoogleDriveNode(treeData, googleDriveFiles, googleDriveEnabled);
           setFileRows(treeData);
@@ -492,7 +524,7 @@ export default function FileTreeView({
     return () => {
       fileWatcherEmitter.off('fileChanged', handleFileChangeWrapper);
     };
-  }, [username, disableFetch, devices, googleDriveFiles, googleDriveEnabled]);
+  }, [username, disableFetch, devices, googleDriveFiles, googleDriveEnabled, cloudFiles, cloudEnabled]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => {
