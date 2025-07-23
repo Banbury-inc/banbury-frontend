@@ -74,6 +74,7 @@
     "@tiptap/extension-mention": "^3.0.7",
     "@tiptap/extension-ordered-list": "^3.0.7",
     "@tiptap/extension-paragraph": "^3.0.7",
+    "@tiptap/extension-placeholder": "^3.0.7",
     "@tiptap/extension-table": "^3.0.7",
     "@tiptap/extension-table-cell": "^3.0.7",
     "@tiptap/extension-table-header": "^3.0.7",

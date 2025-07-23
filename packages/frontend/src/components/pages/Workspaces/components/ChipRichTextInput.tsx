@@ -3,6 +3,7 @@ import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
 import Suggestion from '@tiptap/suggestion';
+import Placeholder from '@tiptap/extension-placeholder';
 import { mergeAttributes } from '@tiptap/core';
 import tippy from 'tippy.js';
 import {
@@ -121,8 +122,18 @@ const MentionListComponent = React.forwardRef<
   }
 
   return (
-    <Paper elevation={4} sx={{ maxWidth: 300, maxHeight: 300, overflow: 'auto' }}>
-      <List dense>
+    <Paper 
+      elevation={4} 
+      sx={{ 
+        maxWidth: 280, 
+        maxHeight: 200, 
+        overflow: 'auto',
+        py: 0.5,
+        border: '1px solid rgba(255,255,255,0.1)',
+        bgcolor: 'rgba(30, 30, 30, 0.95)',
+      }}
+    >
+      <List dense sx={{ py: 0 }}>
         {items.map((file, index) => (
           <ListItem
             key={file.id}
@@ -133,11 +144,24 @@ const MentionListComponent = React.forwardRef<
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
-              minHeight: 40,
+              gap: 0.75,
+              minHeight: 28,
+              py: 0.25,
+              px: 1,
+              borderRadius: 0.5,
+              mx: 0.5,
+              '&.Mui-selected': {
+                bgcolor: 'rgba(100, 149, 237, 0.2)',
+                '&:hover': {
+                  bgcolor: 'rgba(100, 149, 237, 0.3)',
+                },
+              },
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+              },
             }}
           >
-            <Box sx={{ fontSize: '1rem', flexShrink: 0 }}>
+            <Box sx={{ fontSize: '0.75rem', flexShrink: 0, width: '14px', textAlign: 'center' }}>
               {getFileIcon(file)}
             </Box>
             <ListItemText 
@@ -147,7 +171,10 @@ const MentionListComponent = React.forwardRef<
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  fontSize: '0.875rem',
+                  fontSize: '0.75rem',
+                  lineHeight: '1.2',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontWeight: 400,
                 }
               }}
             />
@@ -247,6 +274,12 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
           },
         },
       }),
+      Placeholder.configure({
+        placeholder,
+        emptyEditorClass: 'is-editor-empty',
+        emptyNodeClass: 'is-empty',
+        includeChildren: true,
+      }),
       MentionNode,
     ],
     content: value,
@@ -328,8 +361,28 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
     return <Box sx={{ p: 1 }}>Loading...</Box>;
   }
 
+  const isEditorEmpty = !value || value.trim() === '';
+
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
+      {/* Manual placeholder overlay */}
+      {isEditorEmpty && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 12,
+            left: 12,
+            color: 'rgba(255, 255, 255, 0.6)',
+            pointerEvents: 'none',
+            fontStyle: 'normal',
+            fontSize: '14px',
+            zIndex: 1,
+          }}
+        >
+          {placeholder}
+        </Box>
+      )}
+      
       <Box 
         sx={{ 
           border: 1, 
@@ -369,6 +422,20 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
               outline: 'none',
               '& p': {
                 margin: 0,
+              },
+              '& .ProseMirror-placeholder': {
+                color: 'rgba(255, 255, 255, 0.6) !important',
+                pointerEvents: 'none',
+                fontStyle: 'italic',
+                userSelect: 'none',
+              },
+              '& p.is-editor-empty:first-child::before': {
+                content: 'attr(data-placeholder)',
+                float: 'left',
+                color: 'rgba(255, 255, 255, 0.6)',
+                pointerEvents: 'none',
+                height: 0,
+                fontStyle: 'italic',
               },
             },
             '@keyframes blink': {

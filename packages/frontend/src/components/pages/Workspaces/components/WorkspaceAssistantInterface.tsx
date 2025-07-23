@@ -730,7 +730,7 @@ ${userMessage.content}${instructions}`
                 ? "Ask questions about your document or request edits... Type @ to mention files"
                 : attachedFiles.length > 0 || mentionedFiles.length > 0
                   ? "Ask me about the files... Type @ to mention more files"
-                  : "Type your message... Use @ to mention files"
+                  : "Ask anything... Use @ to mention files"
               }
               disabled={isLoading}
               getFiles={handleGetFiles}
