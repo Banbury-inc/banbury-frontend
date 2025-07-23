@@ -80,7 +80,15 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+      try {
+        // Ensure content is valid before setting
+        const safeContent = content || '<p></p>';
+        editor.commands.setContent(safeContent);
+      } catch (error) {
+        console.error('Error setting editor content:', error);
+        // Fallback to empty content on error
+        editor.commands.setContent('<p></p>');
+      }
     }
   }, [content, editor]);
 

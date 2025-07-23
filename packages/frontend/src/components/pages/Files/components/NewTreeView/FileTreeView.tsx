@@ -480,7 +480,7 @@ export default function FileTreeView({
       console.error('Unhandled error in fetchAndUpdateFiles:', error);
       setIsLoading(false);
     });
-  }, [username, disableFetch, filePath, devices, googleDriveFiles, googleDriveEnabled, cloudFiles, cloudEnabled]);
+  }, [username, filePath]); // Removed problematic dependencies to prevent infinite loop
 
   // File watcher effect - separate from main fetch logic
   useEffect(() => {
@@ -524,7 +524,17 @@ export default function FileTreeView({
     return () => {
       fileWatcherEmitter.off('fileChanged', handleFileChangeWrapper);
     };
-  }, [username, disableFetch, devices, googleDriveFiles, googleDriveEnabled, cloudFiles, cloudEnabled]);
+  }, []); // File watcher only needs to be set up once
+
+  // Separate effect to update tree when cloud/Google Drive data changes
+  useEffect(() => {
+    if (fetchedFiles.length > 0) {
+      let treeData = buildTree(fetchedFiles, Array.isArray(devices) ? devices : []);
+      treeData = addS3FilesNode(treeData, cloudFiles, cloudEnabled);
+      treeData = addGoogleDriveNode(treeData, googleDriveFiles, googleDriveEnabled);
+      setFileRows(treeData);
+    }
+  }, [fetchedFiles, devices, cloudFiles, cloudEnabled, googleDriveFiles, googleDriveEnabled]);
 
   const renderTreeItems = useCallback((nodes: DatabaseData[]) => {
     return nodes.map((node) => {

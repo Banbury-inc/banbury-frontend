@@ -97,7 +97,7 @@ const WorkspaceSidebar = ({
   const [filePathDevice, setFilePathDevice] = useState('');
   const [backHistory, setBackHistory] = useState<string[]>([]);
   const [forwardHistory, setForwardHistory] = useState<string[]>([]);
-  const { username } = useAuth();
+  const { username, devices } = useAuth();
 
   // Helper function to get file type
   const getFileType = (fileName: string): string => {
@@ -427,7 +427,7 @@ export default function Workspaces() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const { showAlert } = useAlert();
-  const { username, tasks, setTasks, setTaskbox_expanded } = useAuth();
+  const { username, tasks, setTasks, setTaskbox_expanded, devices } = useAuth();
 
   // Add Cloud Files state (similar to Files.tsx)
   const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
@@ -823,51 +823,77 @@ export default function Workspaces() {
             const parseElement = (element: string): TextRun[] => {
               const runs: TextRun[] = [];
               
-              // Extract text and formatting
-              let text = element;
-              let isBold = false;
-              let isItalic = false;
-              let isUnderline = false;
-              let isStrike = false;
-              
-              // Check for formatting tags
-              if (text.includes('<strong>') || text.includes('<b>')) {
-                isBold = true;
-                text = text.replace(/<\/?(?:strong|b)>/g, '');
-              }
-              if (text.includes('<em>') || text.includes('<i>')) {
-                isItalic = true;
-                text = text.replace(/<\/?(?:em|i)>/g, '');
-              }
-              if (text.includes('<u>')) {
-                isUnderline = true;
-                text = text.replace(/<\/?u>/g, '');
-              }
-              if (text.includes('<s>') || text.includes('<del>')) {
-                isStrike = true;
-                text = text.replace(/<\/?(?:s|del)>/g, '');
-              }
-              
-              // Clean up remaining HTML
-              text = text
-                .replace(/<[^>]+>/g, ' ')
-                .replace(/&nbsp;/g, ' ')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#039;/g, "'")
-                .replace(/\s+/g, ' ')
-                .trim();
-              
-              if (text) {
-                runs.push(new TextRun({
-                  text: text,
-                  bold: isBold,
-                  italics: isItalic,
-                  underline: isUnderline ? {} : undefined,
-                  strike: isStrike,
-                }));
+              try {
+                // Extract text and formatting
+                let text = element;
+                let isBold = false;
+                let isItalic = false;
+                let isUnderline = false;
+                let isStrike = false;
+                
+                // Check for formatting tags
+                if (text.includes('<strong>') || text.includes('<b>')) {
+                  isBold = true;
+                  text = text.replace(/<\/?(?:strong|b)>/g, '');
+                }
+                if (text.includes('<em>') || text.includes('<i>')) {
+                  isItalic = true;
+                  text = text.replace(/<\/?(?:em|i)>/g, '');
+                }
+                if (text.includes('<u>')) {
+                  isUnderline = true;
+                  text = text.replace(/<\/?u>/g, '');
+                }
+                if (text.includes('<s>') || text.includes('<del>')) {
+                  isStrike = true;
+                  text = text.replace(/<\/?(?:s|del)>/g, '');
+                }
+                
+                // Handle line breaks
+                text = text.replace(/<br\s*\/?>/g, '\n');
+                
+                // Clean up remaining HTML
+                text = text
+                  .replace(/<[^>]+>/g, ' ')
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&#039;/g, "'")
+                  .replace(/&#x27;/g, "'")
+                  .replace(/&#x2F;/g, "/")
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                
+                // Split by newlines and create separate runs
+                const lines = text.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i].trim();
+                  if (line) {
+                    runs.push(new TextRun({
+                      text: line,
+                      bold: isBold,
+                      italics: isItalic,
+                      underline: isUnderline ? {} : undefined,
+                      strike: isStrike,
+                    }));
+                  }
+                  // Add break between lines except for the last one
+                  if (i < lines.length - 1) {
+                    runs.push(new TextRun({
+                      text: '',
+                      break: 1
+                    }));
+                  }
+                }
+              } catch (error) {
+                console.error('Error parsing element:', error);
+                // Fallback: create a simple text run
+                const plainText = element.replace(/<[^>]+>/g, '').trim();
+                if (plainText) {
+                  runs.push(new TextRun(plainText));
+                }
               }
               
               return runs;
@@ -955,27 +981,98 @@ export default function Workspaces() {
           await writeFile(document.filePath, docxBuffer);
           
           console.log('Document saved successfully as DOCX');
-          showAlert('Success', [`"${document.fileName}" saved successfully in DOCX format.`], 'success');
+          
+          // Check if this is a cloud file that needs to be uploaded and replaced
+          const isCloudFile = document.filePath && (
+            document.filePath.startsWith('Core/Cloud/') || 
+            document.filePath.includes(path.join(os.homedir(), 'BCloud'))
+          );
+          
+          if (isCloudFile) {
+            try {
+              console.log('Detected cloud DOCX file, uploading to replace existing cloud file...');
+              
+              // Find the corresponding cloud file in our cloudFiles array
+              const fileName = path.basename(document.filePath);
+              const cloudFile = cloudFiles.find(file => 
+                file.file_name === fileName || file.file_name === document.fileName
+              );
+              
+              if (cloudFile) {
+                // Create a File object from the saved DOCX file
+                const { banbury } = await import('@banbury/core');
+                const fs = await import('fs/promises');
+                
+                const fileBuffer = await fs.readFile(document.filePath);
+                const file = new File([fileBuffer], fileName, {
+                  type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                });
+                
+                // Delete the existing cloud file first
+                if (cloudFile._id || cloudFile.id) {
+                  try {
+                    console.log('Deleting existing cloud file before uploading new version...');
+                    const fileId = String(cloudFile._id || cloudFile.id);
+                    await banbury.files.deleteS3File(fileId);
+                    console.log('Existing cloud file deleted successfully');
+                  } catch (deleteError) {
+                    console.error('Error deleting existing cloud file:', deleteError);
+                    // Continue with upload even if delete fails - the upload should overwrite
+                  }
+                }
+                
+                // Upload to S3/Cloud to replace the existing file
+                const deviceName = devices && devices.length > 0 ? devices[0].device_name : '';
+                if (!deviceName) {
+                  throw new Error('No device found. Please ensure you are logged in with a registered device.');
+                }
+                
+                await banbury.files.uploadToS3(
+                  file,
+                  deviceName, // Use actual device name
+                  'Core/Cloud', // file path
+                  'Cloud' // file parent
+                );
+                
+                console.log('Cloud DOCX file uploaded successfully, deleting local copy...');
+                
+                // Delete the local BCloud file after successful upload
+                await fs.unlink(document.filePath);
+                
+                console.log('Local DOCX file deleted successfully');
+                showAlert('Success', [
+                  `"${fileName}" saved and uploaded to cloud successfully in DOCX format.`,
+                  'Local copy has been cleaned up.'
+                ], 'success');
+              } else {
+                // No matching cloud file found, treat as regular save
+                showAlert('Success', [`"${document.fileName}" saved successfully in DOCX format.`], 'success');
+              }
+            } catch (cloudError) {
+              console.error('Error uploading DOCX to cloud or deleting local file:', cloudError);
+              showAlert('Warning', [
+                `"${document.fileName}" saved locally in DOCX format but failed to upload to cloud.`,
+                `Error: ${cloudError instanceof Error ? cloudError.message : 'Unknown error'}`,
+                'The file remains in your BCloud directory.'
+              ], 'warning');
+            }
+          } else {
+            // Regular local file save
+            showAlert('Success', [`"${document.fileName}" saved successfully in DOCX format.`], 'success');
+          }
           
           return; // Early return to avoid the generic success message
         } catch (docxError) {
           console.error('Error converting to DOCX:', docxError);
           
-          // Fallback: save as HTML if DOCX conversion fails
-          const baseName = path.basename(document.fileName, ext);
-          const dirName = path.dirname(document.filePath);
-          actualSavePath = path.join(dirName, `${baseName}_edited.html`);
-          
-          textContent = document.content;
-          await writeFile(actualSavePath, textContent, 'utf-8');
-          
-          showAlert('Warning', [
-            `Could not save as DOCX format. Saved as HTML instead: "${baseName}_edited.html"`,
+          // Do NOT fallback to HTML - show error instead
+          showAlert('Error', [
+            `Failed to save "${document.fileName}" as DOCX format.`,
             `Error: ${docxError instanceof Error ? docxError.message : 'Unknown error'}`,
-            'The document content has been preserved and can be reopened for further editing.'
-          ], 'warning');
+            'Please try saving again or check the document content for unsupported formatting.'
+          ], 'error');
           
-          return;
+          throw docxError; // Re-throw to prevent any further processing
         }
       } else {
         // For other formats, save as plain text
@@ -984,12 +1081,90 @@ export default function Workspaces() {
 
       await writeFile(actualSavePath, textContent, 'utf-8');
       console.log('Document saved successfully:', document.fileName);
-      showAlert('Success', [`"${path.basename(actualSavePath)}" saved successfully.`], 'success');
+      
+      // Check if this is a cloud file that needs to be uploaded and replaced
+      const isCloudFile = document.filePath && (
+        document.filePath.startsWith('Core/Cloud/') || 
+        actualSavePath.includes(path.join(os.homedir(), 'BCloud'))
+      );
+      
+      if (isCloudFile) {
+        try {
+          console.log('Detected cloud file, uploading to replace existing cloud file...');
+          
+          // Find the corresponding cloud file in our cloudFiles array
+          const fileName = path.basename(actualSavePath);
+          const cloudFile = cloudFiles.find(file => 
+            file.file_name === fileName || file.file_name === document.fileName
+          );
+          
+          if (cloudFile) {
+            // Create a File object from the saved file
+            const { banbury } = await import('@banbury/core');
+            const fs = await import('fs/promises');
+            
+            const fileBuffer = await fs.readFile(actualSavePath);
+            const file = new File([fileBuffer], fileName, {
+              type: 'application/octet-stream' // Generic type, the server will handle it
+            });
+            
+            // Delete the existing cloud file first
+            if (cloudFile._id || cloudFile.id) {
+              try {
+                console.log('Deleting existing cloud file before uploading new version...');
+                const fileId = String(cloudFile._id || cloudFile.id);
+                await banbury.files.deleteS3File(fileId);
+                console.log('Existing cloud file deleted successfully');
+              } catch (deleteError) {
+                console.error('Error deleting existing cloud file:', deleteError);
+                // Continue with upload even if delete fails - the upload should overwrite
+              }
+            }
+            
+            // Upload to S3/Cloud to replace the existing file
+            const deviceName = devices && devices.length > 0 ? devices[0].device_name : '';
+            if (!deviceName) {
+              throw new Error('No device found. Please ensure you are logged in with a registered device.');
+            }
+            
+            await banbury.files.uploadToS3(
+              file,
+              deviceName, // Use actual device name
+              'Core/Cloud', // file path
+              'Cloud' // file parent
+            );
+            
+            console.log('Cloud file uploaded successfully, deleting local copy...');
+            
+            // Delete the local BCloud file after successful upload
+            await fs.unlink(actualSavePath);
+            
+            console.log('Local file deleted successfully');
+            showAlert('Success', [
+              `"${fileName}" saved and uploaded to cloud successfully.`,
+              'Local copy has been cleaned up.'
+            ], 'success');
+          } else {
+            // No matching cloud file found, treat as regular save
+            showAlert('Success', [`"${path.basename(actualSavePath)}" saved successfully.`], 'success');
+          }
+        } catch (cloudError) {
+          console.error('Error uploading to cloud or deleting local file:', cloudError);
+          showAlert('Warning', [
+            `"${document.fileName}" saved locally but failed to upload to cloud.`,
+            `Error: ${cloudError instanceof Error ? cloudError.message : 'Unknown error'}`,
+            'The file remains in your BCloud directory.'
+          ], 'warning');
+        }
+      } else {
+        // Regular local file save
+        showAlert('Success', [`"${path.basename(actualSavePath)}" saved successfully.`], 'success');
+      }
     } catch (error) {
       console.error('Error saving document:', error);
       showAlert('Error', [`Failed to save "${document.fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
     }
-  }, [showAlert]);
+  }, [showAlert, cloudFiles, devices]);
 
   // Handle tab operations
   const handleCloseTab = useCallback((tabId: string) => {
@@ -1070,9 +1245,45 @@ export default function Workspaces() {
           }
         } else {
           // Actual DOCX file
-          const result = await mammoth.convertToHtml({ buffer });
-          content = result.value || '<p>Document appears to be empty.</p>';
+          try {
+            // Convert Node.js Buffer to ArrayBuffer for mammoth
+            const arrayBuffer = new ArrayBuffer(buffer.length);
+            const view = new Uint8Array(arrayBuffer);
+            for (let i = 0; i < buffer.length; i++) {
+              view[i] = buffer[i];
+            }
+            
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            content = result.value || '<p>Document appears to be empty.</p>';
+            
+            // Clean up any empty paragraphs that mammoth might generate
+            content = content.replace(/<p>\s*<\/p>/g, '<p><br></p>');
+          } catch (mammothError) {
+            console.error('Error converting DOCX with mammoth:', mammothError);
+            
+            // Try alternative: use path-based conversion if available
+            try {
+              const result = await mammoth.convertToHtml({ path: filePath });
+              content = result.value || '<p>Document appears to be empty.</p>';
+            } catch (pathError) {
+              console.error('Error using path-based conversion:', pathError);
+              
+              // If both methods fail, try reading as text
+              const fileText = buffer.toString('utf-8');
+              if (fileText.trim().startsWith('<') && fileText.includes('>')) {
+                content = fileText;
+              } else {
+                // Show error message in the editor
+                content = `<p><strong>Error loading DOCX file:</strong></p>
+                          <p>${mammothError instanceof Error ? mammothError.message : 'Unknown error'}</p>
+                          <p><em>The file may be corrupted or in an unsupported format. Try saving the file again.</em></p>`;
+              }
+            }
+          }
         }
+      } else if (ext === '.html' || ext === '.htm') {
+        // Handle HTML files directly
+        content = await readFile(filePath, 'utf-8');
       } else {
         // Text files
         const fileContent = await readFile(filePath, 'utf-8');
@@ -1095,6 +1306,11 @@ export default function Workspaces() {
     try {
       const content = await loadDocumentContent(fileName, filePath);
       
+      // Validate content before setting state
+      if (typeof content !== 'string') {
+        throw new Error('Invalid document content');
+      }
+      
       setCurrentDocument({
         fileName,
         filePath,
@@ -1106,6 +1322,12 @@ export default function Workspaces() {
     } catch (error) {
       console.error('Error opening document:', error);
       showAlert('Error', [`Failed to open "${fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+      
+      // Reset state on error
+      setCurrentDocument(null);
+      setCurrentDocumentContent('');
+      setCurrentDocumentName('');
+      setShowTipTapEditor(false);
     }
   }, [showAlert]);
 
