@@ -62,9 +62,19 @@ interface WorkspaceAssistantInterfaceProps {
 // AI Assistant Chat Interface
 const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions }) => {
   const [langGraphAgent, setLangGraphAgent] = useState<LangGraphAgent | null>(null);
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  // UI message type that includes visual-only message types
+  type UIMessage = {
+    role: 'user' | 'assistant' | 'thinking' | 'tool-call' | 'tool-result';
+    content: string;
+    toolName?: string;
+    thinking?: boolean;
+  };
+
+  const [messages, setMessages] = useState<UIMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentStreamingMessage, setCurrentStreamingMessage] = useState('');
+  const [currentThinking, setCurrentThinking] = useState('');
   const [selectedModel, setSelectedModel] = useState(() => {
     return localStorage.getItem('workspace_ai_model') || 'claude-sonnet-4-20250514';
   });
@@ -175,6 +185,7 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
+    setCurrentStreamingMessage(''); // Clear any previous streaming message
 
     try {
       // Check if the required API key is configured for the selected provider
@@ -187,8 +198,10 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
         return;
       }
 
-      // Build conversation for AI with document context
-      let conversationMessages = [...messages];
+      // Build conversation for AI with document context (filter out UI-only messages)
+      let conversationMessages = messages
+        .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+        .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
       
       // Add context information to the user message if available
       let contextualUserMessage = userMessage;
@@ -263,14 +276,159 @@ ${userMessage.content}${instructions}`
       
       conversationMessages.push(contextualUserMessage);
 
-      let response = '';
+      let accumulatedResponse = '';
+
+      // Helper function to detect step completion
+      const shouldCreateNewBubble = (currentText: string): boolean => {
+        // Create new bubble after significant transitions in reasoning
+        const transitionPhrases = [
+          'Let me try',
+          'I apologize',
+          'I\'ll try',
+          'Let me use',
+          'However,',
+          'Instead,',
+          'Now I\'ll',
+          'Let me check',
+          'Based on my available tools',
+          'Alternative ways',
+          'Would you like me to',
+          'I can still help',
+          'Let me search',
+          'I\'ll search'
+        ];
+        
+        // Only create new bubble if:
+        // 1. Text contains a transition phrase
+        // 2. Text is substantial (more than 50 characters)
+        // 3. The phrase is near the beginning of a sentence
+        return transitionPhrases.some(phrase => {
+          const lowerText = currentText.toLowerCase();
+          const phraseIndex = lowerText.indexOf(phrase.toLowerCase());
+          
+          if (phraseIndex === -1) return false;
+          
+          // Check if phrase is at the beginning or after sentence-ending punctuation
+          const beforePhrase = lowerText.substring(0, phraseIndex).trim();
+          const isAtSentenceStart = beforePhrase === '' || /[.!?]\s*$/.test(beforePhrase);
+          
+          return isAtSentenceStart && currentText.length > 50;
+        });
+      };
 
       await langGraphAgent.chatStream(conversationMessages, {
         onToken: (token: string) => {
-          response += token;
+          accumulatedResponse += token;
+          
+          // Update the current streaming message
+          setCurrentStreamingMessage(accumulatedResponse);
+          
+          // Check if we should create a new message bubble
+          if (shouldCreateNewBubble(accumulatedResponse)) {
+            // Find the best break point for the message
+            const findBreakPoint = (text: string): { beforeBreak: string; afterBreak: string } => {
+              // Look for transition phrases to find the ideal break point
+              const transitionPhrases = [
+                'Let me try',
+                'I apologize',
+                'I\'ll try', 
+                'Let me use',
+                'However,',
+                'Instead,',
+                'Now I\'ll',
+                'Let me check',
+                'Based on my available tools',
+                'Alternative ways',
+                'Would you like me to',
+                'I can still help',
+                'Let me search',
+                'I\'ll search'
+              ];
+              
+              // Find the earliest transition phrase that starts a new thought
+              let earliestBreakPoint = -1;
+              let bestPhrase = '';
+              
+              for (const phrase of transitionPhrases) {
+                const index = text.toLowerCase().indexOf(phrase.toLowerCase());
+                if (index > 50 && (earliestBreakPoint === -1 || index < earliestBreakPoint)) {
+                  // Check if it's at the start of a sentence
+                  const beforePhrase = text.substring(0, index).trim();
+                  if (beforePhrase === '' || /[.!?]\s*$/.test(beforePhrase)) {
+                    earliestBreakPoint = index;
+                    bestPhrase = phrase;
+                  }
+                }
+              }
+              
+              if (earliestBreakPoint > 0) {
+                // Split at the transition phrase
+                return {
+                  beforeBreak: text.substring(0, earliestBreakPoint).trim(),
+                  afterBreak: text.substring(earliestBreakPoint).trim()
+                };
+              }
+              
+              // Fallback: split at sentence boundaries
+              const sentences = text.split(/(?<=[.!?:])\s+/);
+              if (sentences.length > 1) {
+                return {
+                  beforeBreak: sentences.slice(0, -1).join(' ').trim(),
+                  afterBreak: sentences[sentences.length - 1].trim()
+                };
+              }
+              
+              // No good break point found
+              return { beforeBreak: '', afterBreak: text };
+            };
+            
+            const { beforeBreak, afterBreak } = findBreakPoint(accumulatedResponse);
+            
+            if (beforeBreak.length > 30) { // Only create bubble if message is substantial
+              // Add the completed part as a new message
+              setMessages(prev => [...prev, { role: 'assistant', content: beforeBreak }]);
+              
+              // Reset for the next part
+              accumulatedResponse = afterBreak;
+              setCurrentStreamingMessage(afterBreak);
+            }
+          }
+        },
+        onThinkingStart: () => {
+          setCurrentThinking('');
+          setMessages(prev => [...prev, { role: 'thinking', content: '🤔 Thinking...', thinking: true }]);
+        },
+        onThinking: (thinking: string) => {
+          setCurrentThinking(thinking);
+          setMessages(prev => {
+            if (prev.length === 0) return prev;
+            const newPrev = [...prev];
+            const lastIndex = newPrev.length - 1;
+            if (newPrev[lastIndex].role === 'thinking') {
+              newPrev[lastIndex] = { ...newPrev[lastIndex], content: thinking } as UIMessage;
+            }
+            return newPrev;
+          });
+        },
+        onThinkingEnd: () => {
+          /* End thinking */
+        },
+        onToolCall: (toolCall) => {
+          const argsPreview = toolCall.function.arguments ? JSON.stringify(toolCall.function.arguments).slice(0, 120) : '';
+          setMessages(prev => [...prev, { role: 'tool-call', content: `🔧 Calling ${toolCall.function.name}(${argsPreview || ''})`, toolName: toolCall.function.name }]);
+        },
+        onToolResult: (result) => {
+          const resultPreview = JSON.stringify(result.content ?? '').slice(0, 200);
+          setMessages(prev => [...prev, { role: 'tool-result', content: `✅ Result: ${resultPreview}` }]);
         },
         onComplete: (fullResponse: string) => {
-          setMessages(prev => [...prev, { role: 'assistant', content: fullResponse }]);
+          // Clear the streaming message
+          setCurrentStreamingMessage('');
+          
+          // Add any remaining content as the final message
+          if (accumulatedResponse.trim()) {
+            setMessages(prev => [...prev, { role: 'assistant', content: accumulatedResponse.trim() }]);
+          }
           
           // Check if the AI response contains document modification commands
           if (documentActions && documentContext?.hasDocument) {
@@ -314,6 +472,7 @@ ${userMessage.content}${instructions}`
         },
         onError: (error: Error) => {
           console.error('AI Error:', error);
+          setCurrentStreamingMessage('');
           showAlert('Error', [`AI Error: ${error.message}`], 'error');
           setIsLoading(false);
         }
@@ -421,12 +580,30 @@ ${userMessage.content}${instructions}`
             }}
           >
             <Box
-              sx={{
-                maxWidth: '70%',
-                p: 2,
-                borderRadius: 2,
-                backgroundColor: message.role === 'user' ? 'primary.main' : 'grey.100',
-                color: '#000000',
+              sx={(theme) => {
+                const bg = (role: string) => {
+                  switch (role) {
+                    case 'user':
+                      return theme.palette.primary.main;
+                    case 'assistant':
+                      return theme.palette.grey[100];
+                    case 'thinking':
+                      return theme.palette.grey[200];
+                    case 'tool-call':
+                      return theme.palette.info.light;
+                    case 'tool-result':
+                      return theme.palette.success.light;
+                    default:
+                      return theme.palette.grey[100];
+                  }
+                };
+                return {
+                  maxWidth: '70%',
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: bg(message.role),
+                  color: message.role === 'user' ? '#ffffff' : '#000000',
+                };
               }}
             >
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -435,7 +612,53 @@ ${userMessage.content}${instructions}`
             </Box>
           </Box>
         ))}
-        {isLoading && (
+        
+        {/* Current streaming message */}
+        {currentStreamingMessage && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+            <Box
+              sx={{
+                maxWidth: '70%',
+                p: 2,
+                borderRadius: 2,
+                backgroundColor: 'grey.50',
+                border: 1,
+                borderColor: 'grey.300',
+                color: '#000000',
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  right: 8,
+                  bottom: 8,
+                  width: 8,
+                  height: 8,
+                  backgroundColor: 'primary.main',
+                  borderRadius: '50%',
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                },
+                '@keyframes pulse': {
+                  '0%': {
+                    opacity: 1,
+                  },
+                  '50%': {
+                    opacity: 0.5,
+                  },
+                  '100%': {
+                    opacity: 1,
+                  },
+                },
+              }}
+            >
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                {currentStreamingMessage}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+        
+        {/* Loading indicator when no streaming message */}
+        {isLoading && !currentStreamingMessage && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
             <Box
               sx={{
