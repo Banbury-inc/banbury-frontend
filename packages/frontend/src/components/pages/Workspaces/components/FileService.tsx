@@ -2,11 +2,16 @@ import { MentionableFile, getFileExtension } from './MentionExtension';
 import { stat, readdir } from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import axios from 'axios';
+import { CONFIG } from '@banbury/core/src/config';
 
 export class FileService {
   private fileCache: Map<string, MentionableFile[]> = new Map();
   private cacheExpiry: Map<string, number> = new Map();
   private readonly CACHE_DURATION = 30000; // 30 seconds
+  private scannedFolders: string[] = [];
+  private lastScannedFoldersUpdate: number = 0;
+  private readonly SCANNED_FOLDERS_CACHE_DURATION = 60000; // 1 minute
 
   constructor() {
     this.fileCache = new Map();
@@ -14,12 +19,79 @@ export class FileService {
   }
 
   /**
+   * Get scanned folders from all devices
+   */
+  private async getScannedFoldersFromAllDevices(): Promise<string[]> {
+    // Check if we have cached scanned folders
+    const now = Date.now();
+    if (this.scannedFolders.length > 0 && (now - this.lastScannedFoldersUpdate) < this.SCANNED_FOLDERS_CACHE_DURATION) {
+      return this.scannedFolders;
+    }
+
+    try {
+      // Fetch device information from all devices
+      const deviceInfoResponse = await axios.get<{
+        devices: any[];
+      }>(`${CONFIG.url}/devices/getdeviceinfo/`);
+
+      const { devices } = deviceInfoResponse.data;
+      
+      // Collect scanned folders from all devices
+      const allScannedFolders: string[] = [];
+      
+      for (const device of devices) {
+        if (device.scanned_folders && Array.isArray(device.scanned_folders)) {
+          allScannedFolders.push(...device.scanned_folders);
+        }
+      }
+      
+      // Remove duplicates
+      this.scannedFolders = [...new Set(allScannedFolders)];
+      this.lastScannedFoldersUpdate = now;
+      
+      console.log('Got scanned folders from all devices:', this.scannedFolders);
+      
+      // Fallback to common directories if no scanned folders are configured
+      if (this.scannedFolders.length === 0) {
+        console.warn('No scanned folders configured for any device, using default directories');
+        this.scannedFolders = [
+          os.homedir(),
+          path.join(os.homedir(), 'Documents'),
+          path.join(os.homedir(), 'Desktop')
+        ];
+      }
+      
+      return this.scannedFolders;
+    } catch (error) {
+      console.error('Error getting scanned folders from all devices:', error);
+      
+      // Fallback to default directories on error
+      console.warn('Using default directories as fallback');
+      this.scannedFolders = [
+        os.homedir(),
+        path.join(os.homedir(), 'Documents'),
+        path.join(os.homedir(), 'Desktop')
+      ];
+      
+      return this.scannedFolders;
+    }
+  }
+
+  /**
    * Get files for mention suggestions based on a query
    */
   async getFilesForMention(query: string = '', currentPath?: string): Promise<MentionableFile[]> {
     try {
-      // Use current path or default to user's home directory
-      const searchPath = currentPath || os.homedir();
+      // Get scanned folders from all devices
+      const scannedFolders = await this.getScannedFoldersFromAllDevices();
+      
+      if (scannedFolders.length === 0) {
+        console.warn('No scanned folders found for device');
+        return [];
+      }
+
+      // Use the first scanned folder as the search path, or current path if provided
+      const searchPath = currentPath || scannedFolders[0];
       
       // Check cache first
       const cacheKey = `${searchPath}_${query}`;
@@ -49,18 +121,18 @@ export class FileService {
    */
   async getRecentFiles(limit: number = 10): Promise<MentionableFile[]> {
     try {
-      // This would ideally connect to your file history/recent files system
-      // For now, we'll return files from common directories
-      const commonPaths = [
-        os.homedir(),
-        path.join(os.homedir(), 'Documents'),
-        path.join(os.homedir(), 'Desktop'),
-        process.cwd(), // Current working directory
-      ];
+      // Get scanned folders from all devices
+      const scannedFolders = await this.getScannedFoldersFromAllDevices();
+      
+      if (scannedFolders.length === 0) {
+        console.warn('No scanned folders found for device');
+        return [];
+      }
 
       const allFiles: MentionableFile[] = [];
 
-      for (const dirPath of commonPaths) {
+      // Search through scanned folders
+      for (const dirPath of scannedFolders) {
         try {
           const files = await this.getFilesFromDirectory(dirPath, false);
           allFiles.push(...files.slice(0, 3)); // Take first 3 from each directory
@@ -78,7 +150,7 @@ export class FileService {
   }
 
   /**
-   * Search for files by name across multiple common directories
+   * Search for files by name across all scanned folders
    */
   async searchFiles(query: string, maxResults: number = 20): Promise<MentionableFile[]> {
     if (!query.trim()) {
@@ -86,13 +158,13 @@ export class FileService {
     }
 
     try {
-      const searchPaths = [
-        os.homedir(),
-        path.join(os.homedir(), 'Documents'),
-        path.join(os.homedir(), 'Desktop'),
-        path.join(os.homedir(), 'Downloads'),
-        process.cwd(),
-      ];
+      // Get scanned folders from all devices
+      const searchPaths = await this.getScannedFoldersFromAllDevices();
+      
+      if (searchPaths.length === 0) {
+        console.warn('No scanned folders found for device');
+        return [];
+      }
 
       const allFiles: MentionableFile[] = [];
 
@@ -227,6 +299,14 @@ export class FileService {
   clearCache(): void {
     this.fileCache.clear();
     this.cacheExpiry.clear();
+  }
+
+  /**
+   * Refresh scanned folders from all devices
+   */
+  async refreshScannedFolders(): Promise<string[]> {
+    this.lastScannedFoldersUpdate = 0; // Force refresh
+    return this.getScannedFoldersFromAllDevices();
   }
 }
 

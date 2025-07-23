@@ -81,18 +81,18 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
 
   const renderFileIcon = (item: MentionableFile) => {
     if (item.type === 'folder') {
-      return <FolderIcon sx={{ color: 'primary.main' }} />;
+      return <FolderIcon sx={{ color: 'primary.main', fontSize: '14px' }} />;
     }
     
     const emoji = getFileIcon(item.name);
     return (
       <Box sx={{ 
-        fontSize: '16px', 
+        fontSize: '12px', 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        width: 24,
-        height: 24
+        width: 16,
+        height: 16
       }}>
         {emoji}
       </Box>
@@ -118,8 +118,8 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
 
   if (!props.items.length) {
     return (
-      <Paper sx={{ p: 2, maxWidth: 320 }}>
-        <Typography variant="body2" color="text.secondary">
+      <Paper sx={{ p: 1, maxWidth: 250 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '11px' }}>
           No files found
         </Typography>
       </Paper>
@@ -127,8 +127,13 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
   }
 
   return (
-    <Paper sx={{ maxWidth: 320, maxHeight: 300, overflow: 'auto' }} ref={listRef}>
-      <List dense>
+    <Paper sx={{ 
+      maxWidth: 350, 
+      maxHeight: 200, 
+      overflow: 'auto',
+      p: 0
+    }} ref={listRef}>
+      <List dense sx={{ py: 0 }}>
         {props.items.map((item, index) => (
           <ListItem
             key={item.id}
@@ -136,6 +141,9 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
             selected={index === selectedIndex}
             onClick={() => selectItem(index)}
             sx={{
+              py: 0.25,
+              px: 0.5,
+              minHeight: 24,
               '&.Mui-selected': {
                 backgroundColor: 'primary.light',
                 color: 'primary.contrastText',
@@ -145,20 +153,16 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 32 }}>
+            <ListItemIcon sx={{ minWidth: 20, mr: 0.5 }}>
               {renderFileIcon(item)}
             </ListItemIcon>
             <ListItemText
               primary={
-                <Typography variant="body2" noWrap>
+                <Typography variant="caption" noWrap sx={{ fontSize: '11px', lineHeight: 1.2 }}>
                   {item.name}
                 </Typography>
               }
-              secondary={
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {renderSecondaryText(item)}
-                </Typography>
-              }
+              sx={{ my: 0 }}
             />
           </ListItem>
         ))}

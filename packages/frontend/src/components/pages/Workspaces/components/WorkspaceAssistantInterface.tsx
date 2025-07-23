@@ -23,7 +23,7 @@ import { LangGraphAgent, ModelConfig } from '@banbury/core/src/ai/agent/LangGrap
 import { useMcpClient } from '@banbury/core/src/ai/basic/tools/banburyMCP/useMcpClient';
 import FileAttachment from './FileAttachment';
 import ToolSelector from './ToolSelector';
-import RichTextInput from './RichTextInput';
+import ChipRichTextInput from './ChipRichTextInput';
 import { fileService } from './FileService';
 import { MentionableFile } from './MentionExtension';
 import SendIcon from '@mui/icons-material/Send';
@@ -722,7 +722,7 @@ ${userMessage.content}${instructions}`
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Stack direction="row" spacing={1} alignItems="flex-end">
           <Box sx={{ flex: 1}}>
-            <RichTextInput
+            <ChipRichTextInput
               value={inputMessage}
               onChange={setInputMessage}
               onSubmit={handleSendMessage}
