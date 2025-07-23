@@ -1109,11 +1109,42 @@ export default function Workspaces() {
               minSize={250}
               priority={LayoutPriority.Low}
             >
-              <Box sx={{ height: '100%', borderRight: 1, borderColor: 'divider' }}>
+              <Box sx={{ height: '100%', borderRight: 1, borderColor: 'divider', position: 'relative' }}>
                 <WorkspaceSidebar 
                   resetWorkspaceView={resetWorkspaceView} 
                   onFileClick={handleFileClick}
                 />
+                {/* Left Panel Toggle Button (when panel is open) */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: -12,
+                    transform: 'translateY(-50%)',
+                    zIndex: 1000,
+                  }}
+                >
+                  <ToolbarButton
+                    onClick={toggleLeftPanel}
+                    sx={{
+                      paddingLeft: '4px', 
+                      paddingRight: '4px', 
+                      minWidth: '30px',
+                      bgcolor: 'background.paper',
+                      border: 1,
+                      borderColor: 'divider',
+                      width: 24,
+                      height: 24,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
+                      ←
+                    </Typography>
+                  </ToolbarButton>
+                </Box>
               </Box>
             </Allotment.Pane>
 
@@ -1170,77 +1201,111 @@ export default function Workspaces() {
               visible={rightPanelOpen}
               maxSize={800}
             >
-              <Box sx={{ height: '100%' }}>
+              <Box sx={{ height: '100%', position: 'relative' }}>
                 <WorkspaceAssistantInterface documentActions={documentActions} />
+                {/* Right Panel Toggle Button (when panel is open) */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: -12,
+                    transform: 'translateY(-50%)',
+                    zIndex: 1000,
+                  }}
+                >
+                  <ToolbarButton
+                    onClick={toggleRightPanel}
+                    sx={{
+                      paddingLeft: '4px', 
+                      paddingRight: '4px', 
+                      minWidth: '30px',
+                      bgcolor: 'background.paper',
+                      border: 1,
+                      borderColor: 'divider',
+                      width: 24,
+                      height: 24,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      },
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
+                      →
+                    </Typography>
+                  </ToolbarButton>
+                </Box>
               </Box>
             </Allotment.Pane>
           </Allotment>
         </Suspense>
 
-        {/* Toggle Buttons - Positioned outside of Allotment panes */}
-        {/* Left Panel Toggle Button */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: leftPanelCollapsed ? -12 : 238, // Position at left edge when collapsed, or at panel edge when open
-            transform: 'translateY(-50%)',
-            zIndex: 1000,
-          }}
-        >
-          <ToolbarButton
-            onClick={toggleLeftPanel}
+        {/* Toggle Button for collapsed left panel */}
+        {leftPanelCollapsed && (
+          <Box
             sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              bgcolor: 'background.paper',
-              border: 1,
-              borderColor: 'divider',
-              width: 24,
-              height: 24,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              },
+              position: 'absolute',
+              top: '50%',
+              left: -12,
+              transform: 'translateY(-50%)',
+              zIndex: 1000,
             }}
           >
-            <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
-              {leftPanelCollapsed ? '→' : '←'}
-            </Typography>
-          </ToolbarButton>
-        </Box>
+            <ToolbarButton
+              onClick={toggleLeftPanel}
+              sx={{
+                paddingLeft: '4px', 
+                paddingRight: '4px', 
+                minWidth: '30px',
+                bgcolor: 'background.paper',
+                border: 1,
+                borderColor: 'divider',
+                width: 24,
+                height: 24,
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
+                →
+              </Typography>
+            </ToolbarButton>
+          </Box>
+        )}
 
-        {/* Right Panel Toggle Button */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            right: rightPanelOpen ? 388 : -12, // Position at panel edge when open, or at right edge when closed
-            transform: 'translateY(-50%)',
-            zIndex: 1000,
-          }}
-        >
-          <ToolbarButton
-            onClick={toggleRightPanel}
+        {/* Toggle Button for collapsed right panel */}
+        {!rightPanelOpen && (
+          <Box
             sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              bgcolor: 'background.paper',
-              border: 1,
-              borderColor: 'divider',
-              width: 24,
-              height: 24,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              },
+              position: 'absolute',
+              top: '50%',
+              right: -12,
+              transform: 'translateY(-50%)',
+              zIndex: 1000,
             }}
           >
-            <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
-              {rightPanelOpen ? '→' : '←'}
-            </Typography>
-          </ToolbarButton>
-        </Box>
+            <ToolbarButton
+              onClick={toggleRightPanel}
+              sx={{
+                paddingLeft: '4px', 
+                paddingRight: '4px', 
+                minWidth: '30px',
+                bgcolor: 'background.paper',
+                border: 1,
+                borderColor: 'divider',
+                width: 24,
+                height: 24,
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
+                ←
+              </Typography>
+            </ToolbarButton>
+          </Box>
+        )}
       </Box>
     </Box>
   );
