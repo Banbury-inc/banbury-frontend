@@ -202,13 +202,12 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
           flexShrink: 0,
           gap: 1,
           flexWrap: 'wrap',
-          px: 2,
-          py: 1,
+          px: 1,
+          py: 0.5,
           backgroundColor: '#fafafa',
           '& .MuiButtonGroup-root': {
             '& .MuiButtonBase-root': {
               minWidth: 32,
-              height: 32,
             },
           },
         }}
@@ -220,7 +219,7 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
               onClick={onSave}
               tooltip="Save"
             >
-              <Save fontSize="small" />
+              <Save fontSize="inherit" />
             </ToolbarButton>
           )}
           <ToolbarButton
@@ -228,14 +227,14 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
             disabled={!editor.can().chain().focus().undo().run()}
             tooltip="Undo (Ctrl+Z)"
           >
-            <Undo fontSize="small" />
+            <Undo fontSize="inherit" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().chain().focus().redo().run()}
             tooltip="Redo (Ctrl+Y)"
           >
-            <Redo fontSize="small" />
+            <Redo fontSize="inherit" />
           </ToolbarButton>
         </ButtonGroup>
 
@@ -250,28 +249,28 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
             active={editor.isActive('bulletList')}
             tooltip="Bullet List"
           >
-            <FormatListBulleted fontSize="small" />
+            <FormatListBulleted fontSize="inherit" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             active={editor.isActive('orderedList')}
             tooltip="Numbered List"
           >
-            <FormatListNumbered fontSize="small" />
+            <FormatListNumbered fontSize="inherit" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             active={editor.isActive('codeBlock')}
             tooltip="Code Block"
           >
-            <Code fontSize="small" />
+            <Code fontSize="inherit" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             active={editor.isActive('blockquote')}
             tooltip="Quote"
           >
-            <FormatQuote fontSize="small" />
+            <FormatQuote fontSize="inherit" />
           </ToolbarButton>
         </ButtonGroup>
 
@@ -284,28 +283,28 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
             active={editor.isActive('bold')}
             tooltip="Bold (Ctrl+B)"
           >
-            <FormatBold fontSize="small" />
+            <FormatBold fontSize="inherit" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleItalic().run()}
             active={editor.isActive('italic')}
             tooltip="Italic (Ctrl+I)"
           >
-            <FormatItalic fontSize="small" />
+            <FormatItalic fontSize="inherit" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleStrike().run()}
             active={editor.isActive('strike')}
             tooltip="Strikethrough"
           >
-            <FormatStrikethrough fontSize="small" />
+            <FormatStrikethrough fontSize="inherit" />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleCode().run()}
             active={editor.isActive('code')}
             tooltip="Inline Code"
           >
-            <Code fontSize="small" />
+            <Code fontSize="inherit" />
           </ToolbarButton>
         </ButtonGroup>
 
@@ -316,7 +315,7 @@ const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
           onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
           tooltip="Clear Formatting"
         >
-          <FormatClear fontSize="small" />
+          <FormatClear fontSize="inherit" />
         </ToolbarButton>
       </Toolbar>
 

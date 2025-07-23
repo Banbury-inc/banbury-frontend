@@ -290,7 +290,7 @@ const MainContent = ({
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Document Header */}
       <Box sx={{ 
-        p: 2, 
+        p: 1, 
         borderBottom: 1, 
         borderColor: 'divider',
         backgroundColor: 'background.paper',
@@ -298,7 +298,7 @@ const MainContent = ({
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
           {currentFile.fileName}
         </Typography>
         <ToolbarButton
@@ -357,6 +357,17 @@ export default function Workspaces() {
   const [documentEditor, setDocumentEditor] = useState<any>(null);
   const [currentDocumentContent, setCurrentDocumentContent] = useState<string>('');
   const [currentDocumentName, setCurrentDocumentName] = useState<string>('');
+
+  // Image viewing context for AI assistant
+  const [currentImageInfo, setCurrentImageInfo] = useState<{
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    base64Data?: string | null;
+    dimensions?: { width: number; height: number } | null;
+    fileSize?: number;
+  } | null>(null);
+  const [currentImageName, setCurrentImageName] = useState<string>('');
 
   // File tabs state
   interface FileTab {
@@ -469,6 +480,122 @@ export default function Workspaces() {
     setContent: setDocumentContent,
     insertContent: insertDocumentContent,
     replaceSelected: replaceSelectedText
+  };
+
+  // Image AI Integration Functions
+  const getImageInfo = useCallback(() => {
+    const activeTabData = openTabs.find(tab => tab.id === activeTab);
+    const isCurrentlyViewingImage = activeTabData && isImageFile(activeTabData.fileName);
+    
+    return {
+      hasImage: isCurrentlyViewingImage,
+      fileName: currentImageInfo?.fileName || activeTabData?.fileName || 'No Image',
+      fileType: currentImageInfo?.fileType || activeTabData?.fileType || '',
+      filePath: currentImageInfo?.filePath || activeTabData?.filePath || '',
+      dimensions: currentImageInfo?.dimensions,
+      fileSize: currentImageInfo?.fileSize,
+      base64Data: currentImageInfo?.base64Data
+    };
+  }, [activeTab, openTabs, currentImageInfo]);
+
+  const getImageBase64 = useCallback(async (filePath?: string): Promise<string | null> => {
+    try {
+      const pathToUse = filePath || currentImageInfo?.filePath;
+      if (!pathToUse) return null;
+      
+      // Read the file and convert to base64
+      const fs = await import('fs/promises');
+      const imageBuffer = await fs.readFile(pathToUse);
+      const ext = path.extname(pathToUse).toLowerCase();
+      
+      // Determine MIME type
+      let mimeType = 'image/jpeg';
+      switch (ext) {
+        case '.png': mimeType = 'image/png'; break;
+        case '.gif': mimeType = 'image/gif'; break;
+        case '.bmp': mimeType = 'image/bmp'; break;
+        case '.svg': mimeType = 'image/svg+xml'; break;
+        case '.webp': mimeType = 'image/webp'; break;
+        default: mimeType = 'image/jpeg'; break;
+      }
+
+      const base64 = imageBuffer.toString('base64');
+      const dataUrl = `data:${mimeType};base64,${base64}`;
+      
+      // Update current image info with base64 data
+      if (pathToUse === currentImageInfo?.filePath) {
+        setCurrentImageInfo(prev => prev ? { ...prev, base64Data: dataUrl } : null);
+      }
+      
+      return dataUrl;
+    } catch (error) {
+      console.error('Error reading image file:', error);
+      return null;
+    }
+  }, [currentImageInfo]);
+
+  const getImageDimensions = useCallback(async (filePath?: string): Promise<{ width: number; height: number } | null> => {
+    return new Promise((resolve) => {
+      const pathToUse = filePath || currentImageInfo?.filePath;
+      if (!pathToUse) {
+        resolve(null);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const dimensions = { width: img.width, height: img.height };
+        
+        // Update current image info with dimensions
+        if (pathToUse === currentImageInfo?.filePath) {
+          setCurrentImageInfo(prev => prev ? { ...prev, dimensions } : null);
+        }
+        
+        resolve(dimensions);
+      };
+      img.onerror = () => resolve(null);
+      
+      // Load the image from file path
+      getImageBase64(pathToUse).then(base64Data => {
+        if (base64Data) {
+          img.src = base64Data;
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  }, [currentImageInfo, getImageBase64]);
+
+  const analyzeImage = useCallback(async (analysis: 'description' | 'metadata' | 'colors' | 'text') => {
+    // This would be implemented with image analysis APIs or libraries
+    // For now, return basic information
+    const imageInfo = getImageInfo();
+    if (!imageInfo.hasImage) return null;
+
+    switch (analysis) {
+      case 'metadata':
+        return {
+          fileName: imageInfo.fileName,
+          fileSize: imageInfo.fileSize,
+          dimensions: imageInfo.dimensions,
+          format: path.extname(imageInfo.fileName).toUpperCase().replace('.', '')
+        };
+      case 'description':
+        return 'Image analysis would require integration with vision APIs like OpenAI Vision or Google Vision';
+      case 'colors':
+        return 'Color analysis would require additional image processing libraries';
+      case 'text':
+        return 'OCR text extraction would require integration with OCR services';
+      default:
+        return null;
+    }
+  }, [getImageInfo]);
+
+  const imageActions = {
+    getInfo: getImageInfo,
+    getBase64: getImageBase64,
+    getDimensions: getImageDimensions,
+    analyze: analyzeImage
   };
 
   // Keyboard shortcuts
@@ -815,7 +942,15 @@ export default function Workspaces() {
   // Handle tab operations
   const handleCloseTab = useCallback((tabId: string) => {
     setOpenTabs(prev => {
+      const tabToClose = prev.find(tab => tab.id === tabId);
       const newTabs = prev.filter(tab => tab.id !== tabId);
+      
+      // Clear image context if closing an image tab
+      if (tabToClose && isImageFile(tabToClose.fileName) && activeTab === tabId) {
+        setCurrentImageInfo(null);
+        setCurrentImageName('');
+      }
+      
       // If closing the active tab, switch to another tab
       if (activeTab === tabId && newTabs.length > 0) {
         setActiveTab(newTabs[newTabs.length - 1].id);
@@ -827,9 +962,39 @@ export default function Workspaces() {
     });
   }, [activeTab]);
 
-  const handleSwitchTab = useCallback((tabId: string) => {
+  const handleSwitchTab = useCallback(async (tabId: string) => {
     setActiveTab(tabId);
-  }, []);
+    
+    // Update image context when switching to an image tab
+    const newActiveTab = openTabs.find(tab => tab.id === tabId);
+    if (newActiveTab && isImageFile(newActiveTab.fileName)) {
+      try {
+        // Get file size
+        const fs = await import('fs/promises');
+        const stats = await fs.stat(newActiveTab.filePath);
+        
+        // Load base64 data immediately
+        const base64Data = await getImageBase64(newActiveTab.filePath);
+        const dimensions = await getImageDimensions(newActiveTab.filePath);
+        
+        setCurrentImageInfo({
+          fileName: newActiveTab.fileName,
+          filePath: newActiveTab.filePath,
+          fileType: newActiveTab.fileType,
+          fileSize: stats.size,
+          base64Data,
+          dimensions
+        });
+        setCurrentImageName(newActiveTab.fileName);
+      } catch (error) {
+        console.error('Error updating image context on tab switch:', error);
+      }
+    } else {
+      // Clear image context when switching to non-image tab
+      setCurrentImageInfo(null);
+      setCurrentImageName('');
+    }
+  }, [openTabs, getImageDimensions, getImageBase64]);
 
   // Load document content without updating UI
   const loadDocumentContent = async (fileName: string, filePath: string): Promise<string> => {
@@ -915,6 +1080,31 @@ export default function Workspaces() {
         fileContent = content;
       }
 
+      // For image files, set image context
+      if (isImageFile(fileName)) {
+        try {
+          // Get file size
+          const fs = await import('fs/promises');
+          const stats = await fs.stat(filePath);
+          
+          // Load base64 data immediately
+          const base64Data = await getImageBase64(filePath);
+          const dimensions = await getImageDimensions(filePath);
+          
+          setCurrentImageInfo({
+            fileName,
+            filePath,
+            fileType,
+            fileSize: stats.size,
+            base64Data,
+            dimensions
+          });
+          setCurrentImageName(fileName);
+        } catch (error) {
+          console.error('Error setting image context:', error);
+        }
+      }
+
       // Add new tab
       const newTab: FileTab = {
         id: tabId,
@@ -931,7 +1121,7 @@ export default function Workspaces() {
       console.error('Error opening file:', error);
       showAlert('Error', [`Failed to open "${fileName}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
     }
-  }, [openTabs, showAlert, openInTipTap, currentDocumentContent]);
+  }, [openTabs, showAlert, openInTipTap, currentDocumentContent, getImageDimensions, getImageBase64]);
 
   // File handling - TipTap for documents, system default for others
   const handleFileClick = useCallback(async (fileName: string, filePath: string, fileType: string) => {
@@ -1162,7 +1352,7 @@ export default function Workspaces() {
               maxSize={800}
             >
               <Box sx={{ height: '100%', position: 'relative' }}>
-                <WorkspaceAssistantInterface documentActions={documentActions} />
+                <WorkspaceAssistantInterface documentActions={documentActions} imageActions={imageActions} />
                 {/* Right Panel Toggle Button (when panel is open) */}
                 <Box
                   sx={{

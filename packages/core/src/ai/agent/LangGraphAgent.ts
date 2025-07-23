@@ -29,7 +29,7 @@ export interface LangGraphAgentOptions {
 
 export interface LangGraphAgentMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string;
+  content: string | any[]; // Support both text and content blocks (for images)
   tool_call_id?: string;
 }
 
@@ -406,7 +406,7 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
   private convertMessagesToLangGraph(messages: LangGraphAgentMessage[]) {
     return messages.map(msg => ({
       role: msg.role === 'user' ? 'human' : msg.role,
-      content: msg.content,
+      content: msg.content, // Pass content as-is, supporting both strings and content blocks
       ...(msg.tool_call_id && { tool_call_id: msg.tool_call_id })
     }));
   }

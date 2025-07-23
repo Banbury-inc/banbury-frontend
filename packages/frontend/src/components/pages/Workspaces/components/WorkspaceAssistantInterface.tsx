@@ -58,10 +58,16 @@ interface WorkspaceAssistantInterfaceProps {
     insertContent: (content: string, position?: 'start' | 'end' | 'cursor') => boolean;
     replaceSelected: (content: string) => boolean;
   };
+  imageActions?: {
+    getInfo: () => any;
+    getBase64: (filePath?: string) => Promise<string | null>;
+    getDimensions: (filePath?: string) => Promise<{ width: number; height: number } | null>;
+    analyze: (analysis: 'description' | 'metadata' | 'colors' | 'text') => Promise<any>;
+  };
 }
 
 // AI Assistant Chat Interface
-const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions }) => {
+const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions, imageActions }) => {
   const [langGraphAgent, setLangGraphAgent] = useState<LangGraphAgent | null>(null);
   // UI message type that includes visual-only message types
   type UIMessage = {
@@ -162,6 +168,24 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
     };
   }, [documentActions]);
 
+  // Image context for AI
+  const imageContext = useMemo(() => {
+    if (!imageActions) return null;
+    
+    const imageInfo = imageActions.getInfo();
+    if (!imageInfo.hasImage) return null;
+
+    return {
+      hasImage: true,
+      fileName: imageInfo.fileName,
+      fileType: imageInfo.fileType,
+      filePath: imageInfo.filePath,
+      dimensions: imageInfo.dimensions,
+      fileSize: imageInfo.fileSize,
+      base64Data: imageInfo.base64Data
+    };
+  }, [imageActions]);
+
   // Callback handlers
   const handleFilesChange = useCallback((files: AttachedFile[]) => {
     setAttachedFiles(files);
@@ -234,10 +258,10 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
       // Build conversation for AI with document context (filter out UI-only messages)
       let conversationMessages = messages
         .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-        .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content }));
+        .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content as string | any[] }));
       
       // Add context information to the user message if available
-      let contextualUserMessage = userMessage;
+      let contextualUserMessage: { role: 'user'; content: string | any[] } = userMessage;
       
       let contextParts: string[] = [];
       
@@ -246,6 +270,31 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
         contextParts.push(`[DOCUMENT CONTEXT]
 Current Document: ${documentContext.fileName} (${documentContext.fileType})
 Content: ${documentContext.content}`);
+      }
+      
+      // Add image context
+      if (imageContext && imageContext.hasImage) {
+        let imageContextStr = `[IMAGE CONTEXT]
+Current Image: ${imageContext.fileName} (${imageContext.fileType})`;
+        
+        if (imageContext.dimensions) {
+          imageContextStr += `
+Dimensions: ${imageContext.dimensions.width} x ${imageContext.dimensions.height} pixels`;
+        }
+        
+        if (imageContext.fileSize) {
+          const fileSizeKB = (imageContext.fileSize / 1024).toFixed(1);
+          imageContextStr += `
+File Size: ${fileSizeKB} KB`;
+        }
+        
+        if (imageContext.base64Data) {
+          imageContextStr += `
+Image Data: Available for analysis (base64 encoded)
+Note: You can analyze this image for content, colors, text, or other features.`;
+        }
+        
+        contextParts.push(imageContextStr);
       }
       
       // Add attached files context
@@ -258,10 +307,31 @@ Note: You can reference these files in your response. Use the file paths to acce
 
       // Add mentioned files context
       if (mentionedFiles.length > 0) {
-        contextParts.push(`[MENTIONED FILES]
-${mentionedFiles.map(file => `- @${file.name} (${file.type}${file.size ? `, ${(file.size / 1024).toFixed(1)}KB` : ''})`).join('\n')}
+        const imageFiles = mentionedFiles.filter(file => {
+          const ext = file.name.toLowerCase();
+          return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || 
+                 ext.endsWith('.gif') || ext.endsWith('.bmp') || ext.endsWith('.svg') || ext.endsWith('.webp');
+        });
+        
+        const otherFiles = mentionedFiles.filter(file => {
+          const ext = file.name.toLowerCase();
+          return !(ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || 
+                   ext.endsWith('.gif') || ext.endsWith('.bmp') || ext.endsWith('.svg') || ext.endsWith('.webp'));
+        });
+
+        if (otherFiles.length > 0) {
+          contextParts.push(`[MENTIONED FILES]
+${otherFiles.map(file => `- @${file.name} (${file.type}${file.size ? `, ${(file.size / 1024).toFixed(1)}KB` : ''})`).join('\n')}
 
 Note: These files were referenced in the conversation using @ mentions. You can access their content if needed.`);
+        }
+
+        if (imageFiles.length > 0) {
+          contextParts.push(`[MENTIONED IMAGES]
+${imageFiles.map(file => `- @${file.name} (${file.type}${file.size ? `, ${(file.size / 1024).toFixed(1)}KB` : ''})`).join('\n')}
+
+Note: These image files were mentioned and have been provided for visual analysis.`);
+        }
       }
       
       // Add enabled tools context
@@ -284,12 +354,36 @@ Available capabilities: ${enabledTools.join(', ')}`);
         userMessage.content.toLowerCase().includes('create')
       );
       
-      if (contextParts.length > 0 || userWantsDocumentEdit) {
+      // Check if user is asking for image analysis
+      const userWantsImageAnalysis = imageContext?.hasImage && (
+        userMessage.content.toLowerCase().includes('analyze') ||
+        userMessage.content.toLowerCase().includes('describe') ||
+        userMessage.content.toLowerCase().includes('what do you see') ||
+        userMessage.content.toLowerCase().includes('what is in') ||
+        userMessage.content.toLowerCase().includes('identify') ||
+        userMessage.content.toLowerCase().includes('recognize') ||
+        userMessage.content.toLowerCase().includes('tell me about') ||
+        userMessage.content.toLowerCase().includes('colors') ||
+        userMessage.content.toLowerCase().includes('text in') ||
+        userMessage.content.toLowerCase().includes('read') ||
+        userMessage.content.toLowerCase().includes('dimensions') ||
+        userMessage.content.toLowerCase().includes('size')
+      );
+
+      // Check if we have any images available (current or mentioned)
+      const hasAnyImages = (imageContext?.hasImage && imageContext.base64Data) || 
+                          mentionedFiles.some(file => {
+                            const ext = file.name.toLowerCase();
+                            return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || 
+                                   ext.endsWith('.gif') || ext.endsWith('.bmp') || ext.endsWith('.svg') || ext.endsWith('.webp');
+                          });
+      
+      if (contextParts.length > 0 || userWantsDocumentEdit || userWantsImageAnalysis || hasAnyImages) {
         let instructions = '';
         
         // Only add document editing instructions if user seems to want document modification
         if (userWantsDocumentEdit) {
-          instructions = `
+          instructions += `
 
 DOCUMENT EDITING CAPABILITY:
 If you determine that the user wants to modify the document based on their request, you can use these commands:
@@ -300,11 +394,113 @@ If you determine that the user wants to modify the document based on their reque
 Only use these commands if the user's request clearly indicates they want document modification.`;
         }
         
-        contextualUserMessage = {
-          role: 'user' as const,
-          content: `${contextParts.length > 0 ? contextParts.join('\n\n') + '\n\n' : ''}[USER REQUEST]
-${userMessage.content}${instructions}`
+        // Add image analysis instructions when images are available (current or mentioned)
+        if (hasAnyImages) {
+          instructions += `
+
+IMAGE ANALYSIS CAPABILITY:
+I have provided you with image(s) that you can see and analyze. You have full visual access to:
+- Objects, people, text, and scenes in the images
+- Colors, composition, and visual elements  
+- Any text present in the images (OCR capabilities)
+- Technical details like image quality and formatting
+
+Please provide detailed visual insights based on what you observe in the image(s).`;
+        }
+        
+        // Load mentioned image files for multimodal analysis
+        const mentionedImageFiles = mentionedFiles.filter(file => {
+          const ext = file.name.toLowerCase();
+          return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || 
+                 ext.endsWith('.gif') || ext.endsWith('.bmp') || ext.endsWith('.svg') || ext.endsWith('.webp');
+        });
+
+        const loadMentionedImageData = async (file: any): Promise<{ mediaType: string; data: string } | null> => {
+          try {
+            const fs = await import('fs/promises');
+            const path = await import('path');
+            const imageBuffer = await fs.readFile(file.path);
+            const ext = path.extname(file.path).toLowerCase();
+            
+            let mimeType = 'image/jpeg';
+            switch (ext) {
+              case '.png': mimeType = 'image/png'; break;
+              case '.gif': mimeType = 'image/gif'; break;
+              case '.bmp': mimeType = 'image/bmp'; break;
+              case '.svg': mimeType = 'image/svg+xml'; break;
+              case '.webp': mimeType = 'image/webp'; break;
+              default: mimeType = 'image/jpeg'; break;
+            }
+
+            const base64 = imageBuffer.toString('base64');
+            return { mediaType: mimeType, data: base64 };
+          } catch (error) {
+            console.error('Error loading mentioned image:', error);
+            return null;
+          }
         };
+
+        // Check if we have current image or mentioned images for multimodal content
+        const hasCurrentImage = imageContext?.hasImage && imageContext.base64Data && imageContext.base64Data.includes('base64,');
+        const hasMentionedImages = mentionedImageFiles.length > 0;
+
+        if (hasCurrentImage || hasMentionedImages) {
+          // Create multimodal content blocks following Anthropic's format
+          const contentBlocks: any[] = [
+            {
+              type: 'text',
+              text: `${contextParts.length > 0 ? contextParts.join('\n\n') + '\n\n' : ''}[USER REQUEST]
+${userMessage.content}${instructions}
+
+[IMAGES PROVIDED]
+I have provided you with image(s) for analysis. Please analyze the image content and respond to the user's request.`
+            }
+          ];
+
+          // Add current image if available
+          if (hasCurrentImage) {
+            const [mimeTypePart, base64Data] = imageContext.base64Data.split(',');
+            const mediaType = mimeTypePart.split(':')[1].split(';')[0];
+            
+            contentBlocks.push({
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: mediaType,
+                data: base64Data
+              }
+            });
+          }
+
+          // Add mentioned images
+          if (hasMentionedImages) {
+            for (const imageFile of mentionedImageFiles) {
+              const imageData = await loadMentionedImageData(imageFile);
+              if (imageData) {
+                contentBlocks.push({
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: imageData.mediaType,
+                    data: imageData.data
+                  }
+                });
+              }
+            }
+          }
+          
+          contextualUserMessage = {
+            role: 'user' as const,
+            content: contentBlocks
+          };
+        } else {
+          // Standard text-only message
+          contextualUserMessage = {
+            role: 'user' as const,
+            content: `${contextParts.length > 0 ? contextParts.join('\n\n') + '\n\n' : ''}[USER REQUEST]
+${userMessage.content}${instructions}`
+          };
+        }
       }
       
       conversationMessages.push(contextualUserMessage);
@@ -727,10 +923,12 @@ ${userMessage.content}${instructions}`
               onChange={setInputMessage}
               onSubmit={handleSendMessage}
               placeholder={documentContext?.hasDocument 
-                ? "Ask questions about your document or request edits... Type @ to mention files"
-                : attachedFiles.length > 0 || mentionedFiles.length > 0
-                  ? "Ask me about the files... Type @ to mention more files"
-                  : "Ask anything... Use @ to mention files"
+                ? "Ask questions about your document or request edits... Type @ to mention files or images"
+                : imageContext?.hasImage
+                  ? "I can see your image! Ask me to describe it, analyze it, or answer questions about what's shown... Type @ to mention more files"
+                  : attachedFiles.length > 0 || mentionedFiles.length > 0
+                    ? "Ask me about the files... Type @ to mention more files or images"
+                    : "Ask anything... Use @ to mention files or images"
               }
               disabled={isLoading}
               getFiles={handleGetFiles}
