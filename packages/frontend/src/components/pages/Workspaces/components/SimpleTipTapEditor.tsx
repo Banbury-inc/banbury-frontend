@@ -32,7 +32,7 @@ import {
 interface SimpleTipTapEditorProps {
   content?: string;
   onChange?: (content: string) => void;
-  placeholder?: string;
+  _placeholder?: string;
   editable?: boolean;
   onSave?: () => void;
   onEditorReady?: (editor: any) => void;
@@ -41,7 +41,7 @@ interface SimpleTipTapEditorProps {
 const SimpleTipTapEditor: React.FC<SimpleTipTapEditorProps> = ({
   content = '',
   onChange,
-  placeholder = 'Start typing...',
+  _placeholder = 'Start typing...',
   editable = true,
   onSave,
   onEditorReady,

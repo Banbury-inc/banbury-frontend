@@ -1,13 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
-  Button,
   IconButton,
   Tooltip,
-  Typography,
   Stack,
-  Chip,
-  Paper,
+  Typography,
+  Paper
 } from '@mui/material';
 import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
 import AttachFileIcon from '@mui/icons-material/AttachFile';

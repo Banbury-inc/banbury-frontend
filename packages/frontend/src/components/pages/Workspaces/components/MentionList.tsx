@@ -9,8 +9,7 @@ import {
   Paper,
 } from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
-import DescriptionIcon from '@mui/icons-material/Description';
-import { MentionableFile, getFileIcon, formatFileSize } from './MentionExtension';
+import { MentionableFile, getFileIcon } from './MentionExtension';
 
 export interface MentionListProps {
   items: MentionableFile[];
@@ -97,23 +96,6 @@ const MentionList = forwardRef<any, MentionListProps>((props, ref) => {
         {emoji}
       </Box>
     );
-  };
-
-  const renderSecondaryText = (item: MentionableFile) => {
-    const parts = [];
-    
-    if (item.type === 'folder') {
-      parts.push('Folder');
-    } else {
-      if (item.size) {
-        parts.push(formatFileSize(item.size));
-      }
-      if (item.extension) {
-        parts.push(item.extension.toUpperCase());
-      }
-    }
-    
-    return parts.join(' • ');
   };
 
   if (!props.items.length) {

@@ -1,16 +1,10 @@
-import React, { useState, useCallback, Suspense, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, Suspense, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
-  Stack,
-  Button,
-  LinearProgress,
-  IconButton,
-  Tooltip
+  LinearProgress
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Allotment, LayoutPriority } from 'allotment';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -34,70 +28,19 @@ import { DatabaseData } from '@banbury/core/src/types';
 
 
 
-// Navigation Toggle Button Component
-const NavToggleButton = ({ 
-  isCollapsed, 
-  onClick, 
-  direction 
-}: { 
-  isCollapsed: boolean; 
-  onClick: () => void; 
-  direction: 'left' | 'right';
-}) => (
-  <Box
-    sx={{
-      position: 'absolute',
-      top: '50%',
-      [direction === 'left' ? 'right' : 'left']: -12,
-      transform: 'translateY(-50%)',
-      zIndex: 1000,
-    }}
-  >
-    <ToolbarButton
-      onClick={onClick}
-      sx={{
-        paddingLeft: '4px', 
-        paddingRight: '4px', 
-        minWidth: '30px',
-        bgcolor: 'background.paper',
-        border: 1,
-        borderColor: 'divider',
-        width: 24,
-        height: 24,
-        '&:hover': {
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        },
-      }}
-    >
-      <Typography sx={{ fontSize: '10px', fontWeight: 'bold' }}>
-        {direction === 'left' 
-          ? (isCollapsed ? '→' : '←')
-          : (isCollapsed ? '←' : '→')
-        }
-      </Typography>
-    </ToolbarButton>
-  </Box>
-);
-
-
-
 // Workspace Sidebar Component
 const WorkspaceSidebar = ({ 
-  resetWorkspaceView,
   onFileClick,
   cloudFiles = [],
   cloudEnabled = true
 }: { 
-  resetWorkspaceView: () => void;
   onFileClick?: (fileName: string, filePath: string, fileType: string) => void;
   cloudFiles?: DatabaseData[];
   cloudEnabled?: boolean;
 }) => {
   const [filePath, setFilePath] = useState('');
   const [filePathDevice, setFilePathDevice] = useState('');
-  const [backHistory, setBackHistory] = useState<string[]>([]);
-  const [forwardHistory, setForwardHistory] = useState<string[]>([]);
-  const { username, devices } = useAuth();
+  const { username } = useAuth();
 
   // Helper function to get file type
   const getFileType = (fileName: string): string => {
@@ -138,8 +81,6 @@ const WorkspaceSidebar = ({
 
   // Custom file path handler that detects file clicks
   const handleFilePathChange = useCallback(async (newPath: string) => {
-    console.log('File path changed:', newPath);
-    
     // Check if the path points to a file
     try {
       if (newPath && newPath !== filePath && onFileClick) {
@@ -148,14 +89,12 @@ const WorkspaceSidebar = ({
           // Extract the file name from the cloud path
           const fileName = path.basename(newPath);
           
-          // Find the cloud file in the cloudFiles array
-          const cloudFile = cloudFiles.find(file => 
+          // Find the matching cloud file
+          const cloudFile = cloudFiles.find((file: DatabaseData) => 
             file.file_name === fileName || file.file_path === newPath
           );
           
           if (cloudFile && cloudFile.is_s3) {
-            console.log('Detected cloud file click:', cloudFile);
-            
             try {
               // Import the required functions
               const { banbury } = await import('@banbury/core');
@@ -166,8 +105,6 @@ const WorkspaceSidebar = ({
                 cloudFile.file_name
               );
               
-              console.log('Cloud file downloaded to:', localFilePath);
-              
               // Get file type
               const fileType = getFileType(fileName);
               
@@ -175,20 +112,17 @@ const WorkspaceSidebar = ({
               await onFileClick(fileName, localFilePath, fileType);
               
               return; // Don't update filePath for cloud files
-            } catch (error) {
-              console.error('Error downloading and opening cloud file:', error);
+            } catch {
               // Fall through to normal handling if cloud download fails
             }
           }
         }
         
-        // Handle local files (existing logic)
+        // Handle local files
         let actualPath = newPath;
         
         // If it's not an absolute path, it might be a relative path that needs conversion
         if (!path.isAbsolute(newPath)) {
-          // For virtual paths like 'Core/Devices/...', we might need to convert them
-          // to actual file system paths. For now, we'll pass them as-is.
           actualPath = newPath;
         }
         
@@ -202,23 +136,20 @@ const WorkspaceSidebar = ({
             // It's a file, open it in the viewer
             const fileName = path.basename(actualPath);
             const fileType = getFileType(fileName);
-            // Properly await the async onFileClick function and catch any errors
             try {
               await onFileClick(fileName, actualPath, fileType);
-            } catch (fileClickError) {
-              console.error('Error opening file:', fileClickError);
+            } catch {
               // The error will be handled by the onFileClick function's own error handling
             }
             return; // Don't update filePath for files
           }
-        } catch (error) {
-          // If stat fails, it might not be a local file, proceed with normal navigation
-          console.log('Could not stat file:', actualPath, error);
-        }
+                  } catch {
+            // If stat fails, it might not be a local file, proceed with normal navigation
+          }
       }
-    } catch (error) {
-      console.error('Error handling file path change:', error);
-    }
+          } catch {
+        // Handle errors silently
+      }
     
     // For directories or navigation, update the file path
     setFilePath(newPath);
@@ -232,8 +163,8 @@ const WorkspaceSidebar = ({
             setFilePath={handleFilePathChange}
             filePathDevice={filePathDevice}
             setFilePathDevice={setFilePathDevice}
-            setBackHistory={setBackHistory}
-            setForwardHistory={setForwardHistory}
+            setBackHistory={() => {}}
+            setForwardHistory={() => {}}
             googleDriveFiles={[]}
             googleDriveEnabled={false}
             cloudFiles={cloudFiles}
@@ -402,7 +333,7 @@ export default function Workspaces() {
   // Document editing context for AI assistant
   const [documentEditor, setDocumentEditor] = useState<any>(null);
   const [currentDocumentContent, setCurrentDocumentContent] = useState<string>('');
-  const [currentDocumentName, setCurrentDocumentName] = useState<string>('');
+
 
   // Image viewing context for AI assistant
   const [currentImageInfo, setCurrentImageInfo] = useState<{
@@ -413,7 +344,7 @@ export default function Workspaces() {
     dimensions?: { width: number; height: number } | null;
     fileSize?: number;
   } | null>(null);
-  const [currentImageName, setCurrentImageName] = useState<string>('');
+
 
   // File tabs state
   interface FileTab {
@@ -427,12 +358,11 @@ export default function Workspaces() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const { showAlert } = useAlert();
-  const { username, tasks, setTasks, setTaskbox_expanded, devices } = useAuth();
+  const { username, devices } = useAuth();
 
   // Add Cloud Files state (similar to Files.tsx)
   const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
-  const [isCloudLoading, setIsCloudLoading] = useState(false);
-  const [cloudError, setCloudError] = useState<string | null>(null);
+
   const [cloudEnabled] = useState(true); // Cloud is always enabled
 
   // Document AI Integration Functions
@@ -488,11 +418,12 @@ export default function Workspaces() {
             documentEditor.commands.setTextSelection(0);
             documentEditor.commands.insertContent(content);
             break;
-          case 'end':
+          case 'end': {
             const endPos = documentEditor.state.doc.content.size;
             documentEditor.commands.setTextSelection(endPos);
             documentEditor.commands.insertContent(content);
             break;
+          }
           case 'cursor':
           default:
             documentEditor.commands.insertContent(content);
@@ -670,9 +601,7 @@ export default function Workspaces() {
     }
   }, { preventDefault: true });
 
-  const resetWorkspaceView = () => {
-    // Reset any workspace state if needed
-  };
+
 
   // Determine if file should open in the middle panel (editor or viewer)
   const shouldOpenInMiddlePanel = (fileName: string): boolean => {
@@ -682,91 +611,7 @@ export default function Workspaces() {
     return editableExtensions.includes(ext) || imageExtensions.includes(ext);
   };
 
-  // Convert plain text to HTML for TipTap
-  const textToHtml = (text: string): string => {
-    console.log('=== TEXT TO HTML CONVERSION ===');
-    console.log('Input text:', text);
-    console.log('Input text length:', text.length);
-    
-    try {
-      if (!text || text.trim().length === 0) {
-        console.log('Text is empty, returning default paragraph');
-        return '<p></p>';
-      }
 
-      // Escape HTML entities to prevent XSS
-      const escapeHtml = (unsafe: string) => {
-        return unsafe
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      };
-
-      // Split into paragraphs and convert to HTML
-      const paragraphs = text.split(/\n\s*\n/);
-      console.log('Split into paragraphs:', paragraphs.length);
-      let html = '';
-
-      for (let i = 0; i < paragraphs.length; i++) {
-        const paragraph = paragraphs[i];
-        const trimmed = paragraph.trim();
-        console.log(`Processing paragraph ${i}:`, trimmed);
-        
-        if (!trimmed) {
-          console.log(`Paragraph ${i} is empty, skipping`);
-          continue;
-        }
-
-        // Check if it looks like a heading (starts with # for markdown)
-        if (trimmed.startsWith('# ')) {
-          const heading = escapeHtml(trimmed.substring(2).trim());
-          html += `<h1>${heading}</h1>`;
-          console.log(`Added H1: ${heading}`);
-        } else if (trimmed.startsWith('## ')) {
-          const heading = escapeHtml(trimmed.substring(3).trim());
-          html += `<h2>${heading}</h2>`;
-          console.log(`Added H2: ${heading}`);
-        } else if (trimmed.startsWith('### ')) {
-          const heading = escapeHtml(trimmed.substring(4).trim());
-          html += `<h3>${heading}</h3>`;
-          console.log(`Added H3: ${heading}`);
-        } else {
-          // Regular paragraph - preserve line breaks within paragraph
-          const lines = trimmed.split('\n').map(line => line.trim()).filter(line => line);
-          console.log(`Paragraph ${i} lines:`, lines);
-          
-          if (lines.length === 1) {
-            const escapedLine = escapeHtml(lines[0]);
-            html += `<p>${escapedLine}</p>`;
-            console.log(`Added single line paragraph: ${escapedLine}`);
-          } else if (lines.length > 1) {
-            const escapedLines = lines.map(line => escapeHtml(line));
-            html += `<p>${escapedLines.join('<br>')}</p>`;
-            console.log(`Added multi-line paragraph with ${lines.length} lines`);
-          }
-        }
-      }
-
-      // If we still have no HTML content, create a paragraph with the raw text
-      if (!html.trim()) {
-        console.log('No HTML generated from paragraphs, using raw text');
-        // Just wrap the entire text in a paragraph, replacing line breaks
-        const cleanText = escapeHtml(text.trim()).replace(/\n/g, '<br>');
-        html = `<p>${cleanText}</p>`;
-      }
-
-      console.log('Final HTML output:', html);
-      console.log('=== END TEXT TO HTML CONVERSION ===');
-      return html;
-    } catch (error) {
-      console.error('Error in textToHtml conversion:', error);
-      // Fallback: return a simple paragraph with escaped text
-      const fallbackText = String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      return `<p>${fallbackText}</p>`;
-    }
-  };
 
   // Convert HTML back to plain text/markdown for saving
   const htmlToText = (html: string, isMarkdown: boolean = false): string => {
@@ -798,7 +643,7 @@ export default function Workspaces() {
   // Save document to file system
   const saveDocument = useCallback(async (document: { fileName: string; filePath: string; content: string }) => {
     try {
-      console.log('Saving document:', document.fileName);
+
       
       const ext = path.extname(document.fileName).toLowerCase();
       let textContent = '';
@@ -813,7 +658,7 @@ export default function Workspaces() {
       } else if (ext === '.docx' || ext === '.doc') {
         // For DOCX files, convert HTML back to DOCX format
         try {
-          console.log('Converting HTML to DOCX format using docx library...');
+
           
           // Enhanced HTML parser that preserves formatting
           const htmlToDocxParagraphs = (htmlContent: string) => {
@@ -844,7 +689,7 @@ export default function Workspaces() {
                   isUnderline = true;
                   text = text.replace(/<\/?u>/g, '');
                 }
-                if (text.includes('<s>') || text.includes('<del>')) {
+                if (text.includes(' ') || text.includes('<del>')) {
                   isStrike = true;
                   text = text.replace(/<\/?(?:s|del)>/g, '');
                 }
@@ -980,7 +825,7 @@ export default function Workspaces() {
           // Write the DOCX buffer to file
           await writeFile(document.filePath, docxBuffer);
           
-          console.log('Document saved successfully as DOCX');
+
           
           // Check if this is a cloud file that needs to be uploaded and replaced
           const isCloudFile = document.filePath && (
@@ -990,7 +835,7 @@ export default function Workspaces() {
           
           if (isCloudFile) {
             try {
-              console.log('Detected cloud DOCX file, uploading to replace existing cloud file...');
+
               
               // Find the corresponding cloud file in our cloudFiles array
               const fileName = path.basename(document.filePath);
@@ -1010,11 +855,10 @@ export default function Workspaces() {
                 
                 // Delete the existing cloud file first
                 if (cloudFile._id || cloudFile.id) {
-                  try {
-                    console.log('Deleting existing cloud file before uploading new version...');
-                    const fileId = String(cloudFile._id || cloudFile.id);
-                    await banbury.files.deleteS3File(fileId);
-                    console.log('Existing cloud file deleted successfully');
+                                      try {
+                      
+                      const fileId = String(cloudFile._id || cloudFile.id);
+                      await banbury.files.deleteS3File(fileId);
                   } catch (deleteError) {
                     console.error('Error deleting existing cloud file:', deleteError);
                     // Continue with upload even if delete fails - the upload should overwrite
@@ -1034,12 +878,12 @@ export default function Workspaces() {
                   'Cloud' // file parent
                 );
                 
-                console.log('Cloud DOCX file uploaded successfully, deleting local copy...');
+                
                 
                 // Delete the local BCloud file after successful upload
                 await fs.unlink(document.filePath);
                 
-                console.log('Local DOCX file deleted successfully');
+                
                 showAlert('Success', [
                   `"${fileName}" saved and uploaded to cloud successfully in DOCX format.`,
                   'Local copy has been cleaned up.'
@@ -1080,7 +924,7 @@ export default function Workspaces() {
       }
 
       await writeFile(actualSavePath, textContent, 'utf-8');
-      console.log('Document saved successfully:', document.fileName);
+      
       
       // Check if this is a cloud file that needs to be uploaded and replaced
       const isCloudFile = document.filePath && (
@@ -1090,7 +934,7 @@ export default function Workspaces() {
       
       if (isCloudFile) {
         try {
-          console.log('Detected cloud file, uploading to replace existing cloud file...');
+          
           
           // Find the corresponding cloud file in our cloudFiles array
           const fileName = path.basename(actualSavePath);
@@ -1111,10 +955,9 @@ export default function Workspaces() {
             // Delete the existing cloud file first
             if (cloudFile._id || cloudFile.id) {
               try {
-                console.log('Deleting existing cloud file before uploading new version...');
-                const fileId = String(cloudFile._id || cloudFile.id);
-                await banbury.files.deleteS3File(fileId);
-                console.log('Existing cloud file deleted successfully');
+                
+                                  const fileId = String(cloudFile._id || cloudFile.id);
+                  await banbury.files.deleteS3File(fileId);
               } catch (deleteError) {
                 console.error('Error deleting existing cloud file:', deleteError);
                 // Continue with upload even if delete fails - the upload should overwrite
@@ -1134,12 +977,12 @@ export default function Workspaces() {
               'Cloud' // file parent
             );
             
-            console.log('Cloud file uploaded successfully, deleting local copy...');
+            
             
             // Delete the local BCloud file after successful upload
             await fs.unlink(actualSavePath);
             
-            console.log('Local file deleted successfully');
+            
             showAlert('Success', [
               `"${fileName}" saved and uploaded to cloud successfully.`,
               'Local copy has been cleaned up.'
@@ -1175,7 +1018,6 @@ export default function Workspaces() {
       // Clear image context if closing an image tab
       if (tabToClose && isImageFile(tabToClose.fileName) && activeTab === tabId) {
         setCurrentImageInfo(null);
-        setCurrentImageName('');
       }
       
       // If closing the active tab, switch to another tab
@@ -1188,40 +1030,6 @@ export default function Workspaces() {
       return newTabs;
     });
   }, [activeTab]);
-
-  const handleSwitchTab = useCallback(async (tabId: string) => {
-    setActiveTab(tabId);
-    
-    // Update image context when switching to an image tab
-    const newActiveTab = openTabs.find(tab => tab.id === tabId);
-    if (newActiveTab && isImageFile(newActiveTab.fileName)) {
-      try {
-        // Get file size
-        const fs = await import('fs/promises');
-        const stats = await fs.stat(newActiveTab.filePath);
-        
-        // Load base64 data immediately
-        const base64Data = await getImageBase64(newActiveTab.filePath);
-        const dimensions = await getImageDimensions(newActiveTab.filePath);
-        
-        setCurrentImageInfo({
-          fileName: newActiveTab.fileName,
-          filePath: newActiveTab.filePath,
-          fileType: newActiveTab.fileType,
-          fileSize: stats.size,
-          base64Data,
-          dimensions
-        });
-        setCurrentImageName(newActiveTab.fileName);
-      } catch (error) {
-        console.error('Error updating image context on tab switch:', error);
-      }
-    } else {
-      // Clear image context when switching to non-image tab
-      setCurrentImageInfo(null);
-      setCurrentImageName('');
-    }
-  }, [openTabs, getImageDimensions, getImageBase64]);
 
   // Load document content without updating UI
   const loadDocumentContent = async (fileName: string, filePath: string): Promise<string> => {
@@ -1317,7 +1125,6 @@ export default function Workspaces() {
         content
       });
       setCurrentDocumentContent(content);
-      setCurrentDocumentName(fileName);
       setShowTipTapEditor(true);
     } catch (error) {
       console.error('Error opening document:', error);
@@ -1326,7 +1133,6 @@ export default function Workspaces() {
       // Reset state on error
       setCurrentDocument(null);
       setCurrentDocumentContent('');
-      setCurrentDocumentName('');
       setShowTipTapEditor(false);
     }
   }, [showAlert]);
@@ -1373,7 +1179,6 @@ export default function Workspaces() {
             base64Data,
             dimensions
           });
-          setCurrentImageName(fileName);
         } catch (error) {
           console.error('Error setting image context:', error);
         }
@@ -1399,21 +1204,15 @@ export default function Workspaces() {
 
   // File handling - TipTap for documents, system default for others
   const handleFileClick = useCallback(async (fileName: string, filePath: string, fileType: string) => {
-    console.log('=== HANDLE FILE CLICK DEBUG ===');
-    console.log('File clicked:', fileName);
-    console.log('Original file path:', filePath);
-    console.log('File type:', fileType);
+
     
     // Normalize the path for cross-platform compatibility
     const normalizedPath = path.normalize(filePath);
-    console.log('Normalized path:', normalizedPath);
-    console.log('Path is absolute:', path.isAbsolute(normalizedPath));
-    
-    console.log('Should open in middle panel:', shouldOpenInMiddlePanel(fileName));
+
     
     if (shouldOpenInMiddlePanel(fileName)) {
       // Open file in middle panel (editor or viewer)
-      console.log('Opening in middle panel with path:', normalizedPath);
+      
       try {
         await openFileInMiddlePanel(fileName, normalizedPath, fileType);
       } catch (error) {
@@ -1422,7 +1221,7 @@ export default function Workspaces() {
       }
     } else {
       // Open other files with system default application
-      console.log('Opening with system default application');
+      
       try {
         await shell.openPath(normalizedPath);
       } catch (error) {
@@ -1430,23 +1229,9 @@ export default function Workspaces() {
         showAlert('Error', [`Failed to open "${fileName}" with system application.`], 'error');
       }
     }
-    console.log('=== END HANDLE FILE CLICK DEBUG ===');
   }, [showAlert, openFileInMiddlePanel]);
 
-  // Handle document editor changes for FileViewerTabs
-  const handleDocumentEditorChange = useCallback((editor: any, content: string, fileName: string) => {
-    setDocumentEditor(editor);
-    setCurrentDocumentContent(content);
-    setCurrentDocumentName(fileName);
-    
-    // Update current document if it matches the fileName
-    if (currentDocument?.fileName === fileName) {
-      setCurrentDocument({
-        ...currentDocument,
-        content
-      });
-    }
-  }, [currentDocument]);
+
 
   const toggleLeftPanel = () => {
     const newLeftCollapsed = !leftPanelCollapsed;
@@ -1484,7 +1269,7 @@ export default function Workspaces() {
     }
   }, []);
 
-  const onAllotmentChange = useCallback(([leftWidth, middleWidth, rightWidth]: number[]) => {
+  const onAllotmentChange = useCallback(([leftWidth, , rightWidth]: number[]) => {
     const newLeftCollapsed = leftWidth === undefined || leftWidth === 0;
     const newRightOpen = rightWidth !== undefined && rightWidth > 0;
     
@@ -1496,20 +1281,13 @@ export default function Workspaces() {
     const fetchCloudFilesData = async () => {
       if (!username) return;
 
-      // Fetch Cloud files for tree display
-      setIsCloudLoading(true);
-      setCloudError(null);
-
       try {
         const { fetchCloudData } = await import('../Files/utils/fetchAllData');
         const result = await fetchCloudData();
         setCloudFiles(result);
       } catch (error: any) {
         console.error('Error fetching Cloud files for Workspaces:', error);
-        setCloudError(error.message || 'Failed to load Cloud files');
         setCloudFiles([]);
-      } finally {
-        setIsCloudLoading(false);
       }
     };
 
@@ -1560,7 +1338,6 @@ export default function Workspaces() {
             >
               <Box sx={{ height: '100%', borderRight: 1, borderColor: 'divider', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 <WorkspaceSidebar 
-                  resetWorkspaceView={resetWorkspaceView} 
                   onFileClick={handleFileClick}
                   cloudFiles={cloudFiles}
                   cloudEnabled={cloudEnabled}

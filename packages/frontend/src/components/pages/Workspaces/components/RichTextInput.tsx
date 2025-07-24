@@ -3,7 +3,6 @@ import {
   Box,
   TextField,
   Popper,
-  Paper,
   ClickAwayListener,
 } from '@mui/material';
 import MentionList from './MentionList';

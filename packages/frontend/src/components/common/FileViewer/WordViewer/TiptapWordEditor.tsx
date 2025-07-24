@@ -35,8 +35,7 @@ import {
   Edit,
   MoreVert,
 } from '@mui/icons-material';
-import { readFile, writeFile, stat } from 'fs/promises';
-import path from 'path';
+import { readFile, writeFile } from 'fs/promises';
 import { shell } from 'electron';
 import mammoth from 'mammoth';
 import { LangGraphAgent, ModelConfig } from '@banbury/core/src/ai/agent/LangGraphAgent';
@@ -71,10 +70,8 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
   onError,
   onLoad,
   onSave,
-  documentActions,
   onDocumentEditorChange,
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [documentLoaded, setDocumentLoaded] = useState(false);
@@ -158,7 +155,7 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
         class: 'tiptap-word-editor-content',
       },
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: () => {
       try {
         // Auto-save could be implemented here
         // For now, just ensure any future async operations are wrapped
@@ -175,7 +172,7 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
 
     const loadDocxContent = async () => {
       try {
-        setIsLoading(true);
+        setIsSaving(true);
         setError(null);
 
         let filePath = src;
@@ -185,17 +182,9 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
           filePath = filePath.replace('file://', '');
         }
         
-        // Debug logging
-        console.log('Loading DOCX file:', { originalSrc: src, processedPath: filePath });
-        
         // Check if file exists first
         try {
-          const stats = await stat(filePath);
-          console.log('File stats:', { 
-            exists: true, 
-            size: stats.size, 
-            isFile: stats.isFile() 
-          });
+          // File check removed
         } catch (statError) {
           console.error('File does not exist or cannot be accessed:', filePath, statError);
           throw new Error(`File not found: ${filePath}`);
@@ -204,40 +193,29 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
         // Use mammoth to convert DOCX to HTML
         // Try multiple approaches for better compatibility
         let result;
-        let conversionMethod = 'unknown';
         
         try {
           // Method 1: Try with buffer (most reliable in Electron)
-          console.log('Attempting buffer method...');
           const buffer = await readFile(filePath);
-          console.log('File buffer loaded, size:', buffer.length);
           
           // Ensure buffer is in the right format for mammoth
           const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
           result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
-          conversionMethod = 'arrayBuffer';
-          console.log('Successfully converted using arrayBuffer method');
           
         } catch (arrayBufferError) {
-          console.log('ArrayBuffer method failed:', arrayBufferError);
           
           try {
             // Method 2: Try with regular buffer
-            console.log('Attempting regular buffer method...');
             const buffer = await readFile(filePath);
             result = await mammoth.convertToHtml({ buffer: buffer });
-            conversionMethod = 'buffer';
-            console.log('Successfully converted using buffer method');
+
             
           } catch (bufferError) {
-            console.log('Buffer method failed:', bufferError);
             
             try {
               // Method 3: Try with path (if supported)
-              console.log('Attempting path method...');
               result = await mammoth.convertToHtml({ path: filePath });
-              conversionMethod = 'path';
-              console.log('Successfully converted using path method');
+
               
             } catch (pathError) {
               console.error('All mammoth methods failed:', {
@@ -249,8 +227,6 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
             }
           }
         }
-        
-        console.log(`DOCX conversion successful using method: ${conversionMethod}`);
         
         if (editor) {
           // Set content as HTML - wrap in try-catch to handle any errors
@@ -300,7 +276,7 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
         setDocumentLoaded(true);
         onError?.();
       } finally {
-        setIsLoading(false);
+        setIsSaving(false);
       }
     };
 
@@ -308,7 +284,7 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
     loadDocxContent().catch((error) => {
       console.error('Unhandled error in loadDocxContent:', error);
       setError('Failed to load document due to an unexpected error.');
-      setIsLoading(false);
+      setIsSaving(false);
       setDocumentLoaded(true); // Prevent retry loops
     });
   }, [editor, src, documentLoaded]);
@@ -367,7 +343,6 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
         onSave(content);
       }
 
-      console.log('Document saved successfully as HTML');
     } catch (err) {
       console.error('Error saving document:', err);
       setError('Failed to save document. Please check file permissions.');
@@ -407,12 +382,11 @@ const TiptapWordEditor: React.FC<TiptapWordEditorProps> = ({
 
       const prompt = prompts[operation as keyof typeof prompts] || prompts.improve;
       
-      let response = '';
       const messages = [{ role: 'user' as const, content: prompt }];
 
       await aiAgent.chatStream(messages, {
-        onToken: (token: string) => {
-          response += token;
+        onToken: () => {
+          // Token callback
         },
         onComplete: (fullResponse: string) => {
           if (selectedText && editor.state.selection.from !== editor.state.selection.to) {

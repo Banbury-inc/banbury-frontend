@@ -203,7 +203,7 @@ export function createFileSystemTools(fileSystemRootDir: string): any[] {
               }
             }
           } catch (error) {
-            // Skip directories we can't read
+            return `Error searching files: ${error instanceof Error ? error.message : 'Unknown error'}`;
           }
         };
         

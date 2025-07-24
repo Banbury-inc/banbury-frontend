@@ -3,19 +3,10 @@ import {
   Box,
   Typography,
   Stack,
-  FormControl,
-  Select,
-  MenuItem,
-  InputLabel,
-  Divider,
-  Collapse,
   IconButton,
-  Tooltip,
   Paper,
 } from '@mui/material';
 import { ToolbarButton } from '../../../common/ToolbarButton/ToolbarButton';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import SettingsIcon from '@mui/icons-material/Settings';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useAlert } from '../../../../renderer/context/AlertContext';
@@ -83,11 +74,9 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState('');
-  const [currentThinking, setCurrentThinking] = useState('');
-  const [selectedModel, setSelectedModel] = useState(() => {
+  const [selectedModel] = useState(() => {
     return localStorage.getItem('workspace_ai_model') || 'claude-sonnet-4-20250514';
   });
-  const [showModelSettings, setShowModelSettings] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [enabledTools, setEnabledTools] = useState<string[]>(['webSearch', 'filesystem', 'banbury']);
   const [mentionedFiles, setMentionedFiles] = useState<MentionableFile[]>([]);
@@ -95,10 +84,7 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Save selected model to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('workspace_ai_model', selectedModel);
-  }, [selectedModel]);
+
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -576,7 +562,6 @@ ${userMessage.content}${instructions}`
               
               // Find the earliest transition phrase that starts a new thought
               let earliestBreakPoint = -1;
-              let bestPhrase = '';
               
               for (const phrase of transitionPhrases) {
                 const index = text.toLowerCase().indexOf(phrase.toLowerCase());
@@ -585,7 +570,6 @@ ${userMessage.content}${instructions}`
                   const beforePhrase = text.substring(0, index).trim();
                   if (beforePhrase === '' || /[.!?]\s*$/.test(beforePhrase)) {
                     earliestBreakPoint = index;
-                    bestPhrase = phrase;
                   }
                 }
               }
@@ -624,7 +608,6 @@ ${userMessage.content}${instructions}`
           }
         },
         onThinkingStart: () => {
-          setCurrentThinking('');
           setMessages(prev => [...prev, { 
             role: 'thinking', 
             content: 'Thinking...', 
@@ -634,7 +617,6 @@ ${userMessage.content}${instructions}`
           }]);
         },
         onThinking: (thinking: string) => {
-          setCurrentThinking(thinking);
           setMessages(prev => {
             if (prev.length === 0) return prev;
             const newPrev = [...prev];
@@ -681,7 +663,6 @@ ${userMessage.content}${instructions}`
               const addContentMatch = fullResponse.match(/ADD_CONTENT:\s*(.*?)(?=\n\n|\nREPLACE_CONTENT:|\nINSERT_CONTENT:|$)/s);
               if (addContentMatch) {
                 const contentToAdd = addContentMatch[1].trim();
-                console.log('AI wants to add content:', contentToAdd);
                 documentActions.insertContent(contentToAdd, 'end');
                 showAlert('Success', ['AI content added to document'], 'success');
               }
@@ -690,7 +671,6 @@ ${userMessage.content}${instructions}`
               const replaceContentMatch = fullResponse.match(/REPLACE_CONTENT:\s*(.*?)(?=\n\n|\nADD_CONTENT:|\nINSERT_CONTENT:|$)/s);
               if (replaceContentMatch) {
                 const newContent = replaceContentMatch[1].trim();
-                console.log('AI wants to replace content with:', newContent);
                 documentActions.setContent(newContent);
                 showAlert('Success', ['Document content replaced by AI'], 'success');
               }
@@ -699,7 +679,6 @@ ${userMessage.content}${instructions}`
               const insertContentMatch = fullResponse.match(/INSERT_CONTENT:\s*(.*?)(?=\n\n|\nADD_CONTENT:|\nREPLACE_CONTENT:|$)/s);
               if (insertContentMatch) {
                 const contentToInsert = insertContentMatch[1].trim();
-                console.log('AI wants to insert content:', contentToInsert);
                 documentActions.insertContent(contentToInsert, 'cursor');
                 showAlert('Success', ['AI content inserted at cursor'], 'success');
               }

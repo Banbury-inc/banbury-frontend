@@ -6,10 +6,7 @@ import {
   IconButton,
   Tooltip,
   ButtonGroup,
-  Divider,
-  Toolbar,
   Popper,
-  Paper,
   ClickAwayListener,
 } from '@mui/material';
 import {
@@ -20,8 +17,6 @@ import {
   FormatListBulleted,
   FormatListNumbered,
   FormatClear,
-  AttachFile,
-  SmartToy,
 } from '@mui/icons-material';
 import MentionList from './MentionList';
 import { MentionableFile, getFileExtension } from './MentionExtension';
@@ -52,7 +47,7 @@ const EnhancedRichTextInput: React.FC<EnhancedRichTextInputProps> = ({
   disabled = false,
   getFiles,
   onMentionedFilesChange,
-  maxRows = 4,
+  maxRows: _maxRows = 4,
 }) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [mentionState, setMentionState] = useState<MentionState>({

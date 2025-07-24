@@ -49,8 +49,6 @@ export class FileService {
       this.scannedFolders = [...new Set(allScannedFolders)];
       this.lastScannedFoldersUpdate = now;
       
-      console.log('Got scanned folders from all devices:', this.scannedFolders);
-      
       // Fallback to common directories if no scanned folders are configured
       if (this.scannedFolders.length === 0) {
         console.warn('No scanned folders configured for any device, using default directories');
@@ -136,7 +134,7 @@ export class FileService {
         try {
           const files = await this.getFilesFromDirectory(dirPath, false);
           allFiles.push(...files.slice(0, 3)); // Take first 3 from each directory
-        } catch (error) {
+        } catch {
           // Skip directories that can't be accessed
           continue;
         }
@@ -173,7 +171,7 @@ export class FileService {
           const files = await this.getFilesFromDirectory(searchPath);
           const filtered = this.filterFiles(files, query);
           allFiles.push(...filtered);
-        } catch (error) {
+        } catch {
           continue;
         }
       }
@@ -189,7 +187,7 @@ export class FileService {
     }
   }
 
-  private async getFilesFromDirectory(dirPath: string, includeSubdirs: boolean = true): Promise<MentionableFile[]> {
+  private async getFilesFromDirectory(dirPath: string, _includeSubdirs: boolean = true): Promise<MentionableFile[]> {
     try {
       const items = await readdir(dirPath);
       const files: MentionableFile[] = [];
@@ -212,7 +210,7 @@ export class FileService {
           };
 
           files.push(file);
-        } catch (error) {
+        } catch {
           // Skip files that can't be accessed
           continue;
         }

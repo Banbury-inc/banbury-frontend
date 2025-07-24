@@ -1,5 +1,5 @@
 import { BanburyMcpClient } from '../../basic/tools/banburyMCP/BanburyMcpClient';
-import { createSimpleTool, convertToLangChainTool, createToolParameter, SimpleTool } from './simplifiedTools';
+import { createSimpleTool, convertToLangChainTool, createToolParameter } from './simplifiedTools';
 
 /**
  * Create Banbury tools using simplified tool definitions

@@ -233,7 +233,6 @@ export default function FileTreeView({
   const { set_Files, username, setFirstname, setLastname, devices } = useAuth();
   const [fileRows, setFileRows] = useState<DatabaseData[]>([]);
   const [fetchedFiles, setFetchedFiles] = useState<DatabaseData[]>([]);
-  const disableFetch = false;
   const cache = new Map<string, DatabaseData[]>();
   const [isLoading, setIsLoading] = useState(true);
   const [expandedNodes, setExpandedNodes] = useState<string[]>(['Core']);

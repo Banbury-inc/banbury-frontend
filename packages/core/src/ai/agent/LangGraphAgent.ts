@@ -284,7 +284,6 @@ ${modelInfo}${banburyInfo}${filesystemInfo}${webSearchInfo}${gmailInfo}
           if (lastMessage.constructor?.name === 'ToolMessage' || lastMessage.type === 'tool') {
             // Extract tool result and notify
             if (lastMessage.content) {
-              const toolId = lastMessage.tool_call_id || lastMessage.id || 'unknown';
               const content = typeof lastMessage.content === 'string' 
                 ? lastMessage.content 
                 : JSON.stringify(lastMessage.content);

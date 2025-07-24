@@ -131,8 +131,7 @@ export default function Files() {
   // Add Cloud Files state
   const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
   const [isCloudLoading, setIsCloudLoading] = useState(false);
-  const [cloudError, setCloudError] = useState<string | null>(null);
-  const [cloudEnabled, setCloudEnabled] = useState(true); // Cloud is always enabled
+  const [cloudEnabled] = useState(true); // Cloud is always enabled
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -641,7 +640,6 @@ export default function Files() {
       // If we're specifically viewing a Cloud path, fetch those files
       if (filePath.includes('Core/Cloud') || filePath === 'Cloud') {
         setIsCloudLoading(true);
-        setCloudError(null);
 
         try {
           const { fetchCloudData } = await import('./utils/fetchAllData');
@@ -649,7 +647,6 @@ export default function Files() {
           setCloudFiles(result);
         } catch (error: any) {
           console.error('Error fetching Cloud files:', error);
-          setCloudError(error.message || 'Failed to load Cloud files');
           setCloudFiles([]);
         } finally {
           setIsCloudLoading(false);

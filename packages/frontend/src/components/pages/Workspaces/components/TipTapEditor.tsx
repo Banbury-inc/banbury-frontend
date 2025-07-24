@@ -22,10 +22,7 @@ import {
   FormatListBulleted,
   FormatListNumbered,
   FormatQuote,
-  FormatAlignLeft,
-  FormatAlignCenter,
-  FormatAlignRight,
-  FormatAlignJustify,
+
   FormatClear,
 } from '@mui/icons-material';
 import { MentionableFile } from './MentionExtension';
@@ -33,18 +30,18 @@ import { MentionableFile } from './MentionExtension';
 interface TipTapEditorProps {
   content?: string;
   onChange?: (content: string) => void;
-  placeholder?: string;
-  getFiles?: (query: string) => MentionableFile[] | Promise<MentionableFile[]>;
-  onMentionedFilesChange?: (files: MentionableFile[]) => void;
+  _placeholder?: string;
+  _getFiles?: (query: string) => MentionableFile[] | Promise<MentionableFile[]>;
+  _onMentionedFilesChange?: (files: MentionableFile[]) => void;
   editable?: boolean;
 }
 
 const TipTapEditor: React.FC<TipTapEditorProps> = ({
   content = '',
   onChange,
-  placeholder = 'Start typing...',
-  getFiles,
-  onMentionedFilesChange,
+  _placeholder = 'Start typing...',
+  _getFiles,
+  _onMentionedFilesChange,
   editable = true,
 }) => {
   const editor = useEditor({

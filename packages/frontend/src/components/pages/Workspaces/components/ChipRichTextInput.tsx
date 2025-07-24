@@ -1,20 +1,12 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
-import Suggestion from '@tiptap/suggestion';
 import Placeholder from '@tiptap/extension-placeholder';
-import { mergeAttributes } from '@tiptap/core';
 import tippy from 'tippy.js';
-import {
-  Box,
-  List,
-  ListItem,
-  ListItemText,
-  Paper,
-  Typography,
-} from '@mui/material';
-import { MentionableFile, getFileExtension } from './MentionExtension';
+import { Box } from '@mui/material';
+import { MentionableFile } from './MentionExtension';
+import MentionList from './MentionList';
 
 export interface ChipRichTextInputProps {
   value: string;
@@ -26,165 +18,6 @@ export interface ChipRichTextInputProps {
   onMentionedFilesChange?: (files: MentionableFile[]) => void;
 }
 
-// Get appropriate icon based on file type
-const getFileIcon = (file: MentionableFile): string => {
-  if (file.type === 'folder') return '📁';
-  
-  const ext = file.extension?.toLowerCase() || '';
-  switch (ext) {
-    case 'pdf': return '📄';
-    case 'doc':
-    case 'docx': return '📝';
-    case 'xls':
-    case 'xlsx': return '📊';
-    case 'ppt':
-    case 'pptx': return '📈';
-    case 'txt': return '📄';
-    case 'md': return '📝';
-    case 'js':
-    case 'ts':
-    case 'jsx':
-    case 'tsx': return '💻';
-    case 'py': return '🐍';
-    case 'java': return '☕';
-    case 'cpp':
-    case 'c': return '⚙️';
-    case 'html': return '🌐';
-    case 'css': return '🎨';
-    case 'json': return '📋';
-    case 'xml': return '📄';
-    case 'zip':
-    case 'rar': return '📦';
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'gif':
-    case 'svg': return '🖼️';
-    case 'mp4':
-    case 'avi':
-    case 'mov': return '🎥';
-    case 'mp3':
-    case 'wav': return '🎵';
-    default: return '📄';
-  }
-};
-
-// MentionList component for suggestions (following Athena pattern)
-interface MentionListProps {
-  items: MentionableFile[];
-  command: (item: MentionableFile) => void;
-}
-
-const MentionListComponent = React.forwardRef<
-  { handleKeyDown: (event: KeyboardEvent) => boolean },
-  MentionListProps
->(({ items, command }, ref) => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [items]);
-
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.key === 'ArrowUp') {
-      setSelectedIndex((prev) => (prev + items.length - 1) % items.length);
-      return true;
-    }
-
-    if (event.key === 'ArrowDown') {
-      setSelectedIndex((prev) => (prev + 1) % items.length);
-      return true;
-    }
-
-    if (event.key === 'Enter') {
-      const selectedItem = items[selectedIndex];
-      if (selectedItem) {
-        command(selectedItem);
-      }
-      return true;
-    }
-
-    return false;
-  }, [items, selectedIndex, command]);
-
-  React.useImperativeHandle(ref, () => ({
-    handleKeyDown,
-  }));
-
-  if (items.length === 0) {
-    return (
-      <Paper elevation={4} sx={{ p: 2, minWidth: 200 }}>
-        <Typography variant="body2" color="text.secondary">
-          No files found
-        </Typography>
-      </Paper>
-    );
-  }
-
-  return (
-    <Paper 
-      elevation={4} 
-      sx={{ 
-        maxWidth: 280, 
-        maxHeight: 200, 
-        overflow: 'auto',
-        py: 0.5,
-        border: '1px solid rgba(255,255,255,0.1)',
-        bgcolor: 'rgba(30, 30, 30, 0.95)',
-      }}
-    >
-      <List dense sx={{ py: 0 }}>
-        {items.map((file, index) => (
-          <ListItem
-            key={file.id}
-            button
-            selected={index === selectedIndex}
-            onClick={() => command(file)}
-            onMouseEnter={() => setSelectedIndex(index)}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.75,
-              minHeight: 28,
-              py: 0.25,
-              px: 1,
-              borderRadius: 0.5,
-              mx: 0.5,
-              '&.Mui-selected': {
-                bgcolor: 'rgba(100, 149, 237, 0.2)',
-                '&:hover': {
-                  bgcolor: 'rgba(100, 149, 237, 0.3)',
-                },
-              },
-              '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.05)',
-              },
-            }}
-          >
-            <Box sx={{ fontSize: '0.75rem', flexShrink: 0, width: '14px', textAlign: 'center' }}>
-              {getFileIcon(file)}
-            </Box>
-            <ListItemText 
-              primary={file.name}
-              primaryTypographyProps={{
-                style: {
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  fontSize: '0.75rem',
-                  lineHeight: '1.2',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontWeight: 400,
-                }
-              }}
-            />
-          </ListItem>
-        ))}
-      </List>
-    </Paper>
-  );
-});
-
 const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
   value,
   onChange,
@@ -195,75 +28,6 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
   onMentionedFilesChange,
 }) => {
   const [mentionedFiles, setMentionedFiles] = useState<MentionableFile[]>([]);
-
-  // Create mention extension following Athena pattern
-  const suggestion = {
-    char: '@',
-    startOfLine: false,
-    allowSpaces: false,
-    items: async ({ query }: { query: string }) => {
-      if (!getFiles) return [];
-      const files = await Promise.resolve(getFiles(query));
-      return files.slice(0, 10);
-    },
-    render: () => {
-      let component: ReactRenderer;
-      let popup: any;
-
-      return {
-        onStart: (props: any) => {
-          component = new ReactRenderer(MentionListComponent, {
-            props,
-            editor: props.editor,
-          });
-
-          popup = tippy('body', {
-            getReferenceClientRect: props.clientRect as any,
-            content: component.element,
-            showOnCreate: true,
-            interactive: true,
-            trigger: 'manual',
-            placement: 'bottom-start',
-            offset: [0, 8],
-          });
-        },
-        onUpdate(props: any) {
-          component.updateProps(props);
-          popup[0].setProps({
-            getReferenceClientRect: props.clientRect as any,
-          });
-        },
-        onKeyDown(props: { event: KeyboardEvent }) {
-          if (props.event.key === 'Escape') {
-            popup[0].hide();
-            return true;
-          }
-          return (component.ref as any)?.handleKeyDown?.(props.event) || false;
-        },
-        onExit() {
-          popup[0].destroy();
-          component.destroy();
-        },
-      };
-    },
-  };
-
-  const MentionNode = Mention.extend({
-    addOptions() {
-      return {
-        ...this.parent?.(),
-        suggestion,
-        renderText({ options, node }) {
-          return `@${node.attrs.label ?? node.attrs.id}`;
-        },
-        HTMLAttributes: {
-          class: 'mention-chip-inline',
-        },
-      };
-    },
-  }).configure({
-    suggestion,
-  });
 
   const editor = useEditor({
     extensions: [
@@ -280,7 +44,58 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
         emptyNodeClass: 'is-empty',
         includeChildren: true,
       }),
-      MentionNode,
+      Mention.configure({
+        HTMLAttributes: {
+          class: 'mention',
+        },
+        suggestion: {
+          items: async ({ query }: { query: string }) => {
+            if (!getFiles) return [];
+            const files = await Promise.resolve(getFiles(query));
+            return files.slice(0, 10);
+          },
+          render: () => {
+            let component: ReactRenderer;
+            let popup: any;
+
+            return {
+              onStart: (props: any) => {
+                component = new ReactRenderer(MentionList, {
+                  props,
+                  editor: props.editor,
+                });
+
+                popup = tippy('body', {
+                  getReferenceClientRect: props.clientRect as any,
+                  content: component.element,
+                  showOnCreate: true,
+                  interactive: true,
+                  trigger: 'manual',
+                  placement: 'bottom-start',
+                  offset: [0, 8],
+                });
+              },
+              onUpdate(props: any) {
+                component.updateProps(props);
+                popup[0].setProps({
+                  getReferenceClientRect: props.clientRect as any,
+                });
+              },
+              onKeyDown(props: { event: KeyboardEvent }) {
+                if (props.event.key === 'Escape') {
+                  popup[0].hide();
+                  return true;
+                }
+                return (component.ref as any)?.handleKeyDown?.(props.event) || false;
+              },
+              onExit() {
+                popup[0].destroy();
+                component.destroy();
+              },
+            };
+          },
+        },
+      }),
     ],
     content: value,
     editable: !disabled,
