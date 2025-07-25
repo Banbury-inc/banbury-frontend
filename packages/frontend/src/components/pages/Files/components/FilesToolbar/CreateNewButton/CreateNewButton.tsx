@@ -12,9 +12,11 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DescriptionIcon from '@mui/icons-material/Description';
+import GridOnIcon from '@mui/icons-material/GridOn';
 import { useAuth } from '../../../../../../renderer/context/AuthContext';
 import { useAlert } from '../../../../../../renderer/context/AlertContext';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import * as XLSX from 'xlsx';
 import banbury from '@banbury/core';
 import path from 'path';
 import os from 'os';
@@ -163,6 +165,110 @@ export default function CreateNewButton({ onFileCreated, onRefreshFiles }: Creat
     }
   };
 
+  const createNewSpreadsheet = async () => {
+    let taskInfo: any = null;
+    
+    try {
+      handleClose();
+
+      if (!username || !devices || devices.length === 0) {
+        showAlert('Error', ['Please ensure you are logged in with a registered device.'], 'error');
+        return;
+      }
+
+      // Create a task for the spreadsheet creation
+      const taskDescription = 'Creating new spreadsheet';
+      taskInfo = await banbury.sessions.addTask(taskDescription, tasks || [], setTasks);
+      setTaskbox_expanded(true);
+
+      // Generate a unique filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `New Spreadsheet ${timestamp}.xlsx`;
+
+      // Create a new Excel workbook with sample data
+      const workbook = XLSX.utils.book_new();
+      
+      // Create sample data for the first sheet
+      const sampleData = [
+        ['A', 'B', 'C', 'D'],
+        ['1', '', '', ''],
+        ['2', '', '', ''],
+        ['3', '', '', ''],
+        ['4', '', '', '']
+      ];
+      
+      const worksheet = XLSX.utils.aoa_to_sheet(sampleData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+
+      // Generate Excel buffer
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+      // Create a temporary file path
+      const tempDir = path.join(os.homedir(), 'BCloud');
+      const tempFilePath = path.join(tempDir, fileName);
+
+      // Write the file temporarily
+      await writeFile(tempFilePath, excelBuffer);
+
+      // Create a File object for upload
+      const file = new File([excelBuffer], fileName, {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      // Upload to cloud
+      const deviceName = devices[0].device_name;
+      await banbury.files.uploadToS3(
+        file,
+        deviceName,
+        'Core/Cloud',
+        'Cloud'
+      );
+
+      // Complete the task
+      await banbury.sessions.completeTask(taskInfo, tasks || [], setTasks);
+
+      showAlert('Success', [
+        `Spreadsheet "${fileName}" created and uploaded to cloud successfully.`
+      ], 'success');
+
+      // Call the callback if provided (before cleaning up the file)
+      if (onFileCreated) {
+        onFileCreated(fileName, tempFilePath);
+      }
+
+      // Refresh the file tree to show the new file
+      if (onRefreshFiles) {
+        onRefreshFiles();
+      }
+
+      // Clean up temporary file after callback
+      try {
+        const fs = await import('fs/promises');
+        await fs.unlink(tempFilePath);
+      } catch (cleanupError) {
+        console.warn('Could not clean up temporary file:', cleanupError);
+      }
+
+    } catch (error) {
+      console.error('Error creating spreadsheet:', error);
+      
+      // Fail the task if it was created
+      if (taskInfo) {
+        await banbury.sessions.failTask(
+          taskInfo, 
+          error instanceof Error ? error.message : 'Unknown error', 
+          tasks || [], 
+          setTasks
+        );
+      }
+
+      showAlert('Error', [
+        'Failed to create spreadsheet.',
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      ], 'error');
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Tooltip title="Create new file">
@@ -213,6 +319,12 @@ export default function CreateNewButton({ onFileCreated, onRefreshFiles }: Creat
                 <DescriptionIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText primary="Document" secondary="DOCX file" />
+            </MenuItem>
+            <MenuItem onClick={createNewSpreadsheet} sx={{ borderRadius: '4px' }}>
+              <ListItemIcon>
+                <GridOnIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary="Spreadsheet" secondary="XLSX file" />
             </MenuItem>
           </MenuList>
         </Box>

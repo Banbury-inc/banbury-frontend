@@ -29,7 +29,8 @@ import mammoth from 'mammoth';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import 'allotment/dist/style.css';
 import ImageViewer from '../../common/FileViewer/ImageViewer/ImageViewer';
-import { isImageFile } from '../Files/utils/fileUtils';
+import ExcelViewer from '../../common/FileViewer/ExcelViewer/ExcelViewer';
+import { isImageFile, isExcelFile, isCsvFile } from '../Files/utils/fileUtils';
 import { DatabaseData } from '@banbury/core/src/types';
 
 
@@ -69,6 +70,9 @@ const WorkspaceSidebar = ({
       '.pdf': 'PDF',
       '.doc': 'Word Document',
       '.docx': 'Word Document',
+      '.xlsx': 'Excel Spreadsheet',
+      '.xls': 'Excel Spreadsheet',
+      '.csv': 'CSV File',
       '.txt': 'Text',
       '.js': 'Code File',
       '.ts': 'Code File',
@@ -274,6 +278,66 @@ const MainContent = ({
             src={currentFile.filePath}
             alt={currentFile.fileName}
             fileName={currentFile.fileName}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
+  // Check if it's an Excel/CSV file
+  if (isExcelFile(currentFile.fileName) || isCsvFile(currentFile.fileName)) {
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* File Header */}
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={true}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
+          <ToolbarButton
+            onClick={onCloseFile}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
+        </Box>
+        
+        {/* Excel Viewer */}
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <ExcelViewer
+            src={currentFile.filePath}
+            fileName={currentFile.fileName}
+            onError={() => {
+              console.error('Error loading Excel file:', currentFile.fileName);
+            }}
+            onLoad={() => {
+              console.log('Excel file loaded successfully:', currentFile.fileName);
+            }}
+            onSave={(filePath) => {
+              console.log('Excel file saved:', filePath);
+              // Optionally refresh the file tree here
+            }}
           />
         </Box>
       </Box>
@@ -707,7 +771,8 @@ export default function Workspaces() {
     const ext = path.extname(fileName).toLowerCase();
     const editableExtensions = ['.txt', '.md', '.markdown', '.rtf', '.doc', '.docx'];
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'];
-    return editableExtensions.includes(ext) || imageExtensions.includes(ext);
+    const spreadsheetExtensions = ['.xlsx', '.xls', '.csv'];
+    return editableExtensions.includes(ext) || imageExtensions.includes(ext) || spreadsheetExtensions.includes(ext);
   };
 
 
