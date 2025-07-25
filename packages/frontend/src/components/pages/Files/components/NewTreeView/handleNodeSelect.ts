@@ -1,4 +1,16 @@
 import { DatabaseData } from "@banbury/core/src/types";
+import path from 'path';
+
+// Utility function to normalize virtual paths for server communication
+// Converts backslashes to forward slashes for consistent path handling across platforms
+const normalizeVirtualPath = (virtualPath: string): string => {
+  return virtualPath.replace(/\\/g, '/');
+};
+
+// Utility function to join virtual paths (always uses forward slashes)
+const joinVirtualPath = (...segments: string[]): string => {
+  return segments.join('/');
+};
 
 export const handleNodeSelect = (
   setFilePath: (filePath: string) => void,
@@ -36,54 +48,69 @@ export const handleNodeSelect = (
     }
     // Handle Cloud node specially
     else if (selectedNode.id === 'Cloud') {
-      newFilePath = 'Core/Cloud';
+      newFilePath = joinVirtualPath('Core', 'Cloud');
       setFilePathDevice('');
     }
     // Handle Google Drive node specially
     else if (selectedNode.id === 'GoogleDrive') {
-      newFilePath = 'Core/GoogleDrive';
+      newFilePath = joinVirtualPath('Core', 'GoogleDrive');
       setFilePathDevice('');
     }
     // Handle Google Drive files and folders
-    else if (selectedNode.source === 'google_drive' || selectedNode.file_path?.includes('Core/GoogleDrive/')) {
-      if (selectedNode.file_path && selectedNode.file_path.includes('Core/GoogleDrive/')) {
-        newFilePath = selectedNode.file_path;
+    else if (selectedNode.source === 'google_drive' || selectedNode.file_path?.includes(joinVirtualPath('Core', 'GoogleDrive'))) {
+      if (selectedNode.file_path && selectedNode.file_path.includes(joinVirtualPath('Core', 'GoogleDrive'))) {
+        newFilePath = normalizeVirtualPath(selectedNode.file_path);
       } else {
-        newFilePath = `Core/GoogleDrive/${selectedNode.file_name}`;
+        newFilePath = joinVirtualPath('Core', 'GoogleDrive', selectedNode.file_name);
+      }
+      setFilePathDevice('');
+    }
+    // Handle Cloud files (S3 files)
+    else if (selectedNode.source === 'cloud' || selectedNode.file_parent === 'Cloud' || selectedNode.file_path?.includes(joinVirtualPath('Core', 'Cloud'))) {
+      if (selectedNode.file_path && selectedNode.file_path.includes(joinVirtualPath('Core', 'Cloud'))) {
+        newFilePath = normalizeVirtualPath(selectedNode.file_path);
+      } else {
+        newFilePath = joinVirtualPath('Core', 'Cloud', selectedNode.file_name);
       }
       setFilePathDevice('');
     }
     // Don't set path for main Devices, Sync, or Shared nodes
     else if (selectedNode.id === 'Devices' || selectedNode.id === 'Cloud Sync' || 
             selectedNode.id === 'Sync' || selectedNode.id === 'Shared') {
-      newFilePath = `Core/${selectedNode.id}`;
+      newFilePath = joinVirtualPath('Core', selectedNode.id);
       setFilePathDevice('');
     }
     // If it's a device node (direct child of 'Devices')
     else if (selectedNode.file_parent === 'Devices') {
-      newFilePath = `Core/Devices/${selectedNode.file_name}`;
+      newFilePath = joinVirtualPath('Core', 'Devices', selectedNode.file_name);
     }
     // If it's a file/folder under Sync
-    else if (selectedNode.file_parent === 'Sync' || selectedNode.file_path?.includes('Core/Sync/')) {
+    else if (selectedNode.file_parent === 'Sync' || selectedNode.file_path?.includes(joinVirtualPath('Core', 'Sync'))) {
       // Construct the path correctly depending on whether we have a full path
-      if (selectedNode.file_path && selectedNode.file_path.includes('Core/Sync/')) {
-        newFilePath = selectedNode.file_path;
+      if (selectedNode.file_path && selectedNode.file_path.includes(joinVirtualPath('Core', 'Sync'))) {
+        newFilePath = normalizeVirtualPath(selectedNode.file_path);
       } else {
-        newFilePath = `Core/Sync/${selectedNode.file_name}`;
+        newFilePath = joinVirtualPath('Core', 'Sync', selectedNode.file_name);
       }
     }
     // If it's a file/folder under Shared
-    else if (selectedNode.file_parent === 'Shared' || selectedNode.file_path?.includes('Core/Shared/')) {
+    else if (selectedNode.file_parent === 'Shared' || selectedNode.file_path?.includes(joinVirtualPath('Core', 'Shared'))) {
       // Construct the path correctly depending on whether we have a full path
-      if (selectedNode.file_path && selectedNode.file_path.includes('Core/Shared/')) {
-        newFilePath = selectedNode.file_path;
+      if (selectedNode.file_path && selectedNode.file_path.includes(joinVirtualPath('Core', 'Shared'))) {
+        newFilePath = normalizeVirtualPath(selectedNode.file_path);
       } else {
-        newFilePath = `Core/Shared/${selectedNode.file_name}`;
+        newFilePath = joinVirtualPath('Core', 'Shared', selectedNode.file_name);
       }
     }
-    // For files and folders under devices
+    // For files and folders under devices - handle actual file system paths
     else if (selectedNode.file_path) {
-      newFilePath = `Core/Devices/${selectedNode.device_name}${selectedNode.file_path}`;
+      // If it's an absolute path (like C:\Users\... on Windows), use it directly with proper normalization
+      if (path.isAbsolute(selectedNode.file_path)) {
+        newFilePath = path.normalize(selectedNode.file_path);
+      } else {
+        // For virtual device paths, use forward slashes for server communication
+        newFilePath = joinVirtualPath('Core', 'Devices', selectedNode.device_name, selectedNode.file_path);
+      }
     }
 
     // Update navigation history

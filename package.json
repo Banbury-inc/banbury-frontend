@@ -21,6 +21,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.20.0",
+        "@types/node": "^24.1.0",
         "@types/yauzl": "^2.10.3",
         "concurrently": "^8.2.2"
     },
@@ -33,6 +34,18 @@
         "@langchain/ollama": "^0.1.6",
         "@monaco-editor/react": "^4.7.0",
         "@tensorflow/tfjs": "^4.22.0",
+        "@tiptap/extension-color": "^3.0.7",
+        "@tiptap/extension-gapcursor": "^3.0.7",
+        "@tiptap/extension-highlight": "^3.0.7",
+        "@tiptap/extension-mention": "^3.0.7",
+        "@tiptap/extension-table": "^3.0.7",
+        "@tiptap/extension-table-cell": "^3.0.7",
+        "@tiptap/extension-table-header": "^3.0.7",
+        "@tiptap/extension-table-row": "^3.0.7",
+        "@tiptap/extension-text-align": "^3.0.7",
+        "@tiptap/extension-text-style": "^3.0.7",
+        "@tiptap/extension-underline": "^3.0.7",
+        "@tiptap/suggestion": "^3.0.7",
         "@types/react-syntax-highlighter": "^15.5.13",
         "ace-builds": "^1.41.0",
         "docx": "^9.5.0",
@@ -50,6 +63,7 @@
         "react-quill": "^2.0.0",
         "react-syntax-highlighter": "^15.6.1",
         "systeminformation": "^5.27.1",
+        "tippy.js": "^6.3.7",
         "ws": "^8.18.1",
         "yauzl": "^3.2.0"
     }

@@ -128,6 +128,11 @@ export default function Files() {
   const [googleDriveError, setGoogleDriveError] = useState<string | null>(null);
   const [googleDriveEnabled, setGoogleDriveEnabled] = useState(false);
 
+  // Add Cloud Files state
+  const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
+  const [isCloudLoading, setIsCloudLoading] = useState(false);
+  const [cloudEnabled] = useState(true); // Cloud is always enabled
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
@@ -627,6 +632,46 @@ export default function Files() {
     fetchGoogleDriveFiles();
   }, [filePath]);
 
+  // Add Cloud Files fetching effect
+  useEffect(() => {
+    const fetchCloudFilesData = async () => {
+      if (!username) return;
+
+      // If we're specifically viewing a Cloud path, fetch those files
+      if (filePath.includes('Core/Cloud') || filePath === 'Cloud') {
+        setIsCloudLoading(true);
+
+        try {
+          const { fetchCloudData } = await import('./utils/fetchAllData');
+          const result = await fetchCloudData();
+          setCloudFiles(result);
+        } catch (error: any) {
+          console.error('Error fetching Cloud files:', error);
+          setCloudFiles([]);
+        } finally {
+          setIsCloudLoading(false);
+        }
+      } else if (cloudFiles.length === 0 && !isCloudLoading) {
+        // Fetch Cloud files for tree display when not currently viewing Cloud
+        // This ensures the tree shows the Cloud files right away
+        setIsCloudLoading(true);
+
+        try {
+          const { fetchCloudData } = await import('./utils/fetchAllData');
+          const result = await fetchCloudData();
+          setCloudFiles(result);
+        } catch (error: any) {
+          console.error('Error fetching Cloud files for tree:', error);
+          setCloudFiles([]);
+        } finally {
+          setIsCloudLoading(false);
+        }
+      }
+    };
+
+    fetchCloudFilesData();
+  }, [filePath, username]);
+
   // Helper function to get file type
   const getFileType = (fileName: string): string => {
     if (isImageFile(fileName)) return 'Image';
@@ -730,6 +775,8 @@ export default function Files() {
                   setForwardHistory={setForwardHistory}
                   googleDriveFiles={googleDriveFiles}
                   googleDriveEnabled={googleDriveEnabled}
+                  cloudFiles={cloudFiles}
+                  cloudEnabled={cloudEnabled}
                 />
               </Box>
             </CardContent>

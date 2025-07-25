@@ -27,13 +27,17 @@ interface FileViewerTabsProps {
   activeTab: string | null;
   onCloseTab: (tabId: string) => void;
   onSwitchTab: (tabId: string) => void;
+  documentActions?: any;
+  onDocumentEditorChange?: (editor: any, content: string, fileName: string) => void;
 }
 
 const FileViewerTabs: React.FC<FileViewerTabsProps> = React.memo(({
   openTabs,
   activeTab,
   onCloseTab,
-  onSwitchTab
+  onSwitchTab,
+  documentActions,
+  onDocumentEditorChange
 }) => {
 
   if (openTabs.length === 0) {
@@ -100,6 +104,8 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = React.memo(({
             onError={() => {
               console.error('Failed to load Word document:', tab.filePath);
             }}
+            documentActions={documentActions}
+            onDocumentEditorChange={onDocumentEditorChange}
           />
         </Box>
       );
@@ -252,7 +258,9 @@ const FileViewerTabs: React.FC<FileViewerTabsProps> = React.memo(({
     JSON.stringify(prevProps.openTabs) === JSON.stringify(nextProps.openTabs) &&
     prevProps.activeTab === nextProps.activeTab &&
     prevProps.onCloseTab === nextProps.onCloseTab &&
-    prevProps.onSwitchTab === nextProps.onSwitchTab
+    prevProps.onSwitchTab === nextProps.onSwitchTab &&
+    prevProps.documentActions === nextProps.documentActions &&
+    prevProps.onDocumentEditorChange === nextProps.onDocumentEditorChange
   );
 });
 

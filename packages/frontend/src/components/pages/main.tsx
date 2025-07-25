@@ -40,6 +40,8 @@ import { getDownloadsInfo, DownloadInfo } from '@banbury/core/src/device/addDown
 import { getUploadsInfo } from '@banbury/core/src/device/addUploadsInfo';
 import { ipcRenderer } from 'electron';
 import AI from './AI/AI';
+import Workspaces from './Workspaces/Workspaces';
+import WorkspacesIcon from '@mui/icons-material/Workspaces';
 
 const drawerWidth = 240;  // Change the width as needed
 
@@ -381,6 +383,7 @@ export default function PermanentDrawerLeft() {
               <List>
                 {['Files',
                   'AI',
+                  'Workspaces',
                   'Devices',
                   'Friends'].map((text) => (
                     <Tooltip title={text} key={text} placement="right">
@@ -396,6 +399,7 @@ export default function PermanentDrawerLeft() {
                         >
                           {text === 'Files' && <FolderOutlinedIcon fontSize='inherit' />}
                           {text === 'AI' && < AutoAwesomeIcon fontSize='inherit' />}
+                          {text === 'Workspaces' && <WorkspacesIcon fontSize='inherit' />}
                           {text === 'Devices' && <DevicesIcon fontSize='inherit' />}
                           {text === 'Friends' && <PeopleOutlinedIcon fontSize='inherit' />}
                         </Button>
@@ -439,6 +443,8 @@ export default function PermanentDrawerLeft() {
                           return <Files />;
                         case 'AI':
                           return <AI />;
+                        case 'Workspaces':
+                          return <Workspaces />;
                         case 'Devices':
                           return <Devices />;
                         case 'Logs':

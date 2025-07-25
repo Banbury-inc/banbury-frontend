@@ -1,36 +1,40 @@
-import { tool } from '@langchain/core/tools';
-import { z } from 'zod';
 import { BanburyMcpClient } from '../../basic/tools/banburyMCP/BanburyMcpClient';
+import { createSimpleTool, convertToLangChainTool, createToolParameter } from './simplifiedTools';
 
 /**
- * Create Banbury tools using proper LangChain tool definitions with Zod schemas
+ * Create Banbury tools using simplified tool definitions
+ * This avoids complex LangChain generic types while maintaining functionality
  */
-export function createBanburyTools(mcpClient: BanburyMcpClient | null) {
-  const deviceInfoTool = tool(
-    async ({ device_name }) => {
+export function createBanburyTools(mcpClient: BanburyMcpClient | null): any[] {
+  
+  // Device Info Tool
+  const deviceInfoTool = createSimpleTool(
+    'banbury-get-device-info',
+    'Get comprehensive device information and status including performance metrics',
+    {
+      device_name: createToolParameter('string', 'Device name to query (optional)', { optional: true })
+    },
+    async (params: { device_name?: string }) => {
       if (!mcpClient) {
         return 'MCP client not available';
       }
       try {
         const result = await mcpClient.callTool({
           tool: 'banbury-get-device-info',
-          parameters: { device_name }
+          parameters: { device_name: params.device_name }
         });
         return result.content.map(c => c.text).join('\n');
       } catch (error) {
         return `Error: ${error}`;
       }
-    },
-    {
-      name: "banbury-get-device-info",
-      description: "Get comprehensive device information and status including performance metrics",
-      schema: z.object({
-        device_name: z.string().optional().describe("Device name to query (optional)"),
-      }),
     }
   );
 
-  const sessionsTool = tool(
+  // Sessions Tool
+  const sessionsTool = createSimpleTool(
+    'banbury-get-sessions',
+    'Get current active sessions and task information from the system',
+    {},
     async () => {
       if (!mcpClient) {
         return 'MCP client not available';
@@ -44,87 +48,86 @@ export function createBanburyTools(mcpClient: BanburyMcpClient | null) {
       } catch (error) {
         return `Error: ${error}`;
       }
-    },
-    {
-      name: "banbury-get-sessions",
-      description: "Get current active sessions and task information from the system",
-      schema: z.object({}),
     }
   );
 
-  const scannedFoldersTool = tool(
-    async ({ device_name }) => {
+  // Scanned Folders Tool
+  const scannedFoldersTool = createSimpleTool(
+    'banbury-get-scanned-folders',
+    'Get list of folders that have been scanned on the specified device',
+    {
+      device_name: createToolParameter('string', 'Device name to query (optional)', { optional: true })
+    },
+    async (params: { device_name?: string }) => {
       if (!mcpClient) {
         return 'MCP client not available';
       }
       try {
         const result = await mcpClient.callTool({
           tool: 'banbury-get-scanned-folders',
-          parameters: { device_name }
+          parameters: { device_name: params.device_name }
         });
         return result.content.map(c => c.text).join('\n');
       } catch (error) {
         return `Error: ${error}`;
       }
-    },
-    {
-      name: "banbury-get-scanned-folders",
-      description: "List all monitored directory locations on the device",
-      schema: z.object({
-        device_name: z.string().optional().describe("Device name to query (optional)"),
-      }),
     }
   );
 
-  const randomFilesTool = tool(
-    async ({ count, device_name }) => {
+  // Random Files Tool
+  const randomFilesTool = createSimpleTool(
+    'banbury-get-random-files',
+    'Get a random selection of files from the specified device',
+    {
+      count: createToolParameter('number', 'Number of random files to retrieve', { default: 10, optional: true }),
+      device_name: createToolParameter('string', 'Device name to query (optional)', { optional: true })
+    },
+    async (params: { count?: number; device_name?: string }) => {
       if (!mcpClient) {
         return 'MCP client not available';
       }
       try {
         const result = await mcpClient.callTool({
           tool: 'banbury-get-random-files',
-          parameters: { count, device_name }
+          parameters: { count: params.count, device_name: params.device_name }
         });
         return result.content.map(c => c.text).join('\n');
       } catch (error) {
         return `Error: ${error}`;
       }
-    },
-    {
-      name: "banbury-get-random-files",
-      description: "Get a random sample of files from the monitored system",
-      schema: z.object({
-        count: z.number().default(10).describe("Number of random files to retrieve"),
-        device_name: z.string().optional().describe("Device name to query (optional)"),
-      }),
     }
   );
 
-  const addTaskTool = tool(
-    async ({ task_description, device_name }) => {
+  // Add Task Tool
+  const addTaskTool = createSimpleTool(
+    'banbury-add-task',
+    'Add a new task to the system for the specified device',
+    {
+      task_description: createToolParameter('string', 'Description of the task to add', { required: true }),
+      device_name: createToolParameter('string', 'Device name to assign task to (optional)', { optional: true })
+    },
+    async (params: { task_description: string; device_name?: string }) => {
       if (!mcpClient) {
         return 'MCP client not available';
       }
       try {
         const result = await mcpClient.callTool({
           tool: 'banbury-add-task',
-          parameters: { task_description, device_name }
+          parameters: { task_description: params.task_description, device_name: params.device_name }
         });
         return result.content.map(c => c.text).join('\n');
       } catch (error) {
         return `Error: ${error}`;
       }
-    },
-    {
-      name: "banbury-add-task",
-      description: "Create a new task in the system queue",
-      schema: z.object({
-        task_description: z.string().describe("Description of the task to add"),
-        device_name: z.string().optional().describe("Device name to assign task to (optional)"),
-      }),
     }
   );
 
-  return [deviceInfoTool, sessionsTool, scannedFoldersTool, randomFilesTool, addTaskTool];
+  // Convert simplified tools to LangChain-compatible format
+  return [
+    convertToLangChainTool(deviceInfoTool),
+    convertToLangChainTool(sessionsTool),
+    convertToLangChainTool(scannedFoldersTool),
+    convertToLangChainTool(randomFilesTool),
+    convertToLangChainTool(addTaskTool)
+  ];
 }

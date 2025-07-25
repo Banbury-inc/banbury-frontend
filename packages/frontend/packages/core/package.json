@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "docx": "^9.5.1",
+    "html-docx-js": "^0.3.1",
+    "mammoth": "^1.9.1"
+  }
+}

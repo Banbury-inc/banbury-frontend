@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 
 // const { BrowserWindow } = require('@electron/remote')
@@ -9,9 +9,9 @@ const mainProcess = require('electron').ipcRenderer;
 async function fetchData() {
   const API_URL = 'https://api.example.com/data';
   mainProcess.send('fetch-data', API_URL);
-  mainProcess.once('fetch-data-response', (_event ) => {
+  mainProcess.once('fetch-data-response', (_event: IpcRendererEvent) => {
   });
-  mainProcess.once('fetch-data-error', (_event, errorMessage) => {
+  mainProcess.once('fetch-data-error', (_event: IpcRendererEvent, errorMessage: string) => {
     console.error('Error fetching data:', errorMessage);
     // Handle errors gracefully, e.g., display an error message to the user
   });

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import Button from '@mui/material/Button';
 import axios from 'axios';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -70,6 +70,42 @@ function maybeStartDeviceInfoProcess(username: string, deviceId: string) {
 }
 
 export default function SignIn() {
+  // ResizeObserver error handling for Material-UI components
+  useLayoutEffect(() => {
+    // Store original ResizeObserver
+    const OriginalResizeObserver = window.ResizeObserver;
+    
+    // Create a debounced version
+    window.ResizeObserver = class extends OriginalResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        let timeoutId: NodeJS.Timeout;
+        
+        super((entries, observer) => {
+          // Clear any pending callback
+          clearTimeout(timeoutId);
+          
+          // Debounce the callback to prevent loops
+          timeoutId = setTimeout(() => {
+            try {
+              callback(entries, observer);
+            } catch (error) {
+              // Silently catch ResizeObserver loop errors
+              if (error instanceof Error && error.message.includes('ResizeObserver loop completed')) {
+                return;
+              }
+              throw error;
+            }
+          }, 16); // One frame delay
+        });
+      }
+    };
+    
+    // Cleanup on unmount
+    return () => {
+      window.ResizeObserver = OriginalResizeObserver;
+    };
+  }, []);
+
   // Move ALL hooks to the top of the component
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { setUsername, isTokenRefreshFailed, resetTokenRefreshStatus, setRedirectToLogin } = useAuth();

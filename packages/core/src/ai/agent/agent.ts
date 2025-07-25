@@ -100,7 +100,7 @@ export class Agent {
   private rebuildTools() {
     this.banburyTools = this.toolConfig.banbury ? createBanburyTools(this.mcpClient) : [];
     this.fileSystemTools = this.toolConfig.filesystem ? createFileSystemTools(this.fileSystemRootDir) : [];
-    this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService, this.toolConfig.webSearch) : [];
+    this.webSearchTools = this.toolConfig.webSearch ? createWebSearchTools(this.webSearchService) : [];
     this.gmailTools = this.toolConfig.gmail ? createGmailTools(this.toolConfig.gmail) : [];
     this.googleCalendarTools = this.toolConfig.googleCalendar ? createGoogleCalendarTools(this.toolConfig.googleCalendar) : [];
     this.allTools = [...this.banburyTools, ...this.fileSystemTools, ...this.webSearchTools, ...this.gmailTools, ...this.googleCalendarTools];

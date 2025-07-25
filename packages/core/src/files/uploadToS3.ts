@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { config } from '../config/config';
+import { loadGlobalAxiosCredentials } from '../middleware/axiosGlobalHeader';
 
 /**
  * Uploads a file to the S3 bucket
  * 
- * @param username - The username
  * @param file - The file to upload
  * @param deviceName - The device name
  * @param filePath - The file path where the file should be stored
@@ -18,6 +18,13 @@ export const uploadToS3 = async (
   fileParent: string = ''
 ): Promise<any> => {
   try {
+    // Load authentication credentials
+    const { token, apiKey } = loadGlobalAxiosCredentials();
+    
+    if (!token) {
+      throw new Error('Authentication token not found. Please login first.');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('device_name', deviceName);
@@ -30,6 +37,8 @@ export const uploadToS3 = async (
       {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
+          ...(apiKey && { 'X-API-Key': apiKey })
         },
       }
     );
@@ -44,7 +53,6 @@ export const uploadToS3 = async (
 /**
  * Uploads multiple files to the S3 bucket
  * 
- * @param username - The username
  * @param files - The files to upload
  * @param deviceName - The device name
  * @param filePath - The file path where the files should be stored
@@ -59,7 +67,7 @@ export const uploadMultipleToS3 = async (
 ): Promise<any[]> => {
   try {
     const uploadPromises = files.map(file => 
-      uploadToS3( file, deviceName, filePath, fileParent)
+      uploadToS3(file, deviceName, filePath, fileParent)
     );
 
     return await Promise.all(uploadPromises);
