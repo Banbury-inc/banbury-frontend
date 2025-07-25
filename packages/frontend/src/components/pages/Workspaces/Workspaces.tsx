@@ -2,7 +2,9 @@ import React, { useState, useCallback, Suspense, useEffect, useRef } from 'react
 import {
   Box,
   Typography,
-  LinearProgress
+  LinearProgress,
+  Card,
+  CardContent
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { Allotment, LayoutPriority } from 'allotment';
@@ -11,6 +13,9 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import FileTreeView from '../Files/components/NewTreeView/FileTreeView';
+import FilesToolbar from '../Files/components/FilesToolbar/FilesToolbar';
+import { ViewType as FileViewType } from '../Files/components/FilesToolbar/ChangeViewButton/ChangeViewButton';
+import { AvailableTableColumns } from '@banbury/core/src/types';
 
 import WorkspaceAssistantInterface from './components/WorkspaceAssistantInterface';
 import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
@@ -32,13 +37,16 @@ import { DatabaseData } from '@banbury/core/src/types';
 const WorkspaceSidebar = ({ 
   onFileClick,
   cloudFiles = [],
-  cloudEnabled = true
+  cloudEnabled = true,
+  filePath,
+  setFilePath
 }: { 
   onFileClick?: (fileName: string, filePath: string, fileType: string) => void;
   cloudFiles?: DatabaseData[];
   cloudEnabled?: boolean;
+  filePath: string;
+  setFilePath: (path: string) => void;
 }) => {
-  const [filePath, setFilePath] = useState('');
   const [filePathDevice, setFilePathDevice] = useState('');
   const { username } = useAuth();
 
@@ -322,6 +330,27 @@ export default function Workspaces() {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
+  // Toolbar state
+  const [viewType, setViewType] = useState<FileViewType>('list');
+  const [columnVisibility, setColumnVisibility] = useState<Partial<Record<AvailableTableColumns, boolean>>>({
+    file_name: true,
+    file_size: true,
+    kind: true,
+    original_device: true,
+    available: true,
+    is_public: false,
+    file_priority: true,
+    date_uploaded: true,
+    date_modified: false,
+  });
+  const [selected, setSelected] = useState<readonly (string | number)[]>([]);
+  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
+  const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
+  const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
+  const [_backHistory, setBackHistory] = useState<string[]>([]);
+  const [_forwardHistory, setForwardHistory] = useState<string[]>([]);
+  const [filePath, setFilePath] = useState<string>('');
+
   // Document editing state
   const [showTipTapEditor, setShowTipTapEditor] = useState(false);
   const [currentDocument, setCurrentDocument] = useState<{
@@ -358,12 +387,65 @@ export default function Workspaces() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const { showAlert } = useAlert();
-  const { username, devices } = useAuth();
+  const { username, devices, websocket, tasks, setTasks, setTaskbox_expanded } = useAuth();
 
   // Add Cloud Files state (similar to Files.tsx)
   const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
 
   const [cloudEnabled] = useState(true); // Cloud is always enabled
+
+  // Toolbar handler functions
+  const handleShareModalOpen = () => {
+    // TODO: Implement share modal for workspaces
+    showAlert('Info', ['Share functionality will be implemented for workspaces'], 'info');
+  };
+
+  const handleColumnVisibilityChange = (columnId: AvailableTableColumns, isVisible: boolean) => {
+    setColumnVisibility(prev => ({
+      ...prev,
+      [columnId]: isVisible
+    }));
+  };
+
+  const getColumnOptions = () => {
+    // Define which columns to show and their display labels (based on AvailableTableColumns)
+    const columnLabels: Record<AvailableTableColumns, string> = {
+      file_name: 'File Name',
+      file_size: 'File Size',
+      kind: 'Kind',
+      original_device: 'Location',
+      available: 'Status',
+      file_priority: 'Priority',
+      date_uploaded: 'Date Uploaded',
+      date_modified: 'Date Modified',
+      is_public: 'Visibility',
+    };
+
+    // Define which columns should be available for toggling (AvailableTableColumns)
+    const availableColumns: AvailableTableColumns[] = [
+      'file_name',
+      'file_size',
+      'kind',
+      'original_device',
+      'available',
+      'file_priority',
+      'date_uploaded',
+      'date_modified',
+      'is_public'
+    ];
+
+    return availableColumns.map((columnId) => ({
+      id: columnId,
+      label: columnLabels[columnId],
+      isVisible: columnVisibility[columnId] ?? true // Default to visible if not set
+    }));
+  };
+
+  const handleFinish = () => {
+    setSelected([]);
+    setSelectedFileNames([]);
+    // Note: updates is not available in workspaces, so we'll skip that
+  };
 
   // Document AI Integration Functions
   const getDocumentInfo = useCallback(() => {
@@ -1309,16 +1391,57 @@ export default function Workspaces() {
   }, []);
 
   return (
-    <Box sx={{ 
-      position: 'fixed',
-      top: 40,
-      left: 40, // Add left padding to avoid overlapping with navigation sidebar
-      right: 0,
-      bottom: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      bgcolor: 'background.default'
-    }}>
+          <Box sx={{ 
+        position: 'fixed',
+        top: 35,
+        left: 40, // Add left padding to avoid overlapping with navigation sidebar
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.default',
+        border: 1,
+        borderColor: 'divider'
+      }}>
+      {/* Toolbar */}
+      <Card variant="outlined" sx={{ 
+        borderTop: 0, 
+        borderLeft: 0, 
+        borderBottom: 1, 
+        borderColor: 'divider',
+        borderStyle: 'solid'
+      }}>
+        <FilesToolbar
+          _backHistory={_backHistory}
+          setBackHistory={setBackHistory}
+          _forwardHistory={_forwardHistory}
+          setForwardHistory={setForwardHistory}
+          filePath={filePath}
+          setFilePath={setFilePath}
+          setTaskbox_expanded={setTaskbox_expanded}
+          selectedFileNames={selectedFileNames}
+          selectedFileInfo={selectedFileInfo}
+          selectedDeviceNames={selectedDeviceNames}
+          setSelectedFileNames={setSelectedFileNames}
+          setSelected={setSelected}
+          tasks={tasks}
+          setTasks={setTasks}
+          websocket={websocket as WebSocket}
+          updates={Date.now()} // Use current timestamp as updates
+          setUpdates={() => {}} // No-op function since we don't have updates state
+          isShared={false}
+          isCloudSync={false}
+          handleFinish={handleFinish}
+          handleShareModalOpen={handleShareModalOpen}
+          getColumnOptions={getColumnOptions}
+          columnVisibility={columnVisibility}
+          handleColumnVisibilityChange={handleColumnVisibilityChange}
+          viewType={viewType}
+          setViewType={setViewType}
+          username={username}
+        />
+      </Card>
+      
       {/* Main Content - Three Panel Layout */}
       <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <Suspense fallback={<LinearProgress />}>
@@ -1336,11 +1459,21 @@ export default function Workspaces() {
               minSize={250}
               priority={LayoutPriority.Low}
             >
-              <Box sx={{ height: '100%', borderRight: 1, borderColor: 'divider', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ 
+                height: '100%', 
+                borderRight: 1, 
+                borderColor: 'divider', 
+                borderStyle: 'solid',
+                position: 'relative', 
+                display: 'flex', 
+                flexDirection: 'column' 
+              }}>
                 <WorkspaceSidebar 
                   onFileClick={handleFileClick}
                   cloudFiles={cloudFiles}
                   cloudEnabled={cloudEnabled}
+                  filePath={filePath}
+                  setFilePath={setFilePath}
                 />
                 {/* Left Panel Toggle Button (when panel is open) */}
                 <Box
@@ -1382,7 +1515,12 @@ export default function Workspaces() {
               minSize={400}
               preferredSize="75%"
             >
-              <Box sx={{ height: '100%', borderRight: rightPanelOpen ? 1 : 0, borderColor: 'divider' }}>
+              <Box sx={{ 
+                height: '100%', 
+                borderRight: rightPanelOpen ? 1 : 0, 
+                borderColor: 'divider',
+                borderStyle: 'solid'
+              }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key="main-content"
