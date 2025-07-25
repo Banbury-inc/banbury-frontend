@@ -20,6 +20,7 @@ import { AvailableTableColumns } from '@banbury/core/src/types';
 import WorkspaceAssistantInterface from './components/WorkspaceAssistantInterface';
 import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
 import SimpleTipTapEditor from './components/SimpleTipTapEditor';
+import RenameableTitle from './components/RenameableTitle';
 import path from 'path';
 import os from 'os';
 import { stat, readFile, writeFile } from 'fs/promises';
@@ -213,7 +214,8 @@ const MainContent = ({
   onCloseFile,
   onSaveDocument,
   getCurrentContent,
-  setDocumentEditor
+  setDocumentEditor,
+  onRenameFile
 }: { 
   currentFile: { fileName: string; filePath: string; content?: string; fileType: string } | null;
   onDocumentChange: (content: string) => void;
@@ -221,6 +223,7 @@ const MainContent = ({
   onSaveDocument: (document: { fileName: string; filePath: string; content: string }) => void;
   getCurrentContent: () => string;
   setDocumentEditor: (editor: any) => void;
+  onRenameFile?: (oldFileName: string, newFileName: string) => void;
 }) => {
   if (!currentFile) {
     return <WelcomeScreen />;
@@ -240,9 +243,16 @@ const MainContent = ({
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {currentFile.fileName}
-          </Typography>
+          <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={isImageFile(currentFile.fileName)}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
           <ToolbarButton
             onClick={onCloseFile}
             sx={{
@@ -283,9 +293,16 @@ const MainContent = ({
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-          {currentFile.fileName}
-        </Typography>
+                  <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={true}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
         <ToolbarButton
           onClick={onCloseFile}
           sx={{
@@ -723,6 +740,8 @@ export default function Workspaces() {
   };
 
   // Save document to file system
+
+
   const saveDocument = useCallback(async (document: { fileName: string; filePath: string; content: string }) => {
     try {
 
@@ -771,7 +790,7 @@ export default function Workspaces() {
                   isUnderline = true;
                   text = text.replace(/<\/?u>/g, '');
                 }
-                if (text.includes(' ') || text.includes('<del>')) {
+                if (text.includes('<s>') || text.includes('<del>')) {
                   isStrike = true;
                   text = text.replace(/<\/?(?:s|del)>/g, '');
                 }
@@ -1377,6 +1396,109 @@ export default function Workspaces() {
     refreshCloudFiles();
   }, [refreshCloudFiles]);
 
+  // Rename file function
+  const renameFile = useCallback(async (oldFileName: string, newFileName: string) => {
+    try {
+      if (!username || !devices || devices.length === 0) {
+        showAlert('Error', ['Please ensure you are logged in with a registered device.'], 'error');
+        return;
+      }
+
+      // Find the cloud file by name
+      const cloudFile = cloudFiles.find(file => file.file_name === oldFileName);
+      
+      if (!cloudFile || !cloudFile.is_s3) {
+        showAlert('Error', ['File not found in cloud storage or not a cloud file.'], 'error');
+        return;
+      }
+
+      // Create a task for the rename operation
+      const taskDescription = `Renaming "${oldFileName}" to "${newFileName}"`;
+      let taskInfo: any = null;
+      
+      try {
+        // Import required functions
+        const { banbury: coreImport } = await import('@banbury/core');
+        
+        taskInfo = await coreImport.sessions.addTask(taskDescription, tasks || [], setTasks);
+        setTaskbox_expanded(true);
+        
+        // Download the current file content
+        const localFilePath = await coreImport.files.saveS3FileToBCloud(
+          String(cloudFile._id || cloudFile.id),
+          oldFileName
+        );
+
+        // Read the file content
+        const fs = await import('fs/promises');
+        const fileBuffer = await fs.readFile(localFilePath);
+
+        // Create a new File object with the new name
+        const file = new File([fileBuffer], newFileName, {
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        });
+
+        // Delete the old file from cloud
+        await coreImport.files.deleteS3File(String(cloudFile._id || cloudFile.id));
+
+        // Upload the file with the new name
+        const deviceName = devices[0].device_name;
+        await coreImport.files.uploadToS3(
+          file,
+          deviceName,
+          'Core/Cloud',
+          'Cloud'
+        );
+
+        // Clean up temporary files
+        await fs.unlink(localFilePath);
+
+        // Update the tab name if this file is currently open
+        setOpenTabs(prev => prev.map(tab => 
+          tab.fileName === oldFileName 
+            ? { ...tab, fileName: newFileName }
+            : tab
+        ));
+
+        // Refresh cloud files to reflect the change
+        await refreshCloudFiles();
+
+        // Complete the task
+        await coreImport.sessions.completeTask(taskInfo, tasks || [], setTasks);
+
+        showAlert('Success', [
+          `File renamed from "${oldFileName}" to "${newFileName}" successfully.`
+        ], 'success');
+
+      } catch (error) {
+        console.error('Error renaming file:', error);
+        
+        // Fail the task if it was created
+        if (taskInfo) {
+          const { banbury: coreImport } = await import('@banbury/core');
+          await coreImport.sessions.failTask(
+            taskInfo, 
+            error instanceof Error ? error.message : 'Unknown error', 
+            tasks || [], 
+            setTasks
+          );
+        }
+
+        showAlert('Error', [
+          `Failed to rename file.`,
+          `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        ], 'error');
+      }
+
+    } catch (error) {
+      console.error('Error during rename operation:', error);
+      showAlert('Error', [
+        `Failed to rename file.`,
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      ], 'error');
+    }
+  }, [username, devices, cloudFiles, tasks, setTasks, setTaskbox_expanded, showAlert, refreshCloudFiles]);
+
   // Sync initial state with ref
   useEffect(() => {
     panelStateRef.current = { leftCollapsed: leftPanelCollapsed, rightOpen: rightPanelOpen };
@@ -1555,6 +1677,7 @@ export default function Workspaces() {
                           return activeTabData?.content || currentDocumentContent;
                         }}
                         setDocumentEditor={setDocumentEditor}
+                        onRenameFile={renameFile}
                       />
                     ) : (
                       <WelcomeScreen />
