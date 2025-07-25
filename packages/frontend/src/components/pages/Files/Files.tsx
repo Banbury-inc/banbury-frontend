@@ -655,7 +655,6 @@ export default function Files() {
         // Fetch Cloud files for tree display when not currently viewing Cloud
         // This ensures the tree shows the Cloud files right away
         setIsCloudLoading(true);
-        setCloudError(null);
 
         try {
           const { fetchCloudData } = await import('./utils/fetchAllData');
@@ -663,7 +662,6 @@ export default function Files() {
           setCloudFiles(result);
         } catch (error: any) {
           console.error('Error fetching Cloud files for tree:', error);
-          setCloudError(error.message || 'Failed to load Cloud files');
           setCloudFiles([]);
         } finally {
           setIsCloudLoading(false);

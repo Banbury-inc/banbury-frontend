@@ -298,7 +298,7 @@ const MainContent = ({
         <SimpleTipTapEditor
           content={currentFile.content || ''}
           onChange={onDocumentChange}
-          placeholder={`Start editing ${currentFile.fileName}...`}
+          _placeholder={`Start editing ${currentFile.fileName}...`}
           onSave={() => {
             const currentContent = getCurrentContent();
             onSaveDocument({
