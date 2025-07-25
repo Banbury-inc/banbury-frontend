@@ -720,6 +720,14 @@ export default function Files() {
           viewType={viewType}
           setViewType={setViewType}
           username={username}
+          onFileCreated={() => {
+            // In Files page, just refresh the file list or show in file viewer
+            // No special action needed since files are already displayed in the main view
+          }}
+          onRefreshFiles={() => {
+            // Trigger a refresh of the file data
+            setUpdates(updates + 1);
+          }}
         />
       </Card>
       

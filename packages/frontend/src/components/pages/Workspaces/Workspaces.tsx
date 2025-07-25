@@ -1358,23 +1358,24 @@ export default function Workspaces() {
     updatePanelStates(newLeftCollapsed, newRightOpen);
   }, [updatePanelStates]);
 
+  // Cloud files refresh function
+  const refreshCloudFiles = useCallback(async () => {
+    if (!username) return;
+
+    try {
+      const { fetchCloudData } = await import('../Files/utils/fetchAllData');
+      const result = await fetchCloudData();
+      setCloudFiles(result);
+    } catch (error: any) {
+      console.error('Error fetching Cloud files for Workspaces:', error);
+      setCloudFiles([]);
+    }
+  }, [username]);
+
   // Add Cloud Files fetching effect (similar to Files.tsx)
   useEffect(() => {
-    const fetchCloudFilesData = async () => {
-      if (!username) return;
-
-      try {
-        const { fetchCloudData } = await import('../Files/utils/fetchAllData');
-        const result = await fetchCloudData();
-        setCloudFiles(result);
-      } catch (error: any) {
-        console.error('Error fetching Cloud files for Workspaces:', error);
-        setCloudFiles([]);
-      }
-    };
-
-    fetchCloudFilesData();
-  }, [username]);
+    refreshCloudFiles();
+  }, [refreshCloudFiles]);
 
   // Sync initial state with ref
   useEffect(() => {
@@ -1439,6 +1440,11 @@ export default function Workspaces() {
           viewType={viewType}
           setViewType={setViewType}
           username={username}
+          onFileCreated={(fileName: string, filePath: string) => {
+            // Open the newly created document in the middle panel
+            openFileInMiddlePanel(fileName, filePath, 'Word Document');
+          }}
+          onRefreshFiles={refreshCloudFiles}
         />
       </Card>
       
