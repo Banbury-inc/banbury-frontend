@@ -213,12 +213,16 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
               margin: 0,
               color: '#ffffff',
             },
-            '& .mention-chip-inline': {
+            '& .mention': {
               userSelect: 'none',
               pointerEvents: 'none',
               backgroundColor: 'rgba(33,150,243,0.15) !important',
+              color: 'rgba(33,150,243,1) !important',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontWeight: 500,
               '&:hover': {
-                backgroundColor: 'rgba(164, 164, 164, 0.2) !important',
+                backgroundColor: 'rgba(33,150,243,0.25) !important',
               },
             },
             '& .ProseMirror-gapcursor': {
