@@ -240,7 +240,7 @@ const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = 
       const provider = model?.provider || 'anthropic';
       
       if (provider === 'anthropic' && !modelConfig.anthropicApiKey) {
-        showAlert('Error', ['Anthropic API key not configured. Please set it in Settings > Models.'], 'error');
+        showAlert('Error', ['Please configure Anthropic API key'], 'error');
         setIsLoading(false);
         return;
       }
