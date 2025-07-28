@@ -86,7 +86,7 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
                   popup[0].hide();
                   return true;
                 }
-                return (component?.ref as any)?.handleKeyDown?.(props.event) || false;
+                return (component?.ref as any)?.onKeyDown?.({ event: props.event }) || false;
               },
               onExit() {
                 popup?.[0]?.destroy();
