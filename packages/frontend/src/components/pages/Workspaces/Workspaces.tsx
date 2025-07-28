@@ -29,7 +29,7 @@ import mammoth from 'mammoth';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import 'allotment/dist/style.css';
 import ImageViewer from '../../common/FileViewer/ImageViewer/ImageViewer';
-import ExcelViewer from '../../common/FileViewer/ExcelViewer/ExcelViewer';
+import SpreadsheetEditor from '../../common/FileViewer/ExcelViewer/SpreadsheetEditor';
 import PDFViewer from '../../common/FileViewer/PDFViewer/PDFViewer';
 import { isImageFile, isExcelFile, isCsvFile, isPdfFile } from '../Files/utils/fileUtils';
 import { DatabaseData } from '@banbury/core/src/types';
@@ -324,9 +324,9 @@ const MainContent = ({
           </ToolbarButton>
         </Box>
         
-        {/* Excel Viewer */}
+        {/* Spreadsheet Editor */}
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
-          <ExcelViewer
+          <SpreadsheetEditor
             src={currentFile.filePath}
             fileName={currentFile.fileName}
             onError={() => {
@@ -335,7 +335,7 @@ const MainContent = ({
             onLoad={() => {
               console.log('Excel file loaded successfully:', currentFile.fileName);
             }}
-            onSave={(filePath) => {
+            onSave={(filePath: string) => {
               console.log('Excel file saved:', filePath);
               // Optionally refresh the file tree here
             }}

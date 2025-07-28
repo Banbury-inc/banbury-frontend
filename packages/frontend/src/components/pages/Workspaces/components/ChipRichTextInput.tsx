@@ -76,8 +76,8 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
                 });
               },
               onUpdate(props: any) {
-                component.updateProps(props);
-                popup[0].setProps({
+                component?.updateProps(props);
+                popup?.[0]?.setProps({
                   getReferenceClientRect: props.clientRect as any,
                 });
               },
@@ -86,11 +86,11 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
                   popup[0].hide();
                   return true;
                 }
-                return (component.ref as any)?.handleKeyDown?.(props.event) || false;
+                return (component?.ref as any)?.handleKeyDown?.(props.event) || false;
               },
               onExit() {
-                popup[0].destroy();
-                component.destroy();
+                popup?.[0]?.destroy();
+                component?.destroy();
               },
             };
           },
