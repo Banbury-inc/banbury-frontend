@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Mention from '@tiptap/extension-mention';
@@ -28,6 +28,7 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
   onMentionedFilesChange,
 }) => {
   const [mentionedFiles, setMentionedFiles] = useState<MentionableFile[]>([]);
+  const mentionJustSelectedRef = useRef<boolean>(false);
 
   const editor = useEditor({
     extensions: [
@@ -61,7 +62,19 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
             return {
               onStart: (props: any) => {
                 component = new ReactRenderer(MentionList, {
-                  props,
+                  props: {
+                    ...props,
+                    command: (attrs: any) => {
+                      // Set flag that a mention was just selected
+                      mentionJustSelectedRef.current = true;
+                      // Clear the flag after a short delay
+                      setTimeout(() => {
+                        mentionJustSelectedRef.current = false;
+                      }, 100);
+                      // Call the original command
+                      props.command(attrs);
+                    },
+                  },
                   editor: props.editor,
                 });
 
@@ -76,8 +89,20 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
                 });
               },
               onUpdate(props: any) {
-                component.updateProps(props);
-                popup[0].setProps({
+                component?.updateProps({
+                  ...props,
+                  command: (attrs: any) => {
+                    // Set flag that a mention was just selected
+                    mentionJustSelectedRef.current = true;
+                    // Clear the flag after a short delay
+                    setTimeout(() => {
+                      mentionJustSelectedRef.current = false;
+                    }, 100);
+                    // Call the original command
+                    props.command(attrs);
+                  },
+                });
+                popup?.[0]?.setProps({
                   getReferenceClientRect: props.clientRect as any,
                 });
               },
@@ -86,11 +111,11 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
                   popup[0].hide();
                   return true;
                 }
-                return (component.ref as any)?.handleKeyDown?.(props.event) || false;
+                return (component?.ref as any)?.onKeyDown?.({ event: props.event }) || false;
               },
               onExit() {
-                popup[0].destroy();
-                component.destroy();
+                popup?.[0]?.destroy();
+                component?.destroy();
               },
             };
           },
@@ -111,23 +136,12 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
           font-size: 14px;
         `,
       },
-      handleKeyDown: (view, event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-          // Check if suggestion popup is open
-          const tippyInstances = document.querySelectorAll('[data-tippy-root]');
-          const hasOpenSuggestion = Array.from(tippyInstances).some(
-            (el) => (el as HTMLElement).style.display !== 'none'
-          );
-          
-          if (!hasOpenSuggestion) {
-            event.preventDefault();
-            onSubmit?.();
-            return true;
-          }
-        }
-        
-        return false;
-      },
+    },
+    onFocus: () => {
+      // Track when editor gains focus
+    },
+    onBlur: () => {
+      // Track when editor loses focus  
     },
     onUpdate: ({ editor }) => {
       const content = editor.getText();
@@ -179,7 +193,38 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
   const isEditorEmpty = !value || value.trim() === '';
 
   return (
-    <Box sx={{ position: 'relative', width: '100%' }}>
+    <Box 
+      sx={{ position: 'relative', width: '100%' }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          // Check if a mention was just selected
+          if (mentionJustSelectedRef.current) {
+            // Don't submit if a mention was just selected
+            return;
+          }
+          
+          // Check if any tippy popups are visible (mention lists)
+          const tippyInstances = document.querySelectorAll('[data-tippy-root]');
+          const hasVisibleTippy = Array.from(tippyInstances).some(
+            (el) => {
+              const tippyEl = el as HTMLElement;
+              return tippyEl.style.visibility !== 'hidden' && 
+                     tippyEl.style.display !== 'none' &&
+                     tippyEl.offsetParent !== null;
+            }
+          );
+          
+          if (hasVisibleTippy) {
+            // If popup is visible, don't submit - let mention handle it
+            return;
+          }
+          
+          // If no popup and no recent mention selection, submit the message
+          e.preventDefault();
+          onSubmit?.();
+        }
+      }}
+    >
       {/* Manual placeholder overlay */}
       {isEditorEmpty && (
         <Box
@@ -213,12 +258,16 @@ const ChipRichTextInput: React.FC<ChipRichTextInputProps> = ({
               margin: 0,
               color: '#ffffff',
             },
-            '& .mention-chip-inline': {
+            '& .mention': {
               userSelect: 'none',
               pointerEvents: 'none',
               backgroundColor: 'rgba(33,150,243,0.15) !important',
+              color: 'rgba(33,150,243,1) !important',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontWeight: 500,
               '&:hover': {
-                backgroundColor: 'rgba(164, 164, 164, 0.2) !important',
+                backgroundColor: 'rgba(33,150,243,0.25) !important',
               },
             },
             '& .ProseMirror-gapcursor': {

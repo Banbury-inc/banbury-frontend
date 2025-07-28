@@ -13,6 +13,7 @@ import SyncButton from './SyncButton/SyncButton';
 import ShareFileButton from './ShareFileButton/ShareFileButton';
 import ToggleColumnsButton from './ToggleColumnsButton/ToggleColumnsButton';
 import ChangeViewButton from './ChangeViewButton/ChangeViewButton';
+import CreateNewButton from './CreateNewButton/CreateNewButton';
 
 export default function FilesToolbar({
   _backHistory,
@@ -37,6 +38,8 @@ export default function FilesToolbar({
   handleColumnVisibilityChange,
   viewType,
   setViewType,
+  onFileCreated,
+  onRefreshFiles,
 }: any) {
 
   return (
@@ -63,6 +66,9 @@ export default function FilesToolbar({
             />
           </Grid>
           <Grid item paddingRight={1} paddingLeft={1}>
+            <CreateNewButton onFileCreated={onFileCreated} onRefreshFiles={onRefreshFiles} />
+          </Grid>
+          <Grid item paddingRight={1}>
             <Tooltip title="Upload">
               <NewInputFileUploadButton />
             </Tooltip>

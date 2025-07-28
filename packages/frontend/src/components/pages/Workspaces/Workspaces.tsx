@@ -2,7 +2,8 @@ import React, { useState, useCallback, Suspense, useEffect, useRef } from 'react
 import {
   Box,
   Typography,
-  LinearProgress
+  LinearProgress,
+  Card,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { Allotment, LayoutPriority } from 'allotment';
@@ -11,10 +12,13 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useAuth } from '../../../renderer/context/AuthContext';
 import { useAlert } from '../../../renderer/context/AlertContext';
 import FileTreeView from '../Files/components/NewTreeView/FileTreeView';
-
+import FilesToolbar from '../Files/components/FilesToolbar/FilesToolbar';
+import { ViewType as FileViewType } from '../Files/components/FilesToolbar/ChangeViewButton/ChangeViewButton';
+import { AvailableTableColumns } from '@banbury/core/src/types';
 import WorkspaceAssistantInterface from './components/WorkspaceAssistantInterface';
 import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
 import SimpleTipTapEditor from './components/SimpleTipTapEditor';
+import RenameableTitle from './components/RenameableTitle';
 import path from 'path';
 import os from 'os';
 import { stat, readFile, writeFile } from 'fs/promises';
@@ -23,7 +27,9 @@ import mammoth from 'mammoth';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import 'allotment/dist/style.css';
 import ImageViewer from '../../common/FileViewer/ImageViewer/ImageViewer';
-import { isImageFile } from '../Files/utils/fileUtils';
+import SpreadsheetEditor from '../../common/FileViewer/ExcelViewer/SpreadsheetEditor';
+import PDFViewer from '../../common/FileViewer/PDFViewer/PDFViewer';
+import { isImageFile, isExcelFile, isCsvFile, isPdfFile } from '../Files/utils/fileUtils';
 import { DatabaseData } from '@banbury/core/src/types';
 
 
@@ -32,13 +38,16 @@ import { DatabaseData } from '@banbury/core/src/types';
 const WorkspaceSidebar = ({ 
   onFileClick,
   cloudFiles = [],
-  cloudEnabled = true
+  cloudEnabled = true,
+  filePath,
+  setFilePath
 }: { 
   onFileClick?: (fileName: string, filePath: string, fileType: string) => void;
   cloudFiles?: DatabaseData[];
   cloudEnabled?: boolean;
+  filePath: string;
+  setFilePath: (path: string) => void;
 }) => {
-  const [filePath, setFilePath] = useState('');
   const [filePathDevice, setFilePathDevice] = useState('');
   const { username } = useAuth();
 
@@ -60,6 +69,9 @@ const WorkspaceSidebar = ({
       '.pdf': 'PDF',
       '.doc': 'Word Document',
       '.docx': 'Word Document',
+      '.xlsx': 'Excel Spreadsheet',
+      '.xls': 'Excel Spreadsheet',
+      '.csv': 'CSV File',
       '.txt': 'Text',
       '.js': 'Code File',
       '.ts': 'Code File',
@@ -205,7 +217,8 @@ const MainContent = ({
   onCloseFile,
   onSaveDocument,
   getCurrentContent,
-  setDocumentEditor
+  setDocumentEditor,
+  onRenameFile
 }: { 
   currentFile: { fileName: string; filePath: string; content?: string; fileType: string } | null;
   onDocumentChange: (content: string) => void;
@@ -213,6 +226,7 @@ const MainContent = ({
   onSaveDocument: (document: { fileName: string; filePath: string; content: string }) => void;
   getCurrentContent: () => string;
   setDocumentEditor: (editor: any) => void;
+  onRenameFile?: (oldFileName: string, newFileName: string) => void;
 }) => {
   if (!currentFile) {
     return <WelcomeScreen />;
@@ -232,9 +246,16 @@ const MainContent = ({
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {currentFile.fileName}
-          </Typography>
+          <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={isImageFile(currentFile.fileName)}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
           <ToolbarButton
             onClick={onCloseFile}
             sx={{
@@ -262,6 +283,115 @@ const MainContent = ({
     );
   }
 
+  // Check if it's an Excel/CSV file
+  if (isExcelFile(currentFile.fileName) || isCsvFile(currentFile.fileName)) {
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* File Header */}
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={true}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
+          <ToolbarButton
+            onClick={onCloseFile}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
+        </Box>
+        
+        {/* Spreadsheet Editor */}
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <SpreadsheetEditor
+            src={currentFile.filePath}
+            fileName={currentFile.fileName}
+            onError={() => {
+              console.error('Error loading Excel file:', currentFile.fileName);
+            }}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
+  // Check if it's a PDF file
+  if (isPdfFile(currentFile.fileName)) {
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* File Header */}
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={false}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
+          <ToolbarButton
+            onClick={onCloseFile}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
+        </Box>
+        
+        {/* PDF Viewer */}
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <PDFViewer
+            src={currentFile.filePath}
+            fileName={currentFile.fileName}
+            onError={() => {
+              console.error('Error loading PDF file:', currentFile.fileName);
+            }}
+            onLoad={() => {
+              // PDF file loaded successfully
+            }}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
   // For documents, use SimpleTipTapEditor
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -275,9 +405,16 @@ const MainContent = ({
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-          {currentFile.fileName}
-        </Typography>
+                  <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={true}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
         <ToolbarButton
           onClick={onCloseFile}
           sx={{
@@ -322,6 +459,26 @@ export default function Workspaces() {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
+  // Toolbar state
+  const [viewType, setViewType] = useState<FileViewType>('list');
+  const [columnVisibility, setColumnVisibility] = useState<Partial<Record<AvailableTableColumns, boolean>>>({
+    file_name: true,
+    file_size: true,
+    kind: true,
+    original_device: true,
+    available: true,
+    is_public: false,
+    file_priority: true,
+    date_uploaded: true,
+    date_modified: false,
+  });
+  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
+  const [selectedDeviceNames] = useState<string[]>([]);
+  const [_selectedFileInfo] = useState<any[]>([]);
+  const [_backHistory, setBackHistory] = useState<string[]>([]);
+  const [_forwardHistory, setForwardHistory] = useState<string[]>([]);
+  const [filePath, setFilePath] = useState<string>('');
+
   // Document editing state
   const [showTipTapEditor, setShowTipTapEditor] = useState(false);
   const [currentDocument, setCurrentDocument] = useState<{
@@ -345,6 +502,15 @@ export default function Workspaces() {
     fileSize?: number;
   } | null>(null);
 
+  // PDF viewing context for AI assistant
+  const [currentPdfInfo, setCurrentPdfInfo] = useState<{
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    numPages?: number;
+    fileSize?: number;
+  } | null>(null);
+
 
   // File tabs state
   interface FileTab {
@@ -358,12 +524,63 @@ export default function Workspaces() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const { showAlert } = useAlert();
-  const { username, devices } = useAuth();
+  const { username, devices, websocket, tasks, setTasks, setTaskbox_expanded } = useAuth();
 
   // Add Cloud Files state (similar to Files.tsx)
   const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
 
   const [cloudEnabled] = useState(true); // Cloud is always enabled
+
+  // Toolbar handler functions
+  const handleShareModalOpen = () => {
+    // TODO: Implement share modal for workspaces
+    showAlert('Info', ['Share functionality will be implemented for workspaces'], 'info');
+  };
+
+  const handleColumnVisibilityChange = (columnId: AvailableTableColumns, isVisible: boolean) => {
+    setColumnVisibility(prev => ({
+      ...prev,
+      [columnId]: isVisible
+    }));
+  };
+
+  const getColumnOptions = () => {
+    // Define which columns to show and their display labels (based on AvailableTableColumns)
+    const columnLabels: Record<AvailableTableColumns, string> = {
+      file_name: 'File Name',
+      file_size: 'File Size',
+      kind: 'Kind',
+      original_device: 'Location',
+      available: 'Status',
+      file_priority: 'Priority',
+      date_uploaded: 'Date Uploaded',
+      date_modified: 'Date Modified',
+      is_public: 'Visibility',
+    };
+
+    // Define which columns should be available for toggling (AvailableTableColumns)
+    const availableColumns: AvailableTableColumns[] = [
+      'file_name',
+      'file_size',
+      'kind',
+      'original_device',
+      'available',
+      'file_priority',
+      'date_uploaded',
+      'date_modified',
+      'is_public'
+    ];
+
+    return availableColumns.map((columnId) => ({
+      id: columnId,
+      label: columnLabels[columnId],
+      isVisible: columnVisibility[columnId] ?? true // Default to visible if not set
+    }));
+  };
+
+  const handleFinish = () => {
+    setSelectedFileNames([]);
+  };
 
   // Document AI Integration Functions
   const getDocumentInfo = useCallback(() => {
@@ -581,6 +798,47 @@ export default function Workspaces() {
     analyze: analyzeImage
   };
 
+  // PDF AI Integration Functions
+  const getPdfInfo = useCallback(() => {
+    const activeTabData = openTabs.find(tab => tab.id === activeTab);
+    const isCurrentlyViewingPdf = activeTabData && isPdfFile(activeTabData.fileName);
+    
+    return {
+      hasPdf: isCurrentlyViewingPdf,
+      fileName: currentPdfInfo?.fileName || activeTabData?.fileName || 'No PDF',
+      fileType: currentPdfInfo?.fileType || activeTabData?.fileType || '',
+      filePath: currentPdfInfo?.filePath || activeTabData?.filePath || '',
+      numPages: currentPdfInfo?.numPages,
+      fileSize: currentPdfInfo?.fileSize
+    };
+  }, [activeTab, openTabs, currentPdfInfo]);
+
+  const getPdfMetadata = useCallback(async (filePath?: string): Promise<any | null> => {
+    try {
+      const pathToUse = filePath || currentPdfInfo?.filePath;
+      if (!pathToUse) return null;
+      
+      // Get file size
+      const fs = await import('fs/promises');
+      const stats = await fs.stat(pathToUse);
+      
+      return {
+        fileName: currentPdfInfo?.fileName || path.basename(pathToUse),
+        fileSize: stats.size,
+        numPages: currentPdfInfo?.numPages,
+        filePath: pathToUse
+      };
+    } catch (error) {
+      console.error('Error getting PDF metadata:', error);
+      return null;
+    }
+  }, [currentPdfInfo]);
+
+  const pdfActions = {
+    getInfo: getPdfInfo,
+    getMetadata: getPdfMetadata
+  };
+
   // Keyboard shortcuts
   useHotkeys('ctrl+/', () => toggleRightPanel(), { preventDefault: true });
   useHotkeys('meta+/', () => toggleRightPanel(), { preventDefault: true });
@@ -608,7 +866,9 @@ export default function Workspaces() {
     const ext = path.extname(fileName).toLowerCase();
     const editableExtensions = ['.txt', '.md', '.markdown', '.rtf', '.doc', '.docx'];
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'];
-    return editableExtensions.includes(ext) || imageExtensions.includes(ext);
+    const spreadsheetExtensions = ['.xlsx', '.xls', '.csv'];
+    const pdfExtensions = ['.pdf'];
+    return editableExtensions.includes(ext) || imageExtensions.includes(ext) || spreadsheetExtensions.includes(ext) || pdfExtensions.includes(ext);
   };
 
 
@@ -641,6 +901,8 @@ export default function Workspaces() {
   };
 
   // Save document to file system
+
+
   const saveDocument = useCallback(async (document: { fileName: string; filePath: string; content: string }) => {
     try {
 
@@ -689,7 +951,7 @@ export default function Workspaces() {
                   isUnderline = true;
                   text = text.replace(/<\/?u>/g, '');
                 }
-                if (text.includes(' ') || text.includes('<del>')) {
+                if (text.includes('<s>') || text.includes('<del>')) {
                   isStrike = true;
                   text = text.replace(/<\/?(?:s|del)>/g, '');
                 }
@@ -1020,6 +1282,11 @@ export default function Workspaces() {
         setCurrentImageInfo(null);
       }
       
+      // Clear PDF context if closing a PDF tab
+      if (tabToClose && isPdfFile(tabToClose.fileName) && activeTab === tabId) {
+        setCurrentPdfInfo(null);
+      }
+      
       // If closing the active tab, switch to another tab
       if (activeTab === tabId && newTabs.length > 0) {
         setActiveTab(newTabs[newTabs.length - 1].id);
@@ -1160,6 +1427,24 @@ export default function Workspaces() {
         fileContent = content;
       }
 
+      // For PDF files, set PDF context (but don't load content as PDFs are read-only)
+      if (isPdfFile(fileName)) {
+        try {
+          // Get file size
+          const fs = await import('fs/promises');
+          const stats = await fs.stat(filePath);
+          
+          setCurrentPdfInfo({
+            fileName,
+            filePath,
+            fileType,
+            fileSize: stats.size
+          });
+        } catch (error) {
+          console.error('Error setting PDF context:', error);
+        }
+      }
+
       // For image files, set image context
       if (isImageFile(fileName)) {
         try {
@@ -1276,23 +1561,127 @@ export default function Workspaces() {
     updatePanelStates(newLeftCollapsed, newRightOpen);
   }, [updatePanelStates]);
 
+  // Cloud files refresh function
+  const refreshCloudFiles = useCallback(async () => {
+    if (!username) return;
+
+    try {
+      const { fetchCloudData } = await import('../Files/utils/fetchAllData');
+      const result = await fetchCloudData();
+      setCloudFiles(result);
+    } catch (error: any) {
+      console.error('Error fetching Cloud files for Workspaces:', error);
+      setCloudFiles([]);
+    }
+  }, [username]);
+
   // Add Cloud Files fetching effect (similar to Files.tsx)
   useEffect(() => {
-    const fetchCloudFilesData = async () => {
-      if (!username) return;
+    refreshCloudFiles();
+  }, [refreshCloudFiles]);
 
-      try {
-        const { fetchCloudData } = await import('../Files/utils/fetchAllData');
-        const result = await fetchCloudData();
-        setCloudFiles(result);
-      } catch (error: any) {
-        console.error('Error fetching Cloud files for Workspaces:', error);
-        setCloudFiles([]);
+  // Rename file function
+  const renameFile = useCallback(async (oldFileName: string, newFileName: string) => {
+    try {
+      if (!username || !devices || devices.length === 0) {
+        showAlert('Error', ['Please ensure you are logged in with a registered device.'], 'error');
+        return;
       }
-    };
 
-    fetchCloudFilesData();
-  }, [username]);
+      // Find the cloud file by name
+      const cloudFile = cloudFiles.find(file => file.file_name === oldFileName);
+      
+      if (!cloudFile || !cloudFile.is_s3) {
+        showAlert('Error', ['File not found in cloud storage or not a cloud file.'], 'error');
+        return;
+      }
+
+      // Create a task for the rename operation
+      const taskDescription = `Renaming "${oldFileName}" to "${newFileName}"`;
+      let taskInfo: any = null;
+      
+      try {
+        // Import required functions
+        const { banbury: coreImport } = await import('@banbury/core');
+        
+        taskInfo = await coreImport.sessions.addTask(taskDescription, tasks || [], setTasks);
+        setTaskbox_expanded(true);
+        
+        // Download the current file content
+        const localFilePath = await coreImport.files.saveS3FileToBCloud(
+          String(cloudFile._id || cloudFile.id),
+          oldFileName
+        );
+
+        // Read the file content
+        const fs = await import('fs/promises');
+        const fileBuffer = await fs.readFile(localFilePath);
+
+        // Create a new File object with the new name
+        const file = new File([fileBuffer], newFileName, {
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        });
+
+        // Delete the old file from cloud
+        await coreImport.files.deleteS3File(String(cloudFile._id || cloudFile.id));
+
+        // Upload the file with the new name
+        const deviceName = devices[0].device_name;
+        await coreImport.files.uploadToS3(
+          file,
+          deviceName,
+          'Core/Cloud',
+          'Cloud'
+        );
+
+        // Clean up temporary files
+        await fs.unlink(localFilePath);
+
+        // Update the tab name if this file is currently open
+        setOpenTabs(prev => prev.map(tab => 
+          tab.fileName === oldFileName 
+            ? { ...tab, fileName: newFileName }
+            : tab
+        ));
+
+        // Refresh cloud files to reflect the change
+        await refreshCloudFiles();
+
+        // Complete the task
+        await coreImport.sessions.completeTask(taskInfo, tasks || [], setTasks);
+
+        showAlert('Success', [
+          `File renamed from "${oldFileName}" to "${newFileName}" successfully.`
+        ], 'success');
+
+      } catch (error) {
+        console.error('Error renaming file:', error);
+        
+        // Fail the task if it was created
+        if (taskInfo) {
+          const { banbury: coreImport } = await import('@banbury/core');
+          await coreImport.sessions.failTask(
+            taskInfo, 
+            error instanceof Error ? error.message : 'Unknown error', 
+            tasks || [], 
+            setTasks
+          );
+        }
+
+        showAlert('Error', [
+          `Failed to rename file.`,
+          `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        ], 'error');
+      }
+
+    } catch (error) {
+      console.error('Error during rename operation:', error);
+      showAlert('Error', [
+        `Failed to rename file.`,
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      ], 'error');
+    }
+  }, [username, devices, cloudFiles, tasks, setTasks, setTaskbox_expanded, showAlert, refreshCloudFiles]);
 
   // Sync initial state with ref
   useEffect(() => {
@@ -1309,16 +1698,62 @@ export default function Workspaces() {
   }, []);
 
   return (
-    <Box sx={{ 
-      position: 'fixed',
-      top: 40,
-      left: 40, // Add left padding to avoid overlapping with navigation sidebar
-      right: 0,
-      bottom: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      bgcolor: 'background.default'
-    }}>
+          <Box sx={{ 
+        position: 'fixed',
+        top: 35,
+        left: 40, // Add left padding to avoid overlapping with navigation sidebar
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.default',
+        border: 1,
+        borderColor: 'divider'
+      }}>
+      {/* Toolbar */}
+      <Card variant="outlined" sx={{ 
+        borderTop: 0, 
+        borderLeft: 0, 
+        borderBottom: 1, 
+        borderColor: 'divider',
+        borderStyle: 'solid'
+      }}>
+        <FilesToolbar
+          _backHistory={_backHistory}
+          setBackHistory={setBackHistory}
+          _forwardHistory={_forwardHistory}
+          setForwardHistory={setForwardHistory}
+          filePath={filePath}
+          setFilePath={setFilePath}
+          setTaskbox_expanded={setTaskbox_expanded}
+          selectedFileNames={selectedFileNames}
+          selectedFileInfo={_selectedFileInfo}
+          selectedDeviceNames={selectedDeviceNames}
+          setSelectedFileNames={setSelectedFileNames}
+          setSelected={() => {}}
+          tasks={tasks}
+          setTasks={setTasks}
+          websocket={websocket as WebSocket}
+          updates={Date.now()} // Use current timestamp as updates
+          setUpdates={() => {}} // No-op function since we don't have updates state
+          isShared={false}
+          isCloudSync={false}
+          handleFinish={handleFinish}
+          handleShareModalOpen={handleShareModalOpen}
+          getColumnOptions={getColumnOptions}
+          columnVisibility={columnVisibility}
+          handleColumnVisibilityChange={handleColumnVisibilityChange}
+          viewType={viewType}
+          setViewType={setViewType}
+          username={username}
+          onFileCreated={(fileName: string, filePath: string) => {
+            // Open the newly created document in the middle panel
+            openFileInMiddlePanel(fileName, filePath, 'Word Document');
+          }}
+          onRefreshFiles={refreshCloudFiles}
+        />
+      </Card>
+      
       {/* Main Content - Three Panel Layout */}
       <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         <Suspense fallback={<LinearProgress />}>
@@ -1336,11 +1771,21 @@ export default function Workspaces() {
               minSize={250}
               priority={LayoutPriority.Low}
             >
-              <Box sx={{ height: '100%', borderRight: 1, borderColor: 'divider', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ 
+                height: '100%', 
+                borderRight: 1, 
+                borderColor: 'divider', 
+                borderStyle: 'solid',
+                position: 'relative', 
+                display: 'flex', 
+                flexDirection: 'column' 
+              }}>
                 <WorkspaceSidebar 
                   onFileClick={handleFileClick}
                   cloudFiles={cloudFiles}
                   cloudEnabled={cloudEnabled}
+                  filePath={filePath}
+                  setFilePath={setFilePath}
                 />
                 {/* Left Panel Toggle Button (when panel is open) */}
                 <Box
@@ -1382,7 +1827,12 @@ export default function Workspaces() {
               minSize={400}
               preferredSize="75%"
             >
-              <Box sx={{ height: '100%', borderRight: rightPanelOpen ? 1 : 0, borderColor: 'divider' }}>
+              <Box sx={{ 
+                height: '100%', 
+                borderRight: rightPanelOpen ? 1 : 0, 
+                borderColor: 'divider',
+                borderStyle: 'solid'
+              }}>
                 <AnimatePresence mode="wait">
                   <motion.div
                     key="main-content"
@@ -1411,6 +1861,7 @@ export default function Workspaces() {
                           return activeTabData?.content || currentDocumentContent;
                         }}
                         setDocumentEditor={setDocumentEditor}
+                        onRenameFile={renameFile}
                       />
                     ) : (
                       <WelcomeScreen />
@@ -1430,7 +1881,7 @@ export default function Workspaces() {
               maxSize={800}
             >
               <Box sx={{ height: '100%', position: 'relative' }}>
-                <WorkspaceAssistantInterface documentActions={documentActions} imageActions={imageActions} />
+                <WorkspaceAssistantInterface documentActions={documentActions} imageActions={imageActions} pdfActions={pdfActions} />
                 {/* Right Panel Toggle Button (when panel is open) */}
                 <Box
                   sx={{
