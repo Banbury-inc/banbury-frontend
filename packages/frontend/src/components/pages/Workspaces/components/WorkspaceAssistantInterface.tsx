@@ -55,10 +55,14 @@ interface WorkspaceAssistantInterfaceProps {
     getDimensions: (filePath?: string) => Promise<{ width: number; height: number } | null>;
     analyze: (analysis: 'description' | 'metadata' | 'colors' | 'text') => Promise<any>;
   };
+  pdfActions?: {
+    getInfo: () => any;
+    getMetadata: (filePath?: string) => Promise<any | null>;
+  };
 }
 
 // AI Assistant Chat Interface
-const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions, imageActions }) => {
+const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions, imageActions, pdfActions }) => {
   const [langGraphAgent, setLangGraphAgent] = useState<LangGraphAgent | null>(null);
   // UI message type that includes visual-only message types
   type UIMessage = {

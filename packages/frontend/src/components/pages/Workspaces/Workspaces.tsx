@@ -30,7 +30,8 @@ import { Document, Packer, Paragraph, TextRun } from 'docx';
 import 'allotment/dist/style.css';
 import ImageViewer from '../../common/FileViewer/ImageViewer/ImageViewer';
 import ExcelViewer from '../../common/FileViewer/ExcelViewer/ExcelViewer';
-import { isImageFile, isExcelFile, isCsvFile } from '../Files/utils/fileUtils';
+import PDFViewer from '../../common/FileViewer/PDFViewer/PDFViewer';
+import { isImageFile, isExcelFile, isCsvFile, isPdfFile } from '../Files/utils/fileUtils';
 import { DatabaseData } from '@banbury/core/src/types';
 
 
@@ -344,6 +345,62 @@ const MainContent = ({
     );
   }
 
+  // Check if it's a PDF file
+  if (isPdfFile(currentFile.fileName)) {
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* File Header */}
+        <Box sx={{ 
+          p: 2, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <RenameableTitle
+            title={currentFile.fileName}
+            variant="inherit"
+            isDocument={false}
+            onRename={(newFileName) => {
+              if (onRenameFile) {
+                onRenameFile(currentFile.fileName, newFileName);
+              }
+            }}
+          />
+          <ToolbarButton
+            onClick={onCloseFile}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
+        </Box>
+        
+        {/* PDF Viewer */}
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <PDFViewer
+            src={currentFile.filePath}
+            fileName={currentFile.fileName}
+            onError={() => {
+              console.error('Error loading PDF file:', currentFile.fileName);
+            }}
+            onLoad={() => {
+              console.log('PDF file loaded successfully:', currentFile.fileName);
+            }}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
   // For documents, use SimpleTipTapEditor
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -452,6 +509,15 @@ export default function Workspaces() {
     fileType: string;
     base64Data?: string | null;
     dimensions?: { width: number; height: number } | null;
+    fileSize?: number;
+  } | null>(null);
+
+  // PDF viewing context for AI assistant
+  const [currentPdfInfo, setCurrentPdfInfo] = useState<{
+    fileName: string;
+    filePath: string;
+    fileType: string;
+    numPages?: number;
     fileSize?: number;
   } | null>(null);
 
@@ -744,6 +810,47 @@ export default function Workspaces() {
     analyze: analyzeImage
   };
 
+  // PDF AI Integration Functions
+  const getPdfInfo = useCallback(() => {
+    const activeTabData = openTabs.find(tab => tab.id === activeTab);
+    const isCurrentlyViewingPdf = activeTabData && isPdfFile(activeTabData.fileName);
+    
+    return {
+      hasPdf: isCurrentlyViewingPdf,
+      fileName: currentPdfInfo?.fileName || activeTabData?.fileName || 'No PDF',
+      fileType: currentPdfInfo?.fileType || activeTabData?.fileType || '',
+      filePath: currentPdfInfo?.filePath || activeTabData?.filePath || '',
+      numPages: currentPdfInfo?.numPages,
+      fileSize: currentPdfInfo?.fileSize
+    };
+  }, [activeTab, openTabs, currentPdfInfo]);
+
+  const getPdfMetadata = useCallback(async (filePath?: string): Promise<any | null> => {
+    try {
+      const pathToUse = filePath || currentPdfInfo?.filePath;
+      if (!pathToUse) return null;
+      
+      // Get file size
+      const fs = await import('fs/promises');
+      const stats = await fs.stat(pathToUse);
+      
+      return {
+        fileName: currentPdfInfo?.fileName || path.basename(pathToUse),
+        fileSize: stats.size,
+        numPages: currentPdfInfo?.numPages,
+        filePath: pathToUse
+      };
+    } catch (error) {
+      console.error('Error getting PDF metadata:', error);
+      return null;
+    }
+  }, [currentPdfInfo]);
+
+  const pdfActions = {
+    getInfo: getPdfInfo,
+    getMetadata: getPdfMetadata
+  };
+
   // Keyboard shortcuts
   useHotkeys('ctrl+/', () => toggleRightPanel(), { preventDefault: true });
   useHotkeys('meta+/', () => toggleRightPanel(), { preventDefault: true });
@@ -772,7 +879,8 @@ export default function Workspaces() {
     const editableExtensions = ['.txt', '.md', '.markdown', '.rtf', '.doc', '.docx'];
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico'];
     const spreadsheetExtensions = ['.xlsx', '.xls', '.csv'];
-    return editableExtensions.includes(ext) || imageExtensions.includes(ext) || spreadsheetExtensions.includes(ext);
+    const pdfExtensions = ['.pdf'];
+    return editableExtensions.includes(ext) || imageExtensions.includes(ext) || spreadsheetExtensions.includes(ext) || pdfExtensions.includes(ext);
   };
 
 
@@ -1186,6 +1294,11 @@ export default function Workspaces() {
         setCurrentImageInfo(null);
       }
       
+      // Clear PDF context if closing a PDF tab
+      if (tabToClose && isPdfFile(tabToClose.fileName) && activeTab === tabId) {
+        setCurrentPdfInfo(null);
+      }
+      
       // If closing the active tab, switch to another tab
       if (activeTab === tabId && newTabs.length > 0) {
         setActiveTab(newTabs[newTabs.length - 1].id);
@@ -1324,6 +1437,24 @@ export default function Workspaces() {
         // Load document content but don't set UI state yet
         const content = await loadDocumentContent(fileName, filePath);
         fileContent = content;
+      }
+
+      // For PDF files, set PDF context (but don't load content as PDFs are read-only)
+      if (isPdfFile(fileName)) {
+        try {
+          // Get file size
+          const fs = await import('fs/promises');
+          const stats = await fs.stat(filePath);
+          
+          setCurrentPdfInfo({
+            fileName,
+            filePath,
+            fileType,
+            fileSize: stats.size
+          });
+        } catch (error) {
+          console.error('Error setting PDF context:', error);
+        }
       }
 
       // For image files, set image context
@@ -1762,7 +1893,7 @@ export default function Workspaces() {
               maxSize={800}
             >
               <Box sx={{ height: '100%', position: 'relative' }}>
-                <WorkspaceAssistantInterface documentActions={documentActions} imageActions={imageActions} />
+                <WorkspaceAssistantInterface documentActions={documentActions} imageActions={imageActions} pdfActions={pdfActions} />
                 {/* Right Panel Toggle Button (when panel is open) */}
                 <Box
                   sx={{
