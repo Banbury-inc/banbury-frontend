@@ -62,7 +62,7 @@ interface WorkspaceAssistantInterfaceProps {
 }
 
 // AI Assistant Chat Interface
-const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions, imageActions, pdfActions }) => {
+const WorkspaceAssistantInterface: React.FC<WorkspaceAssistantInterfaceProps> = ({ documentActions, imageActions, pdfActions: _pdfActions }) => {
   const [langGraphAgent, setLangGraphAgent] = useState<LangGraphAgent | null>(null);
   // UI message type that includes visual-only message types
   type UIMessage = {

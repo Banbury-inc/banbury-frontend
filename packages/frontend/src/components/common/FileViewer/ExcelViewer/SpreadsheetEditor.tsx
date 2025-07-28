@@ -6,8 +6,6 @@ import {
   IconButton,
   Button,
   Typography,
-  Menu,
-  MenuItem,
   TextField,
   Dialog,
   DialogTitle,
@@ -20,8 +18,6 @@ import {
 import {
   Save,
   GetApp,
-  Edit,
-  Visibility,
   Add,
   FormatBold,
   FormatItalic,
@@ -33,13 +29,8 @@ import {
   Functions,
   Undo,
   Redo,
-  ContentCopy,
-  ContentPaste,
-  ContentCut,
-  Delete,
   BorderAll,
   Palette,
-  MoreVert,
 } from '@mui/icons-material';
 import { shell } from 'electron';
 import fs from 'fs';
@@ -88,15 +79,13 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     active = false, 
     disabled = false, 
     children, 
-    tooltip,
-    color = 'default'
+    tooltip
   }: {
     onClick: () => void;
     active?: boolean;
     disabled?: boolean;
     children: React.ReactNode;
     tooltip: string;
-    color?: 'default' | 'primary' | 'secondary';
   }) => (
     <Tooltip title={tooltip}>
       <span>
@@ -137,7 +126,7 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   const [selectedRange, setSelectedRange] = useState<any>(null);
   const [clipboard, setClipboard] = useState<Matrix<CellBase> | null>(null);
   const [formulaBarValue, setFormulaBarValue] = useState<string>('');
-  const [isFormulaBarFocused, setIsFormulaBarFocused] = useState<boolean>(false);
+  const [_isFormulaBarFocused, _setIsFormulaBarFocused] = useState<boolean>(false);
   const [history, setHistory] = useState<Matrix<CellBase>[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   
@@ -147,13 +136,13 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   const [newSheetName, setNewSheetName] = useState<string>('');
   
   // Menu states
-  const [formatMenuAnchor, setFormatMenuAnchor] = useState<null | HTMLElement>(null);
-  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
+  const [_formatMenuAnchor, _setFormatMenuAnchor] = useState<null | HTMLElement>(null);
+  const [_moreMenuAnchor, _setMoreMenuAnchor] = useState<null | HTMLElement>(null);
 
   // Convert XLSX data to react-spreadsheet format
   const convertToSpreadsheetData = useCallback((xlsxData: any[][]): Matrix<CellData> => {
-    return xlsxData.map((row, rowIndex) =>
-      row.map((cell, colIndex) => ({
+    return xlsxData.map((row, _rowIndex) =>
+      row.map((cell, _colIndex) => ({
         value: cell || '',
         formula: cell && typeof cell === 'string' && cell.startsWith('=') ? cell : undefined,
         style: {
@@ -296,7 +285,7 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     }
   }, [sheets, activeSheet, history, historyIndex]);
 
-  const handleCopy = useCallback(() => {
+  const _handleCopy = useCallback(() => {
     if (selectedRange) {
       // In a real implementation, you'd extract the selected cells
       // For now, we'll use a placeholder
@@ -304,11 +293,10 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     }
   }, [selectedRange, sheets, activeSheet]);
 
-  const handlePaste = useCallback(() => {
+  const _handlePaste = useCallback(() => {
     if (clipboard) {
       // In a real implementation, you'd paste the clipboard data at the selected position
       // For now, this is a placeholder
-      console.log('Paste operation would happen here');
     }
   }, [clipboard]);
 
@@ -565,8 +553,8 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
           variant="outlined"
           value={formulaBarValue}
           onChange={(e) => setFormulaBarValue(e.target.value)}
-          onFocus={() => setIsFormulaBarFocused(true)}
-          onBlur={() => setIsFormulaBarFocused(false)}
+          onFocus={() => _setIsFormulaBarFocused(true)}
+          onBlur={() => _setIsFormulaBarFocused(false)}
           placeholder="Enter formula or value"
           sx={{ 
             '& .MuiOutlinedInput-root': { 

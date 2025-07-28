@@ -4,7 +4,6 @@ import {
   Typography,
   LinearProgress,
   Card,
-  CardContent
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { Allotment, LayoutPriority } from 'allotment';
@@ -16,7 +15,6 @@ import FileTreeView from '../Files/components/NewTreeView/FileTreeView';
 import FilesToolbar from '../Files/components/FilesToolbar/FilesToolbar';
 import { ViewType as FileViewType } from '../Files/components/FilesToolbar/ChangeViewButton/ChangeViewButton';
 import { AvailableTableColumns } from '@banbury/core/src/types';
-
 import WorkspaceAssistantInterface from './components/WorkspaceAssistantInterface';
 import { ToolbarButton } from '../../common/ToolbarButton/ToolbarButton';
 import SimpleTipTapEditor from './components/SimpleTipTapEditor';
@@ -332,13 +330,6 @@ const MainContent = ({
             onError={() => {
               console.error('Error loading Excel file:', currentFile.fileName);
             }}
-            onLoad={() => {
-              console.log('Excel file loaded successfully:', currentFile.fileName);
-            }}
-            onSave={(filePath: string) => {
-              console.log('Excel file saved:', filePath);
-              // Optionally refresh the file tree here
-            }}
           />
         </Box>
       </Box>
@@ -393,7 +384,7 @@ const MainContent = ({
               console.error('Error loading PDF file:', currentFile.fileName);
             }}
             onLoad={() => {
-              console.log('PDF file loaded successfully:', currentFile.fileName);
+              // PDF file loaded successfully
             }}
           />
         </Box>
@@ -481,10 +472,9 @@ export default function Workspaces() {
     date_uploaded: true,
     date_modified: false,
   });
-  const [selected, setSelected] = useState<readonly (string | number)[]>([]);
   const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
-  const [selectedDeviceNames, setSelectedDeviceNames] = useState<string[]>([]);
-  const [selectedFileInfo, setSelectedFileInfo] = useState<any[]>([]);
+  const [selectedDeviceNames] = useState<string[]>([]);
+  const [_selectedFileInfo] = useState<any[]>([]);
   const [_backHistory, setBackHistory] = useState<string[]>([]);
   const [_forwardHistory, setForwardHistory] = useState<string[]>([]);
   const [filePath, setFilePath] = useState<string>('');
@@ -589,9 +579,7 @@ export default function Workspaces() {
   };
 
   const handleFinish = () => {
-    setSelected([]);
     setSelectedFileNames([]);
-    // Note: updates is not available in workspaces, so we'll skip that
   };
 
   // Document AI Integration Functions
@@ -1739,10 +1727,10 @@ export default function Workspaces() {
           setFilePath={setFilePath}
           setTaskbox_expanded={setTaskbox_expanded}
           selectedFileNames={selectedFileNames}
-          selectedFileInfo={selectedFileInfo}
+          selectedFileInfo={_selectedFileInfo}
           selectedDeviceNames={selectedDeviceNames}
           setSelectedFileNames={setSelectedFileNames}
-          setSelected={setSelected}
+          setSelected={() => {}}
           tasks={tasks}
           setTasks={setTasks}
           websocket={websocket as WebSocket}
