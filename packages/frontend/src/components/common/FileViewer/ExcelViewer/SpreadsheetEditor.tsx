@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box,
   CircularProgress,
@@ -52,20 +52,6 @@ interface SheetData {
   data: Matrix<CellBase>;
 }
 
-interface CellData extends CellBase {
-  value: any;
-  formula?: string;
-  style?: {
-    fontWeight?: 'bold' | 'normal';
-    fontStyle?: 'italic' | 'normal';
-    textDecoration?: 'underline' | 'none';
-    textAlign?: 'left' | 'center' | 'right';
-    backgroundColor?: string;
-    color?: string;
-    border?: string;
-  };
-}
-
 const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   src,
   fileName,
@@ -114,62 +100,100 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       </span>
     </Tooltip>
   );
+
   const [sheets, setSheets] = useState<SheetData[]>([]);
   const [activeSheet, setActiveSheet] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [hasChanges, setHasChanges] = useState<boolean>(false);
-  const [originalSheets, setOriginalSheets] = useState<SheetData[]>([]);
   
-  // Advanced features state
+  // Simplified state management following react-spreadsheet patterns
   const [selectedRange, setSelectedRange] = useState<any>(null);
-  const [clipboard, setClipboard] = useState<Matrix<CellBase> | null>(null);
   const [formulaBarValue, setFormulaBarValue] = useState<string>('');
-  const [_isFormulaBarFocused, _setIsFormulaBarFocused] = useState<boolean>(false);
-  const [history, setHistory] = useState<Matrix<CellBase>[]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number>(-1);
   
   // Dialog states
   const [chartDialogOpen, setChartDialogOpen] = useState<boolean>(false);
   const [newSheetDialogOpen, setNewSheetDialogOpen] = useState<boolean>(false);
   const [newSheetName, setNewSheetName] = useState<string>('');
   
-  // Menu states
-  const [_formatMenuAnchor, _setFormatMenuAnchor] = useState<null | HTMLElement>(null);
-  const [_moreMenuAnchor, _setMoreMenuAnchor] = useState<null | HTMLElement>(null);
+  // Performance optimization - track original data for change detection
+  const originalDataRef = useRef<Matrix<CellBase>[]>([]);
+  const changeTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Convert XLSX data to react-spreadsheet format
-  const convertToSpreadsheetData = useCallback((xlsxData: any[][]): Matrix<CellData> => {
-    return xlsxData.map((row, _rowIndex) =>
-      row.map((cell, _colIndex) => ({
-        value: cell || '',
-        formula: cell && typeof cell === 'string' && cell.startsWith('=') ? cell : undefined,
-        style: {
-          fontWeight: 'normal',
-          fontStyle: 'normal',
-          textDecoration: 'none',
-          textAlign: 'left',
-          backgroundColor: '#ffffff',
-          color: '#000000'
-        }
-      }))
+  // Convert XLSX data to proper react-spreadsheet CellBase format
+  const convertToSpreadsheetData = useCallback((xlsxData: any[][]): Matrix<CellBase> => {
+    return xlsxData.map((row) =>
+      row.map((cellValue) => {
+        // Follow the CellBase interface exactly as specified in the API
+        const cell: CellBase = {
+          value: cellValue ?? ''
+        };
+        return cell;
+      })
     );
   }, []);
 
   // Convert react-spreadsheet data back to XLSX format
   const convertFromSpreadsheetData = useCallback((spreadsheetData: Matrix<CellBase>): any[][] => {
     return spreadsheetData.map(row =>
-      row.map(cell => {
-        if (cell && typeof cell === 'object') {
-          const cellData = cell as CellData;
-          return cellData.formula || cellData.value || '';
-        }
-        return cell || '';
-      })
+      row.map(cell => cell?.value ?? '')
     );
   }, []);
 
+  // Optimized change detection using shallow comparison
+  const checkForChanges = useCallback(() => {
+    if (changeTimeoutRef.current) {
+      clearTimeout(changeTimeoutRef.current);
+    }
+
+    changeTimeoutRef.current = setTimeout(() => {
+      if (!sheets[activeSheet] || !originalDataRef.current[activeSheet]) {
+        setHasChanges(false);
+        return;
+      }
+
+      const currentData = sheets[activeSheet].data;
+      const originalData = originalDataRef.current[activeSheet];
+
+      // Quick reference check first
+      if (currentData === originalData) {
+        setHasChanges(false);
+        return;
+      }
+
+      // Efficient shallow comparison
+      let hasChanges = false;
+      
+      if (currentData.length !== originalData.length) {
+        hasChanges = true;
+      } else {
+        for (let rowIndex = 0; rowIndex < currentData.length && !hasChanges; rowIndex++) {
+          const currentRow = currentData[rowIndex];
+          const originalRow = originalData[rowIndex];
+          
+          if (!currentRow || !originalRow || currentRow.length !== originalRow.length) {
+            hasChanges = true;
+            break;
+          }
+          
+          for (let colIndex = 0; colIndex < currentRow.length; colIndex++) {
+            const currentCell = currentRow[colIndex];
+            const originalCell = originalRow[colIndex];
+            
+            if (currentCell?.value !== originalCell?.value) {
+              hasChanges = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      setHasChanges(hasChanges);
+    }, 50); // Reduced debounce time for better responsiveness
+  }, [sheets, activeSheet]);
+
+  // Load Excel/CSV file
   useEffect(() => {
     const loadExcelFile = async () => {
       try {
@@ -229,7 +253,14 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         }
         
         setSheets(sheetsData);
-        setOriginalSheets(JSON.parse(JSON.stringify(sheetsData)));
+        
+        // Store original data for change detection
+        originalDataRef.current = sheetsData.map(sheet => 
+          sheet.data.map(row => 
+            row.map(cell => cell ? { ...cell } as CellBase : undefined)
+          )
+        );
+        
         setLoading(false);
         onLoad?.();
         
@@ -244,61 +275,42 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     loadExcelFile();
   }, [src, onError, onLoad, convertToSpreadsheetData]);
 
-  // Add to history for undo/redo
-  const addToHistory = useCallback((data: Matrix<CellBase>) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push(JSON.parse(JSON.stringify(data)));
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [history, historyIndex]);
-
-  // Handle spreadsheet data change
+  // Optimized data change handler - follows react-spreadsheet patterns
   const handleDataChange = useCallback((data: Matrix<CellBase>) => {
-    const newSheets = [...sheets];
-    newSheets[activeSheet].data = data;
-    setSheets(newSheets);
+    setSheets(prevSheets => {
+      const newSheets = [...prevSheets];
+      newSheets[activeSheet] = {
+        ...newSheets[activeSheet],
+        data: data
+      };
+      return newSheets;
+    });
     
-    // Check if there are changes
-    const hasChanges = JSON.stringify(newSheets) !== JSON.stringify(originalSheets);
-    setHasChanges(hasChanges);
+    // Trigger change detection
+    checkForChanges();
+  }, [activeSheet, checkForChanges]);
+
+  // Selection handler - follows react-spreadsheet API
+  const handleSelectionChange = useCallback((selection: any) => {
+    setSelectedRange(selection);
     
-    // Add to history
-    addToHistory(data);
-  }, [sheets, activeSheet, originalSheets, addToHistory]);
-
-  // Keyboard shortcuts and actions
-  const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      const newSheets = [...sheets];
-      newSheets[activeSheet].data = history[historyIndex - 1];
-      setSheets(newSheets);
-      setHistoryIndex(historyIndex - 1);
+    // Update formula bar based on selection
+    if (selection && sheets[activeSheet]) {
+      // For single cell selection, show the cell value
+      try {
+        const cell = sheets[activeSheet].data[selection.start?.row]?.[selection.start?.column];
+        if (cell) {
+          setFormulaBarValue(String(cell.value || ''));
+        } else {
+          setFormulaBarValue('');
+        }
+      } catch {
+        setFormulaBarValue('');
+      }
+    } else {
+      setFormulaBarValue('');
     }
-  }, [sheets, activeSheet, history, historyIndex]);
-
-  const handleRedo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const newSheets = [...sheets];
-      newSheets[activeSheet].data = history[historyIndex + 1];
-      setSheets(newSheets);
-      setHistoryIndex(historyIndex + 1);
-    }
-  }, [sheets, activeSheet, history, historyIndex]);
-
-  const _handleCopy = useCallback(() => {
-    if (selectedRange) {
-      // In a real implementation, you'd extract the selected cells
-      // For now, we'll use a placeholder
-      setClipboard(sheets[activeSheet].data);
-    }
-  }, [selectedRange, sheets, activeSheet]);
-
-  const _handlePaste = useCallback(() => {
-    if (clipboard) {
-      // In a real implementation, you'd paste the clipboard data at the selected position
-      // For now, this is a placeholder
-    }
-  }, [clipboard]);
+  }, [sheets, activeSheet]);
 
   const handleOpenWithSystemApp = () => {
     let filePath = src;
@@ -339,7 +351,13 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         XLSX.writeFile(workbook, filePath);
       }
       
-      setOriginalSheets(JSON.parse(JSON.stringify(sheets)));
+      // Update original data reference
+      originalDataRef.current = sheets.map(sheet => 
+        sheet.data.map(row => 
+          row.map(cell => cell ? { ...cell } as CellBase : undefined)
+        )
+      );
+      
       setHasChanges(false);
       onSave?.(filePath);
       
@@ -366,9 +384,19 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     setNewSheetName('');
   };
 
+  // Memoize current sheet data to prevent unnecessary re-renders
   const currentSheetData = useMemo(() => {
     return sheets[activeSheet]?.data || [];
   }, [sheets, activeSheet]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (changeTimeoutRef.current) {
+        clearTimeout(changeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (error) {
     return (
@@ -430,20 +458,6 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
             tooltip="Save"
           >
             <Save fontSize="inherit" />
-          </CustomToolbarButton>
-          <CustomToolbarButton
-            onClick={handleUndo}
-            disabled={historyIndex <= 0}
-            tooltip="Undo"
-          >
-            <Undo fontSize="inherit" />
-          </CustomToolbarButton>
-          <CustomToolbarButton
-            onClick={handleRedo}
-            disabled={historyIndex >= history.length - 1}
-            tooltip="Redo"
-          >
-            <Redo fontSize="inherit" />
           </CustomToolbarButton>
           <CustomToolbarButton
             onClick={() => {/* TODO: Implement bold formatting */}}
@@ -552,8 +566,6 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
           variant="outlined"
           value={formulaBarValue}
           onChange={(e) => setFormulaBarValue(e.target.value)}
-          onFocus={() => _setIsFormulaBarFocused(true)}
-          onBlur={() => _setIsFormulaBarFocused(false)}
           placeholder="Enter formula or value"
           sx={{ 
             '& .MuiOutlinedInput-root': { 
@@ -639,35 +651,21 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         '& .Spreadsheet': {
           fontFamily: 'Arial, sans-serif',
           fontSize: '14px',
-          minWidth: 'max-content',
-          width: 'auto',
         },
         '& .Spreadsheet__table': {
           borderCollapse: 'collapse',
-          tableLayout: 'auto',
-          minWidth: 'max-content',
         },
         '& .Spreadsheet__cell': {
           border: '1px solid #ddd',
           padding: '4px 8px',
           minWidth: '100px',
-          width: '100px',
-          maxWidth: 'none',
           minHeight: '24px',
           backgroundColor: '#fff',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
         },
         '& .Spreadsheet__cell--selected': {
           backgroundColor: '#e3f2fd',
           outline: '2px solid #1976d2',
           outlineOffset: '-1px',
-        },
-        '& .Spreadsheet__cell--editing': {
-          backgroundColor: '#fff',
-          whiteSpace: 'normal',
-          overflow: 'visible',
         },
         '& .Spreadsheet__header': {
           backgroundColor: '#f5f5f5',
@@ -676,25 +674,6 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
           fontWeight: 'bold',
           textAlign: 'center',
           minWidth: '100px',
-          width: '100px',
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-        },
-        '& .Spreadsheet__header--row': {
-          backgroundColor: '#f5f5f5',
-          border: '1px solid #ddd',
-          padding: '4px 8px',
-          fontWeight: 'bold',
-          textAlign: 'center',
-          minWidth: '40px',
-          width: '40px',
-          position: 'sticky',
-          left: 0,
-          zIndex: 2,
-        },
-        '& .Spreadsheet__header--row.Spreadsheet__header--column': {
-          zIndex: 3,
         },
       }}>
         {loading && (
@@ -715,21 +694,13 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         )}
         
         {!loading && sheets[activeSheet] && (
-          <Box sx={{ 
-            minWidth: 'max-content',
-            minHeight: 'max-content',
-            position: 'relative'
-          }}>
-            <Spreadsheet
-              data={currentSheetData}
-              onChange={handleDataChange}
-              onSelect={setSelectedRange}
-              columnLabels={['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ']}
-              rowLabels={Array.from({ length: 200 }, (_, i) => String(i + 1))}
-              hideColumnIndicators={false}
-              hideRowIndicators={false}
-            />
-          </Box>
+          <Spreadsheet
+            data={currentSheetData}
+            onChange={handleDataChange}
+            onSelect={handleSelectionChange}
+            hideColumnIndicators={false}
+            hideRowIndicators={false}
+          />
         )}
       </Box>
 
