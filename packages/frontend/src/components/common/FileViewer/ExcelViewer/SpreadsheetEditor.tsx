@@ -427,7 +427,6 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
           <CustomToolbarButton
             onClick={handleSave}
             disabled={!hasChanges || saving}
-            active={hasChanges}
             tooltip="Save"
           >
             <Save fontSize="inherit" />
