@@ -92,6 +92,9 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   onLoad,
   onSave
 }) => {
+  console.log('=== SpreadsheetEditor component rendered ===');
+  console.log('Props:', { src, fileName });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -100,6 +103,10 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
 
   // Load spreadsheet data from file
   const loadSpreadsheetData = async () => {
+    console.log('=== Starting loadSpreadsheetData ===');
+    console.log('Raw src:', src);
+    console.log('FileName:', fileName);
+    
     try {
       let filePath = src;
       
@@ -110,11 +117,12 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       // Normalize the path for cross-platform compatibility
       filePath = path.normalize(filePath);
 
-      console.log('Loading spreadsheet file:', filePath);
+      console.log('Normalized file path:', filePath);
       
       // Check if file exists first
       try {
         await fs.access(filePath);
+        console.log('File access successful');
       } catch (accessError) {
         console.error('File access error:', accessError);
         throw new Error(`Cannot access file: ${filePath}`);
@@ -124,10 +132,14 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       let workbookData: any;
 
       if (isCSV) {
+        console.log('Reading CSV file...');
         const fileContent = await fs.readFile(filePath, 'utf8');
+        console.log('CSV file content length:', fileContent.length);
         const xlsxWorkbook = XLSX.read(fileContent, { type: 'string' });
+        console.log('XLSX workbook created, sheet names:', xlsxWorkbook.SheetNames);
         const worksheet = xlsxWorkbook.Sheets[xlsxWorkbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        console.log('JSON data extracted, rows:', jsonData.length);
         
         workbookData = {
           id: 'workbook',
@@ -164,8 +176,11 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
           }
         };
       } else {
+        console.log('Reading Excel file...');
         const fileBuffer = await fs.readFile(filePath);
+        console.log('Excel file buffer length:', fileBuffer.length);
         const xlsxWorkbook = XLSX.read(fileBuffer, { type: 'buffer' });
+        console.log('Excel workbook created, sheet names:', xlsxWorkbook.SheetNames);
         
         const sheets: any = {};
         const sheetOrder: string[] = [];
@@ -214,6 +229,11 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       }
 
       console.log('Successfully loaded spreadsheet data for:', fileName);
+      console.log('Workbook structure:', {
+        id: workbookData.id,
+        sheetCount: workbookData.sheetOrder?.length || 0,
+        sheetNames: workbookData.sheetOrder
+      });
       return workbookData;
     } catch (error) {
       console.error('Error loading spreadsheet data:', error);
@@ -291,11 +311,20 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     setErrorMessage('');
 
     const initUniver = async () => {
-      if (!containerRef.current) return;
+      console.log('=== Starting initUniver ===');
+      console.log('Container ref available:', !!containerRef.current);
+      
+      if (!containerRef.current) {
+        console.log('No container ref, exiting');
+        return;
+      }
 
       try {
+        console.log('Loading spreadsheet data...');
         const workbookData = await loadSpreadsheetData();
+        console.log('Workbook data loaded:', workbookData);
         
+        console.log('Creating Univer instance...');
         const univer = new Univer({
           theme: defaultTheme,
           locale: LocaleType.EN_US,
@@ -303,24 +332,33 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
             [LocaleType.EN_US]: enUS,
           },
         });
+        console.log('Univer instance created');
 
         // Critical: Register plugins in the EXACT order required for editing
+        console.log('Registering plugins...');
+        
         // 1. Core rendering engine
+        console.log('Registering UniverRenderEnginePlugin...');
         univer.registerPlugin(UniverRenderEnginePlugin);
         
         // 2. Formula engine (required for cell editing)
+        console.log('Registering UniverFormulaEnginePlugin...');
         univer.registerPlugin(UniverFormulaEnginePlugin);
         
         // 3. Docs plugin (provides the text editing capabilities)
+        console.log('Registering UniverDocsPlugin...');
         univer.registerPlugin(UniverDocsPlugin);
         
         // 4. Sheets plugin (core spreadsheet functionality)
+        console.log('Registering UniverSheetsPlugin...');
         univer.registerPlugin(UniverSheetsPlugin);
         
         // 5. Sheets formula plugin (enables formula editing)
+        console.log('Registering UniverSheetsFormulaPlugin...');
         univer.registerPlugin(UniverSheetsFormulaPlugin);
         
         // 6. UI plugin (provides the interface)
+        console.log('Registering UniverUIPlugin...');
         univer.registerPlugin(UniverUIPlugin, {
           container: containerRef.current,
           header: true,
@@ -330,19 +368,25 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         });
         
         // 7. Docs UI plugin (provides text editing UI)
+        console.log('Registering UniverDocsUIPlugin...');
         univer.registerPlugin(UniverDocsUIPlugin);
         
         // 8. Sheets UI plugin (provides spreadsheet-specific UI including cell editing)
+        console.log('Registering UniverSheetsUIPlugin...');
         univer.registerPlugin(UniverSheetsUIPlugin);
 
         // Create the workbook instance
+        console.log('Creating workbook unit...');
         univer.createUnit(UniverInstanceType.UNIVER_SHEET, workbookData);
+        console.log('Workbook unit created successfully');
         
         univerRef.current = univer;
         setLoading(false);
+        console.log('=== Univer initialization complete ===');
         onLoad?.();
       } catch (error) {
         console.error('Error initializing Univer:', error);
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         setError(true);
         setErrorMessage(error instanceof Error ? error.message : 'Failed to initialize spreadsheet editor');
         setLoading(false);
@@ -350,11 +394,24 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       }
     };
 
-    initUniver();
+    // Add a timeout to detect hanging
+    const timeoutId = setTimeout(() => {
+      console.error('Univer initialization is taking too long (>10 seconds)');
+      setError(true);
+      setErrorMessage('Spreadsheet loading timed out. The file may be too large or corrupted.');
+      setLoading(false);
+      onError?.();
+    }, 10000);
+
+    initUniver().finally(() => {
+      clearTimeout(timeoutId);
+    });
 
     // Cleanup
     return () => {
+      clearTimeout(timeoutId);
       if (univerRef.current) {
+        console.log('Cleaning up Univer instance');
         univerRef.current.dispose();
         univerRef.current = null;
       }
