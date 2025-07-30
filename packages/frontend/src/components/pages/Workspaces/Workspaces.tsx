@@ -222,7 +222,6 @@ const MainContent = ({
   setDocumentEditor,
   onRenameFile,
   spreadsheetEditorRef,
-  documentEditorRef
 }: { 
   currentFile: { fileName: string; filePath: string; content?: string; fileType: string } | null;
   onDocumentChange: (content: string) => void;

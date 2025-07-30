@@ -4,13 +4,9 @@ import {
   CircularProgress,
   Typography
 } from '@mui/material';
-import { shell } from 'electron';
 import fs from 'fs';
 import * as XLSX from 'xlsx';
 import { fileURLToPath } from 'url';
-import { Text } from '../../Text/Text';
-import { ToolbarButton } from '../../ToolbarButton/ToolbarButton';
-import { GetApp, Save } from '@mui/icons-material';
 
 // Univer imports
 import { Univer, UniverInstanceType, LocaleType, IUniverInstanceService } from '@univerjs/core';
@@ -105,13 +101,11 @@ const SpreadsheetEditor = forwardRef<{ save: () => Promise<void> }, SpreadsheetE
   onError,
   onLoad,
   onSave,
-  onSaveRequest,
 }, ref) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const univerRef = useRef<Univer | null>(null);
-  const saveRef = useRef<() => Promise<void>>();
 
   // Load spreadsheet data from file
   const loadSpreadsheetData = async () => {
@@ -523,13 +517,7 @@ const SpreadsheetEditor = forwardRef<{ save: () => Promise<void> }, SpreadsheetE
     }
   };
 
-  const handleOpenWithSystemApp = () => {
-    let filePath = src;
-    if (filePath.startsWith('file://')) {
-      filePath = fileURLToPath(filePath);
-    }
-    shell.openPath(filePath);
-  };
+
 
   return (
     <Box
