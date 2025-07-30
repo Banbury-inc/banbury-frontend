@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   Box,
   CircularProgress,
@@ -100,6 +100,15 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
   const univerRef = useRef<Univer | null>(null);
+  
+  // Monitor when container ref becomes available
+  useEffect(() => {
+    console.log('=== Container ref monitor effect ===');
+    console.log('Container ref available:', !!containerRef.current);
+    if (containerRef.current) {
+      console.log('Container ref is now available in monitor effect');
+    }
+  });
 
   // Load spreadsheet data from file
   const loadSpreadsheetData = async () => {
@@ -304,20 +313,53 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   };
 
   // Initialize Univer with correct plugin order for editing
-  useEffect(() => {
+  useLayoutEffect(() => {
+    console.log('=== useLayoutEffect triggered ===');
+    console.log('src:', src);
+    console.log('fileName:', fileName);
+    console.log('Container ref available in useLayoutEffect:', !!containerRef.current);
+    
+    if (!src || !fileName) {
+      console.log('Missing src or fileName, skipping initialization');
+      return;
+    }
+    
     // Reset state when src changes
     setLoading(true);
     setError(false);
     setErrorMessage('');
 
-    const initUniver = async () => {
-      console.log('=== Starting initUniver ===');
-      console.log('Container ref available:', !!containerRef.current);
+    // Initialize immediately since useLayoutEffect runs after DOM is laid out
+    const initializeUniver = async () => {
+      console.log('=== Starting Univer initialization ===');
       
       if (!containerRef.current) {
-        console.log('No container ref, exiting');
-        return;
+        console.warn('Container ref not available in useLayoutEffect, trying fallback...');
+        
+        // Fallback: try to find the container by ID
+        const fallbackContainer = document.getElementById('univerjs-container');
+        if (fallbackContainer) {
+          console.log('Found container using fallback method');
+          // Force the ref to point to the found element
+          (containerRef as any).current = fallbackContainer;
+        } else {
+          console.error('Container ref not available and fallback failed');
+          setError(true);
+          setErrorMessage('Failed to initialize spreadsheet container - DOM element not found');
+          setLoading(false);
+          onError?.();
+          return;
+        }
       }
+
+      const container = containerRef.current!; // We know it's not null due to the check above
+      console.log('Container element found:', container);
+      console.log('Container dimensions:', {
+        width: container.offsetWidth,
+        height: container.offsetHeight,
+        clientWidth: container.clientWidth,
+        clientHeight: container.clientHeight
+      });
 
       try {
         console.log('Loading spreadsheet data...');
@@ -360,7 +402,7 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         // 6. UI plugin (provides the interface)
         console.log('Registering UniverUIPlugin...');
         univer.registerPlugin(UniverUIPlugin, {
-          container: containerRef.current,
+          container: container,
           header: true,
           toolbar: true,
           footer: true,
@@ -403,7 +445,7 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       onError?.();
     }, 10000);
 
-    initUniver().finally(() => {
+    initializeUniver().finally(() => {
       clearTimeout(timeoutId);
     });
 
@@ -470,16 +512,58 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     );
   }
 
+  console.log('=== Rendering SpreadsheetEditor ===');
+  console.log('Loading:', loading, 'Error:', error, 'ErrorMessage:', errorMessage);
+  
+  // Check if we're actually in the DOM
+  useEffect(() => {
+    console.log('=== DOM Check Effect ===');
+    console.log('Document body:', !!document.body);
+    console.log('Container element exists in DOM:', !!document.getElementById('univerjs-container'));
+    
+    const observer = new MutationObserver(() => {
+      const element = document.getElementById('univerjs-container');
+      if (element) {
+        console.log('univerjs-container found in DOM!', element);
+        console.log('Element dimensions:', {
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+          parent: element.parentElement?.tagName
+        });
+      }
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Box
       sx={{
         height: '100%',
         width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+        minHeight: '400px',
+        display: 'block', // Simplified layout
+        position: 'relative',
+        backgroundColor: '#f0f0f0', // Debug background
       }}
     >
+      {/* Add a debug div to check if parent is rendering */}
+      <div style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        background: 'red', 
+        color: 'white', 
+        padding: '4px', 
+        fontSize: '10px',
+        zIndex: 9999,
+        pointerEvents: 'none'
+      }}>
+        SpreadsheetEditor Debug - L:{loading ? 'Y' : 'N'} E:{error ? 'Y' : 'N'}
+      </div>
+      
       <div
         ref={containerRef}
         id="univerjs-container"
@@ -488,6 +572,8 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
           width: '100%',
           minHeight: '400px',
           backgroundColor: '#ffffff',
+          border: '2px solid blue', // Debug border
+          boxSizing: 'border-box',
         }}
       />
     </Box>
