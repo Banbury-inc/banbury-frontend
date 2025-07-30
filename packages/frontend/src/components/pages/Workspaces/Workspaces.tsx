@@ -240,7 +240,8 @@ const MainContent = ({
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* File Header */}
         <Box sx={{ 
-          p: 2, 
+          pl: 1, 
+          pr: 1, 
           borderBottom: 1, 
           borderColor: 'divider',
           backgroundColor: 'background.paper',
@@ -291,7 +292,8 @@ const MainContent = ({
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* File Header */}
         <Box sx={{ 
-          p: 2, 
+          pl: 1, 
+          pr: 1, 
           borderBottom: 1, 
           borderColor: 'divider',
           backgroundColor: 'background.paper',
@@ -312,8 +314,8 @@ const MainContent = ({
           <ToolbarButton
             onClick={onCloseFile}
             sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
+              paddingLeft: '2px', 
+              paddingRight: '2px', 
               minWidth: '30px',
               '&:hover': {
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -345,7 +347,8 @@ const MainContent = ({
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* File Header */}
         <Box sx={{ 
-          p: 2, 
+          pl: 1, 
+          pr: 1, 
           borderBottom: 1, 
           borderColor: 'divider',
           backgroundColor: 'background.paper',
@@ -400,7 +403,8 @@ const MainContent = ({
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Document Header */}
       <Box sx={{ 
-        p: 1, 
+        pl: 1, 
+        pr: 1, 
         borderBottom: 1, 
         borderColor: 'divider',
         backgroundColor: 'background.paper',
