@@ -6,6 +6,7 @@ import {
   Card,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
 import { Allotment, LayoutPriority } from 'allotment';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -216,17 +217,22 @@ const MainContent = ({
   onDocumentChange,
   onCloseFile,
   onSaveDocument,
+  onSaveSpreadsheet,
   getCurrentContent,
   setDocumentEditor,
-  onRenameFile
+  onRenameFile,
+  spreadsheetEditorRef,
 }: { 
   currentFile: { fileName: string; filePath: string; content?: string; fileType: string } | null;
   onDocumentChange: (content: string) => void;
   onCloseFile: () => void;
   onSaveDocument: (document: { fileName: string; filePath: string; content: string }) => void;
+  onSaveSpreadsheet: (filePath: string) => void;
   getCurrentContent: () => string;
   setDocumentEditor: (editor: any) => void;
   onRenameFile?: (oldFileName: string, newFileName: string) => void;
+  spreadsheetEditorRef: React.RefObject<{ save: () => Promise<void> }>;
+  documentEditorRef: React.RefObject<any>;
 }) => {
   if (!currentFile) {
     return <WelcomeScreen />;
@@ -238,7 +244,8 @@ const MainContent = ({
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* File Header */}
         <Box sx={{ 
-          p: 2, 
+          pl: 1, 
+          pr: 1, 
           borderBottom: 1, 
           borderColor: 'divider',
           backgroundColor: 'background.paper',
@@ -256,19 +263,21 @@ const MainContent = ({
               }
             }}
           />
-          <ToolbarButton
-            onClick={onCloseFile}
-            sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <CloseIcon fontSize="inherit" />
-          </ToolbarButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ToolbarButton
+              onClick={onCloseFile}
+              sx={{
+                paddingLeft: '4px', 
+                paddingRight: '4px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <CloseIcon fontSize="inherit" />
+            </ToolbarButton>
+          </Box>
         </Box>
         
         {/* Image Viewer */}
@@ -289,7 +298,8 @@ const MainContent = ({
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* File Header */}
         <Box sx={{ 
-          p: 2, 
+          pl: 1, 
+          pr: 1, 
           borderBottom: 1, 
           borderColor: 'divider',
           backgroundColor: 'background.paper',
@@ -307,29 +317,46 @@ const MainContent = ({
               }
             }}
           />
-          <ToolbarButton
-            onClick={onCloseFile}
-            sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <CloseIcon fontSize="inherit" />
-          </ToolbarButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ToolbarButton
+              onClick={() => spreadsheetEditorRef.current?.save()}
+              sx={{
+                paddingLeft: '2px', 
+                paddingRight: '2px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <SaveIcon fontSize="inherit" />
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={onCloseFile}
+              sx={{
+                paddingLeft: '2px', 
+                paddingRight: '2px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <CloseIcon fontSize="inherit" />
+            </ToolbarButton>
+          </Box>
         </Box>
         
         {/* Spreadsheet Editor */}
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <SpreadsheetEditor
+            ref={spreadsheetEditorRef}
             src={currentFile.filePath}
             fileName={currentFile.fileName}
             onError={() => {
               console.error('Error loading Excel file:', currentFile.fileName);
             }}
+            onSave={onSaveSpreadsheet}
           />
         </Box>
       </Box>
@@ -342,7 +369,8 @@ const MainContent = ({
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* File Header */}
         <Box sx={{ 
-          p: 2, 
+          pl: 1, 
+          pr: 1, 
           borderBottom: 1, 
           borderColor: 'divider',
           backgroundColor: 'background.paper',
@@ -360,19 +388,21 @@ const MainContent = ({
               }
             }}
           />
-          <ToolbarButton
-            onClick={onCloseFile}
-            sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <CloseIcon fontSize="inherit" />
-          </ToolbarButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ToolbarButton
+              onClick={onCloseFile}
+              sx={{
+                paddingLeft: '4px', 
+                paddingRight: '4px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <CloseIcon fontSize="inherit" />
+            </ToolbarButton>
+          </Box>
         </Box>
         
         {/* PDF Viewer */}
@@ -397,7 +427,8 @@ const MainContent = ({
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Document Header */}
       <Box sx={{ 
-        p: 1, 
+        pl: 1, 
+        pr: 1, 
         borderBottom: 1, 
         borderColor: 'divider',
         backgroundColor: 'background.paper',
@@ -415,19 +446,39 @@ const MainContent = ({
               }
             }}
           />
-        <ToolbarButton
-          onClick={onCloseFile}
-          sx={{
-            paddingLeft: '4px', 
-            paddingRight: '4px', 
-            minWidth: '30px',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            }
-          }}
-        >
-          <CloseIcon fontSize="inherit" />
-        </ToolbarButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ToolbarButton
+            onClick={() => {
+              const currentContent = getCurrentContent();
+              onSaveDocument({
+                ...currentFile,
+                content: currentContent
+              });
+            }}
+            startIcon={<SaveIcon />}
+            size="small"
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            Save
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={onCloseFile}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
+        </Box>
       </Box>
       
       {/* TipTap Editor */}
@@ -436,13 +487,6 @@ const MainContent = ({
           content={currentFile.content || ''}
           onChange={onDocumentChange}
           _placeholder={`Start editing ${currentFile.fileName}...`}
-          onSave={() => {
-            const currentContent = getCurrentContent();
-            onSaveDocument({
-              ...currentFile,
-              content: currentContent
-            });
-          }}
           onEditorReady={(editor) => {
             setDocumentEditor(editor);
           }}
@@ -530,6 +574,10 @@ export default function Workspaces() {
   const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
 
   const [cloudEnabled] = useState(true); // Cloud is always enabled
+
+  // Refs for editor components
+  const spreadsheetEditorRef = useRef<{ save: () => Promise<void> }>(null);
+  const documentEditorRef = useRef<any>(null);
 
   // Toolbar handler functions
   const handleShareModalOpen = () => {
@@ -899,6 +947,86 @@ export default function Workspaces() {
 
     return text || '';
   };
+
+  // Save spreadsheet to file system
+  const saveSpreadsheet = useCallback(async (filePath: string) => {
+    try {
+      // Check if this is a cloud file that needs to be uploaded and replaced
+      const isCloudFile = filePath && (
+        filePath.startsWith('Core/Cloud/') || 
+        filePath.includes(path.join(os.homedir(), 'BCloud'))
+      );
+      
+      if (isCloudFile) {
+        try {
+          // Find the corresponding cloud file in our cloudFiles array
+          const fileName = path.basename(filePath);
+          const cloudFile = cloudFiles.find(file => 
+            file.file_name === fileName
+          );
+          
+          if (cloudFile) {
+            // Create a File object from the saved spreadsheet file
+            const { banbury } = await import('@banbury/core');
+            const fs = await import('fs/promises');
+            
+            const fileBuffer = await fs.readFile(filePath);
+            const file = new File([fileBuffer], fileName, {
+              type: filePath.toLowerCase().endsWith('.csv') ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            
+            // Delete the existing cloud file first
+            if (cloudFile._id || cloudFile.id) {
+              try {
+                const fileId = String(cloudFile._id || cloudFile.id);
+                await banbury.files.deleteS3File(fileId);
+              } catch (deleteError) {
+                console.error('Error deleting existing cloud file:', deleteError);
+                // Continue with upload even if delete fails - the upload should overwrite
+              }
+            }
+            
+            // Upload to S3/Cloud to replace the existing file
+            const deviceName = devices && devices.length > 0 ? devices[0].device_name : '';
+            if (!deviceName) {
+              throw new Error('No device found. Please ensure you are logged in with a registered device.');
+            }
+            
+            await banbury.files.uploadToS3(
+              file,
+              deviceName, // Use actual device name
+              'Core/Cloud', // file path
+              'Cloud' // file parent
+            );
+            
+            // Delete the local BCloud file after successful upload
+            await fs.unlink(filePath);
+            
+            showAlert('Success', [
+              `"${fileName}" saved and uploaded to cloud successfully.`,
+              'Local copy has been cleaned up.'
+            ], 'success');
+          } else {
+            // No matching cloud file found, treat as regular save
+            showAlert('Success', [`"${path.basename(filePath)}" saved successfully.`], 'success');
+          }
+        } catch (cloudError) {
+          console.error('Error uploading spreadsheet to cloud or deleting local file:', cloudError);
+          showAlert('Warning', [
+            `"${path.basename(filePath)}" saved locally but failed to upload to cloud.`,
+            `Error: ${cloudError instanceof Error ? cloudError.message : 'Unknown error'}`,
+            'The file remains in your BCloud directory.'
+          ], 'warning');
+        }
+      } else {
+        // Regular local file save
+        showAlert('Success', [`"${path.basename(filePath)}" saved successfully.`], 'success');
+      }
+    } catch (error) {
+      console.error('Error saving spreadsheet:', error);
+      showAlert('Error', [`Failed to save "${path.basename(filePath)}": ${error instanceof Error ? error.message : 'Unknown error'}`], 'error');
+    }
+  }, [showAlert, cloudFiles, devices]);
 
   // Save document to file system
 
@@ -1856,12 +1984,15 @@ export default function Workspaces() {
                         }}
                         onCloseFile={() => handleCloseTab(activeTab || '')}
                         onSaveDocument={saveDocument}
+                        onSaveSpreadsheet={saveSpreadsheet}
                         getCurrentContent={() => {
                           const activeTabData = openTabs.find(tab => tab.id === activeTab);
                           return activeTabData?.content || currentDocumentContent;
                         }}
                         setDocumentEditor={setDocumentEditor}
                         onRenameFile={renameFile}
+                        spreadsheetEditorRef={spreadsheetEditorRef}
+                        documentEditorRef={documentEditorRef}
                       />
                     ) : (
                       <WelcomeScreen />
