@@ -515,68 +515,87 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   console.log('=== Rendering SpreadsheetEditor ===');
   console.log('Loading:', loading, 'Error:', error, 'ErrorMessage:', errorMessage);
   
-  // Check if we're actually in the DOM
+  // Force DOM creation and verification
   useEffect(() => {
-    console.log('=== DOM Check Effect ===');
-    console.log('Document body:', !!document.body);
-    console.log('Container element exists in DOM:', !!document.getElementById('univerjs-container'));
+    console.log('=== Forcing DOM creation check ===');
     
-    const observer = new MutationObserver(() => {
-      const element = document.getElementById('univerjs-container');
-      if (element) {
-        console.log('univerjs-container found in DOM!', element);
-        console.log('Element dimensions:', {
-          width: element.offsetWidth,
-          height: element.offsetHeight,
-          parent: element.parentElement?.tagName
-        });
+    // Check if our container exists
+    const existingContainer = document.getElementById('univerjs-container');
+    console.log('Existing container found:', !!existingContainer);
+    
+    if (!existingContainer) {
+      console.log('No container found, but component should be rendering...');
+      console.log('Body children count:', document.body.children.length);
+      console.log('All elements with id containing "univer":', 
+        Array.from(document.querySelectorAll('[id*="univer"]')).map(el => el.id));
+    }
+    
+    // Try to create container manually if it doesn't exist
+    setTimeout(() => {
+      const stillNoContainer = document.getElementById('univerjs-container');
+      if (!stillNoContainer) {
+        console.error('CRITICAL: Container still not found after 1 second - DOM not being created');
+        console.log('Available elements in body:', Array.from(document.body.children).map(el => el.tagName + (el.id ? '#' + el.id : '')));
       }
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true });
-    
-    return () => observer.disconnect();
+    }, 1000);
   }, []);
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         height: '100%',
         width: '100%',
         minHeight: '400px',
-        display: 'block', // Simplified layout
         position: 'relative',
-        backgroundColor: '#f0f0f0', // Debug background
+        backgroundColor: '#ff0000', // Bright red to verify visibility
+        border: '4px solid green', // Very obvious border
       }}
     >
-      {/* Add a debug div to check if parent is rendering */}
+      {/* Debug info */}
       <div style={{ 
         position: 'absolute', 
         top: 0, 
         left: 0, 
-        background: 'red', 
-        color: 'white', 
-        padding: '4px', 
-        fontSize: '10px',
+        background: 'yellow', 
+        color: 'black', 
+        padding: '8px', 
+        fontSize: '14px',
         zIndex: 9999,
-        pointerEvents: 'none'
+        border: '2px solid black',
+        fontWeight: 'bold'
       }}>
-        SpreadsheetEditor Debug - L:{loading ? 'Y' : 'N'} E:{error ? 'Y' : 'N'}
+        🔴 SPREADSHEET DEBUG - L:{loading ? 'Y' : 'N'} E:{error ? 'Y' : 'N'}
+      </div>
+      
+      {/* Simple test div */}
+      <div style={{
+        position: 'absolute',
+        top: '50px',
+        left: '10px',
+        background: 'blue',
+        color: 'white',
+        padding: '10px',
+        fontSize: '16px',
+        fontWeight: 'bold'
+      }}>
+        TEST DIV - Component is rendering!
       </div>
       
       <div
         ref={containerRef}
         id="univerjs-container"
         style={{
-          height: '100%',
+          height: 'calc(100% - 100px)',
           width: '100%',
-          minHeight: '400px',
+          minHeight: '300px',
           backgroundColor: '#ffffff',
-          border: '2px solid blue', // Debug border
+          border: '4px solid blue',
           boxSizing: 'border-box',
+          marginTop: '100px',
+          display: 'block',
         }}
       />
-    </Box>
+    </div>
   );
 };
 
