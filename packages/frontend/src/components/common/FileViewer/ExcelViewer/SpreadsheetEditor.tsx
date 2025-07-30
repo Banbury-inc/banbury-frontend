@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
   CircularProgress,
@@ -96,19 +96,22 @@ interface SpreadsheetEditorProps {
   onError?: () => void;
   onLoad?: () => void;
   onSave?: (filePath: string) => void;
+  onSaveRequest?: () => void;
 }
 
-const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
+const SpreadsheetEditor = forwardRef<{ save: () => Promise<void> }, SpreadsheetEditorProps>(({
   src,
   fileName,
   onError,
   onLoad,
   onSave,
-}) => {
+  onSaveRequest,
+}, ref) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const univerRef = useRef<Univer | null>(null);
+  const saveRef = useRef<() => Promise<void>>();
 
   // Load spreadsheet data from file
   const loadSpreadsheetData = async () => {
@@ -225,6 +228,11 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     };
   }, []);
 
+  // Expose save function to parent component
+  useImperativeHandle(ref, () => ({
+    save: handleSave
+  }), []);
+
   useEffect(() => {
     const initUniver = async () => {
       if (!containerRef.current) {
@@ -241,6 +249,37 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
           locales: {
             [LocaleType.EN_US]: {
               toolbar: {
+                undo: "Undo",
+                redo: "Redo",
+                cut: "Cut",
+                copy: "Copy",
+                paste: "Paste",
+                bold: "Bold",
+                italic: "Italic",
+                underline: "Underline",
+                strikethrough: "Strikethrough",
+                fontFamily: "Font",
+                fontSize: "Size",
+                color: "Color",
+                backgroundColor: "Background",
+                alignLeft: "Align Left",
+                alignCenter: "Align Center",
+                alignRight: "Align Right",
+                alignJustify: "Justify",
+                mergeCells: "Merge Cells",
+                unmergeCells: "Unmerge Cells",
+                insertRow: "Insert Row",
+                insertColumn: "Insert Column",
+                deleteRow: "Delete Row",
+                deleteColumn: "Delete Column",
+                sort: "Sort",
+                filter: "Filter",
+                freeze: "Freeze",
+                unfreeze: "Unfreeze",
+                zoomIn: "Zoom In",
+                zoomOut: "Zoom Out",
+                zoomReset: "Reset Zoom",
+                formatPainter: "Format Painter",
                 heading: {
                   normal: "Normal",
                   title: "Title",
@@ -321,6 +360,79 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
               "global-shortcut": "Global Shortcut",
               "zoom-slider": {
                 resetTo: "Reset to"
+              },
+              menu: {
+                file: "File",
+                edit: "Edit",
+                view: "View",
+                insert: "Insert",
+                format: "Format",
+                data: "Data",
+                tools: "Tools",
+                help: "Help"
+              },
+              contextMenu: {
+                cut: "Cut",
+                copy: "Copy",
+                paste: "Paste",
+                insertRow: "Insert Row",
+                insertColumn: "Insert Column",
+                deleteRow: "Delete Row",
+                deleteColumn: "Delete Column",
+                clearContents: "Clear Contents",
+                clearFormats: "Clear Formats",
+                clearAll: "Clear All"
+              },
+              sheets: {
+                sheet: "Sheet",
+                newSheet: "New Sheet",
+                deleteSheet: "Delete Sheet",
+                renameSheet: "Rename Sheet",
+                moveSheet: "Move Sheet",
+                copySheet: "Copy Sheet",
+                hideSheet: "Hide Sheet",
+                showSheet: "Show Sheet"
+              },
+              formula: {
+                insertFunction: "Insert Function",
+                functionLibrary: "Function Library",
+                autoSum: "Auto Sum",
+                moreFunctions: "More Functions"
+              },
+              common: {
+                ok: "OK",
+                cancel: "Cancel",
+                apply: "Apply",
+                reset: "Reset",
+                close: "Close",
+                save: "Save",
+                open: "Open",
+                new: "New",
+                delete: "Delete",
+                edit: "Edit",
+                view: "View",
+                help: "Help",
+                about: "About",
+                settings: "Settings",
+                preferences: "Preferences"
+              },
+              statusBar: {
+                ready: "Ready",
+                calculating: "Calculating...",
+                saving: "Saving...",
+                loading: "Loading..."
+              },
+              rightClickMenu: {
+                cut: "Cut",
+                copy: "Copy",
+                paste: "Paste",
+                insertRow: "Insert Row",
+                insertColumn: "Insert Column",
+                deleteRow: "Delete Row",
+                deleteColumn: "Delete Column",
+                clearContents: "Clear Contents",
+                clearFormats: "Clear Formats",
+                clearAll: "Clear All"
               }
             },
           },
@@ -404,7 +516,6 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         }
 
         onSave?.(realPath);
-        alert('File saved successfully!');
         
     } catch (e) {
         console.error("Error saving file:", e);
@@ -430,14 +541,6 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         overflow: 'hidden',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', p: 1, borderBottom: '1px solid #e0e0e0', backgroundColor: '#f5f5f5' }}>
-        <ToolbarButton onClick={handleSave} startIcon={<Save />} size="small">
-          Save
-        </ToolbarButton>
-        <ToolbarButton onClick={handleOpenWithSystemApp} startIcon={<GetApp />} size="small" sx={{ ml: 1 }}>
-          Open with System App
-        </ToolbarButton>
-      </Box>
       <Box sx={{ flex: 1, position: 'relative' }}>
         {loading && (
           <Box
@@ -496,6 +599,6 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       </Box>
     </Box>
   );
-};
+});
 
 export default SpreadsheetEditor;

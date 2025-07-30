@@ -6,6 +6,7 @@ import {
   Card,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
 import { Allotment, LayoutPriority } from 'allotment';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -219,7 +220,9 @@ const MainContent = ({
   onSaveSpreadsheet,
   getCurrentContent,
   setDocumentEditor,
-  onRenameFile
+  onRenameFile,
+  spreadsheetEditorRef,
+  documentEditorRef
 }: { 
   currentFile: { fileName: string; filePath: string; content?: string; fileType: string } | null;
   onDocumentChange: (content: string) => void;
@@ -229,6 +232,8 @@ const MainContent = ({
   getCurrentContent: () => string;
   setDocumentEditor: (editor: any) => void;
   onRenameFile?: (oldFileName: string, newFileName: string) => void;
+  spreadsheetEditorRef: React.RefObject<{ save: () => Promise<void> }>;
+  documentEditorRef: React.RefObject<any>;
 }) => {
   if (!currentFile) {
     return <WelcomeScreen />;
@@ -259,19 +264,21 @@ const MainContent = ({
               }
             }}
           />
-          <ToolbarButton
-            onClick={onCloseFile}
-            sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <CloseIcon fontSize="inherit" />
-          </ToolbarButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ToolbarButton
+              onClick={onCloseFile}
+              sx={{
+                paddingLeft: '4px', 
+                paddingRight: '4px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <CloseIcon fontSize="inherit" />
+            </ToolbarButton>
+          </Box>
         </Box>
         
         {/* Image Viewer */}
@@ -311,24 +318,40 @@ const MainContent = ({
               }
             }}
           />
-          <ToolbarButton
-            onClick={onCloseFile}
-            sx={{
-              paddingLeft: '2px', 
-              paddingRight: '2px', 
-              minWidth: '30px',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <CloseIcon fontSize="inherit" />
-          </ToolbarButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ToolbarButton
+              onClick={() => spreadsheetEditorRef.current?.save()}
+              sx={{
+                paddingLeft: '2px', 
+                paddingRight: '2px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <SaveIcon fontSize="inherit" />
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={onCloseFile}
+              sx={{
+                paddingLeft: '2px', 
+                paddingRight: '2px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <CloseIcon fontSize="inherit" />
+            </ToolbarButton>
+          </Box>
         </Box>
         
         {/* Spreadsheet Editor */}
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
           <SpreadsheetEditor
+            ref={spreadsheetEditorRef}
             src={currentFile.filePath}
             fileName={currentFile.fileName}
             onError={() => {
@@ -366,19 +389,21 @@ const MainContent = ({
               }
             }}
           />
-          <ToolbarButton
-            onClick={onCloseFile}
-            sx={{
-              paddingLeft: '4px', 
-              paddingRight: '4px', 
-              minWidth: '30px',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <CloseIcon fontSize="inherit" />
-          </ToolbarButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ToolbarButton
+              onClick={onCloseFile}
+              sx={{
+                paddingLeft: '4px', 
+                paddingRight: '4px', 
+                minWidth: '30px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              <CloseIcon fontSize="inherit" />
+            </ToolbarButton>
+          </Box>
         </Box>
         
         {/* PDF Viewer */}
@@ -422,19 +447,39 @@ const MainContent = ({
               }
             }}
           />
-        <ToolbarButton
-          onClick={onCloseFile}
-          sx={{
-            paddingLeft: '4px', 
-            paddingRight: '4px', 
-            minWidth: '30px',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            }
-          }}
-        >
-          <CloseIcon fontSize="inherit" />
-        </ToolbarButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ToolbarButton
+            onClick={() => {
+              const currentContent = getCurrentContent();
+              onSaveDocument({
+                ...currentFile,
+                content: currentContent
+              });
+            }}
+            startIcon={<SaveIcon />}
+            size="small"
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            Save
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={onCloseFile}
+            sx={{
+              paddingLeft: '4px', 
+              paddingRight: '4px', 
+              minWidth: '30px',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+          >
+            <CloseIcon fontSize="inherit" />
+          </ToolbarButton>
+        </Box>
       </Box>
       
       {/* TipTap Editor */}
@@ -443,13 +488,6 @@ const MainContent = ({
           content={currentFile.content || ''}
           onChange={onDocumentChange}
           _placeholder={`Start editing ${currentFile.fileName}...`}
-          onSave={() => {
-            const currentContent = getCurrentContent();
-            onSaveDocument({
-              ...currentFile,
-              content: currentContent
-            });
-          }}
           onEditorReady={(editor) => {
             setDocumentEditor(editor);
           }}
@@ -537,6 +575,10 @@ export default function Workspaces() {
   const [cloudFiles, setCloudFiles] = useState<DatabaseData[]>([]);
 
   const [cloudEnabled] = useState(true); // Cloud is always enabled
+
+  // Refs for editor components
+  const spreadsheetEditorRef = useRef<{ save: () => Promise<void> }>(null);
+  const documentEditorRef = useRef<any>(null);
 
   // Toolbar handler functions
   const handleShareModalOpen = () => {
@@ -1950,6 +1992,8 @@ export default function Workspaces() {
                         }}
                         setDocumentEditor={setDocumentEditor}
                         onRenameFile={renameFile}
+                        spreadsheetEditorRef={spreadsheetEditorRef}
+                        documentEditorRef={documentEditorRef}
                       />
                     ) : (
                       <WelcomeScreen />
