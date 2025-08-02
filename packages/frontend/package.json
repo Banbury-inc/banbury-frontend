@@ -135,7 +135,20 @@
     "styled-components": "^6.1.9",
     "xlsx": "^0.18.5",
     "yauzl": "^3.2.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "@univerjs/core": "^0.10.0",
+    "@univerjs/ui": "^0.10.0",
+    "@univerjs/engine-render": "^0.10.0",
+    "@univerjs/engine-formula": "^0.10.0",
+    "@univerjs/docs": "^0.10.0",
+    "@univerjs/docs-ui": "^0.10.0",
+    "@univerjs/sheets": "^0.10.0",
+    "@univerjs/sheets-ui": "^0.10.0",
+    "@univerjs/sheets-formula": "^0.10.0",
+    "@univerjs/sheets-formula-ui": "^0.10.0",
+    "@univerjs/sheets-numfmt": "^0.10.0",
+    "@univerjs/sheets-numfmt-ui": "^0.10.0",
+    "@univerjs/design": "^0.10.0"
   },
   "devDependencies": {
     "@electron/notarize": "^2.5.0",
