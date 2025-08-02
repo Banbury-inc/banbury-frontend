@@ -1705,8 +1705,10 @@ export default function Workspaces() {
 
   // Add Cloud Files fetching effect (similar to Files.tsx)
   useEffect(() => {
-    refreshCloudFiles();
-  }, [refreshCloudFiles]);
+    if (username) {
+      refreshCloudFiles();
+    }
+  }, [username]); // Only depend on username, not refreshCloudFiles to prevent unnecessary re-renders
 
   // Rename file function
   const renameFile = useCallback(async (oldFileName: string, newFileName: string) => {

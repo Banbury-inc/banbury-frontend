@@ -498,7 +498,24 @@ export default function FileTreeView({
         );
 
         if (new_files) {
-          const updatedFiles = [...fetchedFiles, ...new_files];
+          // Create a Map to store unique files (same deduplication logic as main fetch)
+          const uniqueFilesMap = new Map<string, DatabaseData>();
+
+          // Add existing fetched files to the Map
+          fetchedFiles.forEach(file => {
+            const uniqueKey = `${file.file_path}-${file.device_name}`;
+            uniqueFilesMap.set(uniqueKey, file);
+          });
+
+          // Add new files to the Map (will automatically overwrite duplicates)
+          new_files.forEach(file => {
+            const uniqueKey = `${file.file_path}-${file.device_name}`;
+            uniqueFilesMap.set(uniqueKey, file);
+          });
+
+          // Convert Map back to array
+          const updatedFiles = Array.from(uniqueFilesMap.values());
+
           setFetchedFiles(updatedFiles);
           let treeData = buildTree(updatedFiles, Array.isArray(devices) ? devices : []); // Pass devices
           // Add S3 Files node to the tree

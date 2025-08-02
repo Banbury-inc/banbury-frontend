@@ -7,8 +7,8 @@ const { EsbuildPlugin } = require('esbuild-loader');
 // Warm up thread-loader
 threadLoader.warmup(
   {
-    workers: 4,
-    workerParallelJobs: 50,
+    workers: 2,
+    workerParallelJobs: 30,
   },
   ['ts-loader', 'css-loader', 'postcss-loader']
 );
@@ -17,6 +17,15 @@ const rootPath = path.resolve(__dirname, "..");
 const projectRoot = path.resolve(rootPath, "../..");
 
 const config = {
+  stats: {
+    children: false,
+    modules: false,
+  },
+  performance: {
+    hints: false,
+    maxEntrypointSize: 512000,
+    maxAssetSize: 512000,
+  },
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
     mainFields: ["main", "module", "browser"],
@@ -38,7 +47,9 @@ const config = {
     type: 'filesystem',
     buildDependencies: {
       config: [__filename]
-    }
+    },
+    compression: 'gzip',
+    maxAge: 172800000, // 2 days
   },
   optimization: {
     minimizer: [
@@ -50,11 +61,44 @@ const config = {
     moduleIds: 'deterministic',
     runtimeChunk: 'single',
     splitChunks: {
+      chunks: 'all',
+      maxInitialRequests: 25,
+      minSize: 20000,
       cacheGroups: {
+        default: {
+          minChunks: 1,
+          priority: -20,
+          reuseExistingChunk: true,
+        },
         vendor: {
           test: /[\\/]node_modules[\\/]/,
           name: 'vendors',
           chunks: 'all',
+          priority: -10,
+        },
+        mui: {
+          test: /[\\/]node_modules[\\/]@mui[\\/]/,
+          name: 'mui',
+          chunks: 'all',
+          priority: 10,
+        },
+        react: {
+          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+          name: 'react',
+          chunks: 'all',
+          priority: 20,
+        },
+        tiptap: {
+          test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+          name: 'tiptap',
+          chunks: 'all',
+          priority: 10,
+        },
+        ai: {
+          test: /[\\/]node_modules[\\/](@ai-sdk|@assistant-ui|ai)[\\/]/,
+          name: 'ai',
+          chunks: 'all',
+          priority: 10,
         },
       },
     },
@@ -69,8 +113,8 @@ const config = {
           {
             loader: 'thread-loader',
             options: {
-              workers: 4,
-              workerParallelJobs: 50,
+              workers: 2,
+              workerParallelJobs: 30,
             }
           },
           {
