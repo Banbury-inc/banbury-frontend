@@ -1,4 +1,4 @@
-import { notarize } from '@electron/notarize';
+const { notarize } = require('@electron/notarize');
 
 async function notarizing() {
   const appPath = process.env.APP_PATH;
