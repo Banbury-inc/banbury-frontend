@@ -38,10 +38,16 @@ const config = {
     fallback: {
       'osx-temperature-sensor': false,
       'canvas': false
-    }
+    },
+    symlinks: false
   },
   entry: path.resolve(rootPath, "src/renderer", "index.tsx"),
   target: "electron-renderer",
+  externals: {
+    // Prevent bundling certain problematic MUI modules
+    '@mui/system': 'commonjs @mui/system',
+    '@mui/styled-engine': 'commonjs @mui/styled-engine'
+  },
   devtool: process.env.NODE_ENV === 'development' ? 'eval-cheap-module-source-map' : 'nosources-source-map',
   cache: {
     type: 'filesystem',
@@ -60,6 +66,8 @@ const config = {
     ],
     moduleIds: 'deterministic',
     runtimeChunk: 'single',
+    providedExports: false,
+    usedExports: false,
     splitChunks: {
       chunks: 'all',
       maxInitialRequests: 25,
@@ -81,6 +89,8 @@ const config = {
           name: 'mui',
           chunks: 'all',
           priority: 10,
+          enforce: true,
+          minChunks: 1,
         },
         react: {
           test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
@@ -107,8 +117,12 @@ const config = {
     rules: [
       {
         test: /\.(js|ts|tsx)$/,
-        exclude: /node_modules/,
-        include: /src/,
+        exclude: /node_modules\/(?!@banbury)/,
+        include: [
+          path.resolve(rootPath, 'src'),
+          path.resolve(projectRoot, 'node_modules/@banbury'),
+          path.resolve(projectRoot, 'packages/core')
+        ],
         use: [
           {
             loader: 'thread-loader',
@@ -122,7 +136,8 @@ const config = {
             options: {
               loader: 'tsx',
               target: 'es2015',
-              tsconfigRaw: require(path.resolve(projectRoot, 'tsconfig.json'))
+              tsconfigRaw: require(path.resolve(projectRoot, 'tsconfig.json')),
+              format: 'esm'
             }
           }
         ],
