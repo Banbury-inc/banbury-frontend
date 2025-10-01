@@ -62,7 +62,7 @@
     "@mui/material": "^5.16.13",
     "@mui/styled-engine-sc": "^6.0.0-alpha.18",
     "@mui/x-charts": "^7.23.2",
-    "@mui/x-data-grid": "^7.28.3",
+    "@mui/x-data-grid": "^8.13.1",
     "@mui/x-tree-view": "^7.0.0",
     "@tiptap/extension-bold": "^3.0.7",
     "@tiptap/extension-bullet-list": "^3.0.7",
